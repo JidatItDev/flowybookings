@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 const map: Record<string, string> = {
   // Booking
@@ -29,7 +30,9 @@ const map: Record<string, string> = {
 };
 
 export function StatusBadge({ status, className }: { status: string; className?: string }) {
+  const { t } = useT();
   const cls = map[status] ?? "bg-muted text-muted-foreground";
+  const label = t(`status.${status}`) !== `status.${status}` ? t(`status.${status}`) : status;
   return (
     <span
       className={cn(
@@ -38,7 +41,7 @@ export function StatusBadge({ status, className }: { status: string; className?:
         className,
       )}
     >
-      {status}
+      {label}
     </span>
   );
 }
