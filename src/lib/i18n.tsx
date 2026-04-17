@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 
 export type Locale = "nl" | "en";
 
@@ -22,10 +22,14 @@ const I18nContext = createContext<I18nCtx>({
 });
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(() => {
-    if (typeof window === "undefined") return "nl";
-    return (sessionStorage.getItem("bookly_lang") as Locale) || "nl";
-  });
+  // Always start with "nl" for SSR hydration safety
+  const [locale, setLocaleState] = useState<Locale>("nl");
+
+  // After hydration, sync from sessionStorage
+  useEffect(() => {
+    const stored = sessionStorage.getItem("bookly_lang") as Locale | null;
+    if (stored && stored !== locale) setLocaleState(stored);
+  }, []);
 
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l);
