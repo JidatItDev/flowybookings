@@ -18,7 +18,9 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-const nav = [
+type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
+
+const nav: NavItem[] = [
   { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { to: "/admin/shops", label: "Shops", icon: Store },
   { to: "/admin/users", label: "Users", icon: Users },
@@ -28,7 +30,7 @@ const nav = [
   { to: "/admin/support", label: "Support", icon: LifeBuoy },
   { to: "/admin/logs", label: "Audit logs", icon: ScrollText },
   { to: "/admin/settings", label: "Settings", icon: Settings },
-] as const;
+];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);

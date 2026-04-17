@@ -18,7 +18,9 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-const nav = [
+type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
+
+const nav: NavItem[] = [
   { to: "/shop", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/shop/calendar", label: "Calendar", icon: CalendarDays },
   { to: "/shop/customers", label: "Customers", icon: Users },
@@ -28,7 +30,7 @@ const nav = [
   { to: "/shop/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/shop/notifications", label: "Notifications", icon: Bell },
   { to: "/shop/settings", label: "Settings", icon: Settings },
-] as const;
+];
 
 export function ShopLayout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
