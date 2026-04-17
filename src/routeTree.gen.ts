@@ -11,6 +11,15 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as BookRouteImport } from './routes/book'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ShopIndexRouteImport } from './routes/shop.index'
+import { Route as ShopStaffRouteImport } from './routes/shop.staff'
+import { Route as ShopSettingsRouteImport } from './routes/shop.settings'
+import { Route as ShopServicesRouteImport } from './routes/shop.services'
+import { Route as ShopPaymentsRouteImport } from './routes/shop.payments'
+import { Route as ShopNotificationsRouteImport } from './routes/shop.notifications'
+import { Route as ShopCustomersRouteImport } from './routes/shop.customers'
+import { Route as ShopCalendarRouteImport } from './routes/shop.calendar'
+import { Route as ShopAnalyticsRouteImport } from './routes/shop.analytics'
 import { Route as BookConfirmationRouteImport } from './routes/book.confirmation'
 
 const BookRoute = BookRouteImport.update({
@@ -23,6 +32,51 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShopIndexRoute = ShopIndexRouteImport.update({
+  id: '/shop/',
+  path: '/shop/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopStaffRoute = ShopStaffRouteImport.update({
+  id: '/shop/staff',
+  path: '/shop/staff',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopSettingsRoute = ShopSettingsRouteImport.update({
+  id: '/shop/settings',
+  path: '/shop/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopServicesRoute = ShopServicesRouteImport.update({
+  id: '/shop/services',
+  path: '/shop/services',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopPaymentsRoute = ShopPaymentsRouteImport.update({
+  id: '/shop/payments',
+  path: '/shop/payments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopNotificationsRoute = ShopNotificationsRouteImport.update({
+  id: '/shop/notifications',
+  path: '/shop/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopCustomersRoute = ShopCustomersRouteImport.update({
+  id: '/shop/customers',
+  path: '/shop/customers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopCalendarRoute = ShopCalendarRouteImport.update({
+  id: '/shop/calendar',
+  path: '/shop/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopAnalyticsRoute = ShopAnalyticsRouteImport.update({
+  id: '/shop/analytics',
+  path: '/shop/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BookConfirmationRoute = BookConfirmationRouteImport.update({
   id: '/confirmation',
   path: '/confirmation',
@@ -33,29 +87,102 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/book': typeof BookRouteWithChildren
   '/book/confirmation': typeof BookConfirmationRoute
+  '/shop/analytics': typeof ShopAnalyticsRoute
+  '/shop/calendar': typeof ShopCalendarRoute
+  '/shop/customers': typeof ShopCustomersRoute
+  '/shop/notifications': typeof ShopNotificationsRoute
+  '/shop/payments': typeof ShopPaymentsRoute
+  '/shop/services': typeof ShopServicesRoute
+  '/shop/settings': typeof ShopSettingsRoute
+  '/shop/staff': typeof ShopStaffRoute
+  '/shop/': typeof ShopIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/book': typeof BookRouteWithChildren
   '/book/confirmation': typeof BookConfirmationRoute
+  '/shop/analytics': typeof ShopAnalyticsRoute
+  '/shop/calendar': typeof ShopCalendarRoute
+  '/shop/customers': typeof ShopCustomersRoute
+  '/shop/notifications': typeof ShopNotificationsRoute
+  '/shop/payments': typeof ShopPaymentsRoute
+  '/shop/services': typeof ShopServicesRoute
+  '/shop/settings': typeof ShopSettingsRoute
+  '/shop/staff': typeof ShopStaffRoute
+  '/shop': typeof ShopIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/book': typeof BookRouteWithChildren
   '/book/confirmation': typeof BookConfirmationRoute
+  '/shop/analytics': typeof ShopAnalyticsRoute
+  '/shop/calendar': typeof ShopCalendarRoute
+  '/shop/customers': typeof ShopCustomersRoute
+  '/shop/notifications': typeof ShopNotificationsRoute
+  '/shop/payments': typeof ShopPaymentsRoute
+  '/shop/services': typeof ShopServicesRoute
+  '/shop/settings': typeof ShopSettingsRoute
+  '/shop/staff': typeof ShopStaffRoute
+  '/shop/': typeof ShopIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/book' | '/book/confirmation'
+  fullPaths:
+    | '/'
+    | '/book'
+    | '/book/confirmation'
+    | '/shop/analytics'
+    | '/shop/calendar'
+    | '/shop/customers'
+    | '/shop/notifications'
+    | '/shop/payments'
+    | '/shop/services'
+    | '/shop/settings'
+    | '/shop/staff'
+    | '/shop/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/book' | '/book/confirmation'
-  id: '__root__' | '/' | '/book' | '/book/confirmation'
+  to:
+    | '/'
+    | '/book'
+    | '/book/confirmation'
+    | '/shop/analytics'
+    | '/shop/calendar'
+    | '/shop/customers'
+    | '/shop/notifications'
+    | '/shop/payments'
+    | '/shop/services'
+    | '/shop/settings'
+    | '/shop/staff'
+    | '/shop'
+  id:
+    | '__root__'
+    | '/'
+    | '/book'
+    | '/book/confirmation'
+    | '/shop/analytics'
+    | '/shop/calendar'
+    | '/shop/customers'
+    | '/shop/notifications'
+    | '/shop/payments'
+    | '/shop/services'
+    | '/shop/settings'
+    | '/shop/staff'
+    | '/shop/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BookRoute: typeof BookRouteWithChildren
+  ShopAnalyticsRoute: typeof ShopAnalyticsRoute
+  ShopCalendarRoute: typeof ShopCalendarRoute
+  ShopCustomersRoute: typeof ShopCustomersRoute
+  ShopNotificationsRoute: typeof ShopNotificationsRoute
+  ShopPaymentsRoute: typeof ShopPaymentsRoute
+  ShopServicesRoute: typeof ShopServicesRoute
+  ShopSettingsRoute: typeof ShopSettingsRoute
+  ShopStaffRoute: typeof ShopStaffRoute
+  ShopIndexRoute: typeof ShopIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -72,6 +199,69 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop/': {
+      id: '/shop/'
+      path: '/shop'
+      fullPath: '/shop/'
+      preLoaderRoute: typeof ShopIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop/staff': {
+      id: '/shop/staff'
+      path: '/shop/staff'
+      fullPath: '/shop/staff'
+      preLoaderRoute: typeof ShopStaffRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop/settings': {
+      id: '/shop/settings'
+      path: '/shop/settings'
+      fullPath: '/shop/settings'
+      preLoaderRoute: typeof ShopSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop/services': {
+      id: '/shop/services'
+      path: '/shop/services'
+      fullPath: '/shop/services'
+      preLoaderRoute: typeof ShopServicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop/payments': {
+      id: '/shop/payments'
+      path: '/shop/payments'
+      fullPath: '/shop/payments'
+      preLoaderRoute: typeof ShopPaymentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop/notifications': {
+      id: '/shop/notifications'
+      path: '/shop/notifications'
+      fullPath: '/shop/notifications'
+      preLoaderRoute: typeof ShopNotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop/customers': {
+      id: '/shop/customers'
+      path: '/shop/customers'
+      fullPath: '/shop/customers'
+      preLoaderRoute: typeof ShopCustomersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop/calendar': {
+      id: '/shop/calendar'
+      path: '/shop/calendar'
+      fullPath: '/shop/calendar'
+      preLoaderRoute: typeof ShopCalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop/analytics': {
+      id: '/shop/analytics'
+      path: '/shop/analytics'
+      fullPath: '/shop/analytics'
+      preLoaderRoute: typeof ShopAnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/book/confirmation': {
@@ -97,6 +287,15 @@ const BookRouteWithChildren = BookRoute._addFileChildren(BookRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BookRoute: BookRouteWithChildren,
+  ShopAnalyticsRoute: ShopAnalyticsRoute,
+  ShopCalendarRoute: ShopCalendarRoute,
+  ShopCustomersRoute: ShopCustomersRoute,
+  ShopNotificationsRoute: ShopNotificationsRoute,
+  ShopPaymentsRoute: ShopPaymentsRoute,
+  ShopServicesRoute: ShopServicesRoute,
+  ShopSettingsRoute: ShopSettingsRoute,
+  ShopStaffRoute: ShopStaffRoute,
+  ShopIndexRoute: ShopIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
