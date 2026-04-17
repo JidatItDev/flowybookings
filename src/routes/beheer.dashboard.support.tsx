@@ -4,37 +4,29 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { supportTickets } from "@/lib/mock-data";
+import { useT } from "@/lib/i18n";
 
-export const Route = createFileRoute("/beheer/dashboard/support")({
-  head: () => ({ meta: [{ title: "Support — Admin" }] }),
-  component: SupportPage,
-});
+export const Route = createFileRoute("/beheer/dashboard/support")({ head: () => ({ meta: [{ title: "Support — Admin" }] }), component: SupportPage });
 
 function SupportPage() {
+  const { t } = useT();
   return (
     <AdminLayout>
-      <PageHeader title="Support tickets" description="Shop and payment issues — assigned and unassigned." actions={<Button variant="hero">New ticket</Button>} />
+      <PageHeader title={t("adminSupport.title")} description={t("adminSupport.description")} actions={<Button variant="hero">{t("adminSupport.newTicket")}</Button>} />
       <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
         <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
-            <tr>
-              <th className="px-6 py-3 text-left">Subject</th>
-              <th className="hidden px-6 py-3 text-left md:table-cell">Shop</th>
-              <th className="px-6 py-3 text-left">Priority</th>
-              <th className="px-6 py-3 text-left">Status</th>
-              <th className="hidden px-6 py-3 text-left lg:table-cell">Updated</th>
-              <th className="px-6 py-3" />
-            </tr>
-          </thead>
+          <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground"><tr>
+            <th className="px-6 py-3 text-left">{t("adminSupport.subject")}</th><th className="hidden px-6 py-3 text-left md:table-cell">{t("adminSupport.shop")}</th><th className="px-6 py-3 text-left">{t("adminSupport.priority")}</th><th className="px-6 py-3 text-left">{t("adminSupport.status")}</th><th className="hidden px-6 py-3 text-left lg:table-cell">{t("adminSupport.updated")}</th><th className="px-6 py-3" />
+          </tr></thead>
           <tbody className="divide-y divide-border">
-            {supportTickets.map((t) => (
-              <tr key={t.id} className="hover:bg-muted/30">
-                <td className="px-6 py-4 font-medium">{t.subject}</td>
-                <td className="hidden px-6 py-4 text-muted-foreground md:table-cell">{t.shop}</td>
-                <td className="px-6 py-4"><StatusBadge status={t.priority} /></td>
-                <td className="px-6 py-4"><StatusBadge status={t.status} /></td>
-                <td className="hidden px-6 py-4 text-muted-foreground lg:table-cell">{t.updated}</td>
-                <td className="px-6 py-4 text-right"><Button variant="ghost" size="sm">Open</Button></td>
+            {supportTickets.map((tk) => (
+              <tr key={tk.id} className="hover:bg-muted/30">
+                <td className="px-6 py-4 font-medium">{tk.subject}</td>
+                <td className="hidden px-6 py-4 text-muted-foreground md:table-cell">{tk.shop}</td>
+                <td className="px-6 py-4"><StatusBadge status={tk.priority} /></td>
+                <td className="px-6 py-4"><StatusBadge status={tk.status} /></td>
+                <td className="hidden px-6 py-4 text-muted-foreground lg:table-cell">{tk.updated}</td>
+                <td className="px-6 py-4 text-right"><Button variant="ghost" size="sm">{t("adminSupport.open")}</Button></td>
               </tr>
             ))}
           </tbody>
