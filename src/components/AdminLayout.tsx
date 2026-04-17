@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RequireSuperAdmin } from "@/components/RouteGuard";
 import { useAuth } from "@/lib/auth-context";
+import { useT } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -29,18 +31,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
+type NavItem = { to: string; labelKey: string; icon: typeof LayoutDashboard; exact?: boolean };
 
 const nav: NavItem[] = [
-  { to: "/beheer/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
-  { to: "/beheer/dashboard/shops", label: "Shops", icon: Store },
-  { to: "/beheer/dashboard/users", label: "Users", icon: Users },
-  { to: "/beheer/dashboard/bookings", label: "Bookings", icon: CalendarRange },
-  { to: "/beheer/dashboard/payments", label: "Payments", icon: CreditCard },
-  { to: "/beheer/dashboard/plans", label: "Plans", icon: Layers },
-  { to: "/beheer/dashboard/support", label: "Support", icon: LifeBuoy },
-  { to: "/beheer/dashboard/logs", label: "Audit logs", icon: ScrollText },
-  { to: "/beheer/dashboard/settings", label: "Settings", icon: Settings },
+  { to: "/beheer/dashboard", labelKey: "adminNav.overview", icon: LayoutDashboard, exact: true },
+  { to: "/beheer/dashboard/shops", labelKey: "adminNav.shops", icon: Store },
+  { to: "/beheer/dashboard/users", labelKey: "adminNav.users", icon: Users },
+  { to: "/beheer/dashboard/bookings", labelKey: "adminNav.bookings", icon: CalendarRange },
+  { to: "/beheer/dashboard/payments", labelKey: "adminNav.payments", icon: CreditCard },
+  { to: "/beheer/dashboard/plans", labelKey: "adminNav.plans", icon: Layers },
+  { to: "/beheer/dashboard/support", labelKey: "adminNav.support", icon: LifeBuoy },
+  { to: "/beheer/dashboard/logs", labelKey: "adminNav.auditLogs", icon: ScrollText },
+  { to: "/beheer/dashboard/settings", labelKey: "adminNav.settings", icon: Settings },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -55,6 +57,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const { user, signOut } = useAuth();
+  const { t } = useT();
   const isActive = (to: string, exact?: boolean) =>
     exact ? location.pathname === to : location.pathname === to || location.pathname.startsWith(to + "/");
 
@@ -78,7 +81,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                 )}
               >
                 <Icon className="h-4 w-4" />
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             );
           })}
@@ -86,11 +89,9 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         <div className="m-3 rounded-2xl border border-sidebar-border bg-card p-4">
           <div className="flex items-center gap-2 text-xs font-medium text-success-foreground">
             <ShieldCheck className="h-4 w-4" />
-            Platform healthy
+            {t("adminNav.platformHealthy")}
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">
-            All systems operational · 99.98% uptime
-          </p>
+          <p className="mt-2 text-xs text-muted-foreground">{t("adminNav.allSystems")}</p>
         </div>
       </aside>
 
@@ -116,7 +117,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                     )}
                   >
                     <Icon className="h-4 w-4" />
-                    {item.label}
+                    {t(item.labelKey)}
                   </Link>
                 );
               })}
@@ -138,19 +139,20 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           </Button>
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary">
-              SUPER ADMIN
+              {t("adminNav.superAdmin")}
             </span>
-            <span className="hidden text-sm text-muted-foreground sm:inline">Bookly platform</span>
+            <span className="hidden text-sm text-muted-foreground sm:inline">{t("adminNav.platform")}</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="icon" aria-label="Notifications">
+            <LanguageSwitcher />
+            <Button variant="ghost" size="icon" aria-label={t("shopNav.notifications")}>
               <Bell className="h-5 w-5" />
             </Button>
             <Link
               to="/shop"
               className="hidden rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground sm:inline-flex"
             >
-              Switch to Shop →
+              {t("adminNav.switchToShop")}
             </Link>
             <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-1.5">
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-warm text-xs font-semibold text-pink-foreground">
@@ -158,7 +160,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
               </div>
               <div className="hidden text-xs leading-tight sm:block">
                 <p className="font-medium">{user?.email}</p>
-                <p className="text-muted-foreground">Platform owner</p>
+                <p className="text-muted-foreground">{t("adminNav.platformOwner")}</p>
               </div>
             </div>
             <DropdownMenu>
@@ -171,7 +173,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => signOut()}>
-                  <LogOut className="h-4 w-4" /> Sign out
+                  <LogOut className="h-4 w-4" /> {t("auth.signOut")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -21,6 +21,8 @@ import { ShopPicker } from "@/components/ShopPicker";
 import { RequireShopAccess } from "@/components/RouteGuard";
 import { ShopOnboarding } from "@/components/ShopOnboarding";
 import { useAuth } from "@/lib/auth-context";
+import { useT } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,18 +33,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut } from "lucide-react";
 
-type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
+type NavItem = { to: string; labelKey: string; icon: typeof LayoutDashboard; exact?: boolean };
 
 const nav: NavItem[] = [
-  { to: "/shop", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/shop/calendar", label: "Calendar", icon: CalendarDays },
-  { to: "/shop/customers", label: "Customers", icon: Users },
-  { to: "/shop/services", label: "Services", icon: Sparkles },
-  { to: "/shop/staff", label: "Staff", icon: UserCog },
-  { to: "/shop/payments", label: "Payments", icon: CreditCard },
-  { to: "/shop/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/shop/notifications", label: "Notifications", icon: Bell },
-  { to: "/shop/settings", label: "Settings", icon: Settings },
+  { to: "/shop", labelKey: "shopNav.dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/shop/calendar", labelKey: "shopNav.calendar", icon: CalendarDays },
+  { to: "/shop/customers", labelKey: "shopNav.customers", icon: Users },
+  { to: "/shop/services", labelKey: "shopNav.services", icon: Sparkles },
+  { to: "/shop/staff", labelKey: "shopNav.staff", icon: UserCog },
+  { to: "/shop/payments", labelKey: "shopNav.payments", icon: CreditCard },
+  { to: "/shop/analytics", labelKey: "shopNav.analytics", icon: BarChart3 },
+  { to: "/shop/notifications", labelKey: "shopNav.notifications", icon: Bell },
+  { to: "/shop/settings", labelKey: "shopNav.settings", icon: Settings },
 ];
 
 export function ShopLayout({ children }: { children: React.ReactNode }) {
@@ -57,8 +59,8 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const { shops, loading, user, signOut, isSuperAdmin } = useAuth();
+  const { t } = useT();
 
-  // Owner with no shop yet → onboarding
   if (!loading && shops.length === 0 && !isSuperAdmin) {
     return <ShopOnboarding />;
   }
@@ -68,7 +70,6 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen w-full bg-background">
-      {/* Sidebar — desktop */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
         <SidebarHeader />
         <nav className="flex-1 space-y-1 px-3 pb-6">
@@ -87,7 +88,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
                 )}
               >
                 <Icon className="h-4 w-4" />
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             );
           })}
@@ -95,7 +96,6 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
         <SidebarFooter />
       </aside>
 
-      {/* Mobile drawer */}
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div
@@ -121,7 +121,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
                     )}
                   >
                     <Icon className="h-4 w-4" />
-                    {item.label}
+                    {t(item.labelKey)}
                   </Link>
                 );
               })}
@@ -132,7 +132,6 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Top bar */}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur sm:px-6">
           <Button
             variant="ghost"
@@ -147,13 +146,14 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
             <div className="relative w-full max-w-md">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
-                placeholder="Search bookings, customers…"
+                placeholder={t("shopNav.searchPlaceholder")}
                 className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm shadow-xs outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
               />
             </div>
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="ghost" size="icon" aria-label="Notifications">
+            <LanguageSwitcher />
+            <Button variant="ghost" size="icon" aria-label={t("shopNav.notifications")}>
               <Bell className="h-5 w-5" />
             </Button>
             {isSuperAdmin && (
@@ -161,7 +161,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
                 to="/beheer/dashboard"
                 className="hidden rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground sm:inline-flex"
               >
-                Switch to Admin →
+                {t("shopNav.switchToAdmin")}
               </Link>
             )}
             <div className="w-56">
@@ -177,7 +177,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => signOut()}>
-                  <LogOut className="h-4 w-4" /> Sign out
+                  <LogOut className="h-4 w-4" /> {t("auth.signOut")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -209,14 +209,13 @@ function SidebarHeader({ onClose }: { onClose?: () => void }) {
 }
 
 function SidebarFooter() {
+  const { t } = useT();
   return (
     <div className="m-3 rounded-2xl bg-gradient-brand p-4 text-primary-foreground shadow-glow">
-      <p className="text-sm font-semibold">Upgrade to Premium</p>
-      <p className="mt-1 text-xs opacity-90">
-        Unlock multi-location, API access and priority support.
-      </p>
+      <p className="text-sm font-semibold">{t("shopNav.upgradePremium")}</p>
+      <p className="mt-1 text-xs opacity-90">{t("shopNav.upgradeSub")}</p>
       <button className="mt-3 w-full rounded-lg bg-background/15 px-3 py-1.5 text-xs font-medium backdrop-blur hover:bg-background/25">
-        See plans
+        {t("shopNav.seePlans")}
       </button>
     </div>
   );

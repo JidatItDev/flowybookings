@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 export function EmptyState({
   icon: Icon,
@@ -36,10 +37,11 @@ export function EmptyState({
 }
 
 export function NoShopState() {
+  const { t } = useT();
   return (
     <EmptyState
-      title="No shop selected"
-      description="Pick a shop from the dropdown in the top-right to view its data."
+      title={t("empty.noShop")}
+      description={t("empty.noShopDesc")}
     />
   );
 }
