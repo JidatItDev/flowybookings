@@ -4,7 +4,7 @@ import { AdminLayout } from "@/components/AdminLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { auditLogs } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/admin/logs")({
+export const Route = createFileRoute("/beheer/dashboard/logs")({
   head: () => ({ meta: [{ title: "Audit logs — Admin" }] }),
   component: LogsPage,
 });

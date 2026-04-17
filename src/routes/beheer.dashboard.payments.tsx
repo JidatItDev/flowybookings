@@ -6,7 +6,7 @@ import { StatCard } from "@/components/StatCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { bookings, shops } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/admin/payments")({
+export const Route = createFileRoute("/beheer/dashboard/payments")({
   head: () => ({ meta: [{ title: "Payments — Admin" }] }),
   component: AdminPayments,
 });

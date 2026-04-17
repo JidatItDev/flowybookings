@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { supportTickets } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/admin/support")({
+export const Route = createFileRoute("/beheer/dashboard/support")({
   head: () => ({ meta: [{ title: "Support — Admin" }] }),
   component: SupportPage,
 });

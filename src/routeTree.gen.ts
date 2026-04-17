@@ -14,7 +14,6 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as BookRouteImport } from './routes/book'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShopIndexRouteImport } from './routes/shop.index'
-import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as ShopStaffRouteImport } from './routes/shop.staff'
 import { Route as ShopSettingsRouteImport } from './routes/shop.settings'
 import { Route as ShopServicesRouteImport } from './routes/shop.services'
@@ -24,14 +23,16 @@ import { Route as ShopCustomersRouteImport } from './routes/shop.customers'
 import { Route as ShopCalendarRouteImport } from './routes/shop.calendar'
 import { Route as ShopAnalyticsRouteImport } from './routes/shop.analytics'
 import { Route as BookConfirmationRouteImport } from './routes/book.confirmation'
-import { Route as AdminUsersRouteImport } from './routes/admin.users'
-import { Route as AdminSupportRouteImport } from './routes/admin.support'
-import { Route as AdminShopsRouteImport } from './routes/admin.shops'
-import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
-import { Route as AdminPlansRouteImport } from './routes/admin.plans'
-import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
-import { Route as AdminLogsRouteImport } from './routes/admin.logs'
-import { Route as AdminBookingsRouteImport } from './routes/admin.bookings'
+import { Route as BeheerDashboardIndexRouteImport } from './routes/beheer.dashboard.index'
+import { Route as BeheerDashboardUsersRouteImport } from './routes/beheer.dashboard.users'
+import { Route as BeheerDashboardSupportRouteImport } from './routes/beheer.dashboard.support'
+import { Route as BeheerDashboardShopsRouteImport } from './routes/beheer.dashboard.shops'
+import { Route as BeheerDashboardSettingsRouteImport } from './routes/beheer.dashboard.settings'
+import { Route as BeheerDashboardPlansRouteImport } from './routes/beheer.dashboard.plans'
+import { Route as BeheerDashboardPaymentsRouteImport } from './routes/beheer.dashboard.payments'
+import { Route as BeheerDashboardLogsRouteImport } from './routes/beheer.dashboard.logs'
+import { Route as BeheerDashboardBookingsRouteImport } from './routes/beheer.dashboard.bookings'
+import { Route as BeheerAdLoginRouteImport } from './routes/beheer.ad.login'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -56,11 +57,6 @@ const IndexRoute = IndexRouteImport.update({
 const ShopIndexRoute = ShopIndexRouteImport.update({
   id: '/shop/',
   path: '/shop/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/admin/',
-  path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShopStaffRoute = ShopStaffRouteImport.update({
@@ -108,44 +104,54 @@ const BookConfirmationRoute = BookConfirmationRouteImport.update({
   path: '/confirmation',
   getParentRoute: () => BookRoute,
 } as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/admin/users',
-  path: '/admin/users',
+const BeheerDashboardIndexRoute = BeheerDashboardIndexRouteImport.update({
+  id: '/beheer/dashboard/',
+  path: '/beheer/dashboard/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminSupportRoute = AdminSupportRouteImport.update({
-  id: '/admin/support',
-  path: '/admin/support',
+const BeheerDashboardUsersRoute = BeheerDashboardUsersRouteImport.update({
+  id: '/beheer/dashboard/users',
+  path: '/beheer/dashboard/users',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminShopsRoute = AdminShopsRouteImport.update({
-  id: '/admin/shops',
-  path: '/admin/shops',
+const BeheerDashboardSupportRoute = BeheerDashboardSupportRouteImport.update({
+  id: '/beheer/dashboard/support',
+  path: '/beheer/dashboard/support',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminSettingsRoute = AdminSettingsRouteImport.update({
-  id: '/admin/settings',
-  path: '/admin/settings',
+const BeheerDashboardShopsRoute = BeheerDashboardShopsRouteImport.update({
+  id: '/beheer/dashboard/shops',
+  path: '/beheer/dashboard/shops',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminPlansRoute = AdminPlansRouteImport.update({
-  id: '/admin/plans',
-  path: '/admin/plans',
+const BeheerDashboardSettingsRoute = BeheerDashboardSettingsRouteImport.update({
+  id: '/beheer/dashboard/settings',
+  path: '/beheer/dashboard/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
-  id: '/admin/payments',
-  path: '/admin/payments',
+const BeheerDashboardPlansRoute = BeheerDashboardPlansRouteImport.update({
+  id: '/beheer/dashboard/plans',
+  path: '/beheer/dashboard/plans',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminLogsRoute = AdminLogsRouteImport.update({
-  id: '/admin/logs',
-  path: '/admin/logs',
+const BeheerDashboardPaymentsRoute = BeheerDashboardPaymentsRouteImport.update({
+  id: '/beheer/dashboard/payments',
+  path: '/beheer/dashboard/payments',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminBookingsRoute = AdminBookingsRouteImport.update({
-  id: '/admin/bookings',
-  path: '/admin/bookings',
+const BeheerDashboardLogsRoute = BeheerDashboardLogsRouteImport.update({
+  id: '/beheer/dashboard/logs',
+  path: '/beheer/dashboard/logs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BeheerDashboardBookingsRoute = BeheerDashboardBookingsRouteImport.update({
+  id: '/beheer/dashboard/bookings',
+  path: '/beheer/dashboard/bookings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BeheerAdLoginRoute = BeheerAdLoginRouteImport.update({
+  id: '/beheer/ad/login',
+  path: '/beheer/ad/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -154,14 +160,6 @@ export interface FileRoutesByFullPath {
   '/book': typeof BookRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/admin/bookings': typeof AdminBookingsRoute
-  '/admin/logs': typeof AdminLogsRoute
-  '/admin/payments': typeof AdminPaymentsRoute
-  '/admin/plans': typeof AdminPlansRoute
-  '/admin/settings': typeof AdminSettingsRoute
-  '/admin/shops': typeof AdminShopsRoute
-  '/admin/support': typeof AdminSupportRoute
-  '/admin/users': typeof AdminUsersRoute
   '/book/confirmation': typeof BookConfirmationRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/calendar': typeof ShopCalendarRoute
@@ -171,22 +169,23 @@ export interface FileRoutesByFullPath {
   '/shop/services': typeof ShopServicesRoute
   '/shop/settings': typeof ShopSettingsRoute
   '/shop/staff': typeof ShopStaffRoute
-  '/admin/': typeof AdminIndexRoute
   '/shop/': typeof ShopIndexRoute
+  '/beheer/ad/login': typeof BeheerAdLoginRoute
+  '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
+  '/beheer/dashboard/logs': typeof BeheerDashboardLogsRoute
+  '/beheer/dashboard/payments': typeof BeheerDashboardPaymentsRoute
+  '/beheer/dashboard/plans': typeof BeheerDashboardPlansRoute
+  '/beheer/dashboard/settings': typeof BeheerDashboardSettingsRoute
+  '/beheer/dashboard/shops': typeof BeheerDashboardShopsRoute
+  '/beheer/dashboard/support': typeof BeheerDashboardSupportRoute
+  '/beheer/dashboard/users': typeof BeheerDashboardUsersRoute
+  '/beheer/dashboard/': typeof BeheerDashboardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/book': typeof BookRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/admin/bookings': typeof AdminBookingsRoute
-  '/admin/logs': typeof AdminLogsRoute
-  '/admin/payments': typeof AdminPaymentsRoute
-  '/admin/plans': typeof AdminPlansRoute
-  '/admin/settings': typeof AdminSettingsRoute
-  '/admin/shops': typeof AdminShopsRoute
-  '/admin/support': typeof AdminSupportRoute
-  '/admin/users': typeof AdminUsersRoute
   '/book/confirmation': typeof BookConfirmationRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/calendar': typeof ShopCalendarRoute
@@ -196,8 +195,17 @@ export interface FileRoutesByTo {
   '/shop/services': typeof ShopServicesRoute
   '/shop/settings': typeof ShopSettingsRoute
   '/shop/staff': typeof ShopStaffRoute
-  '/admin': typeof AdminIndexRoute
   '/shop': typeof ShopIndexRoute
+  '/beheer/ad/login': typeof BeheerAdLoginRoute
+  '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
+  '/beheer/dashboard/logs': typeof BeheerDashboardLogsRoute
+  '/beheer/dashboard/payments': typeof BeheerDashboardPaymentsRoute
+  '/beheer/dashboard/plans': typeof BeheerDashboardPlansRoute
+  '/beheer/dashboard/settings': typeof BeheerDashboardSettingsRoute
+  '/beheer/dashboard/shops': typeof BeheerDashboardShopsRoute
+  '/beheer/dashboard/support': typeof BeheerDashboardSupportRoute
+  '/beheer/dashboard/users': typeof BeheerDashboardUsersRoute
+  '/beheer/dashboard': typeof BeheerDashboardIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -205,14 +213,6 @@ export interface FileRoutesById {
   '/book': typeof BookRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/admin/bookings': typeof AdminBookingsRoute
-  '/admin/logs': typeof AdminLogsRoute
-  '/admin/payments': typeof AdminPaymentsRoute
-  '/admin/plans': typeof AdminPlansRoute
-  '/admin/settings': typeof AdminSettingsRoute
-  '/admin/shops': typeof AdminShopsRoute
-  '/admin/support': typeof AdminSupportRoute
-  '/admin/users': typeof AdminUsersRoute
   '/book/confirmation': typeof BookConfirmationRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/calendar': typeof ShopCalendarRoute
@@ -222,8 +222,17 @@ export interface FileRoutesById {
   '/shop/services': typeof ShopServicesRoute
   '/shop/settings': typeof ShopSettingsRoute
   '/shop/staff': typeof ShopStaffRoute
-  '/admin/': typeof AdminIndexRoute
   '/shop/': typeof ShopIndexRoute
+  '/beheer/ad/login': typeof BeheerAdLoginRoute
+  '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
+  '/beheer/dashboard/logs': typeof BeheerDashboardLogsRoute
+  '/beheer/dashboard/payments': typeof BeheerDashboardPaymentsRoute
+  '/beheer/dashboard/plans': typeof BeheerDashboardPlansRoute
+  '/beheer/dashboard/settings': typeof BeheerDashboardSettingsRoute
+  '/beheer/dashboard/shops': typeof BeheerDashboardShopsRoute
+  '/beheer/dashboard/support': typeof BeheerDashboardSupportRoute
+  '/beheer/dashboard/users': typeof BeheerDashboardUsersRoute
+  '/beheer/dashboard/': typeof BeheerDashboardIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -232,14 +241,6 @@ export interface FileRouteTypes {
     | '/book'
     | '/login'
     | '/signup'
-    | '/admin/bookings'
-    | '/admin/logs'
-    | '/admin/payments'
-    | '/admin/plans'
-    | '/admin/settings'
-    | '/admin/shops'
-    | '/admin/support'
-    | '/admin/users'
     | '/book/confirmation'
     | '/shop/analytics'
     | '/shop/calendar'
@@ -249,22 +250,23 @@ export interface FileRouteTypes {
     | '/shop/services'
     | '/shop/settings'
     | '/shop/staff'
-    | '/admin/'
     | '/shop/'
+    | '/beheer/ad/login'
+    | '/beheer/dashboard/bookings'
+    | '/beheer/dashboard/logs'
+    | '/beheer/dashboard/payments'
+    | '/beheer/dashboard/plans'
+    | '/beheer/dashboard/settings'
+    | '/beheer/dashboard/shops'
+    | '/beheer/dashboard/support'
+    | '/beheer/dashboard/users'
+    | '/beheer/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/book'
     | '/login'
     | '/signup'
-    | '/admin/bookings'
-    | '/admin/logs'
-    | '/admin/payments'
-    | '/admin/plans'
-    | '/admin/settings'
-    | '/admin/shops'
-    | '/admin/support'
-    | '/admin/users'
     | '/book/confirmation'
     | '/shop/analytics'
     | '/shop/calendar'
@@ -274,22 +276,23 @@ export interface FileRouteTypes {
     | '/shop/services'
     | '/shop/settings'
     | '/shop/staff'
-    | '/admin'
     | '/shop'
+    | '/beheer/ad/login'
+    | '/beheer/dashboard/bookings'
+    | '/beheer/dashboard/logs'
+    | '/beheer/dashboard/payments'
+    | '/beheer/dashboard/plans'
+    | '/beheer/dashboard/settings'
+    | '/beheer/dashboard/shops'
+    | '/beheer/dashboard/support'
+    | '/beheer/dashboard/users'
+    | '/beheer/dashboard'
   id:
     | '__root__'
     | '/'
     | '/book'
     | '/login'
     | '/signup'
-    | '/admin/bookings'
-    | '/admin/logs'
-    | '/admin/payments'
-    | '/admin/plans'
-    | '/admin/settings'
-    | '/admin/shops'
-    | '/admin/support'
-    | '/admin/users'
     | '/book/confirmation'
     | '/shop/analytics'
     | '/shop/calendar'
@@ -299,8 +302,17 @@ export interface FileRouteTypes {
     | '/shop/services'
     | '/shop/settings'
     | '/shop/staff'
-    | '/admin/'
     | '/shop/'
+    | '/beheer/ad/login'
+    | '/beheer/dashboard/bookings'
+    | '/beheer/dashboard/logs'
+    | '/beheer/dashboard/payments'
+    | '/beheer/dashboard/plans'
+    | '/beheer/dashboard/settings'
+    | '/beheer/dashboard/shops'
+    | '/beheer/dashboard/support'
+    | '/beheer/dashboard/users'
+    | '/beheer/dashboard/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -308,14 +320,6 @@ export interface RootRouteChildren {
   BookRoute: typeof BookRouteWithChildren
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
-  AdminBookingsRoute: typeof AdminBookingsRoute
-  AdminLogsRoute: typeof AdminLogsRoute
-  AdminPaymentsRoute: typeof AdminPaymentsRoute
-  AdminPlansRoute: typeof AdminPlansRoute
-  AdminSettingsRoute: typeof AdminSettingsRoute
-  AdminShopsRoute: typeof AdminShopsRoute
-  AdminSupportRoute: typeof AdminSupportRoute
-  AdminUsersRoute: typeof AdminUsersRoute
   ShopAnalyticsRoute: typeof ShopAnalyticsRoute
   ShopCalendarRoute: typeof ShopCalendarRoute
   ShopCustomersRoute: typeof ShopCustomersRoute
@@ -324,8 +328,17 @@ export interface RootRouteChildren {
   ShopServicesRoute: typeof ShopServicesRoute
   ShopSettingsRoute: typeof ShopSettingsRoute
   ShopStaffRoute: typeof ShopStaffRoute
-  AdminIndexRoute: typeof AdminIndexRoute
   ShopIndexRoute: typeof ShopIndexRoute
+  BeheerAdLoginRoute: typeof BeheerAdLoginRoute
+  BeheerDashboardBookingsRoute: typeof BeheerDashboardBookingsRoute
+  BeheerDashboardLogsRoute: typeof BeheerDashboardLogsRoute
+  BeheerDashboardPaymentsRoute: typeof BeheerDashboardPaymentsRoute
+  BeheerDashboardPlansRoute: typeof BeheerDashboardPlansRoute
+  BeheerDashboardSettingsRoute: typeof BeheerDashboardSettingsRoute
+  BeheerDashboardShopsRoute: typeof BeheerDashboardShopsRoute
+  BeheerDashboardSupportRoute: typeof BeheerDashboardSupportRoute
+  BeheerDashboardUsersRoute: typeof BeheerDashboardUsersRoute
+  BeheerDashboardIndexRoute: typeof BeheerDashboardIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -363,13 +376,6 @@ declare module '@tanstack/react-router' {
       path: '/shop'
       fullPath: '/shop/'
       preLoaderRoute: typeof ShopIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/': {
-      id: '/admin/'
-      path: '/admin'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/shop/staff': {
@@ -435,60 +441,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookConfirmationRouteImport
       parentRoute: typeof BookRoute
     }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/admin/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
+    '/beheer/dashboard/': {
+      id: '/beheer/dashboard/'
+      path: '/beheer/dashboard'
+      fullPath: '/beheer/dashboard/'
+      preLoaderRoute: typeof BeheerDashboardIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/support': {
-      id: '/admin/support'
-      path: '/admin/support'
-      fullPath: '/admin/support'
-      preLoaderRoute: typeof AdminSupportRouteImport
+    '/beheer/dashboard/users': {
+      id: '/beheer/dashboard/users'
+      path: '/beheer/dashboard/users'
+      fullPath: '/beheer/dashboard/users'
+      preLoaderRoute: typeof BeheerDashboardUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/shops': {
-      id: '/admin/shops'
-      path: '/admin/shops'
-      fullPath: '/admin/shops'
-      preLoaderRoute: typeof AdminShopsRouteImport
+    '/beheer/dashboard/support': {
+      id: '/beheer/dashboard/support'
+      path: '/beheer/dashboard/support'
+      fullPath: '/beheer/dashboard/support'
+      preLoaderRoute: typeof BeheerDashboardSupportRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/settings': {
-      id: '/admin/settings'
-      path: '/admin/settings'
-      fullPath: '/admin/settings'
-      preLoaderRoute: typeof AdminSettingsRouteImport
+    '/beheer/dashboard/shops': {
+      id: '/beheer/dashboard/shops'
+      path: '/beheer/dashboard/shops'
+      fullPath: '/beheer/dashboard/shops'
+      preLoaderRoute: typeof BeheerDashboardShopsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/plans': {
-      id: '/admin/plans'
-      path: '/admin/plans'
-      fullPath: '/admin/plans'
-      preLoaderRoute: typeof AdminPlansRouteImport
+    '/beheer/dashboard/settings': {
+      id: '/beheer/dashboard/settings'
+      path: '/beheer/dashboard/settings'
+      fullPath: '/beheer/dashboard/settings'
+      preLoaderRoute: typeof BeheerDashboardSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/payments': {
-      id: '/admin/payments'
-      path: '/admin/payments'
-      fullPath: '/admin/payments'
-      preLoaderRoute: typeof AdminPaymentsRouteImport
+    '/beheer/dashboard/plans': {
+      id: '/beheer/dashboard/plans'
+      path: '/beheer/dashboard/plans'
+      fullPath: '/beheer/dashboard/plans'
+      preLoaderRoute: typeof BeheerDashboardPlansRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/logs': {
-      id: '/admin/logs'
-      path: '/admin/logs'
-      fullPath: '/admin/logs'
-      preLoaderRoute: typeof AdminLogsRouteImport
+    '/beheer/dashboard/payments': {
+      id: '/beheer/dashboard/payments'
+      path: '/beheer/dashboard/payments'
+      fullPath: '/beheer/dashboard/payments'
+      preLoaderRoute: typeof BeheerDashboardPaymentsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/bookings': {
-      id: '/admin/bookings'
-      path: '/admin/bookings'
-      fullPath: '/admin/bookings'
-      preLoaderRoute: typeof AdminBookingsRouteImport
+    '/beheer/dashboard/logs': {
+      id: '/beheer/dashboard/logs'
+      path: '/beheer/dashboard/logs'
+      fullPath: '/beheer/dashboard/logs'
+      preLoaderRoute: typeof BeheerDashboardLogsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/beheer/dashboard/bookings': {
+      id: '/beheer/dashboard/bookings'
+      path: '/beheer/dashboard/bookings'
+      fullPath: '/beheer/dashboard/bookings'
+      preLoaderRoute: typeof BeheerDashboardBookingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/beheer/ad/login': {
+      id: '/beheer/ad/login'
+      path: '/beheer/ad/login'
+      fullPath: '/beheer/ad/login'
+      preLoaderRoute: typeof BeheerAdLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -509,14 +529,6 @@ const rootRouteChildren: RootRouteChildren = {
   BookRoute: BookRouteWithChildren,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
-  AdminBookingsRoute: AdminBookingsRoute,
-  AdminLogsRoute: AdminLogsRoute,
-  AdminPaymentsRoute: AdminPaymentsRoute,
-  AdminPlansRoute: AdminPlansRoute,
-  AdminSettingsRoute: AdminSettingsRoute,
-  AdminShopsRoute: AdminShopsRoute,
-  AdminSupportRoute: AdminSupportRoute,
-  AdminUsersRoute: AdminUsersRoute,
   ShopAnalyticsRoute: ShopAnalyticsRoute,
   ShopCalendarRoute: ShopCalendarRoute,
   ShopCustomersRoute: ShopCustomersRoute,
@@ -525,8 +537,17 @@ const rootRouteChildren: RootRouteChildren = {
   ShopServicesRoute: ShopServicesRoute,
   ShopSettingsRoute: ShopSettingsRoute,
   ShopStaffRoute: ShopStaffRoute,
-  AdminIndexRoute: AdminIndexRoute,
   ShopIndexRoute: ShopIndexRoute,
+  BeheerAdLoginRoute: BeheerAdLoginRoute,
+  BeheerDashboardBookingsRoute: BeheerDashboardBookingsRoute,
+  BeheerDashboardLogsRoute: BeheerDashboardLogsRoute,
+  BeheerDashboardPaymentsRoute: BeheerDashboardPaymentsRoute,
+  BeheerDashboardPlansRoute: BeheerDashboardPlansRoute,
+  BeheerDashboardSettingsRoute: BeheerDashboardSettingsRoute,
+  BeheerDashboardShopsRoute: BeheerDashboardShopsRoute,
+  BeheerDashboardSupportRoute: BeheerDashboardSupportRoute,
+  BeheerDashboardUsersRoute: BeheerDashboardUsersRoute,
+  BeheerDashboardIndexRoute: BeheerDashboardIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { plans } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/admin/plans")({
+export const Route = createFileRoute("/beheer/dashboard/plans")({
   head: () => ({ meta: [{ title: "Plans — Admin" }] }),
   component: PlansPage,
 });

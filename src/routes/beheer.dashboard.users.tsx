@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { platformUsers } from "@/lib/mock-data";
 
-export const Route = createFileRoute("/admin/users")({
+export const Route = createFileRoute("/beheer/dashboard/users")({
   head: () => ({ meta: [{ title: "Users — Admin" }] }),
   component: UsersPage,
 });

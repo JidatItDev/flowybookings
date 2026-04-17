@@ -9,7 +9,7 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
 } from "recharts";
 
-export const Route = createFileRoute("/admin/")({
+export const Route = createFileRoute("/beheer/dashboard/")({
   head: () => ({ meta: [{ title: "Admin overview — Bookly" }] }),
   component: AdminOverview,
 });

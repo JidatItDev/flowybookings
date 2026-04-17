@@ -18,7 +18,6 @@ export const Route = createFileRoute("/login")({
 });
 
 const DEMOS = [
-  { label: "Super admin", email: "super_admin@bookly.app" },
   { label: "Shop owner", email: "owner@inkwell.app" },
   { label: "Staff", email: "staff@inkwell.app" },
 ];
@@ -37,7 +36,7 @@ function LoginPage() {
   useEffect(() => {
     if (loading || !session) return;
     if (redirect) navigate({ to: redirect });
-    else navigate({ to: isSuperAdmin ? "/admin" : "/shop" });
+    else navigate({ to: isSuperAdmin ? "/beheer/dashboard" : "/shop" });
   }, [session, loading, isSuperAdmin, redirect, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {

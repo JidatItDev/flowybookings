@@ -5,7 +5,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { bookings, shops } from "@/lib/mock-data";
 import { formatDateTime } from "@/lib/format";
 
-export const Route = createFileRoute("/admin/bookings")({
+export const Route = createFileRoute("/beheer/dashboard/bookings")({
   head: () => ({ meta: [{ title: "Bookings — Admin" }] }),
   component: AdminBookings,
 });
