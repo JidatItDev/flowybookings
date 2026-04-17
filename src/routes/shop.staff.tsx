@@ -44,7 +44,7 @@ type StaffRow = {
   email: string | null;
   phone: string | null;
   is_active: boolean;
-  working_hours: { hours?: string } | Record<string, unknown>;
+  working_hours: unknown;
 };
 
 function StaffPage() {
@@ -55,12 +55,12 @@ function StaffPage() {
   const [deleting, setDeleting] = useState<StaffRow | null>(null);
 
   const { data: staff = [], isLoading } = useQuery({
-    ...(shopId ? staffQuery(shopId) : { queryKey: ["noop"], queryFn: async () => [] }),
+    ...staffQuery(shopId ?? ""),
     enabled: !!shopId,
   });
 
   const { data: services = [] } = useQuery({
-    ...(shopId ? servicesQuery(shopId) : { queryKey: ["noop"], queryFn: async () => [] }),
+    ...servicesQuery(shopId ?? ""),
     enabled: !!shopId,
   });
 

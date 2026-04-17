@@ -56,7 +56,7 @@ function CustomersPage() {
   const [deleting, setDeleting] = useState<CustomerRow | null>(null);
 
   const { data: customers = [], isLoading } = useQuery({
-    ...(shopId ? customersQuery(shopId) : { queryKey: ["noop"], queryFn: async () => [] }),
+    ...customersQuery(shopId ?? ""),
     enabled: !!shopId,
   });
 

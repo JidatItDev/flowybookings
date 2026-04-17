@@ -68,7 +68,7 @@ function ServicesPage() {
   const [deleting, setDeleting] = useState<ServiceRow | null>(null);
 
   const { data: services = [], isLoading } = useQuery({
-    ...(shopId ? servicesQuery(shopId) : { queryKey: ["noop"], queryFn: async () => [] }),
+    ...servicesQuery(shopId ?? ""),
     enabled: !!shopId,
   });
 
