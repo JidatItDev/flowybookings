@@ -9,7 +9,6 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { seedDemoUsers } from "@/lib/seed-demo-users";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -54,8 +53,15 @@ function LoginPage() {
 
   const runSeed = async () => {
     setSeeding(true);
-    try { await seedDemoUsers(); toast.success(t("auth.demoReady")); }
-    catch (err) { toast.error(err instanceof Error ? err.message : "Failed to seed"); }
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/seed-demo-users`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Failed to seed");
+      toast.success(t("auth.demoReady"));
+    } catch (err) { toast.error(err instanceof Error ? err.message : "Failed to seed"); }
     finally { setSeeding(false); }
   };
 
