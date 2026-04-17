@@ -28,6 +28,7 @@ interface AuthContextValue {
   user: User | null;
   loading: boolean;
   roles: AppRole[];
+  rolesLoading: boolean;
   isSuperAdmin: boolean;
   isShopOwner: boolean;
   isStaff: boolean;
@@ -64,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const userId = session?.user?.id ?? null;
 
   // Roles
-  const { data: roles = [] } = useQuery({
+  const { data: roles = [], isLoading: rolesQueryLoading, isFetching: rolesFetching } = useQuery({
     queryKey: ["auth", "roles", userId],
     enabled: !!userId,
     queryFn: async (): Promise<AppRole[]> => {
@@ -76,6 +77,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return (data ?? []).map((r) => r.role as AppRole);
     },
   });
+  // While there's a session, treat roles as "loading" until the query has resolved at least once.
+  const rolesLoading = !!userId && (rolesQueryLoading || rolesFetching);
 
   // Shops the user can access (owner or any role)
   const { data: shops = [] } = useQuery({
@@ -126,13 +129,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<AuthContextValue>(() => {
     const activeShop = shops.find((s) => s.id === activeShopId) ?? null;
+    const isSuperAdmin = roles.includes("super_admin");
     return {
       session,
       user: session?.user ?? null,
       loading,
       roles,
-      isSuperAdmin: roles.includes("super_admin"),
-      isShopOwner: roles.includes("shop_owner") || (session?.user?.id != null && shops.length > 0),
+      rolesLoading,
+      isSuperAdmin,
+      // A super_admin sees all shops via RLS — don't mistake that for shop ownership.
+      isShopOwner: !isSuperAdmin && (roles.includes("shop_owner") || (session?.user?.id != null && shops.length > 0)),
       isStaff: roles.includes("staff"),
       shops,
       activeShop,
@@ -140,7 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setActiveShopId,
       signOut,
     };
-  }, [session, loading, roles, shops, activeShopId]);
+  }, [session, loading, roles, rolesLoading, shops, activeShopId]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

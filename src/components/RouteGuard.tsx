@@ -33,26 +33,26 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
-/** Requires super_admin role. Redirects non-admins to /shop. */
+/** Requires super_admin role. Strictly blocks non-admins. */
 export function RequireSuperAdmin({ children }: { children: ReactNode }) {
-  const { session, loading, roles, isSuperAdmin } = useAuth();
+  const { session, loading, rolesLoading, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || rolesLoading) return;
     if (!session) {
-      navigate({ to: "/login", search: { redirect: window.location.pathname } });
+      // Send to dedicated admin login, never the shop login.
+      navigate({ to: "/beheer/ad/login", replace: true });
       return;
     }
-    // Wait for roles to load (empty roles + loaded session = still fetching or no roles)
-    if (roles.length === 0) return;
     if (!isSuperAdmin) {
-      navigate({ to: "/" });
+      // Non-admin with a session: bounce to homepage. Do NOT keep them here.
+      navigate({ to: "/", replace: true });
     }
-  }, [session, loading, roles, isSuperAdmin, navigate]);
+  }, [session, loading, rolesLoading, isSuperAdmin, navigate]);
 
-  if (loading || !session) return <FullPageLoader />;
-  if (!isSuperAdmin) return <FullPageLoader label="Checking access…" />;
+  if (loading || rolesLoading) return <FullPageLoader />;
+  if (!session || !isSuperAdmin) return <FullPageLoader label="Checking access…" />;
   return <>{children}</>;
 }
 

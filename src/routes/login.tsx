@@ -27,7 +27,7 @@ const DEMO_PASSWORD = "Demo1234!";
 function LoginPage() {
   const navigate = useNavigate();
   const { redirect } = Route.useSearch();
-  const { session, loading, isSuperAdmin } = useAuth();
+  const { session, loading, rolesLoading, isSuperAdmin, isShopOwner, isStaff } = useAuth();
   const { t } = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,10 +35,19 @@ function LoginPage() {
   const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
-    if (loading || !session) return;
-    if (redirect) navigate({ to: redirect });
-    else navigate({ to: isSuperAdmin ? "/beheer/dashboard" : "/shop" });
-  }, [session, loading, isSuperAdmin, redirect, navigate]);
+    if (loading || rolesLoading || !session) return;
+    // Super admins authenticated here go straight to admin dashboard.
+    if (isSuperAdmin) {
+      navigate({ to: "/beheer/dashboard", replace: true });
+      return;
+    }
+    if (redirect) {
+      navigate({ to: redirect, replace: true });
+      return;
+    }
+    if (isShopOwner || isStaff) navigate({ to: "/shop", replace: true });
+    else navigate({ to: "/", replace: true });
+  }, [session, loading, rolesLoading, isSuperAdmin, isShopOwner, isStaff, redirect, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
