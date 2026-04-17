@@ -1,66 +1,190 @@
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NoShopState } from "@/components/EmptyState";
+import { useActiveShopId } from "@/lib/shop-context";
+import { shopFullQuery, shopKeys } from "@/lib/queries";
+import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/shop/settings")({
   head: () => ({ meta: [{ title: "Settings — Bookly" }] }),
   component: SettingsPage,
 });
 
+const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+type DayKey = (typeof DAY_KEYS)[number];
+type DayHours = { open: string; close: string; closed: boolean };
+type BusinessHours = Record<DayKey, DayHours>;
+type BookingRules = { minNoticeHours: number; maxWindowDays: number; slotIntervalMin: number; defaultDepositPct: number };
+type Branding = { color?: string };
+
+const DEFAULT_HOURS: BusinessHours = {
+  mon: { open: "09:00", close: "18:00", closed: false },
+  tue: { open: "09:00", close: "18:00", closed: false },
+  wed: { open: "09:00", close: "18:00", closed: false },
+  thu: { open: "09:00", close: "18:00", closed: false },
+  fri: { open: "09:00", close: "18:00", closed: false },
+  sat: { open: "10:00", close: "16:00", closed: false },
+  sun: { open: "10:00", close: "16:00", closed: true },
+};
+const DEFAULT_RULES: BookingRules = { minNoticeHours: 2, maxWindowDays: 60, slotIntervalMin: 15, defaultDepositPct: 20 };
+
 function SettingsPage() {
+  const shopId = useActiveShopId();
+  const qc = useQueryClient();
   const { t } = useT();
-  const dayKeys = ["settings.monday", "settings.tuesday", "settings.wednesday", "settings.thursday", "settings.friday", "settings.saturday", "settings.sunday"];
+  const { refreshShops } = useAuth() as ReturnType<typeof useAuth> & { refreshShops?: () => void };
+
+  const { data: shop, isLoading } = useQuery({ ...shopFullQuery(shopId ?? ""), enabled: !!shopId });
+
+  const [profile, setProfile] = useState({ name: "", phone: "", email: "", timezone: "Europe/Berlin", address: "" });
+  const [branding, setBranding] = useState<Branding>({ color: "#7C5CFA" });
+  const [hours, setHours] = useState<BusinessHours>(DEFAULT_HOURS);
+  const [rules, setRules] = useState<BookingRules>(DEFAULT_RULES);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    if (!shop) return;
+    setProfile({ name: shop.name ?? "", phone: shop.phone ?? "", email: shop.email ?? "", timezone: shop.timezone ?? "Europe/Berlin", address: shop.address ?? "" });
+    const b = (shop.branding ?? {}) as { color?: string; rules?: Partial<BookingRules> };
+    setBranding({ color: b.color ?? "#7C5CFA" });
+    setRules({ ...DEFAULT_RULES, ...(b.rules ?? {}) });
+    const h = (shop.business_hours ?? {}) as Partial<BusinessHours>;
+    setHours({ ...DEFAULT_HOURS, ...h });
+    setDirty(false);
+  }, [shop]);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      if (!shopId || !shop) throw new Error("No active shop");
+      const newBranding = { ...((shop.branding ?? {}) as Record<string, unknown>), color: branding.color, rules };
+      const payload = {
+        name: profile.name.trim(),
+        phone: profile.phone.trim() || null,
+        email: profile.email.trim() || null,
+        timezone: profile.timezone.trim() || "UTC",
+        address: profile.address.trim() || null,
+        branding: newBranding,
+        business_hours: hours,
+      };
+      const { error } = await supabase.from("shops").update(payload).eq("id", shopId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(t("settings.saved"));
+      setDirty(false);
+      if (shopId) qc.invalidateQueries({ queryKey: shopKeys.shopFull(shopId) });
+      qc.invalidateQueries({ queryKey: ["auth", "shops"] });
+      refreshShops?.();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const updateProfile = <K extends keyof typeof profile>(k: K, v: string) => { setProfile((p) => ({ ...p, [k]: v })); setDirty(true); };
+  const updateHours = (day: DayKey, patch: Partial<DayHours>) => { setHours((h) => ({ ...h, [day]: { ...h[day], ...patch } })); setDirty(true); };
+  const updateRule = <K extends keyof BookingRules>(k: K, v: number) => { setRules((r) => ({ ...r, [k]: v })); setDirty(true); };
+
+  const dayLabelKey: Record<DayKey, string> = { mon: "settings.monday", tue: "settings.tuesday", wed: "settings.wednesday", thu: "settings.thursday", fri: "settings.friday", sat: "settings.saturday", sun: "settings.sunday" };
 
   return (
     <ShopLayout>
-      <PageHeader title={t("settings.title")} description={t("settings.description")} actions={<Button variant="hero">{t("settings.saveChanges")}</Button>} />
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card title={t("settings.shopProfile")} className="lg:col-span-2">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={t("settings.shopName")} defaultValue="Inkwell Studio" />
-            <Field label={t("settings.phone")} defaultValue="+49 30 5550 1010" />
-            <Field label={t("settings.email")} defaultValue="hello@inkwell.io" />
-            <Field label={t("settings.timezone")} defaultValue="Europe/Berlin" />
-            <div className="sm:col-span-2"><Field label={t("settings.address")} defaultValue="Friedrichstraße 102, 10117 Berlin, Germany" /></div>
-          </div>
-        </Card>
-        <Card title={t("settings.branding")}>
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-brand text-xl font-semibold text-primary-foreground">IS</div>
-            <div>
-              <Button variant="outline" size="sm">{t("settings.uploadLogo")}</Button>
-              <p className="mt-2 text-xs text-muted-foreground">{t("settings.logoHint")}</p>
+      <PageHeader
+        title={t("settings.title")}
+        description={t("settings.description")}
+        actions={<Button variant="hero" onClick={() => save.mutate()} disabled={!dirty || save.isPending || !shopId}>{save.isPending ? t("settings.saving") : t("settings.saveChanges")}</Button>}
+      />
+      {!shopId ? <NoShopState /> : isLoading ? (
+        <div className="h-72 animate-pulse rounded-2xl border border-border bg-card" />
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Card title={t("settings.shopProfile")} className="lg:col-span-2">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label={t("settings.shopName")} value={profile.name} onChange={(v) => updateProfile("name", v)} />
+              <Field label={t("settings.phone")} value={profile.phone} onChange={(v) => updateProfile("phone", v)} />
+              <Field label={t("settings.email")} value={profile.email} onChange={(v) => updateProfile("email", v)} />
+              <Field label={t("settings.timezone")} value={profile.timezone} onChange={(v) => updateProfile("timezone", v)} />
+              <div className="sm:col-span-2"><Field label={t("settings.address")} value={profile.address} onChange={(v) => updateProfile("address", v)} /></div>
             </div>
-          </div>
-          <div className="mt-5"><Field label={t("settings.brandColor")} defaultValue="#7C5CFA" /></div>
-        </Card>
-        <Card title={t("settings.businessHours")} className="lg:col-span-2">
-          <div className="space-y-2">
-            {dayKeys.map((dk, i) => (
-              <div key={dk} className="flex items-center justify-between rounded-xl border border-border px-3 py-2">
-                <span className="text-sm font-medium">{t(dk)}</span>
-                <span className="text-xs text-muted-foreground">{i === 6 ? t("settings.closed") : "9:00 — 18:00"}</span>
+          </Card>
+
+          <Card title={t("settings.branding")}>
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl text-xl font-semibold text-primary-foreground" style={{ background: branding.color ?? "var(--color-primary)" }}>
+                {(profile.name || "S").slice(0, 2).toUpperCase()}
               </div>
-            ))}
-          </div>
-        </Card>
-        <Card title={t("settings.bookingRules")}>
-          <Field label={t("settings.minNotice")} defaultValue="2" />
-          <div className="mt-3"><Field label={t("settings.maxWindow")} defaultValue="60" /></div>
-          <div className="mt-3"><Field label={t("settings.slotInterval")} defaultValue="15" /></div>
-          <div className="mt-3"><Field label={t("settings.defaultDeposit")} defaultValue="20" /></div>
-        </Card>
-      </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t("settings.logoHint")}</p>
+              </div>
+            </div>
+            <div className="mt-5">
+              <Label htmlFor="brand-color">{t("settings.brandColor")}</Label>
+              <div className="mt-1 flex items-center gap-2">
+                <input id="brand-color" type="color" value={branding.color ?? "#7C5CFA"} onChange={(e) => { setBranding({ color: e.target.value }); setDirty(true); }} className="h-10 w-12 cursor-pointer rounded-lg border border-border bg-background" />
+                <Input value={branding.color ?? ""} onChange={(e) => { setBranding({ color: e.target.value }); setDirty(true); }} className="h-10 flex-1" />
+              </div>
+            </div>
+          </Card>
+
+          <Card title={t("settings.businessHours")} className="lg:col-span-2">
+            <div className="space-y-2">
+              {DAY_KEYS.map((d) => (
+                <div key={d} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border px-3 py-2">
+                  <span className="w-24 text-sm font-medium">{t(dayLabelKey[d])}</span>
+                  {hours[d].closed ? (
+                    <span className="text-xs text-muted-foreground">{t("settings.closed")}</span>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <input type="time" value={hours[d].open} onChange={(e) => updateHours(d, { open: e.target.value })} className="h-8 rounded-lg border border-border bg-background px-2 text-xs" />
+                      <span className="text-xs text-muted-foreground">—</span>
+                      <input type="time" value={hours[d].close} onChange={(e) => updateHours(d, { close: e.target.value })} className="h-8 rounded-lg border border-border bg-background px-2 text-xs" />
+                    </div>
+                  )}
+                  <button onClick={() => updateHours(d, { closed: !hours[d].closed })} className="rounded-lg border border-border px-2 py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted">
+                    {hours[d].closed ? t("settings.markOpen") : t("settings.markClosed")}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card title={t("settings.bookingRules")}>
+            <NumField label={t("settings.minNotice")} value={rules.minNoticeHours} onChange={(v) => updateRule("minNoticeHours", v)} />
+            <div className="mt-3"><NumField label={t("settings.maxWindow")} value={rules.maxWindowDays} onChange={(v) => updateRule("maxWindowDays", v)} /></div>
+            <div className="mt-3"><NumField label={t("settings.slotInterval")} value={rules.slotIntervalMin} onChange={(v) => updateRule("slotIntervalMin", v)} /></div>
+            <div className="mt-3"><NumField label={t("settings.defaultDeposit")} value={rules.defaultDepositPct} onChange={(v) => updateRule("defaultDepositPct", v)} /></div>
+          </Card>
+        </div>
+      )}
     </ShopLayout>
   );
 }
 
 function Card({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
-  return (<div className={`rounded-2xl border border-border bg-card p-6 shadow-soft ${className}`}><h2 className="mb-4 text-base font-semibold">{title}</h2>{children}</div>);
+  return <div className={`rounded-2xl border border-border bg-card p-6 shadow-soft ${className}`}><h2 className="mb-4 text-base font-semibold">{title}</h2>{children}</div>;
 }
 
-function Field({ label, defaultValue }: { label: string; defaultValue?: string }) {
-  return (<div><label className="mb-1.5 block text-sm font-medium">{label}</label><input defaultValue={defaultValue} className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20" /></div>);
+function Field({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <Label className="mb-1.5 block">{label}</Label>
+      <Input value={value} onChange={(e) => onChange(e.target.value)} className="h-10" />
+    </div>
+  );
+}
+
+function NumField({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  return (
+    <div>
+      <Label className="mb-1.5 block">{label}</Label>
+      <Input type="number" value={value} onChange={(e) => onChange(Number(e.target.value) || 0)} className="h-10" />
+    </div>
+  );
 }
