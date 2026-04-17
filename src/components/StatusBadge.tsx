@@ -7,11 +7,14 @@ const map: Record<string, string> = {
   completed: "bg-mint text-mint-foreground",
   cancelled: "bg-muted text-muted-foreground",
   "no-show": "bg-destructive/15 text-destructive",
+  no_show: "bg-destructive/15 text-destructive",
   // Payment
   paid: "bg-mint text-mint-foreground",
   unpaid: "bg-muted text-muted-foreground",
+  deposit_paid: "bg-warning/15 text-warning-foreground",
   refunded: "bg-pink text-pink-foreground",
   partial: "bg-warning/15 text-warning-foreground",
+  failed: "bg-destructive/15 text-destructive",
   // Shop / user
   active: "bg-mint text-mint-foreground",
   suspended: "bg-destructive/15 text-destructive",
