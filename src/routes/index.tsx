@@ -1,4 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useAuth } from "@/lib/auth-context";
 import {
   CalendarCheck,
   Sparkles,
@@ -36,6 +38,13 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
+  const { session, loading, isSuperAdmin } = useAuth();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (loading || !session) return;
+    navigate({ to: isSuperAdmin ? "/admin" : "/shop" });
+  }, [session, loading, isSuperAdmin, navigate]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Nav */}
@@ -51,17 +60,16 @@ function Landing() {
             <a href="#features" className="hover:text-foreground">Features</a>
             <a href="#pricing" className="hover:text-foreground">Pricing</a>
             <a href="#testimonials" className="hover:text-foreground">Loved by</a>
-            <Link to="/admin" className="hover:text-foreground">Admin</Link>
           </nav>
           <div className="flex items-center gap-2">
             <Link
-              to="/shop"
+              to="/login"
               className="hidden text-sm font-medium text-muted-foreground hover:text-foreground sm:inline-flex"
             >
-              Open dashboard
+              Sign in
             </Link>
             <Button asChild variant="hero" size="default">
-              <Link to="/book">Book a demo</Link>
+              <Link to="/signup">Get started</Link>
             </Button>
           </div>
         </div>

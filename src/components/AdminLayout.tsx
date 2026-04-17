@@ -154,13 +154,27 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             </Link>
             <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-1.5">
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-warm text-xs font-semibold text-pink-foreground">
-                AD
+                {(user?.email ?? "?")[0].toUpperCase()}
               </div>
               <div className="hidden text-xs leading-tight sm:block">
-                <p className="font-medium">Avery Dunn</p>
+                <p className="font-medium">{user?.email}</p>
                 <p className="text-muted-foreground">Platform owner</p>
               </div>
             </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:text-foreground">
+                <LogOut className="h-4 w-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                  {user?.email}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => signOut()}>
+                  <LogOut className="h-4 w-4" /> Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
