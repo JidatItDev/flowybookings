@@ -167,10 +167,10 @@ export const adminBookingsQuery = () =>
       ]);
 
       const shopMap = new Map((shopsRes.data ?? []).map((s) => [s.id, s.name]));
-      const custMap = new Map(((custsRes as any).data ?? []).map((c: any) => [c.id, c.full_name]));
-      const svcMap = new Map(((svcsRes as any).data ?? []).map((s: any) => [s.id, s.name]));
-      const staffMap = new Map(((staffRes as any).data ?? []).map((s: any) => [s.id, s.full_name]));
-      const pmtMap = new Map(((pmtsRes as any).data ?? []).map((p: any) => [p.booking_id, p.status]));
+      const custMap = new Map<string, string>(((custsRes as any).data ?? []).map((c: any) => [c.id, c.full_name]));
+      const svcMap = new Map<string, string>(((svcsRes as any).data ?? []).map((s: any) => [s.id, s.name]));
+      const staffMap = new Map<string, string>(((staffRes as any).data ?? []).map((s: any) => [s.id, s.full_name]));
+      const pmtMap = new Map<string, string>(((pmtsRes as any).data ?? []).map((p: any) => [p.booking_id, p.status]));
 
       return (bookings ?? []).map((b) => ({
         id: b.id,
