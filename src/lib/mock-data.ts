@@ -169,10 +169,10 @@ export const supportTickets = [
 ];
 
 export const auditLogs = [
-  { id: "a1", actor: "admin@bookly.io", action: "Suspended shop", target: "Velvet Hair Atelier", time: "2 hrs ago", type: "shop" },
+  { id: "a1", actor: "admin@flowybookings.com", action: "Suspended shop", target: "Velvet Hair Atelier", time: "2 hrs ago", type: "shop" },
   { id: "a2", actor: "system", action: "Failed payment retry", target: "Sharp & Co. · €19.00", time: "4 hrs ago", type: "payment" },
   { id: "a3", actor: "marco@inkwell.io", action: "Updated booking", target: "Booking #b1", time: "6 hrs ago", type: "booking" },
-  { id: "a4", actor: "admin@bookly.io", action: "Approved shop", target: "Pawsh Grooming", time: "1 day ago", type: "shop" },
+  { id: "a4", actor: "admin@flowybookings.com", action: "Approved shop", target: "Pawsh Grooming", time: "1 day ago", type: "shop" },
   { id: "a5", actor: "iris@bloom.jp", action: "Refund issued", target: "Booking #b22 · ¥6,500", time: "2 days ago", type: "payment" },
 ];
 

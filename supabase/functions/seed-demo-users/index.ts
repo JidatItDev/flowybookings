@@ -4,7 +4,7 @@ const SEED_SHOP_ID = "00000000-0000-0000-0000-0000000000a1";
 const PASSWORD = "Demo1234!";
 
 const DEMO_USERS = [
-  { email: "super_admin@bookly.app", full_name: "Avery Dunn", role: "super_admin" as const },
+  { email: "super_admin@flowybookings.com", full_name: "Avery Dunn", role: "super_admin" as const },
   { email: "owner@inkwell.app", full_name: "Sophia Reyes", role: "shop_owner" as const },
   { email: "staff@inkwell.app", full_name: "Marco Bianchi", role: "staff" as const },
 ];
