@@ -63,11 +63,11 @@ function ShopDashboard() {
             <div className="rounded-2xl border border-border bg-card p-6 shadow-soft lg:col-span-2">
               <div className="mb-4 flex items-center justify-between">
                 <div><h2 className="text-base font-semibold">{t("dashboard.weeklyRevenue")}</h2><p className="text-xs text-muted-foreground">{t("dashboard.last7days")}</p></div>
-                <span className="rounded-full bg-mint px-2.5 py-1 text-xs font-medium text-mint-foreground">{t("dashboard.livePreview")}</span>
+                <span className="rounded-full bg-mint px-2.5 py-1 text-xs font-medium text-mint-foreground">{t("dashboard.live")}</span>
               </div>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={revenueWeekly}>
+                  <AreaChart data={weekly}>
                     <defs><linearGradient id="rev" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.45} /><stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0} /></linearGradient></defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                     <XAxis dataKey="day" stroke="var(--color-muted-foreground)" fontSize={12} />
