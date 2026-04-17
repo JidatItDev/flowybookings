@@ -422,6 +422,15 @@ export const en: Record<string, string> = {
   "book.deposit": "Deposit",
   "book.date": "Date",
   "book.time": "Time",
+  "book.slotTaken": "This time slot was just taken. Please pick another.",
+  "book.failed": "Booking failed. Please try again.",
+  "book.youreBooked": "You're booked in!",
+  "book.confirmationSentSub": "A confirmation has been sent to your email. Reminders will follow 24h and 2h before the appointment.",
+  "book.bookAnother": "Book another",
+  "book.backHome": "Back to home",
+  "book.bookingRef": "Reference",
+  "book.notFound": "Booking not found",
+  "book.notFoundSub": "This booking reference does not exist or has expired.",
 
   // ── Booking confirmation ──
   "confirmation.title": "You're booked in!",

@@ -422,6 +422,15 @@ export const nl: Record<string, string> = {
   "book.deposit": "Aanbetaling",
   "book.date": "Datum",
   "book.time": "Tijd",
+  "book.slotTaken": "Dit tijdslot is helaas net bezet. Kies een ander moment.",
+  "book.failed": "Boeking mislukt. Probeer het opnieuw.",
+  "book.youreBooked": "Je bent ingeboekt!",
+  "book.confirmationSentSub": "Een bevestiging is verstuurd naar je e-mail. Herinnering volgt 24u en 2u voor de afspraak.",
+  "book.bookAnother": "Nog een boeking",
+  "book.backHome": "Terug naar home",
+  "book.bookingRef": "Referentie",
+  "book.notFound": "Boeking niet gevonden",
+  "book.notFoundSub": "Deze boekingsreferentie bestaat niet of is verlopen.",
 
   // ── Booking confirmation ──
   "confirmation.title": "Je bent ingeboekt!",

@@ -1,24 +1,39 @@
-import { useState } from "react";
+// Live booking flow — wired to Supabase.
+// Persists customer + booking + unpaid payment row in one transaction-like sequence,
+// with a server-side overlap check to prevent double-booking the same staff member.
+
+import { useState, useMemo } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Check, Sparkle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, ArrowRight, Check, Sparkle, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { services, shops, staff } from "@/lib/mock-data";
+import { supabase } from "@/integrations/supabase/client";
+import { servicesQuery, staffQuery } from "@/lib/queries";
+import { useT } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/book")({
   head: () => ({
     meta: [
-      { title: "Book an appointment — Bookly" },
-      { name: "description", content: "Choose a shop, service and time. Confirm in seconds." },
+      { title: "Een afspraak boeken — Bookly" },
+      { name: "description", content: "Kies een winkel, dienst en tijd. Bevestig in seconden." },
     ],
   }),
   component: BookingFlow,
 });
 
-const steps = ["Shop", "Service", "Staff", "Date & time", "Your details", "Review"];
+const TIME_SLOTS = ["09:00", "10:30", "11:30", "13:00", "14:30", "16:00", "17:30", "18:30"];
 
 function BookingFlow() {
   const navigate = useNavigate();
+  const { t } = useT();
+  const stepLabels = [
+    t("book.stepShop"), t("book.stepService"), t("book.stepStaff"),
+    t("book.stepDateTime"), t("book.stepDetails"), t("book.stepReview"),
+  ];
+
   const [step, setStep] = useState(0);
   const [shopId, setShopId] = useState<string | null>(null);
   const [serviceId, setServiceId] = useState<string | null>(null);
@@ -29,18 +44,119 @@ function BookingFlow() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const selectedShop = shops.find((s) => s.id === shopId);
-  const selectedService = services.find((s) => s.id === serviceId);
-  const selectedStaff = staff.find((s) => s.id === staffId);
+  // Fetch active shops directly (no shop_id needed)
+  const shopsQ = useQuery({
+    queryKey: ["public", "shops"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("shops").select("id, name, slug, address").eq("status", "active");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
 
-  const canNext = [shopId, serviceId, staffId, date && time, name && phone, true][step];
+  const servicesQ = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
+  const staffQ = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
+
+  const selectedShop = shopsQ.data?.find((s) => s.id === shopId);
+  const selectedService = servicesQ.data?.find((s) => s.id === serviceId);
+  const selectedStaff = staffQ.data?.find((s) => s.id === staffId);
+
+  const canNext = [shopId, serviceId, staffId, date && time, name && phone && email, true][step];
+
+  const back = () => (step > 0 ? setStep(step - 1) : navigate({ to: "/" }));
+
+  const handleSubmit = async () => {
+    if (!shopId || !serviceId || !selectedService || !date || !time) return;
+    setSubmitting(true);
+    try {
+      const startsAt = new Date(`${date}T${time}:00`);
+      const endsAt = new Date(startsAt.getTime() + selectedService.duration_minutes * 60_000);
+      const realStaffId = staffId === "any" ? null : staffId;
+
+      // Slot conflict check (only if a specific staff is chosen)
+      if (realStaffId) {
+        const { data: conflicts, error: cErr } = await supabase
+          .from("bookings")
+          .select("id")
+          .eq("shop_id", shopId)
+          .eq("staff_id", realStaffId)
+          .in("status", ["pending", "confirmed"])
+          .lt("starts_at", endsAt.toISOString())
+          .gt("ends_at", startsAt.toISOString());
+        if (cErr) throw cErr;
+        if (conflicts && conflicts.length > 0) {
+          toast.error(t("book.slotTaken"));
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      // Upsert customer (by email within shop)
+      let customerId: string | null = null;
+      const { data: existingCust } = await supabase
+        .from("customers").select("id").eq("shop_id", shopId).eq("email", email).maybeSingle();
+      if (existingCust) {
+        customerId = existingCust.id;
+      } else {
+        const { data: newCust, error: custErr } = await supabase
+          .from("customers")
+          .insert({ shop_id: shopId, full_name: name, email, phone })
+          .select("id").single();
+        if (custErr) throw custErr;
+        customerId = newCust.id;
+      }
+
+      // Insert booking
+      const { data: booking, error: bErr } = await supabase
+        .from("bookings")
+        .insert({
+          shop_id: shopId,
+          service_id: serviceId,
+          staff_id: realStaffId,
+          customer_id: customerId,
+          starts_at: startsAt.toISOString(),
+          ends_at: endsAt.toISOString(),
+          status: "pending",
+          price_cents: selectedService.price_cents,
+          deposit_cents: selectedService.deposit_cents,
+          currency: selectedService.currency,
+          notes: note || null,
+        })
+        .select("id").single();
+      if (bErr) throw bErr;
+
+      // Insert unpaid payment stub (Mollie Connect-ready)
+      const amountDue = selectedService.deposit_cents > 0 ? selectedService.deposit_cents : selectedService.price_cents;
+      await supabase.from("payments").insert({
+        shop_id: shopId,
+        booking_id: booking.id,
+        amount_cents: amountDue,
+        currency: selectedService.currency,
+        status: "unpaid",
+        provider: "mollie",
+      });
+
+      navigate({ to: "/book/confirmation/$bookingId", params: { bookingId: booking.id } });
+    } catch (err) {
+      console.error("Booking failed:", err);
+      toast.error(err instanceof Error ? err.message : t("book.failed"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const next = () => {
-    if (step < steps.length - 1) setStep(step + 1);
-    else navigate({ to: "/book/confirmation" });
+    if (step < stepLabels.length - 1) setStep(step + 1);
+    else handleSubmit();
   };
-  const back = () => (step > 0 ? setStep(step - 1) : navigate({ to: "/" }));
+
+  const dates = useMemo(() => Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date(); d.setDate(d.getDate() + i);
+    return { value: d.toISOString().slice(0, 10), label: d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }) };
+  }), []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -52,34 +168,27 @@ function BookingFlow() {
             </div>
             <span className="text-base font-semibold">Bookly</span>
           </Link>
-          <p className="text-xs text-muted-foreground">Secure booking · powered by Bookly</p>
+          <div className="flex items-center gap-3">
+            <p className="hidden text-xs text-muted-foreground sm:block">{t("book.secureBooking")}</p>
+            <LanguageSwitcher />
+          </div>
         </div>
       </header>
 
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-        {/* Stepper */}
         <ol className="mb-8 flex flex-wrap items-center gap-2 text-xs">
-          {steps.map((s, i) => (
+          {stepLabels.map((s, i) => (
             <li key={s} className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold",
-                  i < step && "bg-success text-success-foreground",
-                  i === step && "bg-gradient-brand text-primary-foreground shadow-sm",
-                  i > step && "bg-muted text-muted-foreground",
-                )}
-              >
+              <span className={cn(
+                "flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold",
+                i < step && "bg-success text-success-foreground",
+                i === step && "bg-gradient-brand text-primary-foreground shadow-sm",
+                i > step && "bg-muted text-muted-foreground",
+              )}>
                 {i < step ? <Check className="h-3.5 w-3.5" /> : i + 1}
               </span>
-              <span
-                className={cn(
-                  "hidden font-medium sm:inline",
-                  i === step ? "text-foreground" : "text-muted-foreground",
-                )}
-              >
-                {s}
-              </span>
-              {i < steps.length - 1 && <span className="hidden h-px w-8 bg-border sm:inline-block" />}
+              <span className={cn("hidden font-medium sm:inline", i === step ? "text-foreground" : "text-muted-foreground")}>{s}</span>
+              {i < stepLabels.length - 1 && <span className="hidden h-px w-8 bg-border sm:inline-block" />}
             </li>
           ))}
         </ol>
@@ -87,89 +196,65 @@ function BookingFlow() {
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="rounded-3xl border border-border bg-card p-6 shadow-soft sm:p-8">
             {step === 0 && (
-              <Section title="Choose a shop" subtitle="Pick where you'd like to book.">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {shops.filter((s) => s.status === "active").map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => setShopId(s.id)}
-                      className={cn(
-                        "group rounded-2xl border p-4 text-left transition-all",
-                        shopId === s.id
-                          ? "border-primary bg-primary-soft/40 shadow-soft"
-                          : "border-border hover:border-primary/40 hover:bg-muted/40",
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-warm text-sm font-semibold text-pink-foreground">
-                          {s.name[0]}
+              <Section title={t("book.chooseShop")} subtitle={t("book.chooseShopSub")}>
+                {shopsQ.isLoading ? <SkeletonGrid /> : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {(shopsQ.data ?? []).map((s) => (
+                      <button key={s.id} onClick={() => setShopId(s.id)}
+                        className={cn("group rounded-2xl border p-4 text-left transition-all",
+                          shopId === s.id ? "border-primary bg-primary-soft/40 shadow-soft" : "border-border hover:border-primary/40 hover:bg-muted/40")}>
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-warm text-sm font-semibold text-pink-foreground">{s.name[0]}</div>
+                          <div>
+                            <p className="font-semibold">{s.name}</p>
+                            <p className="text-xs text-muted-foreground">{s.address ?? s.slug}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold">{s.name}</p>
-                          <p className="text-xs text-muted-foreground">{s.type} · {s.city}</p>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </Section>
             )}
 
             {step === 1 && (
-              <Section title="Choose a service" subtitle="What can we book for you?">
-                <div className="space-y-2">
-                  {services.filter((s) => s.active).map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => setServiceId(s.id)}
-                      className={cn(
-                        "flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-all",
-                        serviceId === s.id
-                          ? "border-primary bg-primary-soft/40"
-                          : "border-border hover:bg-muted/40",
-                      )}
-                    >
-                      <div>
-                        <p className="font-medium">{s.name}</p>
-                        <p className="text-xs text-muted-foreground">{s.category} · {s.duration} min</p>
-                      </div>
-                      <p className="text-sm font-semibold">€{s.price}</p>
-                    </button>
-                  ))}
-                </div>
+              <Section title={t("book.chooseService")} subtitle={t("book.chooseServiceSub")}>
+                {servicesQ.isLoading ? <SkeletonGrid /> : (
+                  <div className="space-y-2">
+                    {(servicesQ.data ?? []).filter((s) => s.is_active).map((s) => (
+                      <button key={s.id} onClick={() => setServiceId(s.id)}
+                        className={cn("flex w-full items-center justify-between rounded-2xl border p-4 text-left transition-all",
+                          serviceId === s.id ? "border-primary bg-primary-soft/40" : "border-border hover:bg-muted/40")}>
+                        <div>
+                          <p className="font-medium">{s.name}</p>
+                          <p className="text-xs text-muted-foreground">{s.category ?? "—"} · {s.duration_minutes} min</p>
+                        </div>
+                        <p className="text-sm font-semibold">€{(s.price_cents / 100).toFixed(2)}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </Section>
             )}
 
             {step === 2 && (
-              <Section title="Choose a team member" subtitle="Or pick anyone available.">
+              <Section title={t("book.chooseStaff")} subtitle={t("book.chooseStaffSub")}>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <button
-                    onClick={() => setStaffId("any")}
-                    className={cn(
-                      "rounded-2xl border p-4 text-left",
-                      staffId === "any" ? "border-primary bg-primary-soft/40" : "border-border hover:bg-muted/40",
-                    )}
-                  >
-                    <p className="font-medium">Any available</p>
-                    <p className="text-xs text-muted-foreground">First open slot</p>
+                  <button onClick={() => setStaffId("any")}
+                    className={cn("rounded-2xl border p-4 text-left",
+                      staffId === "any" ? "border-primary bg-primary-soft/40" : "border-border hover:bg-muted/40")}>
+                    <p className="font-medium">{t("book.anyAvailable")}</p>
+                    <p className="text-xs text-muted-foreground">{t("book.firstOpenSlot")}</p>
                   </button>
-                  {staff.filter((s) => s.active).map((s) => (
-                    <button
-                      key={s.id}
-                      onClick={() => setStaffId(s.id)}
-                      className={cn(
-                        "rounded-2xl border p-4 text-left",
-                        staffId === s.id ? "border-primary bg-primary-soft/40" : "border-border hover:bg-muted/40",
-                      )}
-                    >
+                  {(staffQ.data ?? []).filter((s) => s.is_active).map((s) => (
+                    <button key={s.id} onClick={() => setStaffId(s.id)}
+                      className={cn("rounded-2xl border p-4 text-left",
+                        staffId === s.id ? "border-primary bg-primary-soft/40" : "border-border hover:bg-muted/40")}>
                       <div className="flex items-center gap-3">
                         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-mint text-sm font-semibold text-mint-foreground">
-                          {s.name.split(" ").map((n) => n[0]).join("")}
+                          {s.full_name.split(" ").map((n) => n[0]).join("")}
                         </div>
-                        <div>
-                          <p className="font-medium">{s.name}</p>
-                          <p className="text-xs text-muted-foreground">{s.role}</p>
-                        </div>
+                        <p className="font-medium">{s.full_name}</p>
                       </div>
                     </button>
                   ))}
@@ -178,41 +263,24 @@ function BookingFlow() {
             )}
 
             {step === 3 && (
-              <Section title="Pick a date & time" subtitle="Available slots in the next 7 days.">
+              <Section title={t("book.pickDate")} subtitle={t("book.pickDateSub")}>
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-7">
-                  {Array.from({ length: 7 }).map((_, i) => {
-                    const d = new Date();
-                    d.setDate(d.getDate() + i);
-                    const label = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", timeZone: "UTC" });
-                    const value = d.toISOString().slice(0, 10);
-                    return (
-                      <button
-                        key={value}
-                        onClick={() => setDate(value)}
-                        className={cn(
-                          "rounded-xl border p-3 text-sm",
-                          date === value ? "border-primary bg-primary-soft/40 font-semibold" : "border-border hover:bg-muted/40",
-                        )}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
+                  {dates.map((d) => (
+                    <button key={d.value} onClick={() => setDate(d.value)}
+                      className={cn("rounded-xl border p-3 text-sm",
+                        date === d.value ? "border-primary bg-primary-soft/40 font-semibold" : "border-border hover:bg-muted/40")}>
+                      {d.label}
+                    </button>
+                  ))}
                 </div>
                 <div className="mt-6">
-                  <p className="mb-2 text-sm font-medium">Available times</p>
+                  <p className="mb-2 text-sm font-medium">{t("book.availableTimes")}</p>
                   <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-                    {["09:00", "10:30", "11:30", "13:00", "14:30", "16:00", "17:30", "18:30"].map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setTime(t)}
-                        disabled={!date}
-                        className={cn(
-                          "rounded-xl border p-2.5 text-sm disabled:opacity-50",
-                          time === t ? "border-primary bg-primary-soft/40 font-semibold" : "border-border hover:bg-muted/40",
-                        )}
-                      >
-                        {t}
+                    {TIME_SLOTS.map((tm) => (
+                      <button key={tm} onClick={() => setTime(tm)} disabled={!date}
+                        className={cn("rounded-xl border p-2.5 text-sm disabled:opacity-50",
+                          time === tm ? "border-primary bg-primary-soft/40 font-semibold" : "border-border hover:bg-muted/40")}>
+                        {tm}
                       </button>
                     ))}
                   </div>
@@ -221,81 +289,76 @@ function BookingFlow() {
             )}
 
             {step === 4 && (
-              <Section title="Your details" subtitle="We'll send your confirmation here.">
+              <Section title={t("book.yourDetails")} subtitle={t("book.yourDetailsSub")}>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Field label="Full name" value={name} onChange={setName} placeholder="Sophia Reyes" />
-                  <Field label="Phone" value={phone} onChange={setPhone} placeholder="+1 415 555 0102" />
+                  <Field label={t("book.fullName")} value={name} onChange={setName} placeholder="Sophia Reyes" />
+                  <Field label={t("book.phone")} value={phone} onChange={setPhone} placeholder="+31 6 1234 5678" />
                   <div className="sm:col-span-2">
-                    <Field label="Email" value={email} onChange={setEmail} placeholder="you@example.com" type="email" />
+                    <Field label={t("book.email")} value={email} onChange={setEmail} placeholder="you@example.com" type="email" />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="mb-1.5 block text-sm font-medium">Note (optional)</label>
-                    <textarea
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      rows={3}
-                      placeholder="Anything we should know?"
-                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
-                    />
+                    <label className="mb-1.5 block text-sm font-medium">{t("book.noteOptional")}</label>
+                    <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3}
+                      placeholder={t("book.notePlaceholder")}
+                      className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20" />
                   </div>
                 </div>
               </Section>
             )}
 
             {step === 5 && (
-              <Section title="Review & confirm" subtitle="Almost done — review your booking.">
+              <Section title={t("book.reviewConfirm")} subtitle={t("book.reviewSub")}>
                 <dl className="space-y-3 text-sm">
-                  <Row label="Shop" value={selectedShop?.name ?? "—"} />
-                  <Row label="Service" value={selectedService?.name ?? "—"} />
-                  <Row label="With" value={staffId === "any" ? "Any available" : selectedStaff?.name ?? "—"} />
-                  <Row label="When" value={`${date ?? "—"} · ${time ?? "—"}`} />
-                  <Row label="Customer" value={`${name} · ${phone}`} />
+                  <Row label={t("book.shop")} value={selectedShop?.name ?? "—"} />
+                  <Row label={t("book.service")} value={selectedService?.name ?? "—"} />
+                  <Row label={t("book.with")} value={staffId === "any" ? t("book.anyAvailable") : selectedStaff?.full_name ?? "—"} />
+                  <Row label={t("book.when")} value={`${date ?? "—"} · ${time ?? "—"}`} />
+                  <Row label={t("book.customerLabel")} value={`${name} · ${phone}`} />
                   {selectedService && (
                     <>
-                      <Row label="Duration" value={`${selectedService.duration} min`} />
-                      <Row label="Price" value={`€${selectedService.price}`} />
-                      {selectedService.deposit > 0 && (
-                        <Row label="Deposit due" value={`€${selectedService.deposit}`} />
+                      <Row label={t("book.durationLabel")} value={`${selectedService.duration_minutes} min`} />
+                      <Row label={t("book.price")} value={`€${(selectedService.price_cents / 100).toFixed(2)}`} />
+                      {selectedService.deposit_cents > 0 && (
+                        <Row label={t("book.depositDue")} value={`€${(selectedService.deposit_cents / 100).toFixed(2)}`} />
                       )}
                     </>
                   )}
                 </dl>
-                <p className="mt-6 rounded-xl bg-mint/40 p-3 text-xs text-mint-foreground">
-                  After confirming you'll be sent to the secure deposit step (Stripe / Mollie).
-                </p>
+                <p className="mt-6 rounded-xl bg-mint/40 p-3 text-xs text-mint-foreground">{t("book.stripeNotice")}</p>
               </Section>
             )}
 
             <div className="mt-8 flex items-center justify-between">
-              <Button variant="ghost" onClick={back}>
-                <ArrowLeft className="h-4 w-4" /> Back
+              <Button variant="ghost" onClick={back} disabled={submitting}>
+                <ArrowLeft className="h-4 w-4" /> {t("book.back")}
               </Button>
-              <Button variant="hero" onClick={next} disabled={!canNext}>
-                {step === steps.length - 1 ? "Confirm booking" : "Continue"} <ArrowRight className="h-4 w-4" />
+              <Button variant="hero" onClick={next} disabled={!canNext || submitting}>
+                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                {step === stepLabels.length - 1 ? t("book.confirmBooking") : t("book.continue")}
+                {!submitting && <ArrowRight className="h-4 w-4" />}
               </Button>
             </div>
           </div>
 
-          {/* Summary */}
           <aside className="rounded-3xl border border-border bg-card p-6 shadow-soft">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Summary</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("book.summary")}</p>
             <div className="mt-3 space-y-2 text-sm">
-              <SummaryRow label="Shop" value={selectedShop?.name ?? "—"} />
-              <SummaryRow label="Service" value={selectedService?.name ?? "—"} />
-              <SummaryRow label="With" value={staffId === "any" ? "Any available" : selectedStaff?.name ?? "—"} />
-              <SummaryRow label="Date" value={date ?? "—"} />
-              <SummaryRow label="Time" value={time ?? "—"} />
+              <SummaryRow label={t("book.shop")} value={selectedShop?.name ?? "—"} />
+              <SummaryRow label={t("book.service")} value={selectedService?.name ?? "—"} />
+              <SummaryRow label={t("book.with")} value={staffId === "any" ? t("book.anyAvailable") : selectedStaff?.full_name ?? "—"} />
+              <SummaryRow label={t("book.date")} value={date ?? "—"} />
+              <SummaryRow label={t("book.time")} value={time ?? "—"} />
             </div>
             {selectedService && (
               <div className="mt-4 border-t border-border pt-4">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Total</span>
-                  <span className="font-semibold">€{selectedService.price}</span>
+                  <span className="text-muted-foreground">{t("book.total")}</span>
+                  <span className="font-semibold">€{(selectedService.price_cents / 100).toFixed(2)}</span>
                 </div>
-                {selectedService.deposit > 0 && (
+                {selectedService.deposit_cents > 0 && (
                   <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Deposit</span>
-                    <span>€{selectedService.deposit}</span>
+                    <span>{t("book.deposit")}</span>
+                    <span>€{(selectedService.deposit_cents / 100).toFixed(2)}</span>
                   </div>
                 )}
               </div>
@@ -305,6 +368,10 @@ function BookingFlow() {
       </div>
     </div>
   );
+}
+
+function SkeletonGrid() {
+  return <div className="grid gap-3 sm:grid-cols-2">{[0, 1, 2, 3].map((i) => <div key={i} className="h-20 rounded-2xl bg-muted animate-pulse" />)}</div>;
 }
 
 function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
@@ -317,29 +384,14 @@ function Section({ title, subtitle, children }: { title: string; subtitle?: stri
   );
 }
 
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
+function Field({ label, value, onChange, placeholder, type = "text" }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string;
 }) {
   return (
     <div>
       <label className="mb-1.5 block text-sm font-medium">{label}</label>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        type={type}
-        className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
-      />
+      <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} type={type}
+        className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20" />
     </div>
   );
 }
