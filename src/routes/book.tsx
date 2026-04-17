@@ -183,7 +183,7 @@ function BookingFlow() {
                   {Array.from({ length: 7 }).map((_, i) => {
                     const d = new Date();
                     d.setDate(d.getDate() + i);
-                    const label = d.toLocaleDateString(undefined, { weekday: "short", day: "numeric" });
+                    const label = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", timeZone: "UTC" });
                     const value = d.toISOString().slice(0, 10);
                     return (
                       <button

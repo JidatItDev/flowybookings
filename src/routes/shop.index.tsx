@@ -116,7 +116,7 @@ function ShopDashboard() {
           {today.map((b) => (
             <div key={b.id} className="flex items-center gap-4 px-6 py-4">
               <div className="hidden w-20 text-sm font-medium text-muted-foreground sm:block">
-                {new Date(b.date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                {new Date(b.date).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" })}
               </div>
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-warm text-sm font-semibold text-pink-foreground">
                 {b.customer.split(" ").map((n) => n[0]).join("")}
