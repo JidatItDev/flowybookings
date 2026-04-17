@@ -458,6 +458,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_default_shop_id: { Args: { _user_id: string }; Returns: string }
       has_shop_access: {
         Args: { _shop_id: string; _user_id: string }
         Returns: boolean
