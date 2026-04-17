@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { ShopPicker } from "@/components/ShopPicker";
 
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
 
@@ -135,14 +136,8 @@ export function ShopLayout({ children }: { children: React.ReactNode }) {
             >
               Switch to Admin →
             </Link>
-            <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-1.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-brand text-xs font-semibold text-primary-foreground">
-                IS
-              </div>
-              <div className="hidden text-xs leading-tight sm:block">
-                <p className="font-medium">Inkwell Studio</p>
-                <p className="text-muted-foreground">Pro plan</p>
-              </div>
+            <div className="w-56">
+              <ShopPicker />
             </div>
           </div>
         </header>
