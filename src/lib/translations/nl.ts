@@ -149,6 +149,7 @@ export const nl: Record<string, string> = {
   "dashboard.weeklyRevenue": "Wekelijkse omzet",
   "dashboard.last7days": "Laatste 7 dagen (voorbeeld)",
   "dashboard.livePreview": "Live voorbeeld",
+  "dashboard.live": "Live",
   "dashboard.atAGlance": "In één oogopslag",
   "dashboard.customers": "Klanten",
   "dashboard.activeServices": "Actieve diensten",
@@ -331,6 +332,9 @@ export const nl: Record<string, string> = {
   "notifications.noshow": "No-show opvolging",
   "notifications.noshowDesc": "Verloren boekingen beleefd terugwinnen.",
   "notifications.saveChanges": "Wijzigingen opslaan",
+  "notifications.saving": "Bezig met opslaan…",
+  "notifications.saved": "Voorkeuren opgeslagen",
+  "notifications.unsaved": "Niet-opgeslagen wijzigingen",
 
   // ── Settings ──
   "settings.title": "Instellingen",
@@ -360,6 +364,10 @@ export const nl: Record<string, string> = {
   "settings.friday": "Vrijdag",
   "settings.saturday": "Zaterdag",
   "settings.sunday": "Zondag",
+  "settings.saved": "Instellingen opgeslagen",
+  "settings.saving": "Bezig met opslaan…",
+  "settings.markOpen": "Open zetten",
+  "settings.markClosed": "Sluiten",
 
   // ── Analytics ──
   "analytics.title": "Statistieken",
@@ -375,6 +383,8 @@ export const nl: Record<string, string> = {
   "analytics.topServices": "Top diensten",
   "analytics.topServicesSub": "Meest geboekt in de laatste 30 dagen",
   "analytics.bookings": "{n} boekingen",
+  "analytics.noData": "Nog geen data om te tonen. Maak je eerste boekingen aan om statistieken te zien.",
+  "analytics.basedOn": "Gebaseerd op {bookings} boekingen, {payments} betalingen, {customers} klanten.",
 
   // ── Booking flow ──
   "book.title": "Een afspraak boeken",

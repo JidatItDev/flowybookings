@@ -10,7 +10,22 @@ export const shopKeys = {
   customers: (shopId: string) => ["shop", shopId, "customers"] as const,
   bookings: (shopId: string) => ["shop", shopId, "bookings"] as const,
   payments: (shopId: string) => ["shop", shopId, "payments"] as const,
+  shopFull: (shopId: string) => ["shop", shopId, "full"] as const,
 };
+
+export const shopFullQuery = (shopId: string) =>
+  queryOptions({
+    queryKey: shopKeys.shopFull(shopId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("shops")
+        .select("*")
+        .eq("id", shopId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
 
 export const servicesQuery = (shopId: string) =>
   queryOptions({

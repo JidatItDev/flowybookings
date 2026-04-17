@@ -149,6 +149,7 @@ export const en: Record<string, string> = {
   "dashboard.weeklyRevenue": "Weekly revenue",
   "dashboard.last7days": "Last 7 days (sample)",
   "dashboard.livePreview": "Live preview",
+  "dashboard.live": "Live",
   "dashboard.atAGlance": "At a glance",
   "dashboard.customers": "Customers",
   "dashboard.activeServices": "Active services",
@@ -331,6 +332,9 @@ export const en: Record<string, string> = {
   "notifications.noshow": "No-show follow-up",
   "notifications.noshowDesc": "Recover lost bookings politely.",
   "notifications.saveChanges": "Save changes",
+  "notifications.saving": "Saving…",
+  "notifications.saved": "Preferences saved",
+  "notifications.unsaved": "Unsaved changes",
 
   // ── Settings ──
   "settings.title": "Settings",
@@ -360,6 +364,10 @@ export const en: Record<string, string> = {
   "settings.friday": "Friday",
   "settings.saturday": "Saturday",
   "settings.sunday": "Sunday",
+  "settings.saved": "Settings saved",
+  "settings.saving": "Saving…",
+  "settings.markOpen": "Open",
+  "settings.markClosed": "Close",
 
   // ── Analytics ──
   "analytics.title": "Analytics",
@@ -375,6 +383,8 @@ export const en: Record<string, string> = {
   "analytics.topServices": "Top services",
   "analytics.topServicesSub": "Most booked in the last 30 days",
   "analytics.bookings": "{n} bookings",
+  "analytics.noData": "No data to show yet. Create your first bookings to see analytics.",
+  "analytics.basedOn": "Based on {bookings} bookings, {payments} payments, {customers} customers.",
 
   // ── Booking flow ──
   "book.title": "Book an appointment",

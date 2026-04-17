@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarCheck, Clock, CircleDollarSign, AlertCircle, Plus, ArrowUpRight } from "lucide-react";
+import { CalendarCheck, Clock, CircleDollarSign, AlertCircle, Plus } from "lucide-react";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -10,7 +10,6 @@ import { NoShopState } from "@/components/EmptyState";
 import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { bookingsQuery, customersQuery, servicesQuery, staffQuery } from "@/lib/queries";
 import { formatCents, formatTime, initials } from "@/lib/format";
-import { revenueWeekly } from "@/lib/mock-data";
 import { useT } from "@/lib/i18n";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
@@ -37,12 +36,20 @@ function ShopDashboard() {
   const pendingCount = bookings.filter((b) => b.status === "pending").length;
   const noShows7d = bookings.filter((b) => { if (b.status !== "no_show") return false; const diff = Date.now() - new Date(b.starts_at).getTime(); return diff <= 7 * 86400000 && diff >= 0; }).length;
 
+  // Real weekly revenue (last 7 days)
+  const weekly = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() - (6 - i));
+    const next = new Date(d); next.setUTCDate(next.getUTCDate() + 1);
+    const sum = bookings.filter((b) => { const t = new Date(b.starts_at).getTime(); return t >= d.getTime() && t < next.getTime() && b.status !== "cancelled" && b.status !== "no_show"; }).reduce((s, b) => s + b.price_cents, 0);
+    return { day: d.toLocaleDateString("en-GB", { weekday: "short" }), revenue: Math.round(sum / 100) };
+  });
+
   return (
     <ShopLayout>
       <PageHeader
         title={activeShop ? t("dashboard.welcomeBack", { name: activeShop.name }) : t("dashboard.title")}
         description={activeShop ? t("dashboard.subWithShop", { name: activeShop.name }) : t("dashboard.subNoShop")}
-        actions={<Button variant="hero"><Plus className="h-4 w-4" /> {t("dashboard.newBooking")}</Button>}
+        actions={<Link to="/shop/calendar"><Button variant="hero"><Plus className="h-4 w-4" /> {t("dashboard.newBooking")}</Button></Link>}
       />
       {!shopId ? <NoShopState /> : (
         <>
@@ -56,11 +63,11 @@ function ShopDashboard() {
             <div className="rounded-2xl border border-border bg-card p-6 shadow-soft lg:col-span-2">
               <div className="mb-4 flex items-center justify-between">
                 <div><h2 className="text-base font-semibold">{t("dashboard.weeklyRevenue")}</h2><p className="text-xs text-muted-foreground">{t("dashboard.last7days")}</p></div>
-                <span className="rounded-full bg-mint px-2.5 py-1 text-xs font-medium text-mint-foreground">{t("dashboard.livePreview")}</span>
+                <span className="rounded-full bg-mint px-2.5 py-1 text-xs font-medium text-mint-foreground">{t("dashboard.live")}</span>
               </div>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={revenueWeekly}>
+                  <AreaChart data={weekly}>
                     <defs><linearGradient id="rev" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.45} /><stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0} /></linearGradient></defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                     <XAxis dataKey="day" stroke="var(--color-muted-foreground)" fontSize={12} />
@@ -84,7 +91,7 @@ function ShopDashboard() {
           <div className="mt-6 rounded-2xl border border-border bg-card shadow-soft">
             <div className="flex items-center justify-between border-b border-border px-6 py-4">
               <h2 className="text-base font-semibold">{t("dashboard.todayAppointments")}</h2>
-              <Button variant="ghost" size="sm">{t("dashboard.viewAll")}</Button>
+              <Link to="/shop/calendar"><Button variant="ghost" size="sm">{t("dashboard.viewAll")}</Button></Link>
             </div>
             <div className="divide-y divide-border">
               {todayBookings.length === 0 ? (
