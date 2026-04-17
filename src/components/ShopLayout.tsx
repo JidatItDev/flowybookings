@@ -18,6 +18,18 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ShopPicker } from "@/components/ShopPicker";
+import { RequireShopAccess } from "@/components/RouteGuard";
+import { ShopOnboarding } from "@/components/ShopOnboarding";
+import { useAuth } from "@/lib/auth-context";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LogOut } from "lucide-react";
 
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
 
@@ -34,8 +46,22 @@ const nav: NavItem[] = [
 ];
 
 export function ShopLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <RequireShopAccess>
+      <ShopLayoutInner>{children}</ShopLayoutInner>
+    </RequireShopAccess>
+  );
+}
+
+function ShopLayoutInner({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const { shops, loading, user, signOut, isSuperAdmin } = useAuth();
+
+  // Owner with no shop yet → onboarding
+  if (!loading && shops.length === 0 && !isSuperAdmin) {
+    return <ShopOnboarding />;
+  }
 
   const isActive = (to: string, exact?: boolean) =>
     exact ? location.pathname === to : location.pathname === to || location.pathname.startsWith(to + "/");
