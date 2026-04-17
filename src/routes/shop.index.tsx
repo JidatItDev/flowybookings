@@ -36,12 +36,20 @@ function ShopDashboard() {
   const pendingCount = bookings.filter((b) => b.status === "pending").length;
   const noShows7d = bookings.filter((b) => { if (b.status !== "no_show") return false; const diff = Date.now() - new Date(b.starts_at).getTime(); return diff <= 7 * 86400000 && diff >= 0; }).length;
 
+  // Real weekly revenue (last 7 days)
+  const weekly = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() - (6 - i));
+    const next = new Date(d); next.setUTCDate(next.getUTCDate() + 1);
+    const sum = bookings.filter((b) => { const t = new Date(b.starts_at).getTime(); return t >= d.getTime() && t < next.getTime() && b.status !== "cancelled" && b.status !== "no_show"; }).reduce((s, b) => s + b.price_cents, 0);
+    return { day: d.toLocaleDateString("en-GB", { weekday: "short" }), revenue: Math.round(sum / 100) };
+  });
+
   return (
     <ShopLayout>
       <PageHeader
         title={activeShop ? t("dashboard.welcomeBack", { name: activeShop.name }) : t("dashboard.title")}
         description={activeShop ? t("dashboard.subWithShop", { name: activeShop.name }) : t("dashboard.subNoShop")}
-        actions={<Button variant="hero"><Plus className="h-4 w-4" /> {t("dashboard.newBooking")}</Button>}
+        actions={<Link to="/shop/calendar"><Button variant="hero"><Plus className="h-4 w-4" /> {t("dashboard.newBooking")}</Button></Link>}
       />
       {!shopId ? <NoShopState /> : (
         <>
