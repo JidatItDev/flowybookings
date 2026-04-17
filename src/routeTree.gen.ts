@@ -9,6 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as BookRouteImport } from './routes/book'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShopIndexRouteImport } from './routes/shop.index'
@@ -31,6 +33,16 @@ import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminLogsRouteImport } from './routes/admin.logs'
 import { Route as AdminBookingsRouteImport } from './routes/admin.bookings'
 
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BookRoute = BookRouteImport.update({
   id: '/book',
   path: '/book',
@@ -140,6 +152,8 @@ const AdminBookingsRoute = AdminBookingsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/book': typeof BookRouteWithChildren
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
   '/admin/bookings': typeof AdminBookingsRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/payments': typeof AdminPaymentsRoute
@@ -163,6 +177,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/book': typeof BookRouteWithChildren
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
   '/admin/bookings': typeof AdminBookingsRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/payments': typeof AdminPaymentsRoute
@@ -187,6 +203,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/book': typeof BookRouteWithChildren
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
   '/admin/bookings': typeof AdminBookingsRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/payments': typeof AdminPaymentsRoute
@@ -212,6 +230,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/book'
+    | '/login'
+    | '/signup'
     | '/admin/bookings'
     | '/admin/logs'
     | '/admin/payments'
@@ -235,6 +255,8 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/book'
+    | '/login'
+    | '/signup'
     | '/admin/bookings'
     | '/admin/logs'
     | '/admin/payments'
@@ -258,6 +280,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/book'
+    | '/login'
+    | '/signup'
     | '/admin/bookings'
     | '/admin/logs'
     | '/admin/payments'
@@ -282,6 +306,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BookRoute: typeof BookRouteWithChildren
+  LoginRoute: typeof LoginRoute
+  SignupRoute: typeof SignupRoute
   AdminBookingsRoute: typeof AdminBookingsRoute
   AdminLogsRoute: typeof AdminLogsRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
@@ -304,6 +330,20 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/book': {
       id: '/book'
       path: '/book'
@@ -467,6 +507,8 @@ const BookRouteWithChildren = BookRoute._addFileChildren(BookRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BookRoute: BookRouteWithChildren,
+  LoginRoute: LoginRoute,
+  SignupRoute: SignupRoute,
   AdminBookingsRoute: AdminBookingsRoute,
   AdminLogsRoute: AdminLogsRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
