@@ -156,15 +156,31 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
             <Button variant="ghost" size="icon" aria-label="Notifications">
               <Bell className="h-5 w-5" />
             </Button>
-            <Link
-              to="/admin"
-              className="hidden rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground sm:inline-flex"
-            >
-              Switch to Admin →
-            </Link>
+            {isSuperAdmin && (
+              <Link
+                to="/admin"
+                className="hidden rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground sm:inline-flex"
+              >
+                Switch to Admin →
+              </Link>
+            )}
             <div className="w-56">
               <ShopPicker />
             </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-warm text-xs font-semibold text-pink-foreground">
+                {(user?.email ?? "?")[0].toUpperCase()}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                  {user?.email}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => signOut()}>
+                  <LogOut className="h-4 w-4" /> Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 

@@ -14,9 +14,20 @@ import {
   X,
   ShieldCheck,
   Bell,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { RequireSuperAdmin } from "@/components/RouteGuard";
+import { useAuth } from "@/lib/auth-context";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
 
@@ -33,8 +44,17 @@ const nav: NavItem[] = [
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <RequireSuperAdmin>
+      <AdminLayoutInner>{children}</AdminLayoutInner>
+    </RequireSuperAdmin>
+  );
+}
+
+function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const { user, signOut } = useAuth();
   const isActive = (to: string, exact?: boolean) =>
     exact ? location.pathname === to : location.pathname === to || location.pathname.startsWith(to + "/");
 
