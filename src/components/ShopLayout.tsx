@@ -158,7 +158,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
             </Button>
             {isSuperAdmin && (
               <Link
-                to="/admin"
+                to="/beheer/dashboard"
                 className="hidden rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground sm:inline-flex"
               >
                 Switch to Admin →

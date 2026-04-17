@@ -32,6 +32,7 @@ import { Route as BeheerDashboardPlansRouteImport } from './routes/beheer.dashbo
 import { Route as BeheerDashboardPaymentsRouteImport } from './routes/beheer.dashboard.payments'
 import { Route as BeheerDashboardLogsRouteImport } from './routes/beheer.dashboard.logs'
 import { Route as BeheerDashboardBookingsRouteImport } from './routes/beheer.dashboard.bookings'
+import { Route as BeheerAdLoginRouteImport } from './routes/beheer.ad.login'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -148,6 +149,11 @@ const BeheerDashboardBookingsRoute = BeheerDashboardBookingsRouteImport.update({
   path: '/beheer/dashboard/bookings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BeheerAdLoginRoute = BeheerAdLoginRouteImport.update({
+  id: '/beheer/ad/login',
+  path: '/beheer/ad/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -164,6 +170,7 @@ export interface FileRoutesByFullPath {
   '/shop/settings': typeof ShopSettingsRoute
   '/shop/staff': typeof ShopStaffRoute
   '/shop/': typeof ShopIndexRoute
+  '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
   '/beheer/dashboard/logs': typeof BeheerDashboardLogsRoute
   '/beheer/dashboard/payments': typeof BeheerDashboardPaymentsRoute
@@ -189,6 +196,7 @@ export interface FileRoutesByTo {
   '/shop/settings': typeof ShopSettingsRoute
   '/shop/staff': typeof ShopStaffRoute
   '/shop': typeof ShopIndexRoute
+  '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
   '/beheer/dashboard/logs': typeof BeheerDashboardLogsRoute
   '/beheer/dashboard/payments': typeof BeheerDashboardPaymentsRoute
@@ -215,6 +223,7 @@ export interface FileRoutesById {
   '/shop/settings': typeof ShopSettingsRoute
   '/shop/staff': typeof ShopStaffRoute
   '/shop/': typeof ShopIndexRoute
+  '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
   '/beheer/dashboard/logs': typeof BeheerDashboardLogsRoute
   '/beheer/dashboard/payments': typeof BeheerDashboardPaymentsRoute
@@ -242,6 +251,7 @@ export interface FileRouteTypes {
     | '/shop/settings'
     | '/shop/staff'
     | '/shop/'
+    | '/beheer/ad/login'
     | '/beheer/dashboard/bookings'
     | '/beheer/dashboard/logs'
     | '/beheer/dashboard/payments'
@@ -267,6 +277,7 @@ export interface FileRouteTypes {
     | '/shop/settings'
     | '/shop/staff'
     | '/shop'
+    | '/beheer/ad/login'
     | '/beheer/dashboard/bookings'
     | '/beheer/dashboard/logs'
     | '/beheer/dashboard/payments'
@@ -292,6 +303,7 @@ export interface FileRouteTypes {
     | '/shop/settings'
     | '/shop/staff'
     | '/shop/'
+    | '/beheer/ad/login'
     | '/beheer/dashboard/bookings'
     | '/beheer/dashboard/logs'
     | '/beheer/dashboard/payments'
@@ -317,6 +329,7 @@ export interface RootRouteChildren {
   ShopSettingsRoute: typeof ShopSettingsRoute
   ShopStaffRoute: typeof ShopStaffRoute
   ShopIndexRoute: typeof ShopIndexRoute
+  BeheerAdLoginRoute: typeof BeheerAdLoginRoute
   BeheerDashboardBookingsRoute: typeof BeheerDashboardBookingsRoute
   BeheerDashboardLogsRoute: typeof BeheerDashboardLogsRoute
   BeheerDashboardPaymentsRoute: typeof BeheerDashboardPaymentsRoute
@@ -491,6 +504,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerDashboardBookingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/beheer/ad/login': {
+      id: '/beheer/ad/login'
+      path: '/beheer/ad/login'
+      fullPath: '/beheer/ad/login'
+      preLoaderRoute: typeof BeheerAdLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -518,6 +538,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShopSettingsRoute: ShopSettingsRoute,
   ShopStaffRoute: ShopStaffRoute,
   ShopIndexRoute: ShopIndexRoute,
+  BeheerAdLoginRoute: BeheerAdLoginRoute,
   BeheerDashboardBookingsRoute: BeheerDashboardBookingsRoute,
   BeheerDashboardLogsRoute: BeheerDashboardLogsRoute,
   BeheerDashboardPaymentsRoute: BeheerDashboardPaymentsRoute,
@@ -531,3 +552,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

@@ -42,7 +42,7 @@ function Landing() {
   const navigate = useNavigate();
   useEffect(() => {
     if (loading || !session) return;
-    navigate({ to: isSuperAdmin ? "/admin" : "/shop" });
+    navigate({ to: isSuperAdmin ? "/beheer/dashboard" : "/shop" });
   }, [session, loading, isSuperAdmin, navigate]);
 
   return (
@@ -311,7 +311,7 @@ function Landing() {
                 <Link to="/book">Try the booking flow</Link>
               </Button>
               <Button asChild size="xl" variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10">
-                <Link to="/admin">Explore admin →</Link>
+                <Link to="/shop">Explore dashboard →</Link>
               </Button>
             </div>
           </div>

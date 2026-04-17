@@ -32,15 +32,15 @@ import {
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
 
 const nav: NavItem[] = [
-  { to: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
-  { to: "/admin/shops", label: "Shops", icon: Store },
-  { to: "/admin/users", label: "Users", icon: Users },
-  { to: "/admin/bookings", label: "Bookings", icon: CalendarRange },
-  { to: "/admin/payments", label: "Payments", icon: CreditCard },
-  { to: "/admin/plans", label: "Plans", icon: Layers },
-  { to: "/admin/support", label: "Support", icon: LifeBuoy },
-  { to: "/admin/logs", label: "Audit logs", icon: ScrollText },
-  { to: "/admin/settings", label: "Settings", icon: Settings },
+  { to: "/beheer/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
+  { to: "/beheer/dashboard/shops", label: "Shops", icon: Store },
+  { to: "/beheer/dashboard/users", label: "Users", icon: Users },
+  { to: "/beheer/dashboard/bookings", label: "Bookings", icon: CalendarRange },
+  { to: "/beheer/dashboard/payments", label: "Payments", icon: CreditCard },
+  { to: "/beheer/dashboard/plans", label: "Plans", icon: Layers },
+  { to: "/beheer/dashboard/support", label: "Support", icon: LifeBuoy },
+  { to: "/beheer/dashboard/logs", label: "Audit logs", icon: ScrollText },
+  { to: "/beheer/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {

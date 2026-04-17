@@ -37,7 +37,7 @@ function LoginPage() {
   useEffect(() => {
     if (loading || !session) return;
     if (redirect) navigate({ to: redirect });
-    else navigate({ to: isSuperAdmin ? "/admin" : "/shop" });
+    else navigate({ to: isSuperAdmin ? "/beheer/dashboard" : "/shop" });
   }, [session, loading, isSuperAdmin, redirect, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {

@@ -47,7 +47,7 @@ export function RequireSuperAdmin({ children }: { children: ReactNode }) {
     // Wait for roles to load (empty roles + loaded session = still fetching or no roles)
     if (roles.length === 0) return;
     if (!isSuperAdmin) {
-      navigate({ to: "/shop" });
+      navigate({ to: "/" });
     }
   }, [session, loading, roles, isSuperAdmin, navigate]);
 
