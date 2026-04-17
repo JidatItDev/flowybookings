@@ -24,6 +24,7 @@ import { Route as ShopCalendarRouteImport } from './routes/shop.calendar'
 import { Route as ShopAnalyticsRouteImport } from './routes/shop.analytics'
 import { Route as BookConfirmationRouteImport } from './routes/book.confirmation'
 import { Route as BeheerDashboardIndexRouteImport } from './routes/beheer.dashboard.index'
+import { Route as BookConfirmationBookingIdRouteImport } from './routes/book.confirmation.$bookingId'
 import { Route as BeheerDashboardUsersRouteImport } from './routes/beheer.dashboard.users'
 import { Route as BeheerDashboardSupportRouteImport } from './routes/beheer.dashboard.support'
 import { Route as BeheerDashboardShopsRouteImport } from './routes/beheer.dashboard.shops'
@@ -109,6 +110,12 @@ const BeheerDashboardIndexRoute = BeheerDashboardIndexRouteImport.update({
   path: '/beheer/dashboard/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BookConfirmationBookingIdRoute =
+  BookConfirmationBookingIdRouteImport.update({
+    id: '/$bookingId',
+    path: '/$bookingId',
+    getParentRoute: () => BookConfirmationRoute,
+  } as any)
 const BeheerDashboardUsersRoute = BeheerDashboardUsersRouteImport.update({
   id: '/beheer/dashboard/users',
   path: '/beheer/dashboard/users',
@@ -160,7 +167,7 @@ export interface FileRoutesByFullPath {
   '/book': typeof BookRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/book/confirmation': typeof BookConfirmationRoute
+  '/book/confirmation': typeof BookConfirmationRouteWithChildren
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/calendar': typeof ShopCalendarRoute
   '/shop/customers': typeof ShopCustomersRoute
@@ -179,6 +186,7 @@ export interface FileRoutesByFullPath {
   '/beheer/dashboard/shops': typeof BeheerDashboardShopsRoute
   '/beheer/dashboard/support': typeof BeheerDashboardSupportRoute
   '/beheer/dashboard/users': typeof BeheerDashboardUsersRoute
+  '/book/confirmation/$bookingId': typeof BookConfirmationBookingIdRoute
   '/beheer/dashboard/': typeof BeheerDashboardIndexRoute
 }
 export interface FileRoutesByTo {
@@ -186,7 +194,7 @@ export interface FileRoutesByTo {
   '/book': typeof BookRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/book/confirmation': typeof BookConfirmationRoute
+  '/book/confirmation': typeof BookConfirmationRouteWithChildren
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/calendar': typeof ShopCalendarRoute
   '/shop/customers': typeof ShopCustomersRoute
@@ -205,6 +213,7 @@ export interface FileRoutesByTo {
   '/beheer/dashboard/shops': typeof BeheerDashboardShopsRoute
   '/beheer/dashboard/support': typeof BeheerDashboardSupportRoute
   '/beheer/dashboard/users': typeof BeheerDashboardUsersRoute
+  '/book/confirmation/$bookingId': typeof BookConfirmationBookingIdRoute
   '/beheer/dashboard': typeof BeheerDashboardIndexRoute
 }
 export interface FileRoutesById {
@@ -213,7 +222,7 @@ export interface FileRoutesById {
   '/book': typeof BookRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
-  '/book/confirmation': typeof BookConfirmationRoute
+  '/book/confirmation': typeof BookConfirmationRouteWithChildren
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/calendar': typeof ShopCalendarRoute
   '/shop/customers': typeof ShopCustomersRoute
@@ -232,6 +241,7 @@ export interface FileRoutesById {
   '/beheer/dashboard/shops': typeof BeheerDashboardShopsRoute
   '/beheer/dashboard/support': typeof BeheerDashboardSupportRoute
   '/beheer/dashboard/users': typeof BeheerDashboardUsersRoute
+  '/book/confirmation/$bookingId': typeof BookConfirmationBookingIdRoute
   '/beheer/dashboard/': typeof BeheerDashboardIndexRoute
 }
 export interface FileRouteTypes {
@@ -260,6 +270,7 @@ export interface FileRouteTypes {
     | '/beheer/dashboard/shops'
     | '/beheer/dashboard/support'
     | '/beheer/dashboard/users'
+    | '/book/confirmation/$bookingId'
     | '/beheer/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -286,6 +297,7 @@ export interface FileRouteTypes {
     | '/beheer/dashboard/shops'
     | '/beheer/dashboard/support'
     | '/beheer/dashboard/users'
+    | '/book/confirmation/$bookingId'
     | '/beheer/dashboard'
   id:
     | '__root__'
@@ -312,6 +324,7 @@ export interface FileRouteTypes {
     | '/beheer/dashboard/shops'
     | '/beheer/dashboard/support'
     | '/beheer/dashboard/users'
+    | '/book/confirmation/$bookingId'
     | '/beheer/dashboard/'
   fileRoutesById: FileRoutesById
 }
@@ -448,6 +461,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerDashboardIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/book/confirmation/$bookingId': {
+      id: '/book/confirmation/$bookingId'
+      path: '/$bookingId'
+      fullPath: '/book/confirmation/$bookingId'
+      preLoaderRoute: typeof BookConfirmationBookingIdRouteImport
+      parentRoute: typeof BookConfirmationRoute
+    }
     '/beheer/dashboard/users': {
       id: '/beheer/dashboard/users'
       path: '/beheer/dashboard/users'
@@ -514,12 +534,23 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface BookConfirmationRouteChildren {
+  BookConfirmationBookingIdRoute: typeof BookConfirmationBookingIdRoute
+}
+
+const BookConfirmationRouteChildren: BookConfirmationRouteChildren = {
+  BookConfirmationBookingIdRoute: BookConfirmationBookingIdRoute,
+}
+
+const BookConfirmationRouteWithChildren =
+  BookConfirmationRoute._addFileChildren(BookConfirmationRouteChildren)
+
 interface BookRouteChildren {
-  BookConfirmationRoute: typeof BookConfirmationRoute
+  BookConfirmationRoute: typeof BookConfirmationRouteWithChildren
 }
 
 const BookRouteChildren: BookRouteChildren = {
-  BookConfirmationRoute: BookConfirmationRoute,
+  BookConfirmationRoute: BookConfirmationRouteWithChildren,
 }
 
 const BookRouteWithChildren = BookRoute._addFileChildren(BookRouteChildren)
