@@ -3,6 +3,7 @@ import { AdminLayout } from "@/components/AdminLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { bookings, shops } from "@/lib/mock-data";
+import { formatDateTime } from "@/lib/format";
 
 export const Route = createFileRoute("/admin/bookings")({
   head: () => ({ meta: [{ title: "Bookings — Admin" }] }),
@@ -33,7 +34,7 @@ function AdminBookings() {
                   <p className="text-xs text-muted-foreground">{b.service}</p>
                 </td>
                 <td className="hidden px-6 py-4 text-muted-foreground md:table-cell">{shops[i % shops.length].name}</td>
-                <td className="hidden px-6 py-4 text-muted-foreground lg:table-cell">{new Date(b.date).toLocaleString()}</td>
+                <td className="hidden px-6 py-4 text-muted-foreground lg:table-cell">{formatDateTime(b.date)}</td>
                 <td className="px-6 py-4"><StatusBadge status={b.status} /></td>
                 <td className="px-6 py-4"><StatusBadge status={b.payment} /></td>
                 <td className="px-6 py-4 font-medium">€{b.price}</td>

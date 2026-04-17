@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
-import { ShopProvider } from "@/lib/shop-context";
+import { AuthProvider } from "@/lib/auth-context";
 
 import appCss from "../styles.css?url";
 
@@ -78,10 +78,10 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <ShopProvider>
+      <AuthProvider>
         <Outlet />
         <Toaster richColors position="top-right" />
-      </ShopProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

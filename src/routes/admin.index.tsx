@@ -88,7 +88,7 @@ function AdminOverview() {
                   <p className="truncate text-sm font-medium">{s.name}</p>
                   <p className="text-xs text-muted-foreground">{s.type} · {s.city}</p>
                 </div>
-                <p className="text-sm font-semibold">€{s.gmv.toLocaleString()}</p>
+                <p className="text-sm font-semibold">€{s.gmv.toLocaleString("en-GB")}</p>
               </div>
             ))}
           </div>

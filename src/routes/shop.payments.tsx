@@ -45,8 +45,9 @@ function PaymentsPage() {
     enabled: !!shopId,
   });
 
+  type PaymentStatus = (typeof paymentStatuses)[number];
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status }: { id: string; status: PaymentStatus }) => {
       const { error } = await supabase.from("payments").update({ status }).eq("id", id);
       if (error) throw error;
     },
@@ -166,7 +167,9 @@ function PaymentsPage() {
                         <td className="px-6 py-4">
                           <Select
                             value={p.status}
-                            onValueChange={(v) => updateStatus.mutate({ id: p.id, status: v })}
+                            onValueChange={(v) =>
+                              updateStatus.mutate({ id: p.id, status: v as PaymentStatus })
+                            }
                           >
                             <SelectTrigger className="h-8 w-[140px] text-xs">
                               <SelectValue />

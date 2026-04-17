@@ -18,6 +18,18 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ShopPicker } from "@/components/ShopPicker";
+import { RequireShopAccess } from "@/components/RouteGuard";
+import { ShopOnboarding } from "@/components/ShopOnboarding";
+import { useAuth } from "@/lib/auth-context";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LogOut } from "lucide-react";
 
 type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean };
 
@@ -34,8 +46,22 @@ const nav: NavItem[] = [
 ];
 
 export function ShopLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <RequireShopAccess>
+      <ShopLayoutInner>{children}</ShopLayoutInner>
+    </RequireShopAccess>
+  );
+}
+
+function ShopLayoutInner({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const { shops, loading, user, signOut, isSuperAdmin } = useAuth();
+
+  // Owner with no shop yet → onboarding
+  if (!loading && shops.length === 0 && !isSuperAdmin) {
+    return <ShopOnboarding />;
+  }
 
   const isActive = (to: string, exact?: boolean) =>
     exact ? location.pathname === to : location.pathname === to || location.pathname.startsWith(to + "/");
@@ -130,15 +156,31 @@ export function ShopLayout({ children }: { children: React.ReactNode }) {
             <Button variant="ghost" size="icon" aria-label="Notifications">
               <Bell className="h-5 w-5" />
             </Button>
-            <Link
-              to="/admin"
-              className="hidden rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground sm:inline-flex"
-            >
-              Switch to Admin →
-            </Link>
+            {isSuperAdmin && (
+              <Link
+                to="/admin"
+                className="hidden rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground sm:inline-flex"
+              >
+                Switch to Admin →
+              </Link>
+            )}
             <div className="w-56">
               <ShopPicker />
             </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-warm text-xs font-semibold text-pink-foreground">
+                {(user?.email ?? "?")[0].toUpperCase()}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                  {user?.email}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => signOut()}>
+                  <LogOut className="h-4 w-4" /> Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 

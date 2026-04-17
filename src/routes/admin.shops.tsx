@@ -74,7 +74,7 @@ function ShopsPage() {
                 <td className="px-6 py-4"><span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium", planColor[s.plan])}>{s.plan}</span></td>
                 <td className="px-6 py-4"><StatusBadge status={s.status} /></td>
                 <td className="hidden px-6 py-4 lg:table-cell">{s.bookings}</td>
-                <td className="hidden px-6 py-4 font-medium lg:table-cell">€{s.gmv.toLocaleString()}</td>
+                <td className="hidden px-6 py-4 font-medium lg:table-cell">€{s.gmv.toLocaleString("en-GB")}</td>
                 <td className="px-6 py-4 text-right"><Button variant="ghost" size="sm">Manage</Button></td>
               </tr>
             ))}
