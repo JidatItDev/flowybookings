@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/shop/calendar")({
-  head: () => ({ meta: [{ title: "Calendar — Bookly" }] }),
+  head: () => ({ meta: [{ title: "Calendar — FlowyBookings" }] }),
   component: CalendarPage,
 });
 

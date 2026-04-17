@@ -10,7 +10,7 @@ import { useT } from "@/lib/i18n";
 export const Route = createFileRoute("/book/confirmation/$bookingId")({
   head: () => ({
     meta: [
-      { title: "Boeking bevestigd — Bookly" },
+      { title: "Boeking bevestigd — FlowyBookings" },
       { name: "description", content: "Je afspraak is bevestigd." },
     ],
   }),

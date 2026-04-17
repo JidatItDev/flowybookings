@@ -12,7 +12,7 @@ import { useT } from "@/lib/i18n";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from "recharts";
 
 export const Route = createFileRoute("/shop/analytics")({
-  head: () => ({ meta: [{ title: "Analytics — Bookly" }] }),
+  head: () => ({ meta: [{ title: "Analytics — FlowyBookings" }] }),
   component: AnalyticsPage,
 });
 

@@ -15,8 +15,8 @@ function AdminSettings() {
       <PageHeader title={t("adminSettings.title")} description={t("adminSettings.description")} actions={<Button variant="hero">{t("adminSettings.saveChanges")}</Button>} />
       <div className="grid gap-6 lg:grid-cols-2">
         <Card title={t("adminSettings.branding")}>
-          <Field label={t("adminSettings.platformName")} defaultValue="Bookly" />
-          <div className="mt-3"><Field label={t("adminSettings.supportEmail")} defaultValue="support@bookly.io" /></div>
+          <Field label={t("adminSettings.platformName")} defaultValue="FlowyBookings" />
+          <div className="mt-3"><Field label={t("adminSettings.supportEmail")} defaultValue="support@flowybookings.com" /></div>
           <div className="mt-3"><Field label={t("adminSettings.brandColor")} defaultValue="#7C5CFA" /></div>
         </Card>
         <Card title={t("adminSettings.bookingDefaults")}>

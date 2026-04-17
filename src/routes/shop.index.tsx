@@ -14,7 +14,7 @@ import { useT } from "@/lib/i18n";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 export const Route = createFileRoute("/shop/")({
-  head: () => ({ meta: [{ title: "Dashboard — Bookly" }] }),
+  head: () => ({ meta: [{ title: "Dashboard — FlowyBookings" }] }),
   component: ShopDashboard,
 });
 

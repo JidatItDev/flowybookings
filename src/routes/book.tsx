@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/book")({
   head: () => ({
     meta: [
-      { title: "Een afspraak boeken — Bookly" },
+      { title: "Een afspraak boeken — FlowyBookings" },
       { name: "description", content: "Kies een winkel, dienst en tijd. Bevestig in seconden." },
     ],
   }),
@@ -166,7 +166,7 @@ function BookingFlow() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-brand">
               <Sparkle className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="text-base font-semibold">Bookly</span>
+            <span className="text-base font-semibold">FlowyBookings</span>
           </Link>
           <div className="flex items-center gap-3">
             <p className="hidden text-xs text-muted-foreground sm:block">{t("book.secureBooking")}</p>

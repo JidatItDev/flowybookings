@@ -192,7 +192,7 @@ function Header({ onClose }: { onClose?: () => void }) {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-brand">
           <ShieldCheck className="h-4 w-4 text-primary-foreground" />
         </div>
-        <span className="text-base font-semibold tracking-tight">Bookly Admin</span>
+        <span className="text-base font-semibold tracking-tight">FlowyBookings Admin</span>
       </Link>
       {onClose && (
         <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close menu">

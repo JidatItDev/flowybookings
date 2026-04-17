@@ -54,7 +54,7 @@ export function ShopOnboarding() {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-brand">
             <Sparkle className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="text-lg font-semibold tracking-tight">Bookly</span>
+          <span className="text-lg font-semibold tracking-tight">FlowyBookings</span>
         </div>
         <div className="rounded-3xl border border-border bg-card p-8 shadow-elevated">
           <h1 className="text-2xl font-semibold tracking-tight">{t("onboarding.createShop")}</h1>
@@ -73,7 +73,7 @@ export function ShopOnboarding() {
             <div className="space-y-1.5">
               <Label htmlFor="slug">{t("onboarding.urlSlug")}</Label>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">bookly.app/</span>
+                <span className="text-sm text-muted-foreground">flowybookings.com/</span>
                 <Input id="slug" placeholder="inkwell-studio" required value={slug} onChange={(e) => setSlug(slugify(e.target.value))} />
               </div>
               <p className="text-xs text-muted-foreground">{t("onboarding.slugHint")}</p>

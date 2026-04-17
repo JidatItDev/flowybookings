@@ -20,7 +20,7 @@ import { formatCents } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
-export const Route = createFileRoute("/shop/services")({ head: () => ({ meta: [{ title: "Services — Bookly" }] }), component: ServicesPage });
+export const Route = createFileRoute("/shop/services")({ head: () => ({ meta: [{ title: "Services — FlowyBookings" }] }), component: ServicesPage });
 
 const categoryColors: Record<string, string> = { Hair: "bg-primary-soft text-primary", Nails: "bg-pink text-pink-foreground", Beauty: "bg-peach text-peach-foreground", Tattoo: "bg-info/15 text-info-foreground", Pet: "bg-mint text-mint-foreground" };
 type ServiceRow = { id: string; name: string; description: string | null; category: string | null; duration_minutes: number; price_cents: number; deposit_cents: number; is_active: boolean; currency: string };

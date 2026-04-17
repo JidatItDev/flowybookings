@@ -12,9 +12,9 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Bookly — Modern booking platform for service businesses" },
+      { title: "FlowyBookings — Modern booking platform for service businesses" },
       { name: "description", content: "All-in-one booking, payments, reminders and analytics for tattoo shops, barbers, nail salons, beauty studios and groomers." },
-      { property: "og:title", content: "Bookly — Modern booking platform for service businesses" },
+      { property: "og:title", content: "FlowyBookings — Modern booking platform for service businesses" },
       { property: "og:description", content: "Booking, payments, reminders and analytics — built for tattoo shops, barbers, nail bars, beauty studios and groomers." },
     ],
   }),
@@ -66,7 +66,7 @@ function Landing() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-brand">
               <Sparkle className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="text-lg font-semibold tracking-tight">Bookly</span>
+            <span className="text-lg font-semibold tracking-tight">FlowyBookings</span>
           </Link>
           <nav className="hidden items-center gap-6 text-sm font-medium text-muted-foreground md:flex">
             <a href="#features" className="hover:text-foreground">{t("nav.features")}</a>
@@ -242,7 +242,7 @@ function Landing() {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6 lg:px-8">
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-brand"><Sparkle className="h-3.5 w-3.5 text-primary-foreground" /></div>
-            <span className="text-sm font-semibold">Bookly</span>
+            <span className="text-sm font-semibold">FlowyBookings</span>
             <span className="text-xs text-muted-foreground">{t("app.copyright", { year: new Date().getFullYear() })}</span>
           </div>
           <div className="flex items-center gap-5 text-xs text-muted-foreground">

@@ -39,7 +39,7 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-const ACTIVE_SHOP_KEY = "bookly:active-shop-id";
+const ACTIVE_SHOP_KEY = "flowybookings:active-shop-id";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);

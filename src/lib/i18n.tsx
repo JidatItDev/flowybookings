@@ -27,13 +27,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   // After hydration, sync from sessionStorage
   useEffect(() => {
-    const stored = sessionStorage.getItem("bookly_lang") as Locale | null;
+    const stored = sessionStorage.getItem("flowybookings_lang") as Locale | null;
     if (stored && stored !== locale) setLocaleState(stored);
   }, []);
 
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l);
-    if (typeof window !== "undefined") sessionStorage.setItem("bookly_lang", l);
+    if (typeof window !== "undefined") sessionStorage.setItem("flowybookings_lang", l);
   }, []);
 
   const t = useCallback(

@@ -14,7 +14,7 @@ type SeedUser = {
 };
 
 const DEMO_USERS: SeedUser[] = [
-  { email: "super_admin@bookly.app", full_name: "Avery Dunn", role: "super_admin" },
+  { email: "super_admin@flowybookings.com", full_name: "Avery Dunn", role: "super_admin" },
   { email: "owner@inkwell.app", full_name: "Sophia Reyes", role: "shop_owner" },
   { email: "staff@inkwell.app", full_name: "Marco Bianchi", role: "staff" },
 ];
