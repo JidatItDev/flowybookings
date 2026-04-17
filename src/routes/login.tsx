@@ -18,7 +18,6 @@ export const Route = createFileRoute("/login")({
 });
 
 const DEMOS = [
-  { label: "Super admin", email: "super_admin@bookly.app" },
   { label: "Shop owner", email: "owner@inkwell.app" },
   { label: "Staff", email: "staff@inkwell.app" },
 ];
