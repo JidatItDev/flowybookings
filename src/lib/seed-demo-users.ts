@@ -56,17 +56,42 @@ export const seedDemoUsers = createServerFn({ method: "POST" }).handler(async ()
 
     // Assign role
     if (u.role === "super_admin") {
-      await supabaseAdmin.rpc("assign_super_admin", { _user_id: userId });
+      await supabaseAdmin
+        .from("user_roles")
+        .upsert(
+          { user_id: userId, role: "super_admin", shop_id: null },
+          { onConflict: "user_id,role", ignoreDuplicates: true },
+        );
     } else if (u.role === "shop_owner") {
-      await supabaseAdmin.rpc("assign_shop_owner", {
-        _user_id: userId,
-        _shop_id: SEED_SHOP_ID,
-      });
+      await supabaseAdmin
+        .from("shops")
+        .update({ owner_id: userId, status: "active" })
+        .eq("id", SEED_SHOP_ID);
+      await supabaseAdmin
+        .from("user_roles")
+        .upsert(
+          { user_id: userId, role: "shop_owner", shop_id: SEED_SHOP_ID },
+          { onConflict: "user_id,role", ignoreDuplicates: true },
+        );
     } else if (u.role === "staff") {
-      await supabaseAdmin.rpc("assign_shop_staff", {
-        _user_id: userId,
-        _shop_id: SEED_SHOP_ID,
-      });
+      await supabaseAdmin
+        .from("user_roles")
+        .upsert(
+          { user_id: userId, role: "staff", shop_id: SEED_SHOP_ID },
+          { onConflict: "user_id,role", ignoreDuplicates: true },
+        );
+      // Link to first unlinked staff member of the shop
+      const { data: staffRow } = await supabaseAdmin
+        .from("staff")
+        .select("id")
+        .eq("shop_id", SEED_SHOP_ID)
+        .is("user_id", null)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (staffRow) {
+        await supabaseAdmin.from("staff").update({ user_id: userId }).eq("id", staffRow.id);
+      }
     }
 
     results.push({ email: u.email, userId, created });
