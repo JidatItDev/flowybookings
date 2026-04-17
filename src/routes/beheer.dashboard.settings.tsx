@@ -3,7 +3,7 @@ import { AdminLayout } from "@/components/AdminLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 
-export const Route = createFileRoute("/admin/settings")({
+export const Route = createFileRoute("/beheer/dashboard/settings")({
   head: () => ({ meta: [{ title: "Platform settings — Admin" }] }),
   component: AdminSettings,
 });
