@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as BookRouteImport } from './routes/book'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShopIndexRouteImport } from './routes/shop.index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as ShopStaffRouteImport } from './routes/shop.staff'
 import { Route as ShopSettingsRouteImport } from './routes/shop.settings'
 import { Route as ShopServicesRouteImport } from './routes/shop.services'
@@ -21,6 +22,14 @@ import { Route as ShopCustomersRouteImport } from './routes/shop.customers'
 import { Route as ShopCalendarRouteImport } from './routes/shop.calendar'
 import { Route as ShopAnalyticsRouteImport } from './routes/shop.analytics'
 import { Route as BookConfirmationRouteImport } from './routes/book.confirmation'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminSupportRouteImport } from './routes/admin.support'
+import { Route as AdminShopsRouteImport } from './routes/admin.shops'
+import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminPlansRouteImport } from './routes/admin.plans'
+import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
+import { Route as AdminLogsRouteImport } from './routes/admin.logs'
+import { Route as AdminBookingsRouteImport } from './routes/admin.bookings'
 
 const BookRoute = BookRouteImport.update({
   id: '/book',
@@ -35,6 +44,11 @@ const IndexRoute = IndexRouteImport.update({
 const ShopIndexRoute = ShopIndexRouteImport.update({
   id: '/shop/',
   path: '/shop/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShopStaffRoute = ShopStaffRouteImport.update({
@@ -82,10 +96,58 @@ const BookConfirmationRoute = BookConfirmationRouteImport.update({
   path: '/confirmation',
   getParentRoute: () => BookRoute,
 } as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSupportRoute = AdminSupportRouteImport.update({
+  id: '/admin/support',
+  path: '/admin/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminShopsRoute = AdminShopsRouteImport.update({
+  id: '/admin/shops',
+  path: '/admin/shops',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/admin/settings',
+  path: '/admin/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPlansRoute = AdminPlansRouteImport.update({
+  id: '/admin/plans',
+  path: '/admin/plans',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
+  id: '/admin/payments',
+  path: '/admin/payments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminLogsRoute = AdminLogsRouteImport.update({
+  id: '/admin/logs',
+  path: '/admin/logs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminBookingsRoute = AdminBookingsRouteImport.update({
+  id: '/admin/bookings',
+  path: '/admin/bookings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/book': typeof BookRouteWithChildren
+  '/admin/bookings': typeof AdminBookingsRoute
+  '/admin/logs': typeof AdminLogsRoute
+  '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/plans': typeof AdminPlansRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/shops': typeof AdminShopsRoute
+  '/admin/support': typeof AdminSupportRoute
+  '/admin/users': typeof AdminUsersRoute
   '/book/confirmation': typeof BookConfirmationRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/calendar': typeof ShopCalendarRoute
@@ -95,11 +157,20 @@ export interface FileRoutesByFullPath {
   '/shop/services': typeof ShopServicesRoute
   '/shop/settings': typeof ShopSettingsRoute
   '/shop/staff': typeof ShopStaffRoute
+  '/admin/': typeof AdminIndexRoute
   '/shop/': typeof ShopIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/book': typeof BookRouteWithChildren
+  '/admin/bookings': typeof AdminBookingsRoute
+  '/admin/logs': typeof AdminLogsRoute
+  '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/plans': typeof AdminPlansRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/shops': typeof AdminShopsRoute
+  '/admin/support': typeof AdminSupportRoute
+  '/admin/users': typeof AdminUsersRoute
   '/book/confirmation': typeof BookConfirmationRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/calendar': typeof ShopCalendarRoute
@@ -109,12 +180,21 @@ export interface FileRoutesByTo {
   '/shop/services': typeof ShopServicesRoute
   '/shop/settings': typeof ShopSettingsRoute
   '/shop/staff': typeof ShopStaffRoute
+  '/admin': typeof AdminIndexRoute
   '/shop': typeof ShopIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/book': typeof BookRouteWithChildren
+  '/admin/bookings': typeof AdminBookingsRoute
+  '/admin/logs': typeof AdminLogsRoute
+  '/admin/payments': typeof AdminPaymentsRoute
+  '/admin/plans': typeof AdminPlansRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/shops': typeof AdminShopsRoute
+  '/admin/support': typeof AdminSupportRoute
+  '/admin/users': typeof AdminUsersRoute
   '/book/confirmation': typeof BookConfirmationRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/calendar': typeof ShopCalendarRoute
@@ -124,6 +204,7 @@ export interface FileRoutesById {
   '/shop/services': typeof ShopServicesRoute
   '/shop/settings': typeof ShopSettingsRoute
   '/shop/staff': typeof ShopStaffRoute
+  '/admin/': typeof AdminIndexRoute
   '/shop/': typeof ShopIndexRoute
 }
 export interface FileRouteTypes {
@@ -131,6 +212,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/book'
+    | '/admin/bookings'
+    | '/admin/logs'
+    | '/admin/payments'
+    | '/admin/plans'
+    | '/admin/settings'
+    | '/admin/shops'
+    | '/admin/support'
+    | '/admin/users'
     | '/book/confirmation'
     | '/shop/analytics'
     | '/shop/calendar'
@@ -140,11 +229,20 @@ export interface FileRouteTypes {
     | '/shop/services'
     | '/shop/settings'
     | '/shop/staff'
+    | '/admin/'
     | '/shop/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/book'
+    | '/admin/bookings'
+    | '/admin/logs'
+    | '/admin/payments'
+    | '/admin/plans'
+    | '/admin/settings'
+    | '/admin/shops'
+    | '/admin/support'
+    | '/admin/users'
     | '/book/confirmation'
     | '/shop/analytics'
     | '/shop/calendar'
@@ -154,11 +252,20 @@ export interface FileRouteTypes {
     | '/shop/services'
     | '/shop/settings'
     | '/shop/staff'
+    | '/admin'
     | '/shop'
   id:
     | '__root__'
     | '/'
     | '/book'
+    | '/admin/bookings'
+    | '/admin/logs'
+    | '/admin/payments'
+    | '/admin/plans'
+    | '/admin/settings'
+    | '/admin/shops'
+    | '/admin/support'
+    | '/admin/users'
     | '/book/confirmation'
     | '/shop/analytics'
     | '/shop/calendar'
@@ -168,12 +275,21 @@ export interface FileRouteTypes {
     | '/shop/services'
     | '/shop/settings'
     | '/shop/staff'
+    | '/admin/'
     | '/shop/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BookRoute: typeof BookRouteWithChildren
+  AdminBookingsRoute: typeof AdminBookingsRoute
+  AdminLogsRoute: typeof AdminLogsRoute
+  AdminPaymentsRoute: typeof AdminPaymentsRoute
+  AdminPlansRoute: typeof AdminPlansRoute
+  AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminShopsRoute: typeof AdminShopsRoute
+  AdminSupportRoute: typeof AdminSupportRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   ShopAnalyticsRoute: typeof ShopAnalyticsRoute
   ShopCalendarRoute: typeof ShopCalendarRoute
   ShopCustomersRoute: typeof ShopCustomersRoute
@@ -182,6 +298,7 @@ export interface RootRouteChildren {
   ShopServicesRoute: typeof ShopServicesRoute
   ShopSettingsRoute: typeof ShopSettingsRoute
   ShopStaffRoute: typeof ShopStaffRoute
+  AdminIndexRoute: typeof AdminIndexRoute
   ShopIndexRoute: typeof ShopIndexRoute
 }
 
@@ -206,6 +323,13 @@ declare module '@tanstack/react-router' {
       path: '/shop'
       fullPath: '/shop/'
       preLoaderRoute: typeof ShopIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/shop/staff': {
@@ -271,6 +395,62 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookConfirmationRouteImport
       parentRoute: typeof BookRoute
     }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/support': {
+      id: '/admin/support'
+      path: '/admin/support'
+      fullPath: '/admin/support'
+      preLoaderRoute: typeof AdminSupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/shops': {
+      id: '/admin/shops'
+      path: '/admin/shops'
+      fullPath: '/admin/shops'
+      preLoaderRoute: typeof AdminShopsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/admin/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/plans': {
+      id: '/admin/plans'
+      path: '/admin/plans'
+      fullPath: '/admin/plans'
+      preLoaderRoute: typeof AdminPlansRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/payments': {
+      id: '/admin/payments'
+      path: '/admin/payments'
+      fullPath: '/admin/payments'
+      preLoaderRoute: typeof AdminPaymentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/logs': {
+      id: '/admin/logs'
+      path: '/admin/logs'
+      fullPath: '/admin/logs'
+      preLoaderRoute: typeof AdminLogsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/bookings': {
+      id: '/admin/bookings'
+      path: '/admin/bookings'
+      fullPath: '/admin/bookings'
+      preLoaderRoute: typeof AdminBookingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -287,6 +467,14 @@ const BookRouteWithChildren = BookRoute._addFileChildren(BookRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BookRoute: BookRouteWithChildren,
+  AdminBookingsRoute: AdminBookingsRoute,
+  AdminLogsRoute: AdminLogsRoute,
+  AdminPaymentsRoute: AdminPaymentsRoute,
+  AdminPlansRoute: AdminPlansRoute,
+  AdminSettingsRoute: AdminSettingsRoute,
+  AdminShopsRoute: AdminShopsRoute,
+  AdminSupportRoute: AdminSupportRoute,
+  AdminUsersRoute: AdminUsersRoute,
   ShopAnalyticsRoute: ShopAnalyticsRoute,
   ShopCalendarRoute: ShopCalendarRoute,
   ShopCustomersRoute: ShopCustomersRoute,
@@ -295,6 +483,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShopServicesRoute: ShopServicesRoute,
   ShopSettingsRoute: ShopSettingsRoute,
   ShopStaffRoute: ShopStaffRoute,
+  AdminIndexRoute: AdminIndexRoute,
   ShopIndexRoute: ShopIndexRoute,
 }
 export const routeTree = rootRouteImport
