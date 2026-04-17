@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatCents, formatDate } from "@/lib/format";
 import { useT } from "@/lib/i18n";
 
-export const Route = createFileRoute("/shop/payments")({ head: () => ({ meta: [{ title: "Payments — Bookly" }] }), component: PaymentsPage });
+export const Route = createFileRoute("/shop/payments")({ head: () => ({ meta: [{ title: "Payments — FlowyBookings" }] }), component: PaymentsPage });
 const paymentStatuses = ["unpaid", "deposit_paid", "paid", "refunded", "failed"] as const;
 
 function PaymentsPage() {

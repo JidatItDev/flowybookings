@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/shop/notifications")({
-  head: () => ({ meta: [{ title: "Notifications — Bookly" }] }),
+  head: () => ({ meta: [{ title: "Notifications — FlowyBookings" }] }),
   component: NotificationsPage,
 });
 

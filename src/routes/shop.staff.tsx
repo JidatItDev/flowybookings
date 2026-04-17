@@ -19,7 +19,7 @@ import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
-export const Route = createFileRoute("/shop/staff")({ head: () => ({ meta: [{ title: "Staff — Bookly" }] }), component: StaffPage });
+export const Route = createFileRoute("/shop/staff")({ head: () => ({ meta: [{ title: "Staff — FlowyBookings" }] }), component: StaffPage });
 type StaffRow = { id: string; full_name: string; email: string | null; phone: string | null; is_active: boolean; working_hours: unknown };
 
 function StaffPage() {

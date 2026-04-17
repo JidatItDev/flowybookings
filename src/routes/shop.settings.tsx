@@ -15,7 +15,7 @@ import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/shop/settings")({
-  head: () => ({ meta: [{ title: "Settings — Bookly" }] }),
+  head: () => ({ meta: [{ title: "Settings — FlowyBookings" }] }),
   component: SettingsPage,
 });
 

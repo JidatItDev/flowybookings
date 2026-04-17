@@ -19,7 +19,7 @@ import { formatCents, initials, relativeFromNow } from "@/lib/format";
 import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/shop/customers")({
-  head: () => ({ meta: [{ title: "Customers — Bookly" }] }),
+  head: () => ({ meta: [{ title: "Customers — FlowyBookings" }] }),
   component: CustomersPage,
 });
 

@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/signup")({
-  head: () => ({ meta: [{ title: "Create account — Bookly" }] }),
+  head: () => ({ meta: [{ title: "Create account — FlowyBookings" }] }),
   component: SignupPage,
 });
 
@@ -46,7 +46,7 @@ function SignupPage() {
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-brand">
               <Sparkle className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="text-lg font-semibold tracking-tight">Bookly</span>
+            <span className="text-lg font-semibold tracking-tight">FlowyBookings</span>
           </Link>
           <LanguageSwitcher />
         </div>

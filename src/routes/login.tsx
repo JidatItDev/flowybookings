@@ -14,7 +14,7 @@ export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>) => ({
     redirect: typeof s.redirect === "string" ? s.redirect : undefined,
   }),
-  head: () => ({ meta: [{ title: "Sign in — Bookly" }] }),
+  head: () => ({ meta: [{ title: "Sign in — FlowyBookings" }] }),
   component: LoginPage,
 });
 
@@ -73,7 +73,7 @@ function LoginPage() {
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-brand">
               <Sparkle className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="text-lg font-semibold tracking-tight">Bookly</span>
+            <span className="text-lg font-semibold tracking-tight">FlowyBookings</span>
           </Link>
           <LanguageSwitcher />
         </div>

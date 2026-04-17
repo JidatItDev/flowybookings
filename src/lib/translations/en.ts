@@ -1,6 +1,6 @@
 export const en: Record<string, string> = {
   // ── Global ──
-  "app.name": "Bookly",
+  "app.name": "FlowyBookings",
   "app.tagline": "The booking platform that grows with your shop",
   "app.copyright": "© {year}",
   "nav.features": "Features",
@@ -16,7 +16,7 @@ export const en: Record<string, string> = {
   "landing.badge": "New · WhatsApp reminders",
   "landing.headline": "The booking platform that",
   "landing.headlineAccent": "grows with your shop",
-  "landing.sub": "Bookly powers tattoo studios, barbers, nail bars, beauty studios and pet groomers. Manage bookings, payments, staff and reminders — all in one place.",
+  "landing.sub": "FlowyBookings powers tattoo studios, barbers, nail bars, beauty studios and pet groomers. Manage bookings, payments, staff and reminders — all in one place.",
   "landing.tryBooking": "Try the booking flow",
   "landing.seeDashboard": "See the dashboard",
   "landing.trial": "14-day free trial",
@@ -31,7 +31,7 @@ export const en: Record<string, string> = {
 
   // ── Features ──
   "features.title": "Everything your shop needs, beautifully organized",
-  "features.sub": "From the first tap to the final tip — Bookly handles every moment of the customer journey.",
+  "features.sub": "From the first tap to the final tip — FlowyBookings handles every moment of the customer journey.",
   "features.smartBookings": "Smart bookings",
   "features.smartBookingsDesc": "Daily and weekly calendar, drag-and-drop, conflict detection.",
   "features.customerProfiles": "Customer profiles",
@@ -66,7 +66,7 @@ export const en: Record<string, string> = {
 
   // ── CTA ──
   "cta.title": "Ready to fill your calendar?",
-  "cta.sub": "Join 470+ shops booking smarter with Bookly.",
+  "cta.sub": "Join 470+ shops booking smarter with FlowyBookings.",
   "cta.tryBooking": "Try the booking flow",
   "cta.exploreDashboard": "Explore dashboard →",
 
@@ -129,7 +129,7 @@ export const en: Record<string, string> = {
   "adminNav.auditLogs": "Audit logs",
   "adminNav.settings": "Settings",
   "adminNav.superAdmin": "SUPER ADMIN",
-  "adminNav.platform": "Bookly platform",
+  "adminNav.platform": "FlowyBookings platform",
   "adminNav.platformHealthy": "Platform healthy",
   "adminNav.allSystems": "All systems operational · 99.98% uptime",
   "adminNav.switchToShop": "Switch to Shop →",
@@ -388,7 +388,7 @@ export const en: Record<string, string> = {
 
   // ── Booking flow ──
   "book.title": "Book an appointment",
-  "book.secureBooking": "Secure booking · powered by Bookly",
+  "book.secureBooking": "Secure booking · powered by FlowyBookings",
   "book.stepShop": "Shop",
   "book.stepService": "Service",
   "book.stepStaff": "Staff",
@@ -480,7 +480,7 @@ export const en: Record<string, string> = {
 
   // ── Admin overview ──
   "adminOverview.title": "Platform overview",
-  "adminOverview.description": "The health of Bookly across all shops.",
+  "adminOverview.description": "The health of FlowyBookings across all shops.",
   "adminOverview.totalShops": "Total shops",
   "adminOverview.totalUsers": "Total users",
   "adminOverview.totalBookings": "Total bookings",

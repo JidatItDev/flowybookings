@@ -10,7 +10,7 @@ import { formatCents, relativeFromNow } from "@/lib/format";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useT } from "@/lib/i18n";
 
-export const Route = createFileRoute("/beheer/dashboard/")({ head: () => ({ meta: [{ title: "Platform overview — Bookly" }] }), component: AdminOverview });
+export const Route = createFileRoute("/beheer/dashboard/")({ head: () => ({ meta: [{ title: "Platform overview — FlowyBookings" }] }), component: AdminOverview });
 
 function AdminOverview() {
   const { t } = useT();

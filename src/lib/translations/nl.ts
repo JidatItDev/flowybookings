@@ -1,6 +1,6 @@
 export const nl: Record<string, string> = {
   // ── Global ──
-  "app.name": "Bookly",
+  "app.name": "FlowyBookings",
   "app.tagline": "Het boekingsplatform dat meegroeit met je zaak",
   "app.copyright": "© {year}",
   "nav.features": "Functies",
@@ -16,7 +16,7 @@ export const nl: Record<string, string> = {
   "landing.badge": "Nieuw · WhatsApp herinneringen",
   "landing.headline": "Het boekingsplatform dat",
   "landing.headlineAccent": "meegroeit met je zaak",
-  "landing.sub": "Bookly is gebouwd voor tattooshops, kappers, nagelsalons, beautystudio's en trimsalons. Beheer boekingen, betalingen, personeel en herinneringen — alles op één plek.",
+  "landing.sub": "FlowyBookings is gebouwd voor tattooshops, kappers, nagelsalons, beautystudio's en trimsalons. Beheer boekingen, betalingen, personeel en herinneringen — alles op één plek.",
   "landing.tryBooking": "Probeer het boekingsproces",
   "landing.seeDashboard": "Bekijk het dashboard",
   "landing.trial": "14 dagen gratis",
@@ -31,7 +31,7 @@ export const nl: Record<string, string> = {
 
   // ── Features ──
   "features.title": "Alles wat je zaak nodig heeft, prachtig georganiseerd",
-  "features.sub": "Van de eerste tik tot de laatste fooi — Bookly regelt elk moment van de klantreis.",
+  "features.sub": "Van de eerste tik tot de laatste fooi — FlowyBookings regelt elk moment van de klantreis.",
   "features.smartBookings": "Slimme boekingen",
   "features.smartBookingsDesc": "Dag- en weekkalender, drag-and-drop, conflictdetectie.",
   "features.customerProfiles": "Klantprofielen",
@@ -66,7 +66,7 @@ export const nl: Record<string, string> = {
 
   // ── CTA ──
   "cta.title": "Klaar om je agenda te vullen?",
-  "cta.sub": "Sluit je aan bij 470+ zaken die slimmer boeken met Bookly.",
+  "cta.sub": "Sluit je aan bij 470+ zaken die slimmer boeken met FlowyBookings.",
   "cta.tryBooking": "Probeer het boekingsproces",
   "cta.exploreDashboard": "Bekijk dashboard →",
 
@@ -129,7 +129,7 @@ export const nl: Record<string, string> = {
   "adminNav.auditLogs": "Activiteitenlog",
   "adminNav.settings": "Instellingen",
   "adminNav.superAdmin": "SUPER ADMIN",
-  "adminNav.platform": "Bookly platform",
+  "adminNav.platform": "FlowyBookings platform",
   "adminNav.platformHealthy": "Platform gezond",
   "adminNav.allSystems": "Alle systemen operationeel · 99,98% uptime",
   "adminNav.switchToShop": "Naar Shop →",
@@ -388,7 +388,7 @@ export const nl: Record<string, string> = {
 
   // ── Booking flow ──
   "book.title": "Een afspraak boeken",
-  "book.secureBooking": "Veilig boeken · mogelijk gemaakt door Bookly",
+  "book.secureBooking": "Veilig boeken · mogelijk gemaakt door FlowyBookings",
   "book.stepShop": "Winkel",
   "book.stepService": "Dienst",
   "book.stepStaff": "Medewerker",
@@ -480,7 +480,7 @@ export const nl: Record<string, string> = {
 
   // ── Admin overview ──
   "adminOverview.title": "Platform overzicht",
-  "adminOverview.description": "De gezondheid van Bookly over alle winkels.",
+  "adminOverview.description": "De gezondheid van FlowyBookings over alle winkels.",
   "adminOverview.totalShops": "Totaal winkels",
   "adminOverview.totalUsers": "Totaal gebruikers",
   "adminOverview.totalBookings": "Totaal boekingen",
