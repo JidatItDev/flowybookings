@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarCheck, Clock, CircleDollarSign, AlertCircle, Plus, ArrowUpRight } from "lucide-react";
+import { CalendarCheck, Clock, CircleDollarSign, AlertCircle, Plus } from "lucide-react";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -10,7 +10,6 @@ import { NoShopState } from "@/components/EmptyState";
 import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { bookingsQuery, customersQuery, servicesQuery, staffQuery } from "@/lib/queries";
 import { formatCents, formatTime, initials } from "@/lib/format";
-import { revenueWeekly } from "@/lib/mock-data";
 import { useT } from "@/lib/i18n";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
