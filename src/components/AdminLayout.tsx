@@ -41,6 +41,7 @@ const nav: NavItem[] = [
   { to: "/beheer/dashboard/bookings", labelKey: "adminNav.bookings", icon: CalendarRange },
   { to: "/beheer/dashboard/payments", labelKey: "adminNav.payments", icon: CreditCard },
   { to: "/beheer/dashboard/plans", labelKey: "adminNav.plans", icon: Layers },
+  { to: "/beheer/dashboard/messages", labelKey: "adminNav.messages", icon: Bell },
   { to: "/beheer/dashboard/support", labelKey: "adminNav.support", icon: LifeBuoy },
   { to: "/beheer/dashboard/logs", labelKey: "adminNav.auditLogs", icon: ScrollText },
   { to: "/beheer/dashboard/demo", labelKey: "adminNav.demo", icon: Beaker },
