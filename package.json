@@ -92,16 +92,13 @@
   },
   "pnpm": {
     "overrides": {
-      "entities": "4.5.0",
       "htmlparser2": "9.1.0"
     }
   },
   "overrides": {
-    "entities": "4.5.0",
     "htmlparser2": "9.1.0"
   },
   "resolutions": {
-    "entities": "4.5.0",
     "htmlparser2": "9.1.0"
   }
 }
