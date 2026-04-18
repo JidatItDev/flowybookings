@@ -104,8 +104,9 @@ function CustomerProfilePage() {
   }, [customer?.id]);
 
   const update = useMutation({
-    mutationFn: async (patch: Partial<Pick<CustomerRow, "notes" | "tags" | "requires_deposit">>) => {
-      const { error } = await supabase.from("customers").update(patch).eq("id", customerId);
+    mutationFn: async (patch: { notes?: string | null; tags?: string[]; requires_deposit?: boolean }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await supabase.from("customers").update(patch as any).eq("id", customerId);
       if (error) throw error;
     },
     onSuccess: () => {

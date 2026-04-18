@@ -28,6 +28,7 @@ import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe
 import { Route as AuthResetPasswordRouteImport } from './routes/auth.reset-password'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
 import { Route as BeheerDashboardIndexRouteImport } from './routes/beheer.dashboard.index'
+import { Route as ShopCustomersCustomerIdRouteImport } from './routes/shop.customers.$customerId'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as BookConfirmationBookingIdRouteImport } from './routes/book.confirmation.$bookingId'
 import { Route as BeheerDashboardUsersRouteImport } from './routes/beheer.dashboard.users'
@@ -141,6 +142,11 @@ const BeheerDashboardIndexRoute = BeheerDashboardIndexRouteImport.update({
   path: '/beheer/dashboard/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShopCustomersCustomerIdRoute = ShopCustomersCustomerIdRouteImport.update({
+  id: '/$customerId',
+  path: '/$customerId',
+  getParentRoute: () => ShopCustomersRoute,
+} as any)
 const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
   id: '/lovable/email/suppression',
   path: '/lovable/email/suppression',
@@ -238,7 +244,7 @@ export interface FileRoutesByFullPath {
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/calendar': typeof ShopCalendarRoute
-  '/shop/customers': typeof ShopCustomersRoute
+  '/shop/customers': typeof ShopCustomersRouteWithChildren
   '/shop/notifications': typeof ShopNotificationsRoute
   '/shop/payments': typeof ShopPaymentsRoute
   '/shop/services': typeof ShopServicesRoute
@@ -256,6 +262,7 @@ export interface FileRoutesByFullPath {
   '/beheer/dashboard/users': typeof BeheerDashboardUsersRoute
   '/book/confirmation/$bookingId': typeof BookConfirmationBookingIdRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/shop/customers/$customerId': typeof ShopCustomersCustomerIdRoute
   '/beheer/dashboard/': typeof BeheerDashboardIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -275,7 +282,7 @@ export interface FileRoutesByTo {
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/calendar': typeof ShopCalendarRoute
-  '/shop/customers': typeof ShopCustomersRoute
+  '/shop/customers': typeof ShopCustomersRouteWithChildren
   '/shop/notifications': typeof ShopNotificationsRoute
   '/shop/payments': typeof ShopPaymentsRoute
   '/shop/services': typeof ShopServicesRoute
@@ -293,6 +300,7 @@ export interface FileRoutesByTo {
   '/beheer/dashboard/users': typeof BeheerDashboardUsersRoute
   '/book/confirmation/$bookingId': typeof BookConfirmationBookingIdRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/shop/customers/$customerId': typeof ShopCustomersCustomerIdRoute
   '/beheer/dashboard': typeof BeheerDashboardIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -313,7 +321,7 @@ export interface FileRoutesById {
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/calendar': typeof ShopCalendarRoute
-  '/shop/customers': typeof ShopCustomersRoute
+  '/shop/customers': typeof ShopCustomersRouteWithChildren
   '/shop/notifications': typeof ShopNotificationsRoute
   '/shop/payments': typeof ShopPaymentsRoute
   '/shop/services': typeof ShopServicesRoute
@@ -331,6 +339,7 @@ export interface FileRoutesById {
   '/beheer/dashboard/users': typeof BeheerDashboardUsersRoute
   '/book/confirmation/$bookingId': typeof BookConfirmationBookingIdRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/shop/customers/$customerId': typeof ShopCustomersCustomerIdRoute
   '/beheer/dashboard/': typeof BeheerDashboardIndexRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -370,6 +379,7 @@ export interface FileRouteTypes {
     | '/beheer/dashboard/users'
     | '/book/confirmation/$bookingId'
     | '/lovable/email/suppression'
+    | '/shop/customers/$customerId'
     | '/beheer/dashboard/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -407,6 +417,7 @@ export interface FileRouteTypes {
     | '/beheer/dashboard/users'
     | '/book/confirmation/$bookingId'
     | '/lovable/email/suppression'
+    | '/shop/customers/$customerId'
     | '/beheer/dashboard'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -444,6 +455,7 @@ export interface FileRouteTypes {
     | '/beheer/dashboard/users'
     | '/book/confirmation/$bookingId'
     | '/lovable/email/suppression'
+    | '/shop/customers/$customerId'
     | '/beheer/dashboard/'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -464,7 +476,7 @@ export interface RootRouteChildren {
   HooksBookingConfirmationRoute: typeof HooksBookingConfirmationRoute
   ShopAnalyticsRoute: typeof ShopAnalyticsRoute
   ShopCalendarRoute: typeof ShopCalendarRoute
-  ShopCustomersRoute: typeof ShopCustomersRoute
+  ShopCustomersRoute: typeof ShopCustomersRouteWithChildren
   ShopNotificationsRoute: typeof ShopNotificationsRoute
   ShopPaymentsRoute: typeof ShopPaymentsRoute
   ShopServicesRoute: typeof ShopServicesRoute
@@ -624,6 +636,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerDashboardIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shop/customers/$customerId': {
+      id: '/shop/customers/$customerId'
+      path: '/$customerId'
+      fullPath: '/shop/customers/$customerId'
+      preLoaderRoute: typeof ShopCustomersCustomerIdRouteImport
+      parentRoute: typeof ShopCustomersRoute
+    }
     '/lovable/email/suppression': {
       id: '/lovable/email/suppression'
       path: '/lovable/email/suppression'
@@ -749,6 +768,18 @@ const BookRouteChildren: BookRouteChildren = {
 
 const BookRouteWithChildren = BookRoute._addFileChildren(BookRouteChildren)
 
+interface ShopCustomersRouteChildren {
+  ShopCustomersCustomerIdRoute: typeof ShopCustomersCustomerIdRoute
+}
+
+const ShopCustomersRouteChildren: ShopCustomersRouteChildren = {
+  ShopCustomersCustomerIdRoute: ShopCustomersCustomerIdRoute,
+}
+
+const ShopCustomersRouteWithChildren = ShopCustomersRoute._addFileChildren(
+  ShopCustomersRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BookRoute: BookRouteWithChildren,
@@ -761,7 +792,7 @@ const rootRouteChildren: RootRouteChildren = {
   HooksBookingConfirmationRoute: HooksBookingConfirmationRoute,
   ShopAnalyticsRoute: ShopAnalyticsRoute,
   ShopCalendarRoute: ShopCalendarRoute,
-  ShopCustomersRoute: ShopCustomersRoute,
+  ShopCustomersRoute: ShopCustomersRouteWithChildren,
   ShopNotificationsRoute: ShopNotificationsRoute,
   ShopPaymentsRoute: ShopPaymentsRoute,
   ShopServicesRoute: ShopServicesRoute,
