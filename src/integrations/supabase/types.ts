@@ -453,6 +453,7 @@ export type Database = {
           id: string
           logo_url: string | null
           name: string
+          onboarding: Json
           owner_id: string
           phone: string | null
           plan: Database["public"]["Enums"]["subscription_plan"]
@@ -471,6 +472,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name: string
+          onboarding?: Json
           owner_id: string
           phone?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
@@ -489,6 +491,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name?: string
+          onboarding?: Json
           owner_id?: string
           phone?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
