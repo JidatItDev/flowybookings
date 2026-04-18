@@ -57,6 +57,7 @@ function ShopDashboard() {
       {!shopId ? <NoShopState /> : (
         <>
           <OnboardingChecklist
+            shopId={shopId}
             hasService={services.length > 0}
             hasStaff={staff.length > 0}
             shopSlug={activeShop?.slug}
