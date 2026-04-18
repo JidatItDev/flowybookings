@@ -119,6 +119,7 @@ export type Database = {
           preferences: Json
           requires_deposit: boolean
           shop_id: string
+          tags: string[]
           total_spent_cents: number
           updated_at: string
         }
@@ -134,6 +135,7 @@ export type Database = {
           preferences?: Json
           requires_deposit?: boolean
           shop_id: string
+          tags?: string[]
           total_spent_cents?: number
           updated_at?: string
         }
@@ -149,6 +151,7 @@ export type Database = {
           preferences?: Json
           requires_deposit?: boolean
           shop_id?: string
+          tags?: string[]
           total_spent_cents?: number
           updated_at?: string
         }
