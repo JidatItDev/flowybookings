@@ -177,6 +177,23 @@ export const en: Record<string, string> = {
   "dashboard.noAppointments": "No appointments today.",
   "dashboard.unknown": "Unknown",
 
+  // ── Onboarding checklist ──
+  "checklist.badge": "Get started",
+  "checklist.title": "Finish setting up your shop",
+  "checklist.progress": "{done} of {total} steps complete",
+  "checklist.dismiss": "Dismiss",
+  "checklist.serviceTitle": "Add your first service",
+  "checklist.serviceDesc": "What do customers book? Add price and duration.",
+  "checklist.serviceCta": "Add service",
+  "checklist.staffTitle": "Add a team member",
+  "checklist.staffDesc": "Even if it's just you — staff power the calendar.",
+  "checklist.staffCta": "Add staff",
+  "checklist.shareTitle": "Share your booking link",
+  "checklist.shareDesc": "Send it to customers to start taking bookings today.",
+  "checklist.shareCta": "Copy link",
+  "checklist.linkCopied": "Booking link copied to clipboard",
+  "checklist.copyFailed": "Couldn't copy the link",
+
   // ── Dashboard insights ──
   "insights.lostNoShowsTitle": "Lost from no-shows this month",
   "insights.lostNoShowsHint": "Estimated revenue missed from no-show bookings.",

@@ -177,6 +177,23 @@ export const nl: Record<string, string> = {
   "dashboard.noAppointments": "Geen afspraken vandaag.",
   "dashboard.unknown": "Onbekend",
 
+  // ── Onboarding checklist ──
+  "checklist.badge": "Aan de slag",
+  "checklist.title": "Maak je shop af",
+  "checklist.progress": "{done} van {total} stappen voltooid",
+  "checklist.dismiss": "Sluiten",
+  "checklist.serviceTitle": "Voeg je eerste service toe",
+  "checklist.serviceDesc": "Wat boeken klanten? Stel prijs en duur in.",
+  "checklist.serviceCta": "Service toevoegen",
+  "checklist.staffTitle": "Voeg een teamlid toe",
+  "checklist.staffDesc": "Zelfs als jij het bent — staff drijft de agenda aan.",
+  "checklist.staffCta": "Staff toevoegen",
+  "checklist.shareTitle": "Deel je boekingslink",
+  "checklist.shareDesc": "Stuur 'm naar klanten en ontvang vandaag boekingen.",
+  "checklist.shareCta": "Kopieer link",
+  "checklist.linkCopied": "Boekingslink gekopieerd",
+  "checklist.copyFailed": "Kon de link niet kopiëren",
+
   // ── Dashboard insights ──
   "insights.lostNoShowsTitle": "Misgelopen door no-shows deze maand",
   "insights.lostNoShowsHint": "Geschatte omzet die je bent misgelopen door no-shows.",
