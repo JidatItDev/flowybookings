@@ -33,18 +33,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogOut } from "lucide-react";
 
-type NavItem = { to: string; labelKey: string; icon: typeof LayoutDashboard; exact?: boolean };
+type NavItem = { to: string; labelKey: string; icon: typeof LayoutDashboard; exact?: boolean; ownerOnly?: boolean };
 
 const nav: NavItem[] = [
   { to: "/shop", labelKey: "shopNav.dashboard", icon: LayoutDashboard, exact: true },
   { to: "/shop/calendar", labelKey: "shopNav.calendar", icon: CalendarDays },
   { to: "/shop/customers", labelKey: "shopNav.customers", icon: Users },
-  { to: "/shop/services", labelKey: "shopNav.services", icon: Sparkles },
-  { to: "/shop/staff", labelKey: "shopNav.staff", icon: UserCog },
-  { to: "/shop/payments", labelKey: "shopNav.payments", icon: CreditCard },
+  { to: "/shop/services", labelKey: "shopNav.services", icon: Sparkles, ownerOnly: true },
+  { to: "/shop/staff", labelKey: "shopNav.staff", icon: UserCog, ownerOnly: true },
+  { to: "/shop/payments", labelKey: "shopNav.payments", icon: CreditCard, ownerOnly: true },
   { to: "/shop/analytics", labelKey: "shopNav.analytics", icon: BarChart3 },
-  { to: "/shop/notifications", labelKey: "shopNav.notifications", icon: Bell },
-  { to: "/shop/settings", labelKey: "shopNav.settings", icon: Settings },
+  { to: "/shop/notifications", labelKey: "shopNav.notifications", icon: Bell, ownerOnly: true },
+  { to: "/shop/settings", labelKey: "shopNav.settings", icon: Settings, ownerOnly: true },
 ];
 
 export function ShopLayout({ children }: { children: React.ReactNode }) {
@@ -58,8 +58,10 @@ export function ShopLayout({ children }: { children: React.ReactNode }) {
 function ShopLayoutInner({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
-  const { shops, loading, user, signOut, isSuperAdmin } = useAuth();
+  const { shops, loading, user, signOut, isSuperAdmin, isShopOwner, isStaff } = useAuth();
   const { t } = useT();
+  const isStaffOnly = isStaff && !isShopOwner && !isSuperAdmin;
+  const visibleNav = nav.filter((n) => !n.ownerOnly || !isStaffOnly);
 
   if (!loading && shops.length === 0 && !isSuperAdmin) {
     return <ShopOnboarding />;
