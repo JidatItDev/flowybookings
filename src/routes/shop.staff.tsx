@@ -47,6 +47,11 @@ function StaffPage() {
   return (
     <ShopLayout>
       <PageHeader title={t("staff.title")} description={t("staff.description")} actions={<Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId}><Plus className="h-4 w-4" /> {t("staff.addStaff")}</Button>} />
+      {atOrOverLimit && (
+        <div className="mb-4">
+          <UpgradeNudge variant="staff-limit" count={planLimit as number} plan={activeShop?.plan === "pro" ? "Premium" : "Pro"} />
+        </div>
+      )}
       {!shopId ? <NoShopState /> : isLoading ? <LoadingGrid count={4} /> : staff.length === 0 ? (
         <EmptyState icon={UserCog} title={t("staff.noStaff")} description={t("staff.noStaffDesc")} action={<Button variant="hero" onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> {t("staff.addStaff")}</Button>} />
       ) : (
