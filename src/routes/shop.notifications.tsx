@@ -134,7 +134,7 @@ function NotificationsPage() {
               </Button>
             </div>
           </div>
-          <DepositSettings shopId={shopId} shop={shop} />
+          <DepositSettings shopId={shopId} shop={shop ?? null} />
         </>
       )}
     </ShopLayout>
