@@ -320,6 +320,56 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_read: boolean
+          message: string
+          metadata: Json
+          read_at: string | null
+          shop_id: string
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_read?: boolean
+          message: string
+          metadata?: Json
+          read_at?: string | null
+          shop_id: string
+          title: string
+          type?: Database["public"]["Enums"]["notification_type"]
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_read?: boolean
+          message?: string
+          metadata?: Json
+          read_at?: string | null
+          shop_id?: string
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount_cents: number
@@ -776,6 +826,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_broadcast_notification: {
+        Args: {
+          _action_url?: string
+          _message: string
+          _shop_ids?: string[]
+          _title: string
+          _type?: Database["public"]["Enums"]["notification_type"]
+        }
+        Returns: number
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -829,6 +889,7 @@ export type Database = {
         | "completed"
         | "cancelled"
         | "no_show"
+      notification_type: "system" | "billing" | "bookings" | "alerts" | "admin"
       payment_status: "unpaid" | "deposit_paid" | "paid" | "refunded" | "failed"
       shop_status: "active" | "suspended" | "pending"
       subscription_plan: "trial" | "starter" | "pro" | "premium"
@@ -967,6 +1028,7 @@ export const Constants = {
         "cancelled",
         "no_show",
       ],
+      notification_type: ["system", "billing", "bookings", "alerts", "admin"],
       payment_status: ["unpaid", "deposit_paid", "paid", "refunded", "failed"],
       shop_status: ["active", "suspended", "pending"],
       subscription_plan: ["trial", "starter", "pro", "premium"],
