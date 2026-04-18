@@ -22,6 +22,8 @@ import { Route as ShopNotificationsRouteImport } from './routes/shop.notificatio
 import { Route as ShopCustomersRouteImport } from './routes/shop.customers'
 import { Route as ShopCalendarRouteImport } from './routes/shop.calendar'
 import { Route as ShopAnalyticsRouteImport } from './routes/shop.analytics'
+import { Route as AuthResetPasswordRouteImport } from './routes/auth.reset-password'
+import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
 import { Route as BeheerDashboardIndexRouteImport } from './routes/beheer.dashboard.index'
 import { Route as BookConfirmationBookingIdRouteImport } from './routes/book.confirmation.$bookingId'
 import { Route as BeheerDashboardUsersRouteImport } from './routes/beheer.dashboard.users'
@@ -99,6 +101,16 @@ const ShopAnalyticsRoute = ShopAnalyticsRouteImport.update({
   path: '/shop/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: '/auth/reset-password',
+  path: '/auth/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: '/auth/forgot-password',
+  path: '/auth/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BeheerDashboardIndexRoute = BeheerDashboardIndexRouteImport.update({
   id: '/beheer/dashboard/',
   path: '/beheer/dashboard/',
@@ -161,6 +173,8 @@ export interface FileRoutesByFullPath {
   '/book': typeof BookRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/calendar': typeof ShopCalendarRoute
   '/shop/customers': typeof ShopCustomersRoute
@@ -187,6 +201,8 @@ export interface FileRoutesByTo {
   '/book': typeof BookRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/calendar': typeof ShopCalendarRoute
   '/shop/customers': typeof ShopCustomersRoute
@@ -214,6 +230,8 @@ export interface FileRoutesById {
   '/book': typeof BookRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/calendar': typeof ShopCalendarRoute
   '/shop/customers': typeof ShopCustomersRoute
@@ -242,6 +260,8 @@ export interface FileRouteTypes {
     | '/book'
     | '/login'
     | '/signup'
+    | '/auth/forgot-password'
+    | '/auth/reset-password'
     | '/shop/analytics'
     | '/shop/calendar'
     | '/shop/customers'
@@ -268,6 +288,8 @@ export interface FileRouteTypes {
     | '/book'
     | '/login'
     | '/signup'
+    | '/auth/forgot-password'
+    | '/auth/reset-password'
     | '/shop/analytics'
     | '/shop/calendar'
     | '/shop/customers'
@@ -294,6 +316,8 @@ export interface FileRouteTypes {
     | '/book'
     | '/login'
     | '/signup'
+    | '/auth/forgot-password'
+    | '/auth/reset-password'
     | '/shop/analytics'
     | '/shop/calendar'
     | '/shop/customers'
@@ -321,6 +345,8 @@ export interface RootRouteChildren {
   BookRoute: typeof BookRouteWithChildren
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   ShopAnalyticsRoute: typeof ShopAnalyticsRoute
   ShopCalendarRoute: typeof ShopCalendarRoute
   ShopCustomersRoute: typeof ShopCustomersRoute
@@ -435,6 +461,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopAnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/auth/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/forgot-password': {
+      id: '/auth/forgot-password'
+      path: '/auth/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/beheer/dashboard/': {
       id: '/beheer/dashboard/'
       path: '/beheer/dashboard'
@@ -530,6 +570,8 @@ const rootRouteChildren: RootRouteChildren = {
   BookRoute: BookRouteWithChildren,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
   ShopAnalyticsRoute: ShopAnalyticsRoute,
   ShopCalendarRoute: ShopCalendarRoute,
   ShopCustomersRoute: ShopCustomersRoute,
