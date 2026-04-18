@@ -79,7 +79,7 @@ export const Route = createFileRoute('/hooks/booking-automations')({
 type Kind = 'reminder-24h' | 'reminder-2h'
 
 async function sendForWindow(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   shopId: string,
   lo: Date, hi: Date,
   kind: Kind,
@@ -118,7 +118,7 @@ async function sendForWindow(
 }
 
 async function sendReminder(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   b: any,
   kind: Kind,
   windowLabel: string,
@@ -143,7 +143,7 @@ async function sendReminder(
 }
 
 async function sendFollowupWindow(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   shopId: string,
   lo: Date, hi: Date,
   counters: { errors: number; skipped: number },
@@ -189,7 +189,7 @@ async function sendFollowupWindow(
   return count
 }
 
-async function loadContext(supabase: ReturnType<typeof createClient>, b: any) {
+async function loadContext(supabase: any, b: any) {
   const [{ data: customer }, { data: shop }, { data: service }, { data: staff }] = await Promise.all([
     b.customer_id
       ? supabase.from('customers').select('full_name, email').eq('id', b.customer_id).maybeSingle()
