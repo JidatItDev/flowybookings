@@ -75,7 +75,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
       <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
         <SidebarHeader />
         <nav className="flex-1 space-y-1 px-3 pb-6">
-          {nav.map((item) => {
+          {visibleNav.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.to, item.exact);
             return (
@@ -95,8 +95,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <SidebarFooter />
-      </aside>
+        {!isStaffOnly && <SidebarFooter />}
 
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
@@ -107,7 +106,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
           <aside className="relative flex h-full w-72 flex-col bg-sidebar">
             <SidebarHeader onClose={() => setOpen(false)} />
             <nav className="flex-1 space-y-1 px-3 pb-6">
-              {nav.map((item) => {
+              {visibleNav.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.to, item.exact);
                 return (
