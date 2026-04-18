@@ -307,6 +307,10 @@ export const en: Record<string, string> = {
   "staff.availableForBookings": "Available for bookings",
   "staff.saveChanges": "Save changes",
   "staff.saving": "Saving…",
+  "staff.assignServices": "Assigned services",
+  "staff.assignServicesHint": "Pick which services this team member can perform.",
+  "staff.noServicesYet": "Create a service first to assign it here.",
+  "staff.selectedCount": "{count} selected",
 
   // ── Payments ──
   "payments.title": "Payments",

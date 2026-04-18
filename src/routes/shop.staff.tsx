@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, CalendarRange, Pencil, Trash2, UserCog } from "lucide-react";
+import { Plus, CalendarRange, Pencil, Trash2, UserCog, Check } from "lucide-react";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -81,7 +81,7 @@ function StaffPage() {
           })}
         </div>
       )}
-      <StaffFormDialog open={creating || !!editing} onClose={() => { setCreating(false); setEditing(null); }} member={editing} shopId={shopId} />
+      <StaffFormDialog open={creating || !!editing} onClose={() => { setCreating(false); setEditing(null); }} member={editing} shopId={shopId} services={services} links={links} />
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader><AlertDialogTitle>{t("staff.removeTitle", { name: deleting?.full_name ?? "" })}</AlertDialogTitle><AlertDialogDescription>{t("staff.removeDesc")}</AlertDialogDescription></AlertDialogHeader>
@@ -92,34 +92,96 @@ function StaffPage() {
   );
 }
 
-function StaffFormDialog({ open, onClose, member, shopId }: { open: boolean; onClose: () => void; member: StaffRow | null; shopId: string | null }) {
+type ServiceRow = { id: string; name: string; duration_minutes: number; price_cents: number; currency: string };
+type LinkRow = { staff_id: string; service_id: string };
+
+function StaffFormDialog({ open, onClose, member, shopId, services, links }: { open: boolean; onClose: () => void; member: StaffRow | null; shopId: string | null; services: ServiceRow[]; links: LinkRow[] }) {
   const qc = useQueryClient(); const { t } = useT();
   const [form, setForm] = useState({ full_name: "", email: "", phone: "", hours: "", is_active: true });
+  const [selectedServiceIds, setSelectedServiceIds] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (!open) return;
     setForm({ full_name: member?.full_name ?? "", email: member?.email ?? "", phone: member?.phone ?? "", hours: (member?.working_hours as { hours?: string })?.hours ?? "", is_active: member?.is_active ?? true });
-  }, [open, member?.id]);
+    setSelectedServiceIds(new Set(member ? links.filter((l) => l.staff_id === member.id).map((l) => l.service_id) : []));
+  }, [open, member?.id, links]);
+
+  const toggleService = (id: string) => setSelectedServiceIds((prev) => { const next = new Set(prev); if (next.has(id)) next.delete(id); else next.add(id); return next; });
 
   const save = useMutation({
     mutationFn: async () => {
       if (!shopId) throw new Error("No active shop");
       const payload = { shop_id: shopId, full_name: form.full_name.trim(), email: form.email.trim() || null, phone: form.phone.trim() || null, is_active: form.is_active, working_hours: form.hours.trim() ? { hours: form.hours.trim() } : {} };
-      if (member) { const { error } = await supabase.from("staff").update(payload).eq("id", member.id); if (error) throw error; }
-      else { const { error } = await supabase.from("staff").insert(payload); if (error) throw error; }
+      let staffId = member?.id;
+      if (member) {
+        const { error } = await supabase.from("staff").update(payload).eq("id", member.id); if (error) throw error;
+      } else {
+        const { data, error } = await supabase.from("staff").insert(payload).select("id").single(); if (error) throw error; staffId = data.id;
+      }
+      if (!staffId) throw new Error("Missing staff id");
+      const desired = selectedServiceIds;
+      const current = new Set(links.filter((l) => l.staff_id === staffId).map((l) => l.service_id));
+      const toAdd = [...desired].filter((id) => !current.has(id));
+      const toRemove = [...current].filter((id) => !desired.has(id));
+      if (toAdd.length) { const { error } = await supabase.from("staff_services").insert(toAdd.map((service_id) => ({ staff_id: staffId!, service_id }))); if (error) throw error; }
+      if (toRemove.length) { const { error } = await supabase.from("staff_services").delete().eq("staff_id", staffId).in("service_id", toRemove); if (error) throw error; }
     },
-    onSuccess: () => { toast.success(member ? t("staff.updated") : t("staff.added")); onClose(); if (shopId) qc.invalidateQueries({ queryKey: shopKeys.staff(shopId) }); },
+    onSuccess: () => {
+      toast.success(member ? t("staff.updated") : t("staff.added"));
+      onClose();
+      if (shopId) qc.invalidateQueries({ queryKey: shopKeys.staff(shopId) });
+      qc.invalidateQueries({ queryKey: ["staff_services", shopId] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>{member ? t("staff.editStaff") : t("staff.addStaffTitle")}</DialogTitle></DialogHeader>
         <div className="grid gap-4 py-2">
           <div><Label htmlFor="fn">{t("staff.fullName")}</Label><Input id="fn" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
           <div><Label htmlFor="em">{t("staff.email")}</Label><Input id="em" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
           <div><Label htmlFor="ph">{t("staff.phone")}</Label><Input id="ph" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
           <div><Label htmlFor="hr">{t("staff.workingHours")}</Label><Input id="hr" value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })} placeholder={t("staff.workingHoursPlaceholder")} /></div>
+          <div>
+            <div className="flex items-center justify-between">
+              <Label>{t("staff.assignServices")}</Label>
+              <span className="text-xs text-muted-foreground">{t("staff.selectedCount", { count: selectedServiceIds.size })}</span>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">{t("staff.assignServicesHint")}</p>
+            <div className="mt-2 max-h-48 overflow-y-auto rounded-xl border border-border p-2">
+              {services.length === 0 ? (
+                <p className="px-2 py-3 text-xs text-muted-foreground">{t("staff.noServicesYet")}</p>
+              ) : (
+                <ul className="grid gap-1">
+                  {services.map((s) => {
+                    const checked = selectedServiceIds.has(s.id);
+                    return (
+                      <li key={s.id}>
+                        <button
+                          type="button"
+                          onClick={() => toggleService(s.id)}
+                          className={cn(
+                            "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm transition",
+                            checked ? "bg-primary/10 text-foreground" : "hover:bg-muted",
+                          )}
+                          aria-pressed={checked}
+                        >
+                          <span className="flex min-w-0 flex-1 items-center gap-2">
+                            <span className={cn("flex h-4 w-4 shrink-0 items-center justify-center rounded border", checked ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background")}>
+                              {checked && <Check className="h-3 w-3" />}
+                            </span>
+                            <span className="truncate">{s.name}</span>
+                          </span>
+                          <span className="shrink-0 text-xs text-muted-foreground">{s.duration_minutes}m</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
           <div className="flex items-center justify-between rounded-xl border border-border p-3"><div><p className="text-sm font-medium">{t("staff.activeLabel")}</p><p className="text-xs text-muted-foreground">{t("staff.availableForBookings")}</p></div><Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} /></div>
         </div>
         <DialogFooter>

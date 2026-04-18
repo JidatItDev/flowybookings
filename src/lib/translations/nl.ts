@@ -307,6 +307,10 @@ export const nl: Record<string, string> = {
   "staff.availableForBookings": "Beschikbaar voor boekingen",
   "staff.saveChanges": "Wijzigingen opslaan",
   "staff.saving": "Bezig met opslaan…",
+  "staff.assignServices": "Toegewezen diensten",
+  "staff.assignServicesHint": "Kies welke diensten dit teamlid kan uitvoeren.",
+  "staff.noServicesYet": "Maak eerst een dienst aan om die hier toe te wijzen.",
+  "staff.selectedCount": "{count} geselecteerd",
 
   // ── Payments ──
   "payments.title": "Betalingen",
