@@ -101,9 +101,11 @@ export type Database = {
           full_name: string
           id: string
           last_visit_at: string | null
+          no_show_count: number
           notes: string | null
           phone: string | null
           preferences: Json
+          requires_deposit: boolean
           shop_id: string
           total_spent_cents: number
           updated_at: string
@@ -114,9 +116,11 @@ export type Database = {
           full_name: string
           id?: string
           last_visit_at?: string | null
+          no_show_count?: number
           notes?: string | null
           phone?: string | null
           preferences?: Json
+          requires_deposit?: boolean
           shop_id: string
           total_spent_cents?: number
           updated_at?: string
@@ -127,9 +131,11 @@ export type Database = {
           full_name?: string
           id?: string
           last_visit_at?: string | null
+          no_show_count?: number
           notes?: string | null
           phone?: string | null
           preferences?: Json
+          requires_deposit?: boolean
           shop_id?: string
           total_spent_cents?: number
           updated_at?: string
@@ -293,6 +299,7 @@ export type Database = {
           branding: Json
           business_hours: Json
           created_at: string
+          default_deposit_percent: number
           email: string | null
           id: string
           logo_url: string | null
@@ -310,6 +317,7 @@ export type Database = {
           branding?: Json
           business_hours?: Json
           created_at?: string
+          default_deposit_percent?: number
           email?: string | null
           id?: string
           logo_url?: string | null
@@ -327,6 +335,7 @@ export type Database = {
           branding?: Json
           business_hours?: Json
           created_at?: string
+          default_deposit_percent?: number
           email?: string | null
           id?: string
           logo_url?: string | null
