@@ -46,7 +46,7 @@ function AdminLoginPage() {
     const { data: userData } = await supabase.auth.getUser();
     const uid = userData.user?.id;
     if (!uid) {
-      toast.error("Authentication failed");
+      toast.error(t("errors.authFailed"));
       return;
     }
     const { data: roleRows } = await supabase

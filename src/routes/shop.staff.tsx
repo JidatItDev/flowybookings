@@ -109,7 +109,7 @@ function StaffFormDialog({ open, onClose, member, shopId, services, links }: { o
 
   const save = useMutation({
     mutationFn: async () => {
-      if (!shopId) throw new Error("No active shop");
+      if (!shopId) throw new Error(t("errors.noActiveShop"));
       const payload = { shop_id: shopId, full_name: form.full_name.trim(), email: form.email.trim() || null, phone: form.phone.trim() || null, is_active: form.is_active, working_hours: form.hours.trim() ? { hours: form.hours.trim() } : {} };
       let staffId = member?.id;
       if (member) {
@@ -117,7 +117,7 @@ function StaffFormDialog({ open, onClose, member, shopId, services, links }: { o
       } else {
         const { data, error } = await supabase.from("staff").insert(payload).select("id").single(); if (error) throw error; staffId = data.id;
       }
-      if (!staffId) throw new Error("Missing staff id");
+      if (!staffId) throw new Error(t("errors.missingStaffId"));
       const desired = selectedServiceIds;
       const current = new Set(links.filter((l) => l.staff_id === staffId).map((l) => l.service_id));
       const toAdd = [...desired].filter((id) => !current.has(id));

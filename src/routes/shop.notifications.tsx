@@ -57,7 +57,7 @@ function NotificationsPage() {
 
   const save = useMutation({
     mutationFn: async () => {
-      if (!shopId || !shop) throw new Error("No active shop");
+      if (!shopId || !shop) throw new Error(t("errors.noActiveShop"));
       const branding = { ...((shop.branding ?? {}) as Record<string, unknown>), notifications: settings };
       const { error } = await supabase.from("shops").update({ branding }).eq("id", shopId);
       if (error) throw error;

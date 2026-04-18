@@ -68,9 +68,9 @@ function LoginPage() {
         headers: { "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}` },
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Failed to seed");
+      if (!res.ok) throw new Error(json.error || t("errors.seedFailed"));
       toast.success(t("auth.demoReady"));
-    } catch (err) { toast.error(err instanceof Error ? err.message : "Failed to seed"); }
+    } catch (err) { toast.error(err instanceof Error ? err.message : t("errors.seedFailed")); }
     finally { setSeeding(false); }
   };
 

@@ -284,6 +284,22 @@ export const nl: Record<string, string> = {
   "customers.depositRequired": "Aanbetaling vereist",
   "customers.requireDeposit": "Altijd aanbetaling vereisen voor deze klant",
   "customers.requireDepositHint": "Aanbevolen voor klanten met 2 of meer no-shows.",
+
+  // ── Gedeelde foutmeldingen ──
+  "errors.notSignedIn": "Je moet ingelogd zijn om dit te doen.",
+  "errors.noActiveShop": "Geen actieve winkel geselecteerd.",
+  "errors.pickStartTime": "Kies een starttijd.",
+  "errors.missingStaffId": "Medewerker ontbreekt.",
+  "errors.authFailed": "Authenticatie mislukt.",
+  "errors.seedFailed": "Kon demogegevens niet aanmaken.",
+
+  // ── Toegankelijkheid ──
+  "a11y.openMenu": "Menu openen",
+  "a11y.closeMenu": "Menu sluiten",
+
+  // ── Onboarding extra ──
+  "onboarding.slugPlaceholder": "jouw-winkel-naam",
+
   "customers.tags": "Labels",
   "customers.noTags": "Nog geen labels — voeg er hieronder een toe.",
   "customers.addTag": "Toevoegen",

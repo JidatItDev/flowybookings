@@ -133,7 +133,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             size="icon"
             className="lg:hidden"
             onClick={() => setOpen(true)}
-            aria-label="Open menu"
+            aria-label={t("a11y.openMenu")}
           >
             <Menu className="h-5 w-5" />
           </Button>
@@ -195,7 +195,7 @@ function Header({ onClose }: { onClose?: () => void }) {
         <span className="text-base font-semibold tracking-tight">FlowyBookings Admin</span>
       </Link>
       {onClose && (
-        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close menu">
+        <Button variant="ghost" size="icon" onClick={onClose} aria-label={t("a11y.closeMenu")}>
           <X className="h-5 w-5" />
         </Button>
       )}

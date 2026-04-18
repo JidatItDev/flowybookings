@@ -96,7 +96,7 @@ function ServiceFormDialog({ open, onClose, service, shopId }: { open: boolean; 
 
   const save = useMutation({
     mutationFn: async () => {
-      if (!shopId) throw new Error("No active shop");
+      if (!shopId) throw new Error(t("errors.noActiveShop"));
       const payload = { shop_id: shopId, name: form.name.trim(), category: form.category.trim() || null, description: form.description.trim() || null, duration_minutes: Number(form.duration_minutes) || 30, price_cents: Math.round(Number(form.price) * 100), deposit_cents: Math.round(Number(form.deposit) * 100), is_active: form.is_active };
       if (service) { const { error } = await supabase.from("services").update(payload).eq("id", service.id); if (error) throw error; }
       else { const { error } = await supabase.from("services").insert(payload); if (error) throw error; }
