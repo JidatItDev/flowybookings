@@ -144,6 +144,7 @@ export const nl: Record<string, string> = {
   "adminNav.plans": "Plannen",
   "adminNav.support": "Ondersteuning",
   "adminNav.auditLogs": "Activiteitenlog",
+  "adminNav.demo": "Demo-instellingen",
   "adminNav.settings": "Instellingen",
   "adminNav.superAdmin": "SUPER ADMIN",
   "adminNav.platform": "FlowyBookings platform",
