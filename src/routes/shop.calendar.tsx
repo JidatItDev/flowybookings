@@ -170,6 +170,17 @@ function CalendarPage() {
                           </Select>
                         </td>
                         <td className="px-4 py-3 text-right">
+                          {b.status !== "no_show" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => updateStatus.mutate({ id: b.id, status: "no_show" })}
+                              title={t("calendar.markNoShow")}
+                            >
+                              <UserX className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button variant="ghost" size="sm" onClick={() => setEditing(b)}>{t("calendar.edit")}</Button>
                           <Button variant="ghost" size="sm" onClick={() => setDeleting(b)}>{t("calendar.delete")}</Button>
                         </td>
