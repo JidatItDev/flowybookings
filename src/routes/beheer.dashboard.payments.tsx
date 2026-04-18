@@ -17,6 +17,7 @@ function AdminPayments() {
   const { t } = useT();
   const { data: stats, isLoading: statsLoading } = useQuery(adminStatsQuery());
   const { data: payments, isLoading } = useQuery(adminPaymentsQuery());
+  const { data: providers, isLoading: providersLoading } = useQuery(adminPaymentProvidersQuery());
   const refundedCount = (payments ?? []).filter((p) => p.status === "refunded").length;
   const refundedAmount = (payments ?? []).filter((p) => p.status === "refunded").reduce((s, p) => s + p.amount_cents, 0);
 
