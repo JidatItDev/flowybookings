@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Plus, Filter, CalendarDays } from "lucide-react";
@@ -223,13 +223,23 @@ function BookingFormDialog({ open, onClose, booking, shopId }: { open: boolean; 
   };
 
   const [form, setForm] = useState({ customer_id: "", service_id: "", staff_id: "", starts_at: "", duration: 60, status: "pending" as BookingWithRelations["status"], notes: "" });
-  const [lastId, setLastId] = useState<string | null>(null);
-  if (open && booking?.id !== lastId) {
-    setLastId(booking?.id ?? null);
+
+  // Reset / hydrate the form whenever the dialog opens or the edited booking changes.
+  // Doing this in useEffect (instead of during render) avoids the infinite-render
+  // loop that previously crashed the page when "Nieuwe boeking" was clicked.
+  useEffect(() => {
+    if (!open) return;
     const dur = booking ? Math.round((+new Date(booking.ends_at) - +new Date(booking.starts_at)) / 60000) : 60;
-    setForm({ customer_id: booking?.customer_id ?? "", service_id: booking?.service_id ?? "", staff_id: booking?.staff_id ?? "", starts_at: toLocalInput(booking?.starts_at ?? null), duration: dur, status: booking?.status ?? "pending", notes: booking?.notes ?? "" });
-  }
-  if (!open && lastId !== null) setLastId(null);
+    setForm({
+      customer_id: booking?.customer_id ?? "",
+      service_id: booking?.service_id ?? "",
+      staff_id: booking?.staff_id ?? "",
+      starts_at: toLocalInput(booking?.starts_at ?? null),
+      duration: dur,
+      status: booking?.status ?? "pending",
+      notes: booking?.notes ?? "",
+    });
+  }, [open, booking?.id]);
 
   const save = useMutation({
     mutationFn: async () => {
