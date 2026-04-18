@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NoShopState } from "@/components/EmptyState";
+import { MollieConnectCard } from "@/components/MollieConnectCard";
 import { useActiveShopId } from "@/lib/shop-context";
 import { shopFullQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
@@ -161,6 +162,10 @@ function SettingsPage() {
             <div className="mt-3"><NumField label={t("settings.slotInterval")} value={rules.slotIntervalMin} onChange={(v) => updateRule("slotIntervalMin", v)} /></div>
             <div className="mt-3"><NumField label={t("settings.defaultDeposit")} value={rules.defaultDepositPct} onChange={(v) => updateRule("defaultDepositPct", v)} /></div>
           </Card>
+
+          <div className="lg:col-span-3">
+            <MollieConnectCard shopId={shopId} />
+          </div>
         </div>
       )}
     </ShopLayout>
