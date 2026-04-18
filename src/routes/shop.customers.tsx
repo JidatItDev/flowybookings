@@ -29,6 +29,7 @@ type CustomerRow = { id: string; full_name: string; email: string | null; phone:
 function CustomersPage() {
   const shopId = useActiveShopId();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { t } = useT();
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<CustomerRow | null>(null);
