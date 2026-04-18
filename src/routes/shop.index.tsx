@@ -67,19 +67,19 @@ function ShopDashboard() {
               <UpgradeNudge variant="no-shows" count={noShows7d} plan="Pro" />
             </div>
           )}
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
             <StatCard label={t("dashboard.todayBookings")} value={String(todayBookings.length)} icon={CalendarCheck} accent="primary" />
             <StatCard label={t("dashboard.todayRevenue")} value={formatCents(todayRevenue)} icon={CircleDollarSign} accent="mint" />
             <StatCard label={t("dashboard.pending")} value={String(pendingCount)} delta={t("dashboard.needsReview")} trend="neutral" icon={Clock} accent="peach" />
             <StatCard label={t("dashboard.noShows7d")} value={String(noShows7d)} icon={AlertCircle} accent="pink" />
           </div>
-          <div className="mt-6 grid gap-6 lg:grid-cols-3">
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-soft lg:col-span-2">
-              <div className="mb-4 flex items-center justify-between">
-                <div><h2 className="text-base font-semibold">{t("dashboard.weeklyRevenue")}</h2><p className="text-xs text-muted-foreground">{t("dashboard.last7days")}</p></div>
-                <span className="rounded-full bg-mint px-2.5 py-1 text-xs font-medium text-mint-foreground">{t("dashboard.live")}</span>
+          <div className="mt-6 grid gap-4 sm:gap-6 lg:grid-cols-3">
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6 lg:col-span-2">
+              <div className="mb-4 flex items-center justify-between gap-2">
+                <div className="min-w-0"><h2 className="truncate text-base font-semibold">{t("dashboard.weeklyRevenue")}</h2><p className="text-xs text-muted-foreground">{t("dashboard.last7days")}</p></div>
+                <span className="flex-none rounded-full bg-mint px-2.5 py-1 text-xs font-medium text-mint-foreground">{t("dashboard.live")}</span>
               </div>
-              <div className="h-64">
+              <div className="h-56 sm:h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={weekly}>
                     <defs><linearGradient id="rev" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.45} /><stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0} /></linearGradient></defs>
@@ -92,7 +92,7 @@ function ShopDashboard() {
                 </ResponsiveContainer>
               </div>
             </div>
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6">
               <h2 className="mb-4 text-base font-semibold">{t("dashboard.atAGlance")}</h2>
               <div className="space-y-3">
                 <Stat label={t("dashboard.customers")} value={customers.length} />
@@ -100,9 +100,9 @@ function ShopDashboard() {
                 <Stat label={t("dashboard.activeStaff")} value={staff.filter((s) => s.is_active).length} />
                 <Stat label={t("dashboard.totalBookings")} value={bookings.length} />
               </div>
+            </div>
           </div>
           <DashboardInsights bookings={bookings} customers={customers} services={services} />
-          </div>
           <div className="mt-6 rounded-2xl border border-border bg-card shadow-soft">
             <div className="flex items-center justify-between border-b border-border px-6 py-4">
               <h2 className="text-base font-semibold">{t("dashboard.todayAppointments")}</h2>

@@ -27,15 +27,15 @@ export function StatCard({
   accent = "primary",
 }: StatCardProps) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-soft transition-all hover:shadow-elevated">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="mt-2 text-3xl font-semibold tracking-tight text-foreground">{value}</p>
+    <div className="group relative overflow-hidden rounded-2xl border border-border/70 bg-card p-4 shadow-soft transition-all hover:shadow-elevated sm:p-5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs text-muted-foreground sm:text-sm">{label}</p>
+          <p className="mt-1.5 truncate text-2xl font-semibold tracking-tight text-foreground sm:mt-2 sm:text-3xl">{value}</p>
           {delta && (
             <p
               className={cn(
-                "mt-2 inline-flex items-center gap-1 text-xs font-medium",
+                "mt-1.5 inline-flex items-center gap-1 truncate text-xs font-medium sm:mt-2",
                 trend === "up" && "text-success-foreground",
                 trend === "down" && "text-destructive",
                 trend === "neutral" && "text-muted-foreground",
@@ -48,11 +48,11 @@ export function StatCard({
         {Icon && (
           <div
             className={cn(
-              "flex h-11 w-11 items-center justify-center rounded-xl",
+              "flex h-9 w-9 flex-none items-center justify-center rounded-xl sm:h-11 sm:w-11",
               accentClasses[accent],
             )}
           >
-            <Icon className="h-5 w-5" />
+            <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
           </div>
         )}
       </div>

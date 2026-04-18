@@ -423,6 +423,40 @@ export const en: Record<string, string> = {
   "payments.date": "Date",
   "payments.updated": "Payment updated",
 
+  // ── Mollie Connect ──
+  "mollie.title": "Mollie payments",
+  "mollie.description": "Connect your own Mollie account to accept payments. Payouts go directly to you.",
+  "mollie.connect": "Connect Mollie",
+  "mollie.disconnect": "Disconnect",
+  "mollie.pending": "Connection pending",
+  "mollie.requestStarted": "Connection request started",
+  "mollie.disconnected": "Mollie disconnected",
+  "mollie.onboarding": "Onboarding",
+  "mollie.feeEnabled": "Platform fee",
+  "mollie.feePercent": "Fee percentage",
+  "mollie.payouts": "Payouts",
+  "mollie.payoutsValue": "Direct to your Mollie",
+  "mollie.platformFeeNotice": "FlowyBookings collects a small application fee per transaction. Customer funds settle directly into your own Mollie account — never our platform.",
+  "mollie.status.not_connected": "Not connected",
+  "mollie.status.pending": "Pending",
+  "mollie.status.connected": "Connected",
+  "mollie.status.disconnected": "Disconnected",
+  "mollie.status.error": "Error",
+  "mollie.onboarding.not_started": "Not started",
+  "mollie.onboarding.in_review": "In review",
+  "mollie.onboarding.completed": "Completed",
+  "mollie.onboarding.rejected": "Rejected",
+
+  // ── Admin: Providers ──
+  "adminProviders.title": "Payment providers",
+  "adminProviders.description": "Per-shop Mollie Connect status and platform fee configuration.",
+  "adminProviders.empty": "No shops have started a Mollie connection yet.",
+  "adminProviders.account": "Account",
+  "adminProviders.fee": "Fee",
+
+  "common.yes": "Yes",
+  "common.no": "No",
+
   // ── Notifications ──
   "notifications.title": "Notifications",
   "notifications.description": "Reminders and confirmations across channels.",

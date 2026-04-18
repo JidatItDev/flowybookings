@@ -469,6 +469,68 @@ export type Database = {
           },
         ]
       }
+      shop_payment_providers: {
+        Row: {
+          application_fee_enabled: boolean
+          application_fee_percent: number
+          connected_at: string | null
+          connection_status: string
+          created_at: string
+          disconnected_at: string | null
+          id: string
+          last_synced_at: string | null
+          metadata: Json
+          onboarding_status: string
+          payment_methods_enabled: Json
+          provider: string
+          provider_account_id: string | null
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          application_fee_enabled?: boolean
+          application_fee_percent?: number
+          connected_at?: string | null
+          connection_status?: string
+          created_at?: string
+          disconnected_at?: string | null
+          id?: string
+          last_synced_at?: string | null
+          metadata?: Json
+          onboarding_status?: string
+          payment_methods_enabled?: Json
+          provider?: string
+          provider_account_id?: string | null
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          application_fee_enabled?: boolean
+          application_fee_percent?: number
+          connected_at?: string | null
+          connection_status?: string
+          created_at?: string
+          disconnected_at?: string | null
+          id?: string
+          last_synced_at?: string | null
+          metadata?: Json
+          onboarding_status?: string
+          payment_methods_enabled?: Json
+          provider?: string
+          provider_account_id?: string | null
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_payment_providers_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shops: {
         Row: {
           address: string | null
