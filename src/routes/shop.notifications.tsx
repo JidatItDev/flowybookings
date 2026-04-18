@@ -1,13 +1,17 @@
+// /shop/notifications — combines the Inbox (in-app messages) with Settings
+// (channel + automation toggles). Mobile-app feel.
+
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Mail, MessageSquare, Smartphone } from "lucide-react";
+import { Inbox, Mail, MessageSquare, Settings as SettingsIcon, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { NoShopState } from "@/components/EmptyState";
 import { UpgradeNudge, PremiumBadge } from "@/components/UpgradeNudge";
+import { NotificationsInbox } from "@/components/NotificationsInbox";
 import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { shopFullQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,12 +46,61 @@ function readSettings(branding: unknown): NotificationSettings {
 
 function NotificationsPage() {
   const shopId = useActiveShopId();
+  const { t } = useT();
+  const [tab, setTab] = useState<"inbox" | "settings">("inbox");
+
+  return (
+    <ShopLayout>
+      <PageHeader title={t("notifications.title")} description={t("inbox.pageDescription")} />
+      {!shopId ? (
+        <NoShopState />
+      ) : (
+        <>
+          <div className="mb-4 inline-flex rounded-full border border-border bg-card p-1 shadow-soft">
+            <TabButton active={tab === "inbox"} onClick={() => setTab("inbox")}>
+              <Inbox className="h-4 w-4" /> {t("inbox.tabInbox")}
+            </TabButton>
+            <TabButton active={tab === "settings"} onClick={() => setTab("settings")}>
+              <SettingsIcon className="h-4 w-4" /> {t("inbox.tabSettings")}
+            </TabButton>
+          </div>
+          {tab === "inbox" ? <NotificationsInbox shopId={shopId} /> : <SettingsPanel shopId={shopId} />}
+        </>
+      )}
+    </ShopLayout>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium transition-colors",
+        active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function SettingsPanel({ shopId }: { shopId: string }) {
   const { activeShop } = useShopContext();
   const qc = useQueryClient();
   const { t } = useT();
   const isPremium = activeShop?.plan === "pro" || activeShop?.plan === "premium";
 
-  const { data: shop, isLoading } = useQuery({ ...shopFullQuery(shopId ?? ""), enabled: !!shopId });
+  const { data: shop, isLoading } = useQuery({ ...shopFullQuery(shopId), enabled: !!shopId });
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULTS);
   const [dirty, setDirty] = useState(false);
 
@@ -60,7 +113,7 @@ function NotificationsPage() {
 
   const save = useMutation({
     mutationFn: async () => {
-      if (!shopId || !shop) throw new Error(t("errors.noActiveShop"));
+      if (!shop) throw new Error(t("errors.noActiveShop"));
       const branding = { ...((shop.branding ?? {}) as Record<string, unknown>), notifications: settings };
       const { error } = await supabase.from("shops").update({ branding }).eq("id", shopId);
       if (error) throw error;
@@ -68,7 +121,7 @@ function NotificationsPage() {
     onSuccess: () => {
       toast.success(t("notifications.saved"));
       setDirty(false);
-      if (shopId) qc.invalidateQueries({ queryKey: shopKeys.shopFull(shopId) });
+      qc.invalidateQueries({ queryKey: shopKeys.shopFull(shopId) });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -85,72 +138,73 @@ function NotificationsPage() {
     { id: "noshow", titleKey: "notifications.noshow", descKey: "notifications.noshowDesc" },
   ];
 
-  const toggleChannel = (k: ChannelKey) => { setSettings((s) => ({ ...s, channels: { ...s.channels, [k]: !s.channels[k] } })); setDirty(true); };
-  const toggleEvent = (k: EventKey) => { setSettings((s) => ({ ...s, events: { ...s.events, [k]: !s.events[k] } })); setDirty(true); };
+  const toggleChannel = (k: ChannelKey) => {
+    setSettings((s) => ({ ...s, channels: { ...s.channels, [k]: !s.channels[k] } }));
+    setDirty(true);
+  };
+  const toggleEvent = (k: EventKey) => {
+    setSettings((s) => ({ ...s, events: { ...s.events, [k]: !s.events[k] } }));
+    setDirty(true);
+  };
+
+  if (isLoading) return <div className="h-72 animate-pulse rounded-2xl border border-border bg-card" />;
 
   return (
-    <ShopLayout>
-      <PageHeader title={t("notifications.title")} description={t("notifications.description")} />
-      {!shopId ? <NoShopState /> : isLoading ? (
-        <div className="h-72 animate-pulse rounded-2xl border border-border bg-card" />
-      ) : (
-        <>
-          {!isPremium && (
-            <div className="mb-4">
-              <UpgradeNudge variant="premium-locked" plan="Pro" feature={t("notifications.whatsapp")} />
-            </div>
-          )}
-          <div className="grid gap-4 sm:grid-cols-3">
-            {channels.map((c) => {
-              const Icon = c.icon;
-              const on = settings.channels[c.id];
-              const locked = c.id === "whatsapp" && !isPremium;
-              return (
-                <div key={c.id} className={cn("relative rounded-2xl border border-border bg-card p-5 shadow-soft", locked && "opacity-80")}>
-                  <div className="flex items-center justify-between">
-                    <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", c.color)}><Icon className="h-5 w-5" /></div>
-                    <Toggle on={on && !locked} onChange={() => !locked && toggleChannel(c.id)} />
-                  </div>
-                  <h3 className="mt-3 flex items-center gap-2 font-semibold">
-                    {t(c.nameKey)}
-                    {locked && <PremiumBadge plan="Pro" />}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">{t(c.descKey)}</p>
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-6 rounded-2xl border border-border bg-card shadow-soft">
-            <div className="border-b border-border px-6 py-4">
-              <h2 className="text-base font-semibold">{t("notifications.reminderEvents")}</h2>
-              <p className="text-xs text-muted-foreground">{t("notifications.reminderDesc")}</p>
-            </div>
-            <div className="divide-y divide-border">
-              {events.map((e) => {
-                const on = settings.events[e.id];
-                return (
-                  <div key={e.id} className="flex items-center justify-between px-6 py-4">
-                    <div>
-                      <p className="font-medium">{t(e.titleKey)}</p>
-                      <p className="text-xs text-muted-foreground">{t(e.descKey)}</p>
-                    </div>
-                    <Toggle on={on} onChange={() => toggleEvent(e.id)} />
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
-              {dirty && <span className="text-xs text-muted-foreground">{t("notifications.unsaved")}</span>}
-              <Button variant="hero" onClick={() => save.mutate()} disabled={!dirty || save.isPending}>
-                {save.isPending ? t("notifications.saving") : t("notifications.saveChanges")}
-              </Button>
-            </div>
-          </div>
-          <AutomationSettings shopId={shopId} />
-          <DepositSettings shopId={shopId} shop={shop ?? null} />
-        </>
+    <>
+      {!isPremium && (
+        <div className="mb-4">
+          <UpgradeNudge variant="premium-locked" plan="Pro" feature={t("notifications.whatsapp")} />
+        </div>
       )}
-    </ShopLayout>
+      <div className="grid gap-4 sm:grid-cols-3">
+        {channels.map((c) => {
+          const Icon = c.icon;
+          const on = settings.channels[c.id];
+          const locked = c.id === "whatsapp" && !isPremium;
+          return (
+            <div key={c.id} className={cn("relative rounded-2xl border border-border bg-card p-5 shadow-soft", locked && "opacity-80")}>
+              <div className="flex items-center justify-between">
+                <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", c.color)}><Icon className="h-5 w-5" /></div>
+                <Toggle on={on && !locked} onChange={() => !locked && toggleChannel(c.id)} />
+              </div>
+              <h3 className="mt-3 flex items-center gap-2 font-semibold">
+                {t(c.nameKey)}
+                {locked && <PremiumBadge plan="Pro" />}
+              </h3>
+              <p className="text-xs text-muted-foreground">{t(c.descKey)}</p>
+            </div>
+          );
+        })}
+      </div>
+      <div className="mt-6 rounded-2xl border border-border bg-card shadow-soft">
+        <div className="border-b border-border px-6 py-4">
+          <h2 className="text-base font-semibold">{t("notifications.reminderEvents")}</h2>
+          <p className="text-xs text-muted-foreground">{t("notifications.reminderDesc")}</p>
+        </div>
+        <div className="divide-y divide-border">
+          {events.map((e) => {
+            const on = settings.events[e.id];
+            return (
+              <div key={e.id} className="flex items-center justify-between px-6 py-4">
+                <div>
+                  <p className="font-medium">{t(e.titleKey)}</p>
+                  <p className="text-xs text-muted-foreground">{t(e.descKey)}</p>
+                </div>
+                <Toggle on={on} onChange={() => toggleEvent(e.id)} />
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
+          {dirty && <span className="text-xs text-muted-foreground">{t("notifications.unsaved")}</span>}
+          <Button variant="hero" onClick={() => save.mutate()} disabled={!dirty || save.isPending}>
+            {save.isPending ? t("notifications.saving") : t("notifications.saveChanges")}
+          </Button>
+        </div>
+      </div>
+      <AutomationSettings shopId={shopId} />
+      <DepositSettings shopId={shopId} shop={shop ?? null} />
+    </>
   );
 }
 

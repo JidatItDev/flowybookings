@@ -23,6 +23,7 @@ import { ShopOnboarding } from "@/components/ShopOnboarding";
 import { useAuth } from "@/lib/auth-context";
 import { useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { NotificationBell } from "@/components/NotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -155,9 +156,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
           </div>
           <div className="ml-auto flex items-center gap-2">
             <LanguageSwitcher />
-            <Button variant="ghost" size="icon" aria-label={t("shopNav.notifications")}>
-              <Bell className="h-5 w-5" />
-            </Button>
+            <NotificationBell />
             {isSuperAdmin && (
               <Link
                 to="/beheer/dashboard"
