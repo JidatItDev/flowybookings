@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Mail, Phone, Pencil, Trash2, Users } from "lucide-react";
+import { Plus, Search, Mail, Phone, Pencil, Trash2, Users, AlertTriangle, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -16,6 +16,7 @@ import { useActiveShopId } from "@/lib/shop-context";
 import { customersQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCents, initials, relativeFromNow } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/shop/customers")({
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/shop/customers")({
   component: CustomersPage,
 });
 
-type CustomerRow = { id: string; full_name: string; email: string | null; phone: string | null; notes: string | null; total_spent_cents: number; last_visit_at: string | null };
+type CustomerRow = { id: string; full_name: string; email: string | null; phone: string | null; notes: string | null; total_spent_cents: number; last_visit_at: string | null; no_show_count?: number; requires_deposit?: boolean };
 
 function CustomersPage() {
   const shopId = useActiveShopId();
@@ -64,19 +65,49 @@ function CustomersPage() {
                     <th className="hidden px-6 py-3 text-left md:table-cell">{t("customers.contact")}</th>
                     <th className="hidden px-6 py-3 text-left sm:table-cell">{t("customers.totalSpent")}</th>
                     <th className="hidden px-6 py-3 text-left lg:table-cell">{t("customers.lastVisit")}</th>
+                    <th className="hidden px-6 py-3 text-left sm:table-cell">{t("customers.noShows")}</th>
                     <th className="px-6 py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {list.map((c) => (
-                    <tr key={c.id} className="hover:bg-muted/30">
-                      <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-warm text-xs font-semibold text-pink-foreground">{initials(c.full_name)}</div><div className="min-w-0"><p className="truncate font-medium">{c.full_name}</p>{c.notes && <p className="truncate text-xs text-muted-foreground">{c.notes}</p>}</div></div></td>
+                  {list.map((c) => {
+                    const ns = c.no_show_count ?? 0;
+                    const repeat = ns >= 2;
+                    return (
+                    <tr key={c.id} className={cn("hover:bg-muted/30", repeat && "bg-destructive/5")}>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-warm text-xs font-semibold text-pink-foreground">{initials(c.full_name)}</div>
+                          <div className="min-w-0">
+                            <p className="truncate font-medium flex items-center gap-2">
+                              {c.full_name}
+                              {repeat && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-destructive">
+                                  <ShieldAlert className="h-3 w-3" /> {t("customers.repeatNoShow")}
+                                </span>
+                              )}
+                              {c.requires_deposit && (
+                                <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
+                                  {t("customers.depositRequired")}
+                                </span>
+                              )}
+                            </p>
+                            {c.notes && <p className="truncate text-xs text-muted-foreground">{c.notes}</p>}
+                          </div>
+                        </div>
+                      </td>
                       <td className="hidden px-6 py-4 text-xs text-muted-foreground md:table-cell">{c.email && <div className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" />{c.email}</div>}{c.phone && <div className="mt-1 flex items-center gap-2"><Phone className="h-3.5 w-3.5" />{c.phone}</div>}</td>
                       <td className="hidden px-6 py-4 sm:table-cell">{formatCents(c.total_spent_cents)}</td>
                       <td className="hidden px-6 py-4 text-muted-foreground lg:table-cell">{relativeFromNow(c.last_visit_at)}</td>
+                      <td className="hidden px-6 py-4 sm:table-cell">
+                        <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium", ns === 0 ? "bg-mint/40 text-mint-foreground" : ns === 1 ? "bg-amber-500/15 text-amber-700" : "bg-destructive/15 text-destructive")}>
+                          {ns > 0 && <AlertTriangle className="h-3 w-3" />} {ns}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 text-right"><Button variant="ghost" size="icon" onClick={() => setEditing(c)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" onClick={() => setDeleting(c)}><Trash2 className="h-4 w-4" /></Button></td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -103,16 +134,16 @@ function CustomersPage() {
 function CustomerFormDialog({ open, onClose, customer, shopId }: { open: boolean; onClose: () => void; customer: CustomerRow | null; shopId: string | null }) {
   const qc = useQueryClient();
   const { t } = useT();
-  const [form, setForm] = useState({ full_name: "", email: "", phone: "", notes: "" });
+  const [form, setForm] = useState({ full_name: "", email: "", phone: "", notes: "", requires_deposit: false });
   useEffect(() => {
     if (!open) return;
-    setForm({ full_name: customer?.full_name ?? "", email: customer?.email ?? "", phone: customer?.phone ?? "", notes: customer?.notes ?? "" });
+    setForm({ full_name: customer?.full_name ?? "", email: customer?.email ?? "", phone: customer?.phone ?? "", notes: customer?.notes ?? "", requires_deposit: customer?.requires_deposit ?? false });
   }, [open, customer?.id]);
 
   const save = useMutation({
     mutationFn: async () => {
       if (!shopId) throw new Error("No active shop");
-      const payload = { shop_id: shopId, full_name: form.full_name.trim(), email: form.email.trim() || null, phone: form.phone.trim() || null, notes: form.notes.trim() || null };
+      const payload = { shop_id: shopId, full_name: form.full_name.trim(), email: form.email.trim() || null, phone: form.phone.trim() || null, notes: form.notes.trim() || null, requires_deposit: form.requires_deposit };
       if (customer) { const { error } = await supabase.from("customers").update(payload).eq("id", customer.id); if (error) throw error; }
       else { const { error } = await supabase.from("customers").insert(payload); if (error) throw error; }
     },
@@ -120,15 +151,30 @@ function CustomerFormDialog({ open, onClose, customer, shopId }: { open: boolean
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const ns = customer?.no_show_count ?? 0;
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader><DialogTitle>{customer ? t("customers.editCustomer") : t("customers.newCustomerTitle")}</DialogTitle></DialogHeader>
         <div className="grid gap-4 py-2">
+          {customer && (
+            <div className={cn("rounded-lg border px-3 py-2 text-xs flex items-center justify-between", ns >= 2 ? "border-destructive/30 bg-destructive/5 text-destructive" : "border-border bg-muted/40 text-muted-foreground")}>
+              <span className="flex items-center gap-2"><AlertTriangle className="h-3.5 w-3.5" /> {t("customers.noShowsLabel")}</span>
+              <span className="font-semibold">{ns}</span>
+            </div>
+          )}
           <div><Label htmlFor="fn">{t("customers.fullName")}</Label><Input id="fn" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
           <div><Label htmlFor="em">{t("customers.email")}</Label><Input id="em" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
           <div><Label htmlFor="ph">{t("customers.phone")}</Label><Input id="ph" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
           <div><Label htmlFor="nt">{t("customers.notes")}</Label><Textarea id="nt" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} /></div>
+          <label className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm cursor-pointer">
+            <input type="checkbox" className="mt-0.5" checked={form.requires_deposit} onChange={(e) => setForm({ ...form, requires_deposit: e.target.checked })} />
+            <span>
+              <span className="font-medium">{t("customers.requireDeposit")}</span>
+              <span className="block text-xs text-muted-foreground">{t("customers.requireDepositHint")}</span>
+            </span>
+          </label>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{t("customers.cancel")}</Button>

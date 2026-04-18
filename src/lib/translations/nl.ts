@@ -215,6 +215,7 @@ export const nl: Record<string, string> = {
   "calendar.save": "Opslaan",
   "calendar.saving": "Bezig met opslaan…",
   "calendar.edit": "Bewerken",
+  "calendar.markNoShow": "Markeer als no-show",
 
   // ── Customers ──
   "customers.title": "Klanten",
@@ -245,6 +246,12 @@ export const nl: Record<string, string> = {
   "customers.notes": "Notities",
   "customers.saveChanges": "Wijzigingen opslaan",
   "customers.saving": "Bezig met opslaan…",
+  "customers.noShows": "No-shows",
+  "customers.noShowsLabel": "Aantal no-shows",
+  "customers.repeatNoShow": "Herhaal no-show",
+  "customers.depositRequired": "Aanbetaling vereist",
+  "customers.requireDeposit": "Altijd aanbetaling vereisen voor deze klant",
+  "customers.requireDepositHint": "Aanbevolen voor klanten met 2 of meer no-shows.",
 
   // ── Services ──
   "services.title": "Diensten",
@@ -356,6 +363,10 @@ export const nl: Record<string, string> = {
   "notifications.saving": "Bezig met opslaan…",
   "notifications.saved": "Voorkeuren opgeslagen",
   "notifications.unsaved": "Niet-opgeslagen wijzigingen",
+  "notifications.depositTitle": "Aanbetalingen (binnenkort)",
+  "notifications.depositSub": "Stel een standaard aanbetalingspercentage in. Wordt gebruikt om aanbetalingen te vragen van klanten met herhaalde no-shows zodra betalingen actief zijn.",
+  "notifications.depositPercent": "Standaard aanbetaling %",
+  "notifications.depositSaved": "Aanbetalingsinstellingen opgeslagen",
 
   // ── Settings ──
   "settings.title": "Instellingen",
