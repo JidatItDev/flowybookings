@@ -35,6 +35,8 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [seeding, setSeeding] = useState(false);
+  const { data: appSettings } = useQuery(publicAppSettingsQuery());
+  const demoEnabled = appSettings?.demo_mode_enabled !== false && appSettings?.demo_logins_enabled !== false;
 
   useEffect(() => {
     if (loading || rolesLoading || !session) return;
@@ -53,6 +55,10 @@ function LoginPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!demoEnabled && DEMOS.some((d) => d.email === email)) {
+      toast.error(t("auth.demoDisabled"));
+      return;
+    }
     setSubmitting(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setSubmitting(false);
