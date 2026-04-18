@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as BookRouteImport } from './routes/book'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShopIndexRouteImport } from './routes/shop.index'
+import { Route as ShopUpgradeRouteImport } from './routes/shop.upgrade'
 import { Route as ShopStaffRouteImport } from './routes/shop.staff'
 import { Route as ShopSettingsRouteImport } from './routes/shop.settings'
 import { Route as ShopServicesRouteImport } from './routes/shop.services'
@@ -69,6 +70,11 @@ const IndexRoute = IndexRouteImport.update({
 const ShopIndexRoute = ShopIndexRouteImport.update({
   id: '/shop/',
   path: '/shop/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopUpgradeRoute = ShopUpgradeRouteImport.update({
+  id: '/shop/upgrade',
+  path: '/shop/upgrade',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShopStaffRoute = ShopStaffRouteImport.update({
@@ -250,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/shop/services': typeof ShopServicesRoute
   '/shop/settings': typeof ShopSettingsRoute
   '/shop/staff': typeof ShopStaffRoute
+  '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop/': typeof ShopIndexRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
@@ -288,6 +295,7 @@ export interface FileRoutesByTo {
   '/shop/services': typeof ShopServicesRoute
   '/shop/settings': typeof ShopSettingsRoute
   '/shop/staff': typeof ShopStaffRoute
+  '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop': typeof ShopIndexRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
@@ -327,6 +335,7 @@ export interface FileRoutesById {
   '/shop/services': typeof ShopServicesRoute
   '/shop/settings': typeof ShopSettingsRoute
   '/shop/staff': typeof ShopStaffRoute
+  '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop/': typeof ShopIndexRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
@@ -367,6 +376,7 @@ export interface FileRouteTypes {
     | '/shop/services'
     | '/shop/settings'
     | '/shop/staff'
+    | '/shop/upgrade'
     | '/shop/'
     | '/beheer/ad/login'
     | '/beheer/dashboard/bookings'
@@ -405,6 +415,7 @@ export interface FileRouteTypes {
     | '/shop/services'
     | '/shop/settings'
     | '/shop/staff'
+    | '/shop/upgrade'
     | '/shop'
     | '/beheer/ad/login'
     | '/beheer/dashboard/bookings'
@@ -443,6 +454,7 @@ export interface FileRouteTypes {
     | '/shop/services'
     | '/shop/settings'
     | '/shop/staff'
+    | '/shop/upgrade'
     | '/shop/'
     | '/beheer/ad/login'
     | '/beheer/dashboard/bookings'
@@ -482,6 +494,7 @@ export interface RootRouteChildren {
   ShopServicesRoute: typeof ShopServicesRoute
   ShopSettingsRoute: typeof ShopSettingsRoute
   ShopStaffRoute: typeof ShopStaffRoute
+  ShopUpgradeRoute: typeof ShopUpgradeRoute
   ShopIndexRoute: typeof ShopIndexRoute
   BeheerAdLoginRoute: typeof BeheerAdLoginRoute
   BeheerDashboardBookingsRoute: typeof BeheerDashboardBookingsRoute
@@ -536,6 +549,13 @@ declare module '@tanstack/react-router' {
       path: '/shop'
       fullPath: '/shop/'
       preLoaderRoute: typeof ShopIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop/upgrade': {
+      id: '/shop/upgrade'
+      path: '/shop/upgrade'
+      fullPath: '/shop/upgrade'
+      preLoaderRoute: typeof ShopUpgradeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/shop/staff': {
@@ -798,6 +818,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShopServicesRoute: ShopServicesRoute,
   ShopSettingsRoute: ShopSettingsRoute,
   ShopStaffRoute: ShopStaffRoute,
+  ShopUpgradeRoute: ShopUpgradeRoute,
   ShopIndexRoute: ShopIndexRoute,
   BeheerAdLoginRoute: BeheerAdLoginRoute,
   BeheerDashboardBookingsRoute: BeheerDashboardBookingsRoute,

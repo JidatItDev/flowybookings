@@ -7,7 +7,8 @@ import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { NoShopState } from "@/components/EmptyState";
-import { useActiveShopId } from "@/lib/shop-context";
+import { UpgradeNudge, PremiumBadge } from "@/components/UpgradeNudge";
+import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { shopFullQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -41,8 +42,10 @@ function readSettings(branding: unknown): NotificationSettings {
 
 function NotificationsPage() {
   const shopId = useActiveShopId();
+  const { activeShop } = useShopContext();
   const qc = useQueryClient();
   const { t } = useT();
+  const isPremium = activeShop?.plan === "pro" || activeShop?.plan === "premium";
 
   const { data: shop, isLoading } = useQuery({ ...shopFullQuery(shopId ?? ""), enabled: !!shopId });
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULTS);
@@ -92,17 +95,26 @@ function NotificationsPage() {
         <div className="h-72 animate-pulse rounded-2xl border border-border bg-card" />
       ) : (
         <>
+          {!isPremium && (
+            <div className="mb-4">
+              <UpgradeNudge variant="premium-locked" plan="Pro" feature={t("notifications.whatsapp")} />
+            </div>
+          )}
           <div className="grid gap-4 sm:grid-cols-3">
             {channels.map((c) => {
               const Icon = c.icon;
               const on = settings.channels[c.id];
+              const locked = c.id === "whatsapp" && !isPremium;
               return (
-                <div key={c.id} className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+                <div key={c.id} className={cn("relative rounded-2xl border border-border bg-card p-5 shadow-soft", locked && "opacity-80")}>
                   <div className="flex items-center justify-between">
                     <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", c.color)}><Icon className="h-5 w-5" /></div>
-                    <Toggle on={on} onChange={() => toggleChannel(c.id)} />
+                    <Toggle on={on && !locked} onChange={() => !locked && toggleChannel(c.id)} />
                   </div>
-                  <h3 className="mt-3 font-semibold">{t(c.nameKey)}</h3>
+                  <h3 className="mt-3 flex items-center gap-2 font-semibold">
+                    {t(c.nameKey)}
+                    {locked && <PremiumBadge plan="Pro" />}
+                  </h3>
                   <p className="text-xs text-muted-foreground">{t(c.descKey)}</p>
                 </div>
               );

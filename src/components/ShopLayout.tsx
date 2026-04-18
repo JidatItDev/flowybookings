@@ -215,9 +215,12 @@ function SidebarFooter() {
     <div className="m-3 rounded-2xl bg-gradient-brand p-4 text-primary-foreground shadow-glow">
       <p className="text-sm font-semibold">{t("shopNav.upgradePremium")}</p>
       <p className="mt-1 text-xs opacity-90">{t("shopNav.upgradeSub")}</p>
-      <button className="mt-3 w-full rounded-lg bg-background/15 px-3 py-1.5 text-xs font-medium backdrop-blur hover:bg-background/25">
+      <Link
+        to="/shop/upgrade"
+        className="mt-3 block w-full rounded-lg bg-background/15 px-3 py-1.5 text-center text-xs font-medium backdrop-blur hover:bg-background/25"
+      >
         {t("shopNav.seePlans")}
-      </button>
+      </Link>
     </div>
   );
 }

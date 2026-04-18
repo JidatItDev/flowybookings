@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { NoShopState } from "@/components/EmptyState";
 import { DashboardInsights } from "@/components/DashboardInsights";
+import { UpgradeNudge } from "@/components/UpgradeNudge";
 import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { bookingsQuery, customersQuery, servicesQuery, staffQuery } from "@/lib/queries";
 import { formatCents, formatTime, initials } from "@/lib/format";
@@ -54,6 +55,11 @@ function ShopDashboard() {
       />
       {!shopId ? <NoShopState /> : (
         <>
+          {noShows7d >= 3 && (
+            <div className="mb-4">
+              <UpgradeNudge variant="no-shows" count={noShows7d} plan="Pro" />
+            </div>
+          )}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard label={t("dashboard.todayBookings")} value={String(todayBookings.length)} icon={CalendarCheck} accent="primary" />
             <StatCard label={t("dashboard.todayRevenue")} value={formatCents(todayRevenue)} icon={CircleDollarSign} accent="mint" />
