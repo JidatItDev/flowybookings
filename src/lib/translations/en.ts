@@ -284,6 +284,22 @@ export const en: Record<string, string> = {
   "customers.depositRequired": "Deposit required",
   "customers.requireDeposit": "Always require a deposit for this customer",
   "customers.requireDepositHint": "Recommended for customers with 2 or more no-shows.",
+
+  // ── Shared error messages ──
+  "errors.notSignedIn": "You need to be signed in to do that.",
+  "errors.noActiveShop": "No active shop selected.",
+  "errors.pickStartTime": "Please pick a start time.",
+  "errors.missingStaffId": "Missing staff member.",
+  "errors.authFailed": "Authentication failed.",
+  "errors.seedFailed": "Could not seed demo data.",
+
+  // ── Accessibility labels ──
+  "a11y.openMenu": "Open menu",
+  "a11y.closeMenu": "Close menu",
+
+  // ── Onboarding extras ──
+  "onboarding.slugPlaceholder": "your-shop-name",
+
   "customers.tags": "Tags",
   "customers.noTags": "No tags yet — add one below.",
   "customers.addTag": "Add",

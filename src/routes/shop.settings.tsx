@@ -64,7 +64,7 @@ function SettingsPage() {
 
   const save = useMutation({
     mutationFn: async () => {
-      if (!shopId || !shop) throw new Error("No active shop");
+      if (!shopId || !shop) throw new Error(t("errors.noActiveShop"));
       const newBranding = { ...((shop.branding ?? {}) as Record<string, unknown>), color: branding.color, rules };
       const payload = {
         name: profile.name.trim(),

@@ -152,7 +152,7 @@ function CustomerFormDialog({ open, onClose, customer, shopId }: { open: boolean
 
   const save = useMutation({
     mutationFn: async () => {
-      if (!shopId) throw new Error("No active shop");
+      if (!shopId) throw new Error(t("errors.noActiveShop"));
       const payload = { shop_id: shopId, full_name: form.full_name.trim(), email: form.email.trim() || null, phone: form.phone.trim() || null, notes: form.notes.trim() || null, requires_deposit: form.requires_deposit };
       if (customer) { const { error } = await supabase.from("customers").update(payload).eq("id", customer.id); if (error) throw error; }
       else { const { error } = await supabase.from("customers").insert(payload); if (error) throw error; }

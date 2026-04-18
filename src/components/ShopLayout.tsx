@@ -138,7 +138,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
             size="icon"
             className="lg:hidden"
             onClick={() => setOpen(true)}
-            aria-label="Open menu"
+            aria-label={t("a11y.openMenu")}
           >
             <Menu className="h-5 w-5" />
           </Button>
@@ -191,6 +191,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
 }
 
 function SidebarHeader({ onClose }: { onClose?: () => void }) {
+  const { t } = useT();
   return (
     <div className="flex h-16 items-center justify-between gap-2 px-5">
       <Link to="/" className="flex items-center gap-2">
@@ -200,7 +201,7 @@ function SidebarHeader({ onClose }: { onClose?: () => void }) {
         <span className="text-base font-semibold tracking-tight">FlowyBookings</span>
       </Link>
       {onClose && (
-        <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close menu">
+        <Button variant="ghost" size="icon" onClick={onClose} aria-label={t("a11y.closeMenu")}>
           <X className="h-5 w-5" />
         </Button>
       )}

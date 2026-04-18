@@ -22,7 +22,7 @@ export function ShopOnboarding() {
 
   const createShop = useMutation({
     mutationFn: async () => {
-      if (!user) throw new Error("Not signed in");
+      if (!user) throw new Error(t("errors.notSignedIn"));
       const finalSlug = slug || slugify(name);
       const { data: shop, error } = await supabase
         .from("shops")
@@ -74,7 +74,7 @@ export function ShopOnboarding() {
               <Label htmlFor="slug">{t("onboarding.urlSlug")}</Label>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">flowybookings.com/</span>
-                <Input id="slug" placeholder="inkwell-studio" required value={slug} onChange={(e) => setSlug(slugify(e.target.value))} />
+                <Input id="slug" placeholder={t("onboarding.slugPlaceholder")} required value={slug} onChange={(e) => setSlug(slugify(e.target.value))} />
               </div>
               <p className="text-xs text-muted-foreground">{t("onboarding.slugHint")}</p>
             </div>
