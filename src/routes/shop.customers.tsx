@@ -75,12 +75,16 @@ function CustomersPage() {
                     const ns = c.no_show_count ?? 0;
                     const repeat = ns >= 2;
                     return (
-                    <tr key={c.id} className={cn("hover:bg-muted/30", repeat && "bg-destructive/5")}>
+                    <tr
+                      key={c.id}
+                      onClick={() => navigate({ to: "/shop/customers/$customerId", params: { customerId: c.id } })}
+                      className={cn("cursor-pointer hover:bg-muted/30", repeat && "bg-destructive/5")}
+                    >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-warm text-xs font-semibold text-pink-foreground">{initials(c.full_name)}</div>
                           <div className="min-w-0">
-                            <p className="truncate font-medium flex items-center gap-2">
+                            <p className="truncate font-medium flex items-center gap-2 flex-wrap">
                               {c.full_name}
                               {repeat && (
                                 <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-destructive">
@@ -92,6 +96,11 @@ function CustomersPage() {
                                   {t("customers.depositRequired")}
                                 </span>
                               )}
+                              {(c.tags ?? []).slice(0, 3).map((tg) => (
+                                <span key={tg} className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                                  {tg}
+                                </span>
+                              ))}
                             </p>
                             {c.notes && <p className="truncate text-xs text-muted-foreground">{c.notes}</p>}
                           </div>
@@ -105,7 +114,7 @@ function CustomersPage() {
                           {ns > 0 && <AlertTriangle className="h-3 w-3" />} {ns}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right"><Button variant="ghost" size="icon" onClick={() => setEditing(c)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" onClick={() => setDeleting(c)}><Trash2 className="h-4 w-4" /></Button></td>
+                      <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" onClick={() => setEditing(c)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" onClick={() => setDeleting(c)}><Trash2 className="h-4 w-4" /></Button></td>
                     </tr>
                     );
                   })}
