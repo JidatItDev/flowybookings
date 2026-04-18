@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { NoShopState } from "@/components/EmptyState";
 import { DashboardInsights } from "@/components/DashboardInsights";
+import { UpgradeNudge } from "@/components/UpgradeNudge";
 import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { bookingsQuery, customersQuery, servicesQuery, staffQuery } from "@/lib/queries";
 import { formatCents, formatTime, initials } from "@/lib/format";
