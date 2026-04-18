@@ -25,12 +25,15 @@ type StaffRow = { id: string; full_name: string; email: string | null; phone: st
 
 function StaffPage() {
   const shopId = useActiveShopId(); const qc = useQueryClient(); const { t } = useT();
+  const { activeShop } = useShopContext();
+  const planLimit: number = !activeShop || activeShop.plan === "trial" || activeShop.plan === "starter" ? 3 : activeShop.plan === "pro" ? 10 : Number.POSITIVE_INFINITY;
   const [editing, setEditing] = useState<StaffRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<StaffRow | null>(null);
   const { data: staff = [], isLoading } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
   const { data: links = [] } = useQuery({ queryKey: ["staff_services", shopId], queryFn: async () => { const { data, error } = await supabase.from("staff_services").select("*"); if (error) throw error; return data ?? []; }, enabled: !!shopId });
+  const atOrOverLimit = Number.isFinite(planLimit) && staff.length >= planLimit;
 
   const toggleActive = useMutation({
     mutationFn: async (s: StaffRow) => { const { error } = await supabase.from("staff").update({ is_active: !s.is_active }).eq("id", s.id); if (error) throw error; },
