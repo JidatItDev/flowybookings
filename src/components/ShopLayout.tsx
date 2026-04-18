@@ -96,6 +96,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         {!isStaffOnly && <SidebarFooter />}
+      </aside>
 
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
