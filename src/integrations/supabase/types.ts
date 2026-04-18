@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          demo_logins_enabled: boolean
+          demo_mode_enabled: boolean
+          id: number
+          public_booking_on_demo_shops_enabled: boolean
+          seeded_demo_data_visible: boolean
+          updated_at: string
+        }
+        Insert: {
+          demo_logins_enabled?: boolean
+          demo_mode_enabled?: boolean
+          id?: number
+          public_booking_on_demo_shops_enabled?: boolean
+          seeded_demo_data_visible?: boolean
+          updated_at?: string
+        }
+        Update: {
+          demo_logins_enabled?: boolean
+          demo_mode_enabled?: boolean
+          id?: number
+          public_booking_on_demo_shops_enabled?: boolean
+          seeded_demo_data_visible?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           confirmation_sent_at: string | null
@@ -451,6 +478,7 @@ export type Database = {
           default_deposit_percent: number
           email: string | null
           id: string
+          is_demo: boolean
           logo_url: string | null
           name: string
           onboarding: Json
@@ -470,6 +498,7 @@ export type Database = {
           default_deposit_percent?: number
           email?: string | null
           id?: string
+          is_demo?: boolean
           logo_url?: string | null
           name: string
           onboarding?: Json
@@ -489,6 +518,7 @@ export type Database = {
           default_deposit_percent?: number
           email?: string | null
           id?: string
+          is_demo?: boolean
           logo_url?: string | null
           name?: string
           onboarding?: Json
@@ -652,6 +682,15 @@ export type Database = {
         Returns: number
       }
       get_default_shop_id: { Args: { _user_id: string }; Returns: string }
+      get_public_app_settings: {
+        Args: never
+        Returns: {
+          demo_logins_enabled: boolean
+          demo_mode_enabled: boolean
+          public_booking_on_demo_shops_enabled: boolean
+          seeded_demo_data_visible: boolean
+        }[]
+      }
       has_shop_access: {
         Args: { _shop_id: string; _user_id: string }
         Returns: boolean
