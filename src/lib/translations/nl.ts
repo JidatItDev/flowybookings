@@ -142,6 +142,7 @@ export const nl: Record<string, string> = {
   "adminNav.bookings": "Boekingen",
   "adminNav.payments": "Betalingen",
   "adminNav.plans": "Plannen",
+  "adminNav.messages": "Berichten",
   "adminNav.support": "Ondersteuning",
   "adminNav.auditLogs": "Activiteitenlog",
   "adminNav.demo": "Demo-instellingen",

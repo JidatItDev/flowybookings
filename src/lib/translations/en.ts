@@ -142,6 +142,7 @@ export const en: Record<string, string> = {
   "adminNav.bookings": "Bookings",
   "adminNav.payments": "Payments",
   "adminNav.plans": "Plans",
+  "adminNav.messages": "Messages",
   "adminNav.support": "Support",
   "adminNav.auditLogs": "Audit logs",
   "adminNav.demo": "Demo controls",
