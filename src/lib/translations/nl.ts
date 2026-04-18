@@ -725,15 +725,7 @@ export const nl: Record<string, string> = {
   "lang.nl": "NL",
   "lang.en": "EN",
 
-  // ── Onboarding (multi-step) ──
-  "onboarding.createShop": "Maak je zaak aan",
-  "onboarding.sub": "Binnen 60 seconden je eerste boekingslink.",
-  "onboarding.shopName": "Naam van je zaak",
-  "onboarding.shopNamePlaceholder": "bijv. Inkwell Studio",
-  "onboarding.urlSlug": "Jouw boekings-URL",
-  "onboarding.slugHint": "Klanten boeken op flowybookings.com/jouw-slug",
-  "onboarding.createBtn": "Zaak aanmaken & doorgaan",
-  "onboarding.created": "Zaak aangemaakt — laten we 'm inrichten.",
+  // ── Onboarding (multi-step extras) ──
   "onboarding.stepWelcome": "Welkom",
   "onboarding.stepShop": "Je zaak",
   "onboarding.stepReady": "Klaar",
