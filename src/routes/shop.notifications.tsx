@@ -134,6 +134,7 @@ function NotificationsPage() {
               </Button>
             </div>
           </div>
+          <DepositSettings shopId={shopId} shop={shop} />
         </>
       )}
     </ShopLayout>
@@ -145,5 +146,58 @@ function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
     <button onClick={onChange} className={cn("relative inline-flex h-6 w-11 items-center rounded-full transition-colors", on ? "bg-primary" : "bg-muted")}>
       <span className={cn("inline-block h-5 w-5 transform rounded-full bg-card shadow transition-transform", on ? "translate-x-5" : "translate-x-0.5")} />
     </button>
+  );
+}
+
+function DepositSettings({ shopId, shop }: { shopId: string; shop: { default_deposit_percent?: number | null } | null }) {
+  const qc = useQueryClient();
+  const { t } = useT();
+  const [percent, setPercent] = useState<number>(0);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    if (shop) {
+      setPercent(shop.default_deposit_percent ?? 0);
+      setDirty(false);
+    }
+  }, [shop]);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const safe = Math.max(0, Math.min(100, Math.round(percent)));
+      const { error } = await supabase.from("shops").update({ default_deposit_percent: safe }).eq("id", shopId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(t("notifications.depositSaved"));
+      setDirty(false);
+      qc.invalidateQueries({ queryKey: shopKeys.shopFull(shopId) });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="mt-6 rounded-2xl border border-border bg-card shadow-soft">
+      <div className="border-b border-border px-6 py-4">
+        <h2 className="text-base font-semibold">{t("notifications.depositTitle")}</h2>
+        <p className="text-xs text-muted-foreground">{t("notifications.depositSub")}</p>
+      </div>
+      <div className="flex items-end gap-3 px-6 py-4">
+        <div className="w-40">
+          <label className="text-xs font-medium text-muted-foreground">{t("notifications.depositPercent")}</label>
+          <input
+            type="number"
+            min={0}
+            max={100}
+            value={percent}
+            onChange={(e) => { setPercent(Number(e.target.value)); setDirty(true); }}
+            className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+          />
+        </div>
+        <Button variant="outline" disabled={!dirty || save.isPending} onClick={() => save.mutate()}>
+          {save.isPending ? t("notifications.saving") : t("notifications.saveChanges")}
+        </Button>
+      </div>
+    </div>
   );
 }
