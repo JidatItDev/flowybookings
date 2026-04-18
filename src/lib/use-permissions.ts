@@ -3,7 +3,7 @@
 
 import { useMemo } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { planAllows, tierOf, type Feature, type Tier, requiredTierFor } from "@/lib/plans";
+import { planAllows, requiredTierFor, tierOf, type Feature, type Tier } from "@/lib/plans";
 
 export function usePermissions() {
   const { isSuperAdmin, isShopOwner, isStaff, activeShop } = useAuth();
@@ -17,6 +17,7 @@ export function usePermissions() {
     return {
       plan,
       tier: tierOf(plan),
+      isStaffOnly,
       canManageBilling: !isStaffOnly,
       canManageAutomation: !isStaffOnly,
       canManagePaymentProvider: !isStaffOnly,
