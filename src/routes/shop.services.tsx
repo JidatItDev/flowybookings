@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Sparkles } from "lucide-react";
@@ -88,10 +88,11 @@ function ServicesPage() {
 function ServiceFormDialog({ open, onClose, service, shopId }: { open: boolean; onClose: () => void; service: ServiceRow | null; shopId: string | null }) {
   const qc = useQueryClient(); const { t } = useT();
   const [form, setForm] = useState({ name: "", category: "", duration_minutes: 30, price: 0, deposit: 0, is_active: true, description: "" });
-  const reset = (s: ServiceRow | null) => setForm({ name: s?.name ?? "", category: s?.category ?? "", duration_minutes: s?.duration_minutes ?? 30, price: s ? s.price_cents / 100 : 0, deposit: s ? s.deposit_cents / 100 : 0, is_active: s?.is_active ?? true, description: s?.description ?? "" });
-  const [lastId, setLastId] = useState<string | null>(null);
-  if (open && service?.id !== lastId) { setLastId(service?.id ?? null); reset(service); }
-  if (!open && lastId !== null) setLastId(null);
+  useEffect(() => {
+    if (!open) return;
+    const s = service;
+    setForm({ name: s?.name ?? "", category: s?.category ?? "", duration_minutes: s?.duration_minutes ?? 30, price: s ? s.price_cents / 100 : 0, deposit: s ? s.deposit_cents / 100 : 0, is_active: s?.is_active ?? true, description: s?.description ?? "" });
+  }, [open, service?.id]);
 
   const save = useMutation({
     mutationFn: async () => {
