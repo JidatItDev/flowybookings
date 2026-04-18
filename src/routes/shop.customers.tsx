@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Mail, Phone, Pencil, Trash2, Users, AlertTriangle, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/shop/customers")({
   component: CustomersPage,
 });
 
-type CustomerRow = { id: string; full_name: string; email: string | null; phone: string | null; notes: string | null; total_spent_cents: number; last_visit_at: string | null; no_show_count?: number; requires_deposit?: boolean };
+type CustomerRow = { id: string; full_name: string; email: string | null; phone: string | null; notes: string | null; total_spent_cents: number; last_visit_at: string | null; no_show_count?: number; requires_deposit?: boolean; tags?: string[] | null };
 
 function CustomersPage() {
   const shopId = useActiveShopId();
