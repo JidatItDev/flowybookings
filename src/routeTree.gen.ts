@@ -22,6 +22,8 @@ import { Route as ShopNotificationsRouteImport } from './routes/shop.notificatio
 import { Route as ShopCustomersRouteImport } from './routes/shop.customers'
 import { Route as ShopCalendarRouteImport } from './routes/shop.calendar'
 import { Route as ShopAnalyticsRouteImport } from './routes/shop.analytics'
+import { Route as HooksBookingConfirmationRouteImport } from './routes/hooks/booking-confirmation'
+import { Route as HooksBookingAutomationsRouteImport } from './routes/hooks/booking-automations'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth.reset-password'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
@@ -106,6 +108,17 @@ const ShopCalendarRoute = ShopCalendarRouteImport.update({
 const ShopAnalyticsRoute = ShopAnalyticsRouteImport.update({
   id: '/shop/analytics',
   path: '/shop/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HooksBookingConfirmationRoute =
+  HooksBookingConfirmationRouteImport.update({
+    id: '/hooks/booking-confirmation',
+    path: '/hooks/booking-confirmation',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const HooksBookingAutomationsRoute = HooksBookingAutomationsRouteImport.update({
+  id: '/hooks/booking-automations',
+  path: '/hooks/booking-automations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
@@ -221,6 +234,8 @@ export interface FileRoutesByFullPath {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
+  '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/calendar': typeof ShopCalendarRoute
   '/shop/customers': typeof ShopCustomersRoute
@@ -256,6 +271,8 @@ export interface FileRoutesByTo {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
+  '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/calendar': typeof ShopCalendarRoute
   '/shop/customers': typeof ShopCustomersRoute
@@ -292,6 +309,8 @@ export interface FileRoutesById {
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
+  '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/calendar': typeof ShopCalendarRoute
   '/shop/customers': typeof ShopCustomersRoute
@@ -329,6 +348,8 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/email/unsubscribe'
+    | '/hooks/booking-automations'
+    | '/hooks/booking-confirmation'
     | '/shop/analytics'
     | '/shop/calendar'
     | '/shop/customers'
@@ -364,6 +385,8 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/email/unsubscribe'
+    | '/hooks/booking-automations'
+    | '/hooks/booking-confirmation'
     | '/shop/analytics'
     | '/shop/calendar'
     | '/shop/customers'
@@ -399,6 +422,8 @@ export interface FileRouteTypes {
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/email/unsubscribe'
+    | '/hooks/booking-automations'
+    | '/hooks/booking-confirmation'
     | '/shop/analytics'
     | '/shop/calendar'
     | '/shop/customers'
@@ -435,6 +460,8 @@ export interface RootRouteChildren {
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
+  HooksBookingAutomationsRoute: typeof HooksBookingAutomationsRoute
+  HooksBookingConfirmationRoute: typeof HooksBookingConfirmationRoute
   ShopAnalyticsRoute: typeof ShopAnalyticsRoute
   ShopCalendarRoute: typeof ShopCalendarRoute
   ShopCustomersRoute: typeof ShopCustomersRoute
@@ -553,6 +580,20 @@ declare module '@tanstack/react-router' {
       path: '/shop/analytics'
       fullPath: '/shop/analytics'
       preLoaderRoute: typeof ShopAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hooks/booking-confirmation': {
+      id: '/hooks/booking-confirmation'
+      path: '/hooks/booking-confirmation'
+      fullPath: '/hooks/booking-confirmation'
+      preLoaderRoute: typeof HooksBookingConfirmationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hooks/booking-automations': {
+      id: '/hooks/booking-automations'
+      path: '/hooks/booking-automations'
+      fullPath: '/hooks/booking-automations'
+      preLoaderRoute: typeof HooksBookingAutomationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/email/unsubscribe': {
@@ -716,6 +757,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
+  HooksBookingAutomationsRoute: HooksBookingAutomationsRoute,
+  HooksBookingConfirmationRoute: HooksBookingConfirmationRoute,
   ShopAnalyticsRoute: ShopAnalyticsRoute,
   ShopCalendarRoute: ShopCalendarRoute,
   ShopCustomersRoute: ShopCustomersRoute,
@@ -745,3 +788,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
