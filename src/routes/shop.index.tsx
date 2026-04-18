@@ -104,27 +104,29 @@ function ShopDashboard() {
           </div>
           <DashboardInsights bookings={bookings} customers={customers} services={services} />
           <div className="mt-6 rounded-2xl border border-border bg-card shadow-soft">
-            <div className="flex items-center justify-between border-b border-border px-6 py-4">
-              <h2 className="text-base font-semibold">{t("dashboard.todayAppointments")}</h2>
+            <div className="flex items-center justify-between border-b border-border px-4 py-3 sm:px-6 sm:py-4">
+              <h2 className="text-sm font-semibold sm:text-base">{t("dashboard.todayAppointments")}</h2>
               <Link to="/shop/calendar"><Button variant="ghost" size="sm">{t("dashboard.viewAll")}</Button></Link>
             </div>
             <div className="divide-y divide-border">
               {todayBookings.length === 0 ? (
-                <p className="px-6 py-8 text-center text-sm text-muted-foreground">{t("dashboard.noAppointments")}</p>
+                <p className="px-4 py-8 text-center text-sm text-muted-foreground sm:px-6">{t("dashboard.noAppointments")}</p>
               ) : todayBookings.map((b) => {
                 const cust = customers.find((c) => c.id === b.customer_id);
                 const svc = services.find((s) => s.id === b.service_id);
                 const stf = staff.find((s) => s.id === b.staff_id);
                 return (
-                  <div key={b.id} className="flex items-center gap-4 px-6 py-4">
+                  <div key={b.id} className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
                     <div className="hidden w-20 text-sm font-medium text-muted-foreground sm:block">{formatTime(b.starts_at)}</div>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-warm text-sm font-semibold text-pink-foreground">{initials(cust?.full_name ?? "?")}</div>
+                    <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-gradient-warm text-xs font-semibold text-pink-foreground sm:h-10 sm:w-10 sm:text-sm">{initials(cust?.full_name ?? "?")}</div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{cust?.full_name ?? t("dashboard.unknown")}</p>
-                      <p className="truncate text-xs text-muted-foreground">{svc?.name ?? "—"} · {stf?.full_name ?? "—"}</p>
+                      <p className="truncate text-sm font-medium sm:text-base">{cust?.full_name ?? t("dashboard.unknown")}</p>
+                      <p className="truncate text-xs text-muted-foreground"><span className="sm:hidden">{formatTime(b.starts_at)} · </span>{svc?.name ?? "—"}</p>
                     </div>
-                    <StatusBadge status={b.status.replace("_", "-")} />
-                    <p className="hidden w-20 text-right text-sm font-medium sm:block">{formatCents(b.price_cents)}</p>
+                    <div className="flex flex-none flex-col items-end gap-1">
+                      <p className="text-sm font-semibold tabular-nums">{formatCents(b.price_cents)}</p>
+                      <StatusBadge status={b.status.replace("_", "-")} />
+                    </div>
                   </div>
                 );
               })}
