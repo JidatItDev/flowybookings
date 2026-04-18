@@ -52,8 +52,8 @@ function AdminMessagesPage() {
         _title: title.trim(),
         _message: message.trim(),
         _type: type,
-        _action_url: actionUrl.trim() || null,
-        _shop_ids: scope === "all" ? null : Array.from(selected),
+        _action_url: actionUrl.trim() || undefined,
+        _shop_ids: scope === "all" ? undefined : Array.from(selected),
       });
       if (error) throw error;
       return data as number;
