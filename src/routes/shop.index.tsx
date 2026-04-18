@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { NoShopState } from "@/components/EmptyState";
 import { DashboardInsights } from "@/components/DashboardInsights";
 import { UpgradeNudge } from "@/components/UpgradeNudge";
+import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { bookingsQuery, customersQuery, servicesQuery, staffQuery } from "@/lib/queries";
 import { formatCents, formatTime, initials } from "@/lib/format";
@@ -55,6 +56,11 @@ function ShopDashboard() {
       />
       {!shopId ? <NoShopState /> : (
         <>
+          <OnboardingChecklist
+            hasService={services.length > 0}
+            hasStaff={staff.length > 0}
+            shopSlug={activeShop?.slug}
+          />
           {noShows7d >= 3 && (
             <div className="mb-4">
               <UpgradeNudge variant="no-shows" count={noShows7d} plan="Pro" />
