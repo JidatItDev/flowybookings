@@ -39,6 +39,7 @@ import { Route as BeheerDashboardSettingsRouteImport } from './routes/beheer.das
 import { Route as BeheerDashboardPlansRouteImport } from './routes/beheer.dashboard.plans'
 import { Route as BeheerDashboardPaymentsRouteImport } from './routes/beheer.dashboard.payments'
 import { Route as BeheerDashboardLogsRouteImport } from './routes/beheer.dashboard.logs'
+import { Route as BeheerDashboardDemoRouteImport } from './routes/beheer.dashboard.demo'
 import { Route as BeheerDashboardBookingsRouteImport } from './routes/beheer.dashboard.bookings'
 import { Route as BeheerAdLoginRouteImport } from './routes/beheer.ad.login'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
@@ -199,6 +200,11 @@ const BeheerDashboardLogsRoute = BeheerDashboardLogsRouteImport.update({
   path: '/beheer/dashboard/logs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BeheerDashboardDemoRoute = BeheerDashboardDemoRouteImport.update({
+  id: '/beheer/dashboard/demo',
+  path: '/beheer/dashboard/demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BeheerDashboardBookingsRoute = BeheerDashboardBookingsRouteImport.update({
   id: '/beheer/dashboard/bookings',
   path: '/beheer/dashboard/bookings',
@@ -260,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/shop/': typeof ShopIndexRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
+  '/beheer/dashboard/demo': typeof BeheerDashboardDemoRoute
   '/beheer/dashboard/logs': typeof BeheerDashboardLogsRoute
   '/beheer/dashboard/payments': typeof BeheerDashboardPaymentsRoute
   '/beheer/dashboard/plans': typeof BeheerDashboardPlansRoute
@@ -299,6 +306,7 @@ export interface FileRoutesByTo {
   '/shop': typeof ShopIndexRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
+  '/beheer/dashboard/demo': typeof BeheerDashboardDemoRoute
   '/beheer/dashboard/logs': typeof BeheerDashboardLogsRoute
   '/beheer/dashboard/payments': typeof BeheerDashboardPaymentsRoute
   '/beheer/dashboard/plans': typeof BeheerDashboardPlansRoute
@@ -339,6 +347,7 @@ export interface FileRoutesById {
   '/shop/': typeof ShopIndexRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
+  '/beheer/dashboard/demo': typeof BeheerDashboardDemoRoute
   '/beheer/dashboard/logs': typeof BeheerDashboardLogsRoute
   '/beheer/dashboard/payments': typeof BeheerDashboardPaymentsRoute
   '/beheer/dashboard/plans': typeof BeheerDashboardPlansRoute
@@ -380,6 +389,7 @@ export interface FileRouteTypes {
     | '/shop/'
     | '/beheer/ad/login'
     | '/beheer/dashboard/bookings'
+    | '/beheer/dashboard/demo'
     | '/beheer/dashboard/logs'
     | '/beheer/dashboard/payments'
     | '/beheer/dashboard/plans'
@@ -419,6 +429,7 @@ export interface FileRouteTypes {
     | '/shop'
     | '/beheer/ad/login'
     | '/beheer/dashboard/bookings'
+    | '/beheer/dashboard/demo'
     | '/beheer/dashboard/logs'
     | '/beheer/dashboard/payments'
     | '/beheer/dashboard/plans'
@@ -458,6 +469,7 @@ export interface FileRouteTypes {
     | '/shop/'
     | '/beheer/ad/login'
     | '/beheer/dashboard/bookings'
+    | '/beheer/dashboard/demo'
     | '/beheer/dashboard/logs'
     | '/beheer/dashboard/payments'
     | '/beheer/dashboard/plans'
@@ -498,6 +510,7 @@ export interface RootRouteChildren {
   ShopIndexRoute: typeof ShopIndexRoute
   BeheerAdLoginRoute: typeof BeheerAdLoginRoute
   BeheerDashboardBookingsRoute: typeof BeheerDashboardBookingsRoute
+  BeheerDashboardDemoRoute: typeof BeheerDashboardDemoRoute
   BeheerDashboardLogsRoute: typeof BeheerDashboardLogsRoute
   BeheerDashboardPaymentsRoute: typeof BeheerDashboardPaymentsRoute
   BeheerDashboardPlansRoute: typeof BeheerDashboardPlansRoute
@@ -726,6 +739,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerDashboardLogsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/beheer/dashboard/demo': {
+      id: '/beheer/dashboard/demo'
+      path: '/beheer/dashboard/demo'
+      fullPath: '/beheer/dashboard/demo'
+      preLoaderRoute: typeof BeheerDashboardDemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/beheer/dashboard/bookings': {
       id: '/beheer/dashboard/bookings'
       path: '/beheer/dashboard/bookings'
@@ -822,6 +842,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShopIndexRoute: ShopIndexRoute,
   BeheerAdLoginRoute: BeheerAdLoginRoute,
   BeheerDashboardBookingsRoute: BeheerDashboardBookingsRoute,
+  BeheerDashboardDemoRoute: BeheerDashboardDemoRoute,
   BeheerDashboardLogsRoute: BeheerDashboardLogsRoute,
   BeheerDashboardPaymentsRoute: BeheerDashboardPaymentsRoute,
   BeheerDashboardPlansRoute: BeheerDashboardPlansRoute,

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { servicesQuery, staffQuery } from "@/lib/queries";
+import { publicAppSettingsQuery } from "@/lib/app-settings";
 import { useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { cn } from "@/lib/utils";
@@ -46,14 +47,22 @@ function BookingFlow() {
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // Public app settings (demo mode toggles)
+  const { data: appSettings } = useQuery(publicAppSettingsQuery());
+
   // Fetch active shops directly (no shop_id needed)
   const shopsQ = useQuery({
-    queryKey: ["public", "shops"],
+    queryKey: ["public", "shops", appSettings?.public_booking_on_demo_shops_enabled, appSettings?.seeded_demo_data_visible],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("shops").select("id, name, slug, address").eq("status", "active");
+        .from("shops").select("id, name, slug, address, is_demo").eq("status", "active");
       if (error) throw error;
-      return data ?? [];
+      let rows = data ?? [];
+      const hideDemo =
+        (appSettings && appSettings.public_booking_on_demo_shops_enabled === false) ||
+        (appSettings && appSettings.seeded_demo_data_visible === false);
+      if (hideDemo) rows = rows.filter((s) => !s.is_demo);
+      return rows;
     },
   });
 

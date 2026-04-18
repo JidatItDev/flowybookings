@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Bell,
   LogOut,
+  Beaker,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ const nav: NavItem[] = [
   { to: "/beheer/dashboard/plans", labelKey: "adminNav.plans", icon: Layers },
   { to: "/beheer/dashboard/support", labelKey: "adminNav.support", icon: LifeBuoy },
   { to: "/beheer/dashboard/logs", labelKey: "adminNav.auditLogs", icon: ScrollText },
+  { to: "/beheer/dashboard/demo", labelKey: "adminNav.demo", icon: Beaker },
   { to: "/beheer/dashboard/settings", labelKey: "adminNav.settings", icon: Settings },
 ];
 
