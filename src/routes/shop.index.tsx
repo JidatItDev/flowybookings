@@ -87,7 +87,8 @@ function ShopDashboard() {
                 <Stat label={t("dashboard.activeStaff")} value={staff.filter((s) => s.is_active).length} />
                 <Stat label={t("dashboard.totalBookings")} value={bookings.length} />
               </div>
-            </div>
+          </div>
+          <DashboardInsights bookings={bookings} customers={customers} services={services} />
           </div>
           <div className="mt-6 rounded-2xl border border-border bg-card shadow-soft">
             <div className="flex items-center justify-between border-b border-border px-6 py-4">
