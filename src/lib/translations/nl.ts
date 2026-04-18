@@ -822,4 +822,32 @@ export const nl: Record<string, string> = {
   "nudge.dismiss": "Verbergen",
   "nudge.lockedBadge": "Pro functie",
   "nudge.premiumBadge": "Premium",
+
+  // ── Auth: demo gating ──
+  "auth.demoDisabled": "Demo-accounts zijn momenteel uitgeschakeld door de platform-admin.",
+
+  // ── Admin demo controls ──
+  "adminDemo.title": "Demo-instellingen",
+  "adminDemo.description": "Beheer demo-modus, demo-logins, publieke boekingen op demo-shops en zichtbaarheid van seed-data.",
+  "adminDemo.flagsTitle": "Platform-flags",
+  "adminDemo.modeTitle": "Demo-modus",
+  "adminDemo.modeDesc": "Hoofdschakelaar. Indien uit, is alle demo-functionaliteit verborgen.",
+  "adminDemo.loginsTitle": "Demo-logins",
+  "adminDemo.loginsDesc": "Toon demo-accounts op de inlogpagina.",
+  "adminDemo.publicBookingTitle": "Publiek boeken op demo-shops",
+  "adminDemo.publicBookingDesc": "Sta anonieme bezoekers toe te boeken op shops die als demo zijn gemarkeerd.",
+  "adminDemo.dataTitle": "Zichtbaarheid seed-data",
+  "adminDemo.dataDesc": "Toon geseede demo-shops in publieke lijsten.",
+  "adminDemo.shopsTitle": "Markeer shops als demo",
+  "adminDemo.shopsDesc": "Demo-shops worden beheerd door de bovenstaande toggles.",
+  "adminDemo.demoBadge": "Demo",
+  "adminDemo.noShops": "Nog geen shops.",
+  "adminDemo.reseedTitle": "Demo-accounts opnieuw aanmaken",
+  "adminDemo.reseedDesc": "Maakt de drie demo-gebruikers (super admin, eigenaar, staff) opnieuw aan met het standaard wachtwoord.",
+  "adminDemo.reseedCta": "Demo-gebruikers reseed",
+  "adminDemo.saved": "Instellingen opgeslagen",
+  "adminDemo.shopUpdated": "Shop bijgewerkt",
+  "adminDemo.reseeded": "Demo-gebruikers opnieuw aangemaakt",
+  "adminDemo.warningTitle": "Demo-modus is UIT",
+  "adminDemo.warningDesc": "Demo-accounts worden geblokkeerd en demo-shops zijn verborgen van publieke boekingen.",
 };
