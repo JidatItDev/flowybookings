@@ -215,6 +215,7 @@ export const en: Record<string, string> = {
   "calendar.save": "Save",
   "calendar.saving": "Saving…",
   "calendar.edit": "Edit",
+  "calendar.markNoShow": "Mark as no-show",
 
   // ── Customers ──
   "customers.title": "Customers",
@@ -245,6 +246,12 @@ export const en: Record<string, string> = {
   "customers.notes": "Notes",
   "customers.saveChanges": "Save changes",
   "customers.saving": "Saving…",
+  "customers.noShows": "No-shows",
+  "customers.noShowsLabel": "No-show count",
+  "customers.repeatNoShow": "Repeat no-show",
+  "customers.depositRequired": "Deposit required",
+  "customers.requireDeposit": "Always require a deposit for this customer",
+  "customers.requireDepositHint": "Recommended for customers with 2 or more no-shows.",
 
   // ── Services ──
   "services.title": "Services",
@@ -356,6 +363,10 @@ export const en: Record<string, string> = {
   "notifications.saving": "Saving…",
   "notifications.saved": "Preferences saved",
   "notifications.unsaved": "Unsaved changes",
+  "notifications.depositTitle": "Deposits (coming soon)",
+  "notifications.depositSub": "Set a default deposit percent. Used to require deposits from repeat no-show customers when payments go live.",
+  "notifications.depositPercent": "Default deposit %",
+  "notifications.depositSaved": "Deposit settings saved",
 
   // ── Settings ──
   "settings.title": "Settings",
