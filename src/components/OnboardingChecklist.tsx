@@ -1,30 +1,48 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Sparkles, UserCog, Link2, X, ChevronRight, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { shopFullQuery, shopKeys } from "@/lib/queries";
 
 type Props = {
+  shopId: string;
   hasService: boolean;
   hasStaff: boolean;
   shopSlug?: string | null;
 };
 
-export function OnboardingChecklist({ hasService, hasStaff, shopSlug }: Props) {
+type OnboardingState = { shared?: boolean; dismissed?: boolean };
+
+export function OnboardingChecklist({ shopId, hasService, hasStaff, shopSlug }: Props) {
   const { t } = useT();
+  const qc = useQueryClient();
+
+  const { data: shop } = useQuery({ ...shopFullQuery(shopId), enabled: !!shopId });
+  const onboarding = ((shop?.onboarding ?? {}) as OnboardingState) || {};
+  const shared = !!onboarding.shared;
+  const dismissed = !!onboarding.dismissed;
+
   const bookingUrl = useMemo(
-    () => (shopSlug ? `${typeof window !== "undefined" ? window.location.origin : ""}/book?shop=${shopSlug}` : ""),
+    () => (shopSlug && typeof window !== "undefined" ? `${window.location.origin}/book?shop=${shopSlug}` : ""),
     [shopSlug],
   );
-  const [shared, setShared] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem(`fb:onboarding:shared:${shopSlug ?? ""}`) === "1";
-  });
-  const [dismissed, setDismissed] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem(`fb:onboarding:dismissed:${shopSlug ?? ""}`) === "1";
+
+  const updateOnboarding = useMutation({
+    mutationFn: async (patch: OnboardingState) => {
+      const next = { ...(shop?.onboarding as OnboardingState ?? {}), ...patch };
+      const { error } = await supabase.from("shops").update({ onboarding: next }).eq("id", shopId);
+      if (error) throw error;
+      return next;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: shopKeys.shopFull(shopId) });
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const items = [
@@ -66,18 +84,14 @@ export function OnboardingChecklist({ hasService, hasStaff, shopSlug }: Props) {
     if (!bookingUrl) return;
     try {
       await navigator.clipboard.writeText(bookingUrl);
-      localStorage.setItem(`fb:onboarding:shared:${shopSlug ?? ""}`, "1");
-      setShared(true);
+      updateOnboarding.mutate({ shared: true });
       toast.success(t("checklist.linkCopied"));
     } catch {
       toast.error(t("checklist.copyFailed"));
     }
   };
 
-  const handleDismiss = () => {
-    localStorage.setItem(`fb:onboarding:dismissed:${shopSlug ?? ""}`, "1");
-    setDismissed(true);
-  };
+  const handleDismiss = () => updateOnboarding.mutate({ dismissed: true });
 
   const pct = Math.round((completed / items.length) * 100);
 
