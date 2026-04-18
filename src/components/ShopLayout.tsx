@@ -191,6 +191,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
 }
 
 function SidebarHeader({ onClose }: { onClose?: () => void }) {
+  const { t } = useT();
   return (
     <div className="flex h-16 items-center justify-between gap-2 px-5">
       <Link to="/" className="flex items-center gap-2">
