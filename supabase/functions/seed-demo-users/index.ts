@@ -27,6 +27,11 @@ Deno.serve(async (_req) => {
 
     if (found) {
       userId = found.id;
+      // Ensure password and email confirmation are correct (idempotent reset)
+      await supabaseAdmin.auth.admin.updateUserById(userId, {
+        password: PASSWORD,
+        email_confirm: true,
+      });
     } else {
       const { data, error } = await supabaseAdmin.auth.admin.createUser({
         email: u.email,
