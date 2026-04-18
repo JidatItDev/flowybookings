@@ -423,6 +423,40 @@ export const nl: Record<string, string> = {
   "payments.date": "Datum",
   "payments.updated": "Betaling bijgewerkt",
 
+  // ── Mollie Connect ──
+  "mollie.title": "Mollie betalingen",
+  "mollie.description": "Koppel je eigen Mollie-account om betalingen te ontvangen. Uitbetalingen gaan rechtstreeks naar jou.",
+  "mollie.connect": "Mollie koppelen",
+  "mollie.disconnect": "Ontkoppelen",
+  "mollie.pending": "Koppeling in behandeling",
+  "mollie.requestStarted": "Koppelingsverzoek gestart",
+  "mollie.disconnected": "Mollie ontkoppeld",
+  "mollie.onboarding": "Onboarding",
+  "mollie.feeEnabled": "Platformkosten",
+  "mollie.feePercent": "Kostenpercentage",
+  "mollie.payouts": "Uitbetalingen",
+  "mollie.payoutsValue": "Direct naar jouw Mollie",
+  "mollie.platformFeeNotice": "FlowyBookings rekent een kleine applicatievergoeding per transactie. Klantbetalingen komen rechtstreeks op jouw eigen Mollie-account — nooit op ons platform.",
+  "mollie.status.not_connected": "Niet gekoppeld",
+  "mollie.status.pending": "In behandeling",
+  "mollie.status.connected": "Gekoppeld",
+  "mollie.status.disconnected": "Ontkoppeld",
+  "mollie.status.error": "Fout",
+  "mollie.onboarding.not_started": "Niet gestart",
+  "mollie.onboarding.in_review": "In beoordeling",
+  "mollie.onboarding.completed": "Voltooid",
+  "mollie.onboarding.rejected": "Afgewezen",
+
+  // ── Admin: Providers ──
+  "adminProviders.title": "Betalingsproviders",
+  "adminProviders.description": "Mollie Connect-status en platformkosten per shop.",
+  "adminProviders.empty": "Nog geen shops met een Mollie-koppeling.",
+  "adminProviders.account": "Account",
+  "adminProviders.fee": "Kosten",
+
+  "common.yes": "Ja",
+  "common.no": "Nee",
+
   // ── Notifications ──
   "notifications.title": "Meldingen",
   "notifications.description": "Herinneringen en bevestigingen via alle kanalen.",
