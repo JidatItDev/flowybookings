@@ -25,16 +25,36 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   // Always start with "nl" for SSR hydration safety
   const [locale, setLocaleState] = useState<Locale>("nl");
 
-  // After hydration, sync from sessionStorage
+  // After hydration, sync from localStorage (persists across browser sessions),
+  // falling back to legacy sessionStorage, then browser language.
   useEffect(() => {
-    const stored = sessionStorage.getItem("flowybookings_lang") as Locale | null;
-    if (stored && stored !== locale) setLocaleState(stored);
+    if (typeof window === "undefined") return;
+    const stored =
+      (localStorage.getItem("flowybookings_lang") as Locale | null) ??
+      (sessionStorage.getItem("flowybookings_lang") as Locale | null);
+    if (stored === "nl" || stored === "en") {
+      if (stored !== locale) setLocaleState(stored);
+      return;
+    }
+    const nav = navigator.language?.toLowerCase() ?? "";
+    const detected: Locale = nav.startsWith("nl") ? "nl" : nav.startsWith("en") ? "en" : "nl";
+    if (detected !== locale) setLocaleState(detected);
   }, []);
 
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l);
-    if (typeof window !== "undefined") sessionStorage.setItem("flowybookings_lang", l);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("flowybookings_lang", l);
+      // Also mirror to sessionStorage so any older code keeps working.
+      sessionStorage.setItem("flowybookings_lang", l);
+      document.documentElement.lang = l;
+    }
   }, []);
+
+  // Keep <html lang> in sync for SEO / accessibility on every locale change.
+  useEffect(() => {
+    if (typeof document !== "undefined") document.documentElement.lang = locale;
+  }, [locale]);
 
   const t = useCallback(
     (key: string, vars?: Record<string, string | number>) => {
