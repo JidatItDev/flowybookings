@@ -35,6 +35,7 @@ import { Route as BeheerDashboardPaymentsRouteImport } from './routes/beheer.das
 import { Route as BeheerDashboardLogsRouteImport } from './routes/beheer.dashboard.logs'
 import { Route as BeheerDashboardBookingsRouteImport } from './routes/beheer.dashboard.bookings'
 import { Route as BeheerAdLoginRouteImport } from './routes/beheer.ad.login'
+import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -167,6 +168,12 @@ const BeheerAdLoginRoute = BeheerAdLoginRouteImport.update({
   path: '/beheer/ad/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LovableEmailQueueProcessRoute =
+  LovableEmailQueueProcessRouteImport.update({
+    id: '/lovable/email/queue/process',
+    path: '/lovable/email/queue/process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -195,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/beheer/dashboard/users': typeof BeheerDashboardUsersRoute
   '/book/confirmation/$bookingId': typeof BookConfirmationBookingIdRoute
   '/beheer/dashboard/': typeof BeheerDashboardIndexRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -223,6 +231,7 @@ export interface FileRoutesByTo {
   '/beheer/dashboard/users': typeof BeheerDashboardUsersRoute
   '/book/confirmation/$bookingId': typeof BookConfirmationBookingIdRoute
   '/beheer/dashboard': typeof BeheerDashboardIndexRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -252,6 +261,7 @@ export interface FileRoutesById {
   '/beheer/dashboard/users': typeof BeheerDashboardUsersRoute
   '/book/confirmation/$bookingId': typeof BookConfirmationBookingIdRoute
   '/beheer/dashboard/': typeof BeheerDashboardIndexRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -282,6 +292,7 @@ export interface FileRouteTypes {
     | '/beheer/dashboard/users'
     | '/book/confirmation/$bookingId'
     | '/beheer/dashboard/'
+    | '/lovable/email/queue/process'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -310,6 +321,7 @@ export interface FileRouteTypes {
     | '/beheer/dashboard/users'
     | '/book/confirmation/$bookingId'
     | '/beheer/dashboard'
+    | '/lovable/email/queue/process'
   id:
     | '__root__'
     | '/'
@@ -338,6 +350,7 @@ export interface FileRouteTypes {
     | '/beheer/dashboard/users'
     | '/book/confirmation/$bookingId'
     | '/beheer/dashboard/'
+    | '/lovable/email/queue/process'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -366,6 +379,7 @@ export interface RootRouteChildren {
   BeheerDashboardSupportRoute: typeof BeheerDashboardSupportRoute
   BeheerDashboardUsersRoute: typeof BeheerDashboardUsersRoute
   BeheerDashboardIndexRoute: typeof BeheerDashboardIndexRoute
+  LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -552,6 +566,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerAdLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lovable/email/queue/process': {
+      id: '/lovable/email/queue/process'
+      path: '/lovable/email/queue/process'
+      fullPath: '/lovable/email/queue/process'
+      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -591,6 +612,7 @@ const rootRouteChildren: RootRouteChildren = {
   BeheerDashboardSupportRoute: BeheerDashboardSupportRoute,
   BeheerDashboardUsersRoute: BeheerDashboardUsersRoute,
   BeheerDashboardIndexRoute: BeheerDashboardIndexRoute,
+  LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
