@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CircleDollarSign, TrendingUp, RotateCcw, Wallet } from "lucide-react";
+import { CircleDollarSign, TrendingUp, RotateCcw, Wallet, Plug, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/AdminLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -7,6 +7,7 @@ import { StatCard } from "@/components/StatCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminPaymentsQuery, adminStatsQuery } from "@/lib/admin-queries";
+import { adminPaymentProvidersQuery, type ConnectionStatus } from "@/lib/payment-providers";
 import { formatCents, relativeFromNow } from "@/lib/format";
 import { useT } from "@/lib/i18n";
 
