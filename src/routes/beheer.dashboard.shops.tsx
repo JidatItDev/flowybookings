@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { useT } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth-context";
+import { changeShopPlan, ALL_DB_PLANS, planLabel, type DbPlan } from "@/lib/plans";
 
 type ShopStatus = Database["public"]["Enums"]["shop_status"];
 export const Route = createFileRoute("/beheer/dashboard/shops")({ head: () => ({ meta: [{ title: "Shops — Platform" }] }), component: ShopsPage });
@@ -21,12 +23,20 @@ const planColor: Record<string, string> = { trial: "bg-muted text-muted-foregrou
 
 function ShopsPage() {
   const { t } = useT();
+  const { user } = useAuth();
   const [q, setQ] = useState(""); const [statusFilter, setStatusFilter] = useState<"all" | ShopStatus>("all");
   const { data: shops, isLoading } = useQuery(adminShopsQuery()); const qc = useQueryClient();
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: ShopStatus }) => { const { error } = await supabase.from("shops").update({ status }).eq("id", id); if (error) throw error; },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin"] }); toast.success(t("adminShops.updated")); },
     onError: (e) => toast.error(e.message),
+  });
+  const updatePlan = useMutation({
+    mutationFn: async ({ id, plan, prev }: { id: string; plan: DbPlan; prev: string }) => {
+      await changeShopPlan({ shopId: id, newPlan: plan, previousPlan: prev, actorUserId: user?.id ?? null, actorEmail: user?.email ?? null, source: "admin" });
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin"] }); toast.success(t("adminShops.planUpdated")); },
+    onError: (e: Error) => toast.error(e.message),
   });
   const list = (shops ?? []).filter((s) => (statusFilter === "all" || s.status === statusFilter) && s.name.toLowerCase().includes(q.toLowerCase()));
 
@@ -49,7 +59,20 @@ function ShopsPage() {
                 <tr key={s.id} className="hover:bg-muted/30">
                   <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-warm text-xs font-semibold text-pink-foreground">{s.name[0]}</div><div><p className="font-medium">{s.name}</p><p className="text-xs text-muted-foreground">{s.slug}</p></div></div></td>
                   <td className="hidden px-6 py-4 text-muted-foreground md:table-cell">{s.owner_email ?? "—"}</td>
-                  <td className="px-6 py-4"><span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium capitalize", planColor[s.plan] ?? planColor.trial)}>{s.plan}</span></td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium capitalize", planColor[s.plan] ?? planColor.trial)}>{planLabel(s.plan)}</span>
+                      <select
+                        aria-label="Change plan"
+                        value={s.plan}
+                        disabled={updatePlan.isPending}
+                        onChange={(e) => updatePlan.mutate({ id: s.id, plan: e.target.value as DbPlan, prev: s.plan })}
+                        className="h-7 rounded-md border border-border bg-background px-1 text-xs"
+                      >
+                        {ALL_DB_PLANS.map((p) => <option key={p} value={p}>{planLabel(p)}</option>)}
+                      </select>
+                    </div>
+                  </td>
                   <td className="px-6 py-4"><StatusBadge status={s.status} /></td>
                   <td className="hidden px-6 py-4 lg:table-cell">{s.booking_count ?? 0}</td>
                   <td className="hidden px-6 py-4 font-medium lg:table-cell">{formatCents(s.revenue_cents ?? 0)}</td>

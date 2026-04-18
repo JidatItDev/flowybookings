@@ -884,4 +884,27 @@ export const en: Record<string, string> = {
   "adminDemo.reseeded": "Demo users reseeded",
   "adminDemo.warningTitle": "Demo mode is OFF",
   "adminDemo.warningDesc": "Demo accounts are blocked and demo shops are hidden from public booking.",
+  // ── Plan / upgrade extras ──
+  "upgrade.youAreOn": "You're on",
+  "upgrade.toastApplied": "Plan changed to {plan}",
+  "upgrade.cta.downgrade": "Switch to {plan}",
+  "upgrade.confirmDowngrade": "Downgrade to {plan}? You may lose access to current features.",
+  "upgrade.billingNotice": "Billing is processed manually for now. Your access updates immediately.",
+
+  // ── Admin plans extras ──
+  "adminPlans.shopUpdated": "Shop plan updated",
+  "adminPlans.shopsOnPlan": "shops",
+  "adminPlans.manageShops": "Per-shop plan",
+  "adminPlans.manageShopsDesc": "Change any shop's plan. Updates take effect immediately.",
+  "adminPlans.recentChanges": "Recent plan changes",
+  "adminPlans.noChanges": "No plan changes yet.",
+  "adminPlans.noShops": "No shops yet.",
+  "adminShops.planUpdated": "Plan updated",
+
+  // ── Permissions ──
+  "perm.staffNoBillingTitle": "Staff cannot manage billing",
+  "perm.staffNoBillingDesc": "Ask the shop owner to upgrade or change the plan.",
+  "perm.staffNoAccessTitle": "Owner-only area",
+  "perm.staffNoAccessDesc": "This section is reserved for the shop owner.",
+
 };

@@ -1,27 +1,55 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Check, Sparkles, ShieldCheck, TrendingUp, AlertTriangle, ArrowRight } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Check, Sparkles, ShieldCheck, TrendingUp, AlertTriangle, ArrowRight, Loader2, Lock } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { useShopContext } from "@/lib/shop-context";
+import { useAuth } from "@/lib/auth-context";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { changeShopPlan, tierOf, TIER_RANK, type DbPlan } from "@/lib/plans";
+import { usePermissions } from "@/lib/use-permissions";
+import { shopKeys } from "@/lib/queries";
 
 export const Route = createFileRoute("/shop/upgrade")({
   head: () => ({ meta: [{ title: "Upgrade — FlowyBookings" }] }),
   component: UpgradePage,
 });
 
-type PlanKey = "starter" | "pro" | "premium";
+type PlanKey = "starter" | "pro" | "premium"; // DB plan values for BASIC/PRO/PREMIUM tiers
 
 function UpgradePage() {
   const { t } = useT();
-  const { activeShop } = useShopContext();
-  const currentPlan = (activeShop?.plan ?? "trial") as string;
+  const { activeShop, user } = useAuth();
+  const { canManageBilling, isStaffOnly } = usePermissions();
+  const qc = useQueryClient();
+  const currentPlan = (activeShop?.plan ?? "trial") as DbPlan;
+  const currentTier = tierOf(currentPlan);
+
+  const upgrade = useMutation({
+    mutationFn: async (newPlan: PlanKey) => {
+      if (!activeShop) throw new Error("No active shop");
+      await changeShopPlan({
+        shopId: activeShop.id,
+        newPlan,
+        previousPlan: currentPlan,
+        actorUserId: user?.id ?? null,
+        actorEmail: user?.email ?? null,
+        source: "owner_upgrade",
+      });
+    },
+    onSuccess: (_d, planKey) => {
+      toast.success(t("upgrade.toastApplied", { plan: planKey }));
+      qc.invalidateQueries({ queryKey: ["auth", "shops"] });
+      if (activeShop) qc.invalidateQueries({ queryKey: shopKeys.shopFull(activeShop.id) });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const plans: Array<{
     key: PlanKey;
+    tier: "basic" | "pro" | "premium";
     name: string;
     tagline: string;
     price: number;
@@ -31,59 +59,64 @@ function UpgradePage() {
   }> = [
     {
       key: "starter",
+      tier: "basic",
       name: t("upgrade.basic"),
       tagline: t("upgrade.basicTagline"),
       price: 19,
       accent: "neutral",
-      features: [
-        t("upgrade.feat.bookings"),
-        t("upgrade.feat.staff3"),
-        t("upgrade.feat.email"),
-        t("upgrade.feat.analytics"),
-      ],
+      features: [t("upgrade.feat.bookings"), t("upgrade.feat.staff3"), t("upgrade.feat.email"), t("upgrade.feat.analytics")],
     },
     {
       key: "pro",
+      tier: "pro",
       name: t("upgrade.pro"),
       tagline: t("upgrade.proTagline"),
       price: 49,
       badge: t("upgrade.mostPopular"),
       accent: "primary",
-      features: [
-        t("upgrade.feat.bookings"),
-        t("upgrade.feat.staff10"),
-        t("upgrade.feat.sms"),
-        t("upgrade.feat.deposits"),
-        t("upgrade.feat.advAnalytics"),
-        t("upgrade.feat.branding"),
-      ],
+      features: [t("upgrade.feat.bookings"), t("upgrade.feat.staff10"), t("upgrade.feat.sms"), t("upgrade.feat.deposits"), t("upgrade.feat.advAnalytics"), t("upgrade.feat.branding")],
     },
     {
       key: "premium",
+      tier: "premium",
       name: t("upgrade.premium"),
       tagline: t("upgrade.premiumTagline"),
       price: 99,
       badge: t("upgrade.bestValue"),
       accent: "premium",
-      features: [
-        t("upgrade.feat.bookings"),
-        t("upgrade.feat.staffUnlimited"),
-        t("upgrade.feat.whatsapp"),
-        t("upgrade.feat.multiloc"),
-        t("upgrade.feat.priority"),
-        t("upgrade.feat.api"),
-      ],
+      features: [t("upgrade.feat.bookings"), t("upgrade.feat.staffUnlimited"), t("upgrade.feat.whatsapp"), t("upgrade.feat.multiloc"), t("upgrade.feat.priority"), t("upgrade.feat.api")],
     },
   ];
 
-  const handleSelect = (planKey: PlanKey) => {
-    if (planKey === currentPlan) return;
-    toast.success(t("upgrade.toastSoon"));
-  };
+  if (isStaffOnly) {
+    return (
+      <ShopLayout>
+        <PageHeader title={t("upgrade.pageTitle")} description={t("upgrade.pageSub")} />
+        <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-soft">
+          <Lock className="mx-auto h-8 w-8 text-muted-foreground" />
+          <h2 className="mt-3 text-base font-semibold">{t("perm.staffNoBillingTitle")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{t("perm.staffNoBillingDesc")}</p>
+        </div>
+      </ShopLayout>
+    );
+  }
 
   return (
     <ShopLayout>
       <PageHeader title={t("upgrade.pageTitle")} description={t("upgrade.pageSub")} />
+
+      {/* Current plan summary */}
+      <div className="mb-4 rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-xs text-muted-foreground">{t("upgrade.youAreOn")}</p>
+            <p className="truncate text-sm font-semibold capitalize">{currentPlan}</p>
+          </div>
+          <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary capitalize">
+            {currentTier}
+          </span>
+        </div>
+      </div>
 
       {/* Outcomes strip */}
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
@@ -105,7 +138,9 @@ function UpgradePage() {
       <div className="grid gap-4 lg:grid-cols-3">
         {plans.map((p) => {
           const isCurrent = currentPlan === p.key;
+          const isDowngrade = TIER_RANK[p.tier] < TIER_RANK[currentTier] && !isCurrent;
           const featured = p.accent === "primary";
+          const busy = upgrade.isPending && upgrade.variables === p.key;
           return (
             <div
               key={p.key}
@@ -117,12 +152,7 @@ function UpgradePage() {
               )}
             >
               {p.badge && (
-                <span
-                  className={cn(
-                    "absolute -top-3 left-6 rounded-full px-3 py-1 text-xs font-semibold",
-                    featured ? "bg-gradient-brand text-primary-foreground" : "bg-foreground text-background",
-                  )}
-                >
+                <span className={cn("absolute -top-3 left-6 rounded-full px-3 py-1 text-xs font-semibold", featured ? "bg-gradient-brand text-primary-foreground" : "bg-foreground text-background")}>
                   {p.badge}
                 </span>
               )}
@@ -153,15 +183,21 @@ function UpgradePage() {
                 variant={featured ? "hero" : isCurrent ? "outline" : "default"}
                 className="mt-6 w-full"
                 size="lg"
-                disabled={isCurrent}
-                onClick={() => handleSelect(p.key)}
+                disabled={isCurrent || busy || !canManageBilling}
+                onClick={() => {
+                  if (!canManageBilling) return;
+                  if (isCurrent) return;
+                  if (isDowngrade && !window.confirm(t("upgrade.confirmDowngrade", { plan: p.name }))) return;
+                  upgrade.mutate(p.key);
+                }}
               >
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {isCurrent
                   ? t("upgrade.currentPlan")
-                  : p.key === "starter"
-                  ? t("upgrade.cta.starter")
+                  : isDowngrade
+                  ? t("upgrade.cta.downgrade", { plan: p.name })
                   : t("upgrade.cta.upgrade", { plan: p.name })}
-                {!isCurrent && <ArrowRight className="h-4 w-4" />}
+                {!isCurrent && !busy && <ArrowRight className="h-4 w-4" />}
               </Button>
             </div>
           );
@@ -169,6 +205,7 @@ function UpgradePage() {
       </div>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">{t("upgrade.guarantee")}</p>
+      <p className="mt-2 text-center text-xs text-muted-foreground">{t("upgrade.billingNotice")}</p>
 
       {/* FAQ */}
       <div className="mt-10 rounded-3xl border border-border bg-card p-6 shadow-soft">

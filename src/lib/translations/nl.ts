@@ -884,4 +884,27 @@ export const nl: Record<string, string> = {
   "adminDemo.reseeded": "Demo-gebruikers opnieuw aangemaakt",
   "adminDemo.warningTitle": "Demo-modus is UIT",
   "adminDemo.warningDesc": "Demo-accounts worden geblokkeerd en demo-shops zijn verborgen van publieke boekingen.",
+  // ── Plan / upgrade extras ──
+  "upgrade.youAreOn": "Je gebruikt",
+  "upgrade.toastApplied": "Plan gewijzigd naar {plan}",
+  "upgrade.cta.downgrade": "Wissel naar {plan}",
+  "upgrade.confirmDowngrade": "Downgraden naar {plan}? Je verliest mogelijk toegang tot functies.",
+  "upgrade.billingNotice": "Facturering verloopt voorlopig handmatig. Je toegang wordt direct bijgewerkt.",
+
+  // ── Admin plans extras ──
+  "adminPlans.shopUpdated": "Shopabonnement bijgewerkt",
+  "adminPlans.shopsOnPlan": "shops",
+  "adminPlans.manageShops": "Abonnement per shop",
+  "adminPlans.manageShopsDesc": "Wijzig elk shopabonnement. Wijzigingen zijn direct actief.",
+  "adminPlans.recentChanges": "Recente abonnementswijzigingen",
+  "adminPlans.noChanges": "Nog geen wijzigingen.",
+  "adminPlans.noShops": "Nog geen shops.",
+  "adminShops.planUpdated": "Abonnement bijgewerkt",
+
+  // ── Permissions ──
+  "perm.staffNoBillingTitle": "Personeel kan facturering niet beheren",
+  "perm.staffNoBillingDesc": "Vraag de eigenaar om het abonnement te wijzigen.",
+  "perm.staffNoAccessTitle": "Alleen voor eigenaar",
+  "perm.staffNoAccessDesc": "Dit gedeelte is alleen voor de shopeigenaar.",
+
 };

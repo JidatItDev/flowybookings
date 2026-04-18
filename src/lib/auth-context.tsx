@@ -37,6 +37,7 @@ interface AuthContextValue {
   activeShopId: string | null;
   setActiveShopId: (id: string) => void;
   signOut: () => Promise<void>;
+  refreshShops: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -127,6 +128,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setActiveShopIdState(null);
   };
 
+  const refreshShops = () => {
+    qc.invalidateQueries({ queryKey: ["auth", "shops"] });
+  };
+
   const value = useMemo<AuthContextValue>(() => {
     const activeShop = shops.find((s) => s.id === activeShopId) ?? null;
     const isSuperAdmin = roles.includes("super_admin");
@@ -145,8 +150,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       activeShopId,
       setActiveShopId,
       signOut,
+      refreshShops,
     };
-  }, [session, loading, roles, rolesLoading, shops, activeShopId]);
+  }, [session, loading, roles, rolesLoading, shops, activeShopId, qc]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
