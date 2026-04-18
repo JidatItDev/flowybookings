@@ -16,14 +16,18 @@ export type Database = {
     Tables: {
       bookings: {
         Row: {
+          confirmation_sent_at: string | null
           created_at: string
           currency: string
           customer_id: string | null
           deposit_cents: number
           ends_at: string
+          followup_sent_at: string | null
           id: string
           notes: string | null
           price_cents: number
+          reminder_24h_sent_at: string | null
+          reminder_2h_sent_at: string | null
           service_id: string | null
           shop_id: string
           staff_id: string | null
@@ -32,14 +36,18 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          confirmation_sent_at?: string | null
           created_at?: string
           currency?: string
           customer_id?: string | null
           deposit_cents?: number
           ends_at: string
+          followup_sent_at?: string | null
           id?: string
           notes?: string | null
           price_cents?: number
+          reminder_24h_sent_at?: string | null
+          reminder_2h_sent_at?: string | null
           service_id?: string | null
           shop_id: string
           staff_id?: string | null
@@ -48,14 +56,18 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          confirmation_sent_at?: string | null
           created_at?: string
           currency?: string
           customer_id?: string | null
           deposit_cents?: number
           ends_at?: string
+          followup_sent_at?: string | null
           id?: string
           notes?: string | null
           price_cents?: number
+          reminder_24h_sent_at?: string | null
+          reminder_2h_sent_at?: string | null
           service_id?: string | null
           shop_id?: string
           staff_id?: string | null
@@ -375,6 +387,53 @@ export type Database = {
             foreignKeyName: "services_shop_id_fkey"
             columns: ["shop_id"]
             isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_automations: {
+        Row: {
+          confirmation_enabled: boolean
+          created_at: string
+          followup_delay_minutes: number
+          followup_enabled: boolean
+          id: string
+          reminder_24h_enabled: boolean
+          reminder_2h_enabled: boolean
+          settings: Json
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          confirmation_enabled?: boolean
+          created_at?: string
+          followup_delay_minutes?: number
+          followup_enabled?: boolean
+          id?: string
+          reminder_24h_enabled?: boolean
+          reminder_2h_enabled?: boolean
+          settings?: Json
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          confirmation_enabled?: boolean
+          created_at?: string
+          followup_delay_minutes?: number
+          followup_enabled?: boolean
+          id?: string
+          reminder_24h_enabled?: boolean
+          reminder_2h_enabled?: boolean
+          settings?: Json
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_automations_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: true
             referencedRelation: "shops"
             referencedColumns: ["id"]
           },

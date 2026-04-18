@@ -134,6 +134,7 @@ function NotificationsPage() {
               </Button>
             </div>
           </div>
+          <AutomationSettings shopId={shopId} />
           <DepositSettings shopId={shopId} shop={shop ?? null} />
         </>
       )}
@@ -195,6 +196,104 @@ function DepositSettings({ shopId, shop }: { shopId: string; shop: { default_dep
           />
         </div>
         <Button variant="outline" disabled={!dirty || save.isPending} onClick={() => save.mutate()}>
+          {save.isPending ? t("notifications.saving") : t("notifications.saveChanges")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+type AutomationRow = {
+  confirmation_enabled: boolean;
+  reminder_24h_enabled: boolean;
+  reminder_2h_enabled: boolean;
+  followup_enabled: boolean;
+};
+
+const AUTO_DEFAULTS: AutomationRow = {
+  confirmation_enabled: true,
+  reminder_24h_enabled: true,
+  reminder_2h_enabled: true,
+  followup_enabled: false,
+};
+
+function AutomationSettings({ shopId }: { shopId: string }) {
+  const qc = useQueryClient();
+  const { t } = useT();
+  const [row, setRow] = useState<AutomationRow>(AUTO_DEFAULTS);
+  const [dirty, setDirty] = useState(false);
+
+  const q = useQuery({
+    queryKey: ["shop_automations", shopId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("shop_automations")
+        .select("confirmation_enabled, reminder_24h_enabled, reminder_2h_enabled, followup_enabled")
+        .eq("shop_id", shopId)
+        .maybeSingle();
+      if (error) throw error;
+      return data ?? AUTO_DEFAULTS;
+    },
+    enabled: !!shopId,
+  });
+
+  useEffect(() => {
+    if (q.data) {
+      setRow({ ...AUTO_DEFAULTS, ...q.data });
+      setDirty(false);
+    }
+  }, [q.data]);
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from("shop_automations")
+        .upsert({ shop_id: shopId, ...row }, { onConflict: "shop_id" });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(t("automations.saved"));
+      setDirty(false);
+      qc.invalidateQueries({ queryKey: ["shop_automations", shopId] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const items: { key: keyof AutomationRow; titleKey: string; descKey: string }[] = [
+    { key: "confirmation_enabled", titleKey: "automations.confirmation", descKey: "automations.confirmationDesc" },
+    { key: "reminder_24h_enabled", titleKey: "automations.reminder24", descKey: "automations.reminder24Desc" },
+    { key: "reminder_2h_enabled", titleKey: "automations.reminder2", descKey: "automations.reminder2Desc" },
+    { key: "followup_enabled", titleKey: "automations.followup", descKey: "automations.followupDesc" },
+  ];
+
+  return (
+    <div className="mt-6 rounded-2xl border border-border bg-card shadow-soft">
+      <div className="flex items-start justify-between gap-3 border-b border-border px-6 py-4">
+        <div>
+          <h2 className="text-base font-semibold">{t("automations.title")}</h2>
+          <p className="text-xs text-muted-foreground">{t("automations.sub")}</p>
+        </div>
+        <span className="rounded-full bg-mint/40 px-2.5 py-1 text-[11px] font-medium text-mint-foreground">
+          {t("automations.statusActive")}
+        </span>
+      </div>
+      <div className="divide-y divide-border">
+        {items.map((it) => (
+          <div key={it.key} className="flex items-center justify-between px-6 py-4">
+            <div>
+              <p className="font-medium">{t(it.titleKey)}</p>
+              <p className="text-xs text-muted-foreground">{t(it.descKey)}</p>
+            </div>
+            <Toggle
+              on={row[it.key]}
+              onChange={() => { setRow((r) => ({ ...r, [it.key]: !r[it.key] })); setDirty(true); }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="flex items-center justify-between border-t border-border px-6 py-4">
+        <span className="text-[11px] text-muted-foreground">{t("automations.poweredBy")}</span>
+        <Button variant="hero" onClick={() => save.mutate()} disabled={!dirty || save.isPending}>
           {save.isPending ? t("notifications.saving") : t("notifications.saveChanges")}
         </Button>
       </div>
