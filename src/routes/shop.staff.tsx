@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, CalendarRange, Pencil, Trash2, UserCog } from "lucide-react";
@@ -95,9 +95,10 @@ function StaffPage() {
 function StaffFormDialog({ open, onClose, member, shopId }: { open: boolean; onClose: () => void; member: StaffRow | null; shopId: string | null }) {
   const qc = useQueryClient(); const { t } = useT();
   const [form, setForm] = useState({ full_name: "", email: "", phone: "", hours: "", is_active: true });
-  const [lastId, setLastId] = useState<string | null>(null);
-  if (open && member?.id !== lastId) { setLastId(member?.id ?? null); setForm({ full_name: member?.full_name ?? "", email: member?.email ?? "", phone: member?.phone ?? "", hours: (member?.working_hours as { hours?: string })?.hours ?? "", is_active: member?.is_active ?? true }); }
-  if (!open && lastId !== null) setLastId(null);
+  useEffect(() => {
+    if (!open) return;
+    setForm({ full_name: member?.full_name ?? "", email: member?.email ?? "", phone: member?.phone ?? "", hours: (member?.working_hours as { hours?: string })?.hours ?? "", is_active: member?.is_active ?? true });
+  }, [open, member?.id]);
 
   const save = useMutation({
     mutationFn: async () => {

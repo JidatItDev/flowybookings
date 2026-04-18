@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Mail, Phone, Pencil, Trash2, Users } from "lucide-react";
@@ -104,9 +104,10 @@ function CustomerFormDialog({ open, onClose, customer, shopId }: { open: boolean
   const qc = useQueryClient();
   const { t } = useT();
   const [form, setForm] = useState({ full_name: "", email: "", phone: "", notes: "" });
-  const [lastId, setLastId] = useState<string | null>(null);
-  if (open && customer?.id !== lastId) { setLastId(customer?.id ?? null); setForm({ full_name: customer?.full_name ?? "", email: customer?.email ?? "", phone: customer?.phone ?? "", notes: customer?.notes ?? "" }); }
-  if (!open && lastId !== null) setLastId(null);
+  useEffect(() => {
+    if (!open) return;
+    setForm({ full_name: customer?.full_name ?? "", email: customer?.email ?? "", phone: customer?.phone ?? "", notes: customer?.notes ?? "" });
+  }, [open, customer?.id]);
 
   const save = useMutation({
     mutationFn: async () => {
