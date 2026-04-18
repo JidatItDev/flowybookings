@@ -139,6 +139,13 @@ function BookingFlow() {
         provider: "mollie",
       });
 
+      // Fire-and-forget: send confirmation email (respects shop automation toggle)
+      fetch('/hooks/booking-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId: booking.id }),
+      }).catch((e) => console.warn('confirmation email failed', e));
+
       navigate({ to: "/book/confirmation/$bookingId", params: { bookingId: booking.id } });
     } catch (err) {
       console.error("Booking failed:", err);
