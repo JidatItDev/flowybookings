@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Sparkle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { publicAppSettingsQuery } from "@/lib/app-settings";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -116,24 +118,28 @@ function LoginPage() {
             <Link to="/signup" className="font-medium text-primary hover:underline">{t("auth.createAnAccount")}</Link>
           </div>
 
-          <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
-            <div className="h-px flex-1 bg-border" /> {t("auth.demoAccounts")}
-            <div className="h-px flex-1 bg-border" />
-          </div>
-          <div className="space-y-2">
-            {DEMOS.map((d) => (
-              <button key={d.email} type="button" onClick={() => fillDemo(d.email)} className="flex w-full items-center justify-between rounded-xl border border-border bg-muted/40 px-3 py-2 text-left text-xs hover:bg-muted">
-                <span className="font-medium">{t(d.labelKey)}</span>
-                <span className="font-mono text-muted-foreground">{d.email}</span>
-              </button>
-            ))}
-            <p className="text-[11px] text-muted-foreground">
-              {t("auth.password_label")}: <code className="font-mono">{DEMO_PASSWORD}</code> · {t("auth.firstTime")}{" "}
-              <button type="button" onClick={runSeed} disabled={seeding} className="font-medium text-primary hover:underline disabled:opacity-60">
-                {seeding ? t("auth.seeding") : t("auth.provisionDemo")}
-              </button>
-            </p>
-          </div>
+          {demoEnabled && (
+            <>
+              <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
+                <div className="h-px flex-1 bg-border" /> {t("auth.demoAccounts")}
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <div className="space-y-2">
+                {DEMOS.map((d) => (
+                  <button key={d.email} type="button" onClick={() => fillDemo(d.email)} className="flex w-full items-center justify-between rounded-xl border border-border bg-muted/40 px-3 py-2 text-left text-xs hover:bg-muted">
+                    <span className="font-medium">{t(d.labelKey)}</span>
+                    <span className="font-mono text-muted-foreground">{d.email}</span>
+                  </button>
+                ))}
+                <p className="text-[11px] text-muted-foreground">
+                  {t("auth.password_label")}: <code className="font-mono">{DEMO_PASSWORD}</code> · {t("auth.firstTime")}{" "}
+                  <button type="button" onClick={runSeed} disabled={seeding} className="font-medium text-primary hover:underline disabled:opacity-60">
+                    {seeding ? t("auth.seeding") : t("auth.provisionDemo")}
+                  </button>
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
