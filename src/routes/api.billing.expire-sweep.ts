@@ -33,7 +33,7 @@ export const Route = createFileRoute("/api/billing/expire-sweep")({
         const { data: expired, error: fetchErr } = await supabaseAdmin
           .from("shops")
           .select("id, name, owner_id, plan, plan_expires_at, plan_billing_cycle")
-          .in("plan", PAID_PLANS as unknown as string[])
+          .in("plan", [...PAID_PLANS])
           .not("plan_expires_at", "is", null)
           .lt("plan_expires_at", nowIso);
 
