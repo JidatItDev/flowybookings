@@ -23,14 +23,14 @@ export function RevenueSparkline({ data, height = 120 }: { data: MonthBucket[]; 
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" preserveAspectRatio="none" aria-hidden="true">
         <defs>
           <linearGradient id="rev-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
           </linearGradient>
         </defs>
         <path d={area} fill="url(#rev-fill)" />
-        <path d={path} fill="none" stroke="hsl(var(--primary))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={path} fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         {points.map(([x, y], i) => (
-          <circle key={i} cx={x} cy={y} r="2.5" fill="hsl(var(--primary))" />
+          <circle key={i} cx={x} cy={y} r="2.5" fill="var(--primary)" />
         ))}
       </svg>
       <div className="mt-1 flex justify-between gap-1 text-[10px] text-muted-foreground">
