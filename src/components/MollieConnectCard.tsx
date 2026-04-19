@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearch } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { CheckCircle2, AlertCircle, Wallet, Plug, Loader2, Info } from "lucide-react";
+import { CheckCircle2, AlertCircle, Wallet, Plug, Loader2, Info, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
@@ -17,43 +19,63 @@ interface Props {
 export function MollieConnectCard({ shopId }: Props) {
   const { t } = useT();
   const qc = useQueryClient();
+  // (no navigate needed — we use window.location for OAuth redirects)
+  // Read mollie_connect=ok|error from the callback redirect to show toast.
+  const search = useSearch({ strict: false }) as { mollie_connect?: string; reason?: string };
   const { data: provider, isLoading } = useQuery(shopPaymentProviderQuery(shopId));
+
+  useEffect(() => {
+    if (!search?.mollie_connect) return;
+    if (search.mollie_connect === "ok") {
+      toast.success(t("mollie.connected"));
+    } else if (search.mollie_connect === "error") {
+      toast.error(`${t("mollie.connectFailed")}${search.reason ? ` (${search.reason})` : ""}`);
+    }
+    qc.invalidateQueries({ queryKey: paymentProviderKeys.byShop(shopId) });
+    // Strip the query params so toast doesn't refire on refresh.
+    const url = new URL(window.location.href);
+    url.searchParams.delete("mollie_connect");
+    url.searchParams.delete("reason");
+    window.history.replaceState({}, "", url.toString());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const startConnect = useMutation({
     mutationFn: async () => {
-      // OAuth flow not wired yet — mark as pending so admins can see intent
-      const payload = {
-        shop_id: shopId,
-        provider: "mollie",
-        connection_status: "pending" as ConnectionStatus,
-        onboarding_status: "in_review",
-        application_fee_enabled: true,
-        application_fee_percent: 2.0,
-      };
-      const { error } = await (supabase as any)
-        .from("shop_payment_providers")
-        .upsert(payload, { onConflict: "shop_id,provider" });
-      if (error) throw error;
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      if (!token) throw new Error("Niet ingelogd");
+      const res = await fetch(`/api/mollie-connect/authorize?shop_id=${encodeURIComponent(shopId)}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = (await res.json()) as { authorize_url?: string; error?: string; details?: string };
+      if (!res.ok || !data.authorize_url) {
+        throw new Error(data.error || "authorize_failed");
+      }
+      window.location.href = data.authorize_url;
     },
-    onSuccess: () => {
-      toast.success(t("mollie.requestStarted"));
-      qc.invalidateQueries({ queryKey: paymentProviderKeys.byShop(shopId) });
+    onError: (e: Error) => {
+      if (e.message === "mollie_connect_not_configured") {
+        toast.error(t("mollie.notConfigured"));
+      } else {
+        toast.error(e.message);
+      }
     },
-    onError: (e: Error) => toast.error(e.message),
   });
 
   const disconnect = useMutation({
     mutationFn: async () => {
-      const { error } = await (supabase as any)
-        .from("shop_payment_providers")
-        .update({
-          connection_status: "disconnected",
-          onboarding_status: "not_started",
-          disconnected_at: new Date().toISOString(),
-        })
-        .eq("shop_id", shopId)
-        .eq("provider", "mollie");
-      if (error) throw error;
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      if (!token) throw new Error("Niet ingelogd");
+      const res = await fetch("/api/mollie-connect/disconnect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ shop_id: shopId }),
+      });
+      const data = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok || !data.ok) throw new Error(data.error || "disconnect_failed");
     },
     onSuccess: () => {
       toast.success(t("mollie.disconnected"));
@@ -62,10 +84,12 @@ export function MollieConnectCard({ shopId }: Props) {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const status = provider?.connection_status ?? "not_connected";
+  const status = (provider?.connection_status ?? "not_connected") as ConnectionStatus;
   const onboarding = provider?.onboarding_status ?? "not_started";
   const isConnected = status === "connected";
   const isPending = status === "pending";
+  const meta = (provider?.metadata ?? {}) as Record<string, unknown>;
+  const orgName = (meta.organization_name as string | undefined) ?? null;
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6">
@@ -77,6 +101,9 @@ export function MollieConnectCard({ shopId }: Props) {
           <div className="min-w-0">
             <h2 className="text-base font-semibold">{t("mollie.title")}</h2>
             <p className="text-xs text-muted-foreground sm:text-sm">{t("mollie.description")}</p>
+            {isConnected && orgName && (
+              <p className="mt-1 text-xs font-medium text-primary">{orgName}</p>
+            )}
           </div>
         </div>
         <StatusPill status={status} />
@@ -99,19 +126,16 @@ export function MollieConnectCard({ shopId }: Props) {
           </div>
 
           <div className="mt-5 flex flex-wrap gap-2">
-            {!isConnected && !isPending && (
+            {!isConnected && (
               <Button onClick={() => startConnect.mutate()} disabled={startConnect.isPending} variant="hero">
                 {startConnect.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plug className="h-4 w-4" />}
-                {t("mollie.connect")}
-              </Button>
-            )}
-            {isPending && (
-              <Button disabled variant="outline">
-                <Loader2 className="h-4 w-4 animate-spin" /> {t("mollie.pending")}
+                {isPending ? t("mollie.reconnect") : t("mollie.connect")}
+                {!startConnect.isPending && <ExternalLink className="h-3.5 w-3.5" />}
               </Button>
             )}
             {(isConnected || isPending) && (
               <Button onClick={() => disconnect.mutate()} disabled={disconnect.isPending} variant="outline">
+                {disconnect.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 {t("mollie.disconnect")}
               </Button>
             )}

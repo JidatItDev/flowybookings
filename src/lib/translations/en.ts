@@ -535,6 +535,10 @@ export const en: Record<string, string> = {
   "mollie.nudge.cta": "Connect Mollie",
   "mollie.nudge.notifTitle": "Connect Mollie to accept payments",
   "mollie.nudge.notifMessage": "Your shop hasn't connected a payment provider yet. Connect Mollie to take deposits and reduce no-shows.",
+  "mollie.connected": "Mollie connected successfully",
+  "mollie.connectFailed": "Failed to connect Mollie",
+  "mollie.notConfigured": "Mollie Connect is not configured on the platform",
+  "mollie.reconnect": "Reconnect",
 
   // ── Admin: Providers ──
   "adminProviders.title": "Payment providers",

@@ -535,6 +535,10 @@ export const nl: Record<string, string> = {
   "mollie.nudge.cta": "Mollie koppelen",
   "mollie.nudge.notifTitle": "Koppel Mollie om betalingen te ontvangen",
   "mollie.nudge.notifMessage": "Je shop heeft nog geen betaalprovider gekoppeld. Koppel Mollie om aanbetalingen te accepteren en no-shows te verminderen.",
+  "mollie.connected": "Mollie succesvol gekoppeld",
+  "mollie.connectFailed": "Koppelen met Mollie mislukt",
+  "mollie.notConfigured": "Mollie Connect is niet geconfigureerd op het platform",
+  "mollie.reconnect": "Opnieuw koppelen",
 
   // ── Admin: Providers ──
   "adminProviders.title": "Betalingsproviders",
