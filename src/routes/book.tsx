@@ -35,13 +35,15 @@ const TIME_SLOTS = ["09:00", "10:30", "11:30", "13:00", "14:30", "16:00", "17:30
 function BookingFlow() {
   const navigate = useNavigate();
   const { t } = useT();
-  const stepLabels = [
-    t("book.stepShop"), t("book.stepService"), t("book.stepStaff"),
-    t("book.stepDateTime"), t("book.stepDetails"), t("book.stepReview"),
-  ];
+  const search = Route.useSearch();
+  const presetShopId = search.shop ?? null;
+
+  const stepLabels = presetShopId
+    ? [t("book.stepService"), t("book.stepStaff"), t("book.stepDateTime"), t("book.stepDetails"), t("book.stepReview")]
+    : [t("book.stepShop"), t("book.stepService"), t("book.stepStaff"), t("book.stepDateTime"), t("book.stepDetails"), t("book.stepReview")];
 
   const [step, setStep] = useState(0);
-  const [shopId, setShopId] = useState<string | null>(null);
+  const [shopId, setShopId] = useState<string | null>(presetShopId);
   const [serviceId, setServiceId] = useState<string | null>(null);
   const [staffId, setStaffId] = useState<string | null>(null);
   const [date, setDate] = useState<string | null>(null);
@@ -51,6 +53,11 @@ function BookingFlow() {
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Keep shopId in sync if URL changes
+  useEffect(() => {
+    if (presetShopId && shopId !== presetShopId) setShopId(presetShopId);
+  }, [presetShopId, shopId]);
 
   // Public app settings (demo mode toggles)
   const { data: appSettings } = useQuery(publicAppSettingsQuery());
