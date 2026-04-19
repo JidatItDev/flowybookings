@@ -1085,4 +1085,66 @@ export const nl: Record<string, string> = {
   "inbox.kind.subscription": "Abonnement",
   "inbox.kind.provider": "Mollie",
 
+  // ── Support page ──
+  "support.title": "Support",
+  "support.subtitle": "Hulp, informatie en beleid",
+  "support.contact": "Neem contact op",
+  "support.legal": "Juridisch",
+  "support.legal.privacy": "Privacybeleid",
+  "support.legal.terms": "Algemene voorwaarden",
+  "support.legal.refunds": "Restitutiebeleid",
+  "support.company": "FlowyBookings · KvK: 69444552",
+
+  // ── Support FAQ ──
+  "support.faq.payments.q": "Hoe ontvang ik betalingen?",
+  "support.faq.payments.a": "Betalingen worden via Mollie verwerkt en rechtstreeks uitbetaald naar je gekoppelde rekening.",
+  "support.faq.connect.q": "Hoe koppel ik Mollie?",
+  "support.faq.connect.a": "Ga in je dashboard naar Betalingen → Koppel Mollie en volg de stappen.",
+  "support.faq.payouts.q": "Wanneer word ik uitbetaald?",
+  "support.faq.payouts.a": "Uitbetalingen worden door Mollie verzorgd en zijn afhankelijk van je accountinstellingen.",
+  "support.faq.cancel.q": "Kunnen klanten boekingen annuleren?",
+  "support.faq.cancel.a": "Ja, afhankelijk van het annuleringsbeleid dat door de shop is ingesteld.",
+  "support.faq.refunds.q": "Hoe werken restituties?",
+  "support.faq.refunds.a": "Restituties worden door de shop afgehandeld. FlowyBookings verwerkt geen restituties.",
+
+  // ── Juridisch: gedeeld ──
+  "legal.contact": "Contact",
+  "legal.company": "Bedrijf",
+  "legal.companyLine": "FlowyBookings",
+  "legal.kvk": "KvK: 69444552",
+  "legal.back": "Terug",
+
+  // ── Juridisch: Privacy ──
+  "legal.privacy.title": "Privacybeleid",
+  "legal.privacy.metaDesc": "Hoe FlowyBookings je gegevens verzamelt, gebruikt en beschermt.",
+  "legal.privacy.intro": "FlowyBookings respecteert je privacy. We verzamelen alleen de gegevens die nodig zijn om onze boekings- en betaaldiensten te leveren.",
+  "legal.privacy.collectHeading": "Welke gegevens we verzamelen",
+  "legal.privacy.collect1": "Accountgegevens (naam, e-mail)",
+  "legal.privacy.collect2": "Boekingsgegevens",
+  "legal.privacy.collect3": "Betalingsgegevens via Mollie (we slaan GEEN betaalgegevens op)",
+  "legal.privacy.useHeading": "We gebruiken deze gegevens om",
+  "legal.privacy.use1": "Ons platform te leveren en te verbeteren",
+  "legal.privacy.use2": "Boekingen en betalingen te verwerken",
+  "legal.privacy.use3": "Met gebruikers te communiceren",
+  "legal.privacy.shareHeading": "Delen",
+  "legal.privacy.share": "We verkopen of delen je gegevens niet met derden, behalve waar nodig voor betalingsverwerking (Mollie).",
+
+  // ── Juridisch: Voorwaarden ──
+  "legal.terms.title": "Algemene voorwaarden",
+  "legal.terms.metaDesc": "Algemene voorwaarden voor het gebruik van FlowyBookings.",
+  "legal.terms.intro": "Door FlowyBookings te gebruiken ga je akkoord met het volgende:",
+  "legal.terms.point1": "Je bent verantwoordelijk voor de informatie die je aanlevert",
+  "legal.terms.point2": "Shops zijn verantwoordelijk voor hun diensten en boekingen",
+  "legal.terms.point3": "FlowyBookings is niet aansprakelijk voor geschillen tussen klanten en shops",
+  "legal.terms.point4": "Betalingen worden verwerkt via Mollie",
+  "legal.terms.suspend": "We behouden ons het recht voor om accounts bij misbruik op te schorten.",
+
+  // ── Juridisch: Restituties ──
+  "legal.refunds.title": "Restitutiebeleid",
+  "legal.refunds.metaDesc": "Hoe restituties worden afgehandeld op FlowyBookings.",
+  "legal.refunds.line1": "Restituties worden door de individuele shop afgehandeld, tenzij anders vermeld.",
+  "legal.refunds.line2": "FlowyBookings verwerkt geen restituties rechtstreeks, omdat betalingen via Mollie en de shop verlopen.",
+  "legal.refunds.subHeading": "Voor abonnementen",
+  "legal.refunds.sub1": "Betalingen zijn niet-restitueerbaar, tenzij wettelijk vereist",
+
 };
