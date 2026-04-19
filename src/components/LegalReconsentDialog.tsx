@@ -84,12 +84,11 @@ export function LegalReconsentDialog() {
   if (!user || !outdated || outdated.length === 0) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(next) => { if (next) setOpen(true); /* not dismissible */ }}>
+    <Dialog open={open} onOpenChange={() => { /* not dismissible until accepted */ }}>
       <DialogContent
-        className="max-w-md"
+        className="max-w-md [&>button]:hidden"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
-        showClose={false}
       >
         <DialogHeader>
           <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
