@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Mail, FileText, Shield, RotateCcw, ChevronRight } from "lucide-react";
 import { SupportLayout, CompanyFootnote } from "@/components/SupportLayout";
+import { useT } from "@/lib/i18n";
 import {
   Accordion,
   AccordionContent,
@@ -20,47 +21,27 @@ export const Route = createFileRoute("/support")({
   component: SupportPage,
 });
 
-const FAQ = [
-  {
-    q: "How do I receive payments?",
-    a: "Payments are processed through Mollie and paid directly to your connected account.",
-  },
-  {
-    q: "How do I connect Mollie?",
-    a: "Go to your dashboard → Payments → Connect Mollie and follow the steps.",
-  },
-  {
-    q: "When do I get paid?",
-    a: "Payouts are handled by Mollie and depend on your account settings.",
-  },
-  {
-    q: "Can customers cancel bookings?",
-    a: "Yes, depending on your cancellation policy set by the shop.",
-  },
-  {
-    q: "How do refunds work?",
-    a: "Refunds are handled by the shop. FlowyBookings does not process refunds directly.",
-  },
-];
+const FAQ_KEYS = ["payments", "connect", "payouts", "cancel", "refunds"] as const;
 
 const LEGAL = [
-  { to: "/legal/privacy", label: "Privacy Policy", icon: Shield },
-  { to: "/legal/terms", label: "Terms & Conditions", icon: FileText },
-  { to: "/legal/refunds", label: "Refund Policy", icon: RotateCcw },
+  { to: "/legal/privacy", labelKey: "support.legal.privacy", icon: Shield },
+  { to: "/legal/terms", labelKey: "support.legal.terms", icon: FileText },
+  { to: "/legal/refunds", labelKey: "support.legal.refunds", icon: RotateCcw },
 ] as const;
 
 function SupportPage() {
+  const { t } = useT();
   return (
-    <SupportLayout title="Support" subtitle="Help, information, and policies">
+    <SupportLayout title={t("support.title")} subtitle={t("support.subtitle")}>
       <div className="rounded-2xl border border-border bg-card p-2 shadow-sm">
         <Accordion type="single" collapsible className="w-full">
-          {FAQ.map((item, i) => (
-            <AccordionItem key={i} value={`item-${i}`} className="border-border/60 last:border-b-0">
+          {FAQ_KEYS.map((key, i) => (
+            <AccordionItem key={key} value={`item-${i}`} className="border-border/60 last:border-b-0">
               <AccordionTrigger className="px-3 text-left text-sm font-medium">
-                {item.q}
+                {t(`support.faq.${key}.q`)}
               </AccordionTrigger>
               <AccordionContent className="px-3 text-sm text-muted-foreground">
-                {item.a}
+                {t(`support.faq.${key}.a`)}
               </AccordionContent>
             </AccordionItem>
           ))}
@@ -70,7 +51,7 @@ function SupportPage() {
       <section className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
         <div className="flex items-center gap-2">
           <Mail className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-semibold">Contact us</h2>
+          <h2 className="text-sm font-semibold">{t("support.contact")}</h2>
         </div>
         <div className="mt-3 space-y-1.5 text-sm">
           <a href="mailto:support@flowybookings.com" className="block text-primary hover:underline">
@@ -84,7 +65,7 @@ function SupportPage() {
 
       <section className="mt-6">
         <h2 className="mb-2 px-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          Legal
+          {t("support.legal")}
         </h2>
         <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
           {LEGAL.map((l, idx) => {
@@ -98,7 +79,7 @@ function SupportPage() {
                 }`}
               >
                 <Icon className="h-4 w-4 text-muted-foreground" />
-                <span className="flex-1 font-medium">{l.label}</span>
+                <span className="flex-1 font-medium">{t(l.labelKey)}</span>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </Link>
             );

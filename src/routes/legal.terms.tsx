@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SupportLayout, LegalSection, CompanyFootnote } from "@/components/SupportLayout";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/legal/terms")({
   head: () => ({
@@ -14,28 +15,29 @@ export const Route = createFileRoute("/legal/terms")({
 });
 
 function TermsPage() {
+  const { t } = useT();
   return (
-    <SupportLayout title="Terms & Conditions">
+    <SupportLayout title={t("legal.terms.title")}>
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
         <LegalSection>
-          <p>By using FlowyBookings, you agree to the following:</p>
+          <p>{t("legal.terms.intro")}</p>
           <ul className="ml-4 list-disc space-y-1">
-            <li>You are responsible for the information you provide</li>
-            <li>Shops are responsible for their services and bookings</li>
-            <li>FlowyBookings is not liable for disputes between customers and shops</li>
-            <li>Payments are processed via Mollie</li>
+            <li>{t("legal.terms.point1")}</li>
+            <li>{t("legal.terms.point2")}</li>
+            <li>{t("legal.terms.point3")}</li>
+            <li>{t("legal.terms.point4")}</li>
           </ul>
         </LegalSection>
 
         <LegalSection>
-          <p>We reserve the right to suspend accounts in case of misuse.</p>
+          <p>{t("legal.terms.suspend")}</p>
         </LegalSection>
 
-        <LegalSection heading="Company">
+        <LegalSection heading={t("legal.company")}>
           <p>
-            FlowyBookings
+            {t("legal.companyLine")}
             <br />
-            KvK: 69444552
+            {t("legal.kvk")}
           </p>
         </LegalSection>
       </div>

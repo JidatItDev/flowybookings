@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SupportLayout, LegalSection, CompanyFootnote } from "@/components/SupportLayout";
+import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/legal/privacy")({
   head: () => ({
@@ -14,40 +15,35 @@ export const Route = createFileRoute("/legal/privacy")({
 });
 
 function PrivacyPage() {
+  const { t } = useT();
   return (
-    <SupportLayout title="Privacy Policy">
+    <SupportLayout title={t("legal.privacy.title")}>
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
         <LegalSection>
-          <p>
-            FlowyBookings respects your privacy. We collect only the data necessary to provide our
-            booking and payment services.
-          </p>
+          <p>{t("legal.privacy.intro")}</p>
         </LegalSection>
 
-        <LegalSection heading="Data we collect">
+        <LegalSection heading={t("legal.privacy.collectHeading")}>
           <ul className="ml-4 list-disc space-y-1">
-            <li>Account information (name, email)</li>
-            <li>Booking data</li>
-            <li>Payment-related data via Mollie (we do NOT store payment details)</li>
+            <li>{t("legal.privacy.collect1")}</li>
+            <li>{t("legal.privacy.collect2")}</li>
+            <li>{t("legal.privacy.collect3")}</li>
           </ul>
         </LegalSection>
 
-        <LegalSection heading="We use this data to">
+        <LegalSection heading={t("legal.privacy.useHeading")}>
           <ul className="ml-4 list-disc space-y-1">
-            <li>Provide and improve our platform</li>
-            <li>Process bookings and payments</li>
-            <li>Communicate with users</li>
+            <li>{t("legal.privacy.use1")}</li>
+            <li>{t("legal.privacy.use2")}</li>
+            <li>{t("legal.privacy.use3")}</li>
           </ul>
         </LegalSection>
 
-        <LegalSection heading="Sharing">
-          <p>
-            We do not sell or share your data with third parties, except where necessary for
-            payment processing (Mollie).
-          </p>
+        <LegalSection heading={t("legal.privacy.shareHeading")}>
+          <p>{t("legal.privacy.share")}</p>
         </LegalSection>
 
-        <LegalSection heading="Contact">
+        <LegalSection heading={t("legal.contact")}>
           <p>
             <a href="mailto:support@flowybookings.com" className="text-primary hover:underline">
               support@flowybookings.com
@@ -55,11 +51,11 @@ function PrivacyPage() {
           </p>
         </LegalSection>
 
-        <LegalSection heading="Company">
+        <LegalSection heading={t("legal.company")}>
           <p>
-            FlowyBookings
+            {t("legal.companyLine")}
             <br />
-            KvK: 69444552
+            {t("legal.kvk")}
           </p>
         </LegalSection>
       </div>

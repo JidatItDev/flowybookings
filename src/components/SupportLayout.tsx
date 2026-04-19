@@ -2,6 +2,7 @@ import { type ReactNode } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { ArrowLeft, Sparkle } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export function SupportLayout({
@@ -15,6 +16,7 @@ export function SupportLayout({
 }) {
   const { session } = useAuth();
   const location = useLocation();
+  const { t } = useT();
   const backHref = session ? "/shop" : "/";
   const isLegal = location.pathname.startsWith("/legal");
 
@@ -24,7 +26,7 @@ export function SupportLayout({
         <Link
           to={isLegal ? "/support" : backHref}
           className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
-          aria-label="Back"
+          aria-label={t("legal.back")}
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
@@ -66,9 +68,10 @@ export function LegalSection({
 }
 
 export function CompanyFootnote() {
+  const { t } = useT();
   return (
     <p className="mt-10 text-center text-[11px] text-muted-foreground/70">
-      FlowyBookings · KvK: 69444552
+      {t("support.company")}
     </p>
   );
 }
