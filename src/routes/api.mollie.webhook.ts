@@ -23,6 +23,26 @@ export const Route = createFileRoute("/api/mollie/webhook")({
     handlers: {
       POST: async ({ request }) => {
         try {
+          // Optional shared-secret guard. Mollie does not sign webhook bodies, so we use a
+          // query-string token (or x-webhook-token header) configured when registering
+          // the webhook URL with Mollie. If MOLLIE_WEBHOOK_SECRET is set, requests
+          // missing/mismatching the token are rejected as spoofed.
+          const expectedSecret = process.env.MOLLIE_WEBHOOK_SECRET;
+          if (expectedSecret) {
+            const url = new URL(request.url);
+            const provided =
+              url.searchParams.get("token") ??
+              request.headers.get("x-webhook-token") ??
+              "";
+            if (!safeEqual(provided, expectedSecret)) {
+              console.warn("[mollie/webhook] rejected: invalid or missing token");
+              return new Response(JSON.stringify({ error: "unauthorized" }), {
+                status: 401,
+                headers: { "Content-Type": "application/json" },
+              });
+            }
+          }
+
           const ct = request.headers.get("content-type") ?? "";
           let mollieId: string | null = null;
           if (ct.includes("application/json")) {
