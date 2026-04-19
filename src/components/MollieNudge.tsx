@@ -15,7 +15,7 @@ interface Props {
  * App-style nudge shown on /shop/payments when Mollie is not connected.
  * Also inserts a one-time billing notification so it surfaces in the inbox.
  */
-export function MollieNudge({ shopId, connectAnchor = "mollie-connect" }: Props) {
+export function MollieNudge({ shopId }: Props) {
   const { t } = useT();
   const { data: provider, isLoading } = useQuery(shopPaymentProviderQuery(shopId));
   const inserted = useRef(false);
