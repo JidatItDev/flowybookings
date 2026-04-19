@@ -14,6 +14,7 @@ import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { bookingsQuery, customersQuery, servicesQuery, staffQuery } from "@/lib/queries";
 import { formatCents, formatTime, initials } from "@/lib/format";
 import { useT } from "@/lib/i18n";
+import { getTrialState } from "@/lib/trial";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 export const Route = createFileRoute("/shop/")({
@@ -56,12 +57,20 @@ function ShopDashboard() {
     return { day: d.toLocaleDateString("en-GB", { weekday: "short" }), revenue: Math.round(sum / 100) };
   });
 
+  const trial = getTrialState(activeShop as never);
+
   return (
     <ShopLayout>
       <PageHeader
         title={activeShop ? t("dashboard.welcomeBack", { name: activeShop.name }) : t("dashboard.title")}
         description={activeShop ? t("dashboard.subWithShop", { name: activeShop.name }) : t("dashboard.subNoShop")}
-        actions={<Link to="/shop/calendar"><Button variant="hero"><Plus className="h-4 w-4" /> {t("dashboard.newBooking")}</Button></Link>}
+        actions={
+          <Link to="/shop/calendar">
+            <Button variant="hero" disabled={trial.isExpired} title={trial.isExpired ? "Proefperiode verlopen — kies een plan." : undefined}>
+              <Plus className="h-4 w-4" /> {t("dashboard.newBooking")}
+            </Button>
+          </Link>
+        }
       />
       {!shopId ? <NoShopState /> : (
         <>
