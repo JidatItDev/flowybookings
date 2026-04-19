@@ -22,6 +22,7 @@ import { Route as ShopPaymentsRouteImport } from './routes/shop.payments'
 import { Route as ShopNotificationsRouteImport } from './routes/shop.notifications'
 import { Route as ShopCustomersRouteImport } from './routes/shop.customers'
 import { Route as ShopCalendarRouteImport } from './routes/shop.calendar'
+import { Route as ShopBillingRouteImport } from './routes/shop.billing'
 import { Route as ShopAnalyticsRouteImport } from './routes/shop.analytics'
 import { Route as HooksBookingConfirmationRouteImport } from './routes/hooks/booking-confirmation'
 import { Route as HooksBookingAutomationsRouteImport } from './routes/hooks/booking-automations'
@@ -36,6 +37,7 @@ import { Route as BeheerDashboardUsersRouteImport } from './routes/beheer.dashbo
 import { Route as BeheerDashboardSupportRouteImport } from './routes/beheer.dashboard.support'
 import { Route as BeheerDashboardShopsRouteImport } from './routes/beheer.dashboard.shops'
 import { Route as BeheerDashboardSettingsRouteImport } from './routes/beheer.dashboard.settings'
+import { Route as BeheerDashboardProvidersRouteImport } from './routes/beheer.dashboard.providers'
 import { Route as BeheerDashboardPlansRouteImport } from './routes/beheer.dashboard.plans'
 import { Route as BeheerDashboardPaymentsRouteImport } from './routes/beheer.dashboard.payments'
 import { Route as BeheerDashboardMessagesRouteImport } from './routes/beheer.dashboard.messages'
@@ -119,6 +121,11 @@ const ShopCalendarRoute = ShopCalendarRouteImport.update({
   path: '/shop/calendar',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShopBillingRoute = ShopBillingRouteImport.update({
+  id: '/shop/billing',
+  path: '/shop/billing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ShopAnalyticsRoute = ShopAnalyticsRouteImport.update({
   id: '/shop/analytics',
   path: '/shop/analytics',
@@ -191,6 +198,12 @@ const BeheerDashboardSettingsRoute = BeheerDashboardSettingsRouteImport.update({
   path: '/beheer/dashboard/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BeheerDashboardProvidersRoute =
+  BeheerDashboardProvidersRouteImport.update({
+    id: '/beheer/dashboard/providers',
+    path: '/beheer/dashboard/providers',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const BeheerDashboardPlansRoute = BeheerDashboardPlansRouteImport.update({
   id: '/beheer/dashboard/plans',
   path: '/beheer/dashboard/plans',
@@ -291,6 +304,7 @@ export interface FileRoutesByFullPath {
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
+  '/shop/billing': typeof ShopBillingRoute
   '/shop/calendar': typeof ShopCalendarRoute
   '/shop/customers': typeof ShopCustomersRouteWithChildren
   '/shop/notifications': typeof ShopNotificationsRoute
@@ -312,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/beheer/dashboard/messages': typeof BeheerDashboardMessagesRoute
   '/beheer/dashboard/payments': typeof BeheerDashboardPaymentsRoute
   '/beheer/dashboard/plans': typeof BeheerDashboardPlansRoute
+  '/beheer/dashboard/providers': typeof BeheerDashboardProvidersRoute
   '/beheer/dashboard/settings': typeof BeheerDashboardSettingsRoute
   '/beheer/dashboard/shops': typeof BeheerDashboardShopsRoute
   '/beheer/dashboard/support': typeof BeheerDashboardSupportRoute
@@ -337,6 +352,7 @@ export interface FileRoutesByTo {
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
+  '/shop/billing': typeof ShopBillingRoute
   '/shop/calendar': typeof ShopCalendarRoute
   '/shop/customers': typeof ShopCustomersRouteWithChildren
   '/shop/notifications': typeof ShopNotificationsRoute
@@ -358,6 +374,7 @@ export interface FileRoutesByTo {
   '/beheer/dashboard/messages': typeof BeheerDashboardMessagesRoute
   '/beheer/dashboard/payments': typeof BeheerDashboardPaymentsRoute
   '/beheer/dashboard/plans': typeof BeheerDashboardPlansRoute
+  '/beheer/dashboard/providers': typeof BeheerDashboardProvidersRoute
   '/beheer/dashboard/settings': typeof BeheerDashboardSettingsRoute
   '/beheer/dashboard/shops': typeof BeheerDashboardShopsRoute
   '/beheer/dashboard/support': typeof BeheerDashboardSupportRoute
@@ -384,6 +401,7 @@ export interface FileRoutesById {
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
+  '/shop/billing': typeof ShopBillingRoute
   '/shop/calendar': typeof ShopCalendarRoute
   '/shop/customers': typeof ShopCustomersRouteWithChildren
   '/shop/notifications': typeof ShopNotificationsRoute
@@ -405,6 +423,7 @@ export interface FileRoutesById {
   '/beheer/dashboard/messages': typeof BeheerDashboardMessagesRoute
   '/beheer/dashboard/payments': typeof BeheerDashboardPaymentsRoute
   '/beheer/dashboard/plans': typeof BeheerDashboardPlansRoute
+  '/beheer/dashboard/providers': typeof BeheerDashboardProvidersRoute
   '/beheer/dashboard/settings': typeof BeheerDashboardSettingsRoute
   '/beheer/dashboard/shops': typeof BeheerDashboardShopsRoute
   '/beheer/dashboard/support': typeof BeheerDashboardSupportRoute
@@ -432,6 +451,7 @@ export interface FileRouteTypes {
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
     | '/shop/analytics'
+    | '/shop/billing'
     | '/shop/calendar'
     | '/shop/customers'
     | '/shop/notifications'
@@ -453,6 +473,7 @@ export interface FileRouteTypes {
     | '/beheer/dashboard/messages'
     | '/beheer/dashboard/payments'
     | '/beheer/dashboard/plans'
+    | '/beheer/dashboard/providers'
     | '/beheer/dashboard/settings'
     | '/beheer/dashboard/shops'
     | '/beheer/dashboard/support'
@@ -478,6 +499,7 @@ export interface FileRouteTypes {
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
     | '/shop/analytics'
+    | '/shop/billing'
     | '/shop/calendar'
     | '/shop/customers'
     | '/shop/notifications'
@@ -499,6 +521,7 @@ export interface FileRouteTypes {
     | '/beheer/dashboard/messages'
     | '/beheer/dashboard/payments'
     | '/beheer/dashboard/plans'
+    | '/beheer/dashboard/providers'
     | '/beheer/dashboard/settings'
     | '/beheer/dashboard/shops'
     | '/beheer/dashboard/support'
@@ -524,6 +547,7 @@ export interface FileRouteTypes {
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
     | '/shop/analytics'
+    | '/shop/billing'
     | '/shop/calendar'
     | '/shop/customers'
     | '/shop/notifications'
@@ -545,6 +569,7 @@ export interface FileRouteTypes {
     | '/beheer/dashboard/messages'
     | '/beheer/dashboard/payments'
     | '/beheer/dashboard/plans'
+    | '/beheer/dashboard/providers'
     | '/beheer/dashboard/settings'
     | '/beheer/dashboard/shops'
     | '/beheer/dashboard/support'
@@ -571,6 +596,7 @@ export interface RootRouteChildren {
   HooksBookingAutomationsRoute: typeof HooksBookingAutomationsRoute
   HooksBookingConfirmationRoute: typeof HooksBookingConfirmationRoute
   ShopAnalyticsRoute: typeof ShopAnalyticsRoute
+  ShopBillingRoute: typeof ShopBillingRoute
   ShopCalendarRoute: typeof ShopCalendarRoute
   ShopCustomersRoute: typeof ShopCustomersRouteWithChildren
   ShopNotificationsRoute: typeof ShopNotificationsRoute
@@ -592,6 +618,7 @@ export interface RootRouteChildren {
   BeheerDashboardMessagesRoute: typeof BeheerDashboardMessagesRoute
   BeheerDashboardPaymentsRoute: typeof BeheerDashboardPaymentsRoute
   BeheerDashboardPlansRoute: typeof BeheerDashboardPlansRoute
+  BeheerDashboardProvidersRoute: typeof BeheerDashboardProvidersRoute
   BeheerDashboardSettingsRoute: typeof BeheerDashboardSettingsRoute
   BeheerDashboardShopsRoute: typeof BeheerDashboardShopsRoute
   BeheerDashboardSupportRoute: typeof BeheerDashboardSupportRoute
@@ -698,6 +725,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopCalendarRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shop/billing': {
+      id: '/shop/billing'
+      path: '/shop/billing'
+      fullPath: '/shop/billing'
+      preLoaderRoute: typeof ShopBillingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/shop/analytics': {
       id: '/shop/analytics'
       path: '/shop/analytics'
@@ -794,6 +828,13 @@ declare module '@tanstack/react-router' {
       path: '/beheer/dashboard/settings'
       fullPath: '/beheer/dashboard/settings'
       preLoaderRoute: typeof BeheerDashboardSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/beheer/dashboard/providers': {
+      id: '/beheer/dashboard/providers'
+      path: '/beheer/dashboard/providers'
+      fullPath: '/beheer/dashboard/providers'
+      preLoaderRoute: typeof BeheerDashboardProvidersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/beheer/dashboard/plans': {
@@ -951,6 +992,7 @@ const rootRouteChildren: RootRouteChildren = {
   HooksBookingAutomationsRoute: HooksBookingAutomationsRoute,
   HooksBookingConfirmationRoute: HooksBookingConfirmationRoute,
   ShopAnalyticsRoute: ShopAnalyticsRoute,
+  ShopBillingRoute: ShopBillingRoute,
   ShopCalendarRoute: ShopCalendarRoute,
   ShopCustomersRoute: ShopCustomersRouteWithChildren,
   ShopNotificationsRoute: ShopNotificationsRoute,
@@ -972,6 +1014,7 @@ const rootRouteChildren: RootRouteChildren = {
   BeheerDashboardMessagesRoute: BeheerDashboardMessagesRoute,
   BeheerDashboardPaymentsRoute: BeheerDashboardPaymentsRoute,
   BeheerDashboardPlansRoute: BeheerDashboardPlansRoute,
+  BeheerDashboardProvidersRoute: BeheerDashboardProvidersRoute,
   BeheerDashboardSettingsRoute: BeheerDashboardSettingsRoute,
   BeheerDashboardShopsRoute: BeheerDashboardShopsRoute,
   BeheerDashboardSupportRoute: BeheerDashboardSupportRoute,
