@@ -81,11 +81,26 @@ function BookingFlow() {
   const servicesQ = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
   const staffQ = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
 
-  const selectedShop = shopsQ.data?.find((s) => s.id === shopId);
+  // When preselected, fetch the single shop directly so summary works without the full list.
+  const presetShopQ = useQuery({
+    queryKey: ["shop-preset", presetShopId],
+    enabled: !!presetShopId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("shops").select("id, name, slug, address, is_demo").eq("id", presetShopId!).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const selectedShop = shopsQ.data?.find((s) => s.id === shopId) ?? presetShopQ.data ?? null;
+  const isDemoShop = !!selectedShop?.is_demo;
   const selectedService = servicesQ.data?.find((s) => s.id === serviceId);
   const selectedStaff = staffQ.data?.find((s) => s.id === staffId);
 
-  const canNext = [shopId, serviceId, staffId, date && time, name && phone && email, true][step];
+  // Logical-step index (0..5). When preset, we hide step 0 (shop) by mapping visible step n to logical n+1.
+  const logicalStep = presetShopId ? step + 1 : step;
+  const canNext = [shopId, serviceId, staffId, date && time, name && phone && email, true][logicalStep];
 
   const back = () => (step > 0 ? setStep(step - 1) : navigate({ to: "/" }));
 
