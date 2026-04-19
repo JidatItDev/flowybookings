@@ -43,6 +43,7 @@ export const PLATFORM_BILLING_SECRETS = {
   apiKey: "MOLLIE_API_KEY",
   clientId: "MOLLIE_CLIENT_ID",
   clientSecret: "MOLLIE_CLIENT_SECRET",
+  webhookSecret: "MOLLIE_WEBHOOK_SECRET",
 } as const;
 
 async function assertSuperAdmin(token: string) {
