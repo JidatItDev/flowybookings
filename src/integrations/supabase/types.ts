@@ -883,6 +883,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _mollie_token_key: { Args: never; Returns: string }
       admin_broadcast_notification: {
         Args: {
           _action_url?: string
@@ -893,10 +894,12 @@ export type Database = {
         }
         Returns: number
       }
+      decrypt_mollie_token: { Args: { ciphertext: string }; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      encrypt_mollie_token: { Args: { plaintext: string }; Returns: string }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
