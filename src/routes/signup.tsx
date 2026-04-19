@@ -9,6 +9,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Create account — FlowyBookings" }] }),
@@ -22,12 +23,17 @@ function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => { if (!loading && session) navigate({ to: "/shop" }); }, [session, loading, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!agreed) {
+      toast.error(t("auth.mustAgree"));
+      return;
+    }
     setSubmitting(true);
     const { error } = await supabase.auth.signUp({
       email, password,
@@ -69,7 +75,25 @@ function SignupPage() {
               <Input id="password" type="password" autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
               <p className="text-xs text-muted-foreground">{t("auth.minChars")}</p>
             </div>
-            <Button type="submit" variant="hero" className="w-full" disabled={submitting}>
+            <label className="flex items-start gap-2.5 text-xs text-muted-foreground">
+              <Checkbox
+                checked={agreed}
+                onCheckedChange={(v) => setAgreed(v === true)}
+                className="mt-0.5"
+                aria-label={t("auth.mustAgree")}
+              />
+              <span>
+                {t("auth.agreePrefix")}{" "}
+                <Link to="/legal/terms" className="font-medium text-primary hover:underline">
+                  {t("auth.termsLink")}
+                </Link>{" "}
+                {t("auth.and")}{" "}
+                <Link to="/legal/privacy" className="font-medium text-primary hover:underline">
+                  {t("auth.privacyLink")}
+                </Link>
+              </span>
+            </label>
+            <Button type="submit" variant="hero" className="w-full" disabled={submitting || !agreed}>
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
               {t("auth.createBtn")}
             </Button>

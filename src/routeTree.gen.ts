@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SupportRouteImport } from './routes/support'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as BookRouteImport } from './routes/book'
@@ -24,6 +25,9 @@ import { Route as ShopCustomersRouteImport } from './routes/shop.customers'
 import { Route as ShopCalendarRouteImport } from './routes/shop.calendar'
 import { Route as ShopBillingRouteImport } from './routes/shop.billing'
 import { Route as ShopAnalyticsRouteImport } from './routes/shop.analytics'
+import { Route as LegalTermsRouteImport } from './routes/legal.terms'
+import { Route as LegalRefundsRouteImport } from './routes/legal.refunds'
+import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as HooksBookingConfirmationRouteImport } from './routes/hooks/booking-confirmation'
 import { Route as HooksBookingAutomationsRouteImport } from './routes/hooks/booking-automations'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
@@ -56,6 +60,11 @@ import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/e
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -129,6 +138,21 @@ const ShopBillingRoute = ShopBillingRouteImport.update({
 const ShopAnalyticsRoute = ShopAnalyticsRouteImport.update({
   id: '/shop/analytics',
   path: '/shop/analytics',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalTermsRoute = LegalTermsRouteImport.update({
+  id: '/legal/terms',
+  path: '/legal/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalRefundsRoute = LegalRefundsRouteImport.update({
+  id: '/legal/refunds',
+  path: '/legal/refunds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalPrivacyRoute = LegalPrivacyRouteImport.update({
+  id: '/legal/privacy',
+  path: '/legal/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HooksBookingConfirmationRoute =
@@ -298,11 +322,15 @@ export interface FileRoutesByFullPath {
   '/book': typeof BookRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/support': typeof SupportRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
+  '/legal/privacy': typeof LegalPrivacyRoute
+  '/legal/refunds': typeof LegalRefundsRoute
+  '/legal/terms': typeof LegalTermsRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/billing': typeof ShopBillingRoute
   '/shop/calendar': typeof ShopCalendarRoute
@@ -346,11 +374,15 @@ export interface FileRoutesByTo {
   '/book': typeof BookRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/support': typeof SupportRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
+  '/legal/privacy': typeof LegalPrivacyRoute
+  '/legal/refunds': typeof LegalRefundsRoute
+  '/legal/terms': typeof LegalTermsRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/billing': typeof ShopBillingRoute
   '/shop/calendar': typeof ShopCalendarRoute
@@ -395,11 +427,15 @@ export interface FileRoutesById {
   '/book': typeof BookRouteWithChildren
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
+  '/support': typeof SupportRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
+  '/legal/privacy': typeof LegalPrivacyRoute
+  '/legal/refunds': typeof LegalRefundsRoute
+  '/legal/terms': typeof LegalTermsRoute
   '/shop/analytics': typeof ShopAnalyticsRoute
   '/shop/billing': typeof ShopBillingRoute
   '/shop/calendar': typeof ShopCalendarRoute
@@ -445,11 +481,15 @@ export interface FileRouteTypes {
     | '/book'
     | '/login'
     | '/signup'
+    | '/support'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/email/unsubscribe'
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
+    | '/legal/privacy'
+    | '/legal/refunds'
+    | '/legal/terms'
     | '/shop/analytics'
     | '/shop/billing'
     | '/shop/calendar'
@@ -493,11 +533,15 @@ export interface FileRouteTypes {
     | '/book'
     | '/login'
     | '/signup'
+    | '/support'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/email/unsubscribe'
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
+    | '/legal/privacy'
+    | '/legal/refunds'
+    | '/legal/terms'
     | '/shop/analytics'
     | '/shop/billing'
     | '/shop/calendar'
@@ -541,11 +585,15 @@ export interface FileRouteTypes {
     | '/book'
     | '/login'
     | '/signup'
+    | '/support'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/email/unsubscribe'
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
+    | '/legal/privacy'
+    | '/legal/refunds'
+    | '/legal/terms'
     | '/shop/analytics'
     | '/shop/billing'
     | '/shop/calendar'
@@ -590,11 +638,15 @@ export interface RootRouteChildren {
   BookRoute: typeof BookRouteWithChildren
   LoginRoute: typeof LoginRoute
   SignupRoute: typeof SignupRoute
+  SupportRoute: typeof SupportRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   HooksBookingAutomationsRoute: typeof HooksBookingAutomationsRoute
   HooksBookingConfirmationRoute: typeof HooksBookingConfirmationRoute
+  LegalPrivacyRoute: typeof LegalPrivacyRoute
+  LegalRefundsRoute: typeof LegalRefundsRoute
+  LegalTermsRoute: typeof LegalTermsRoute
   ShopAnalyticsRoute: typeof ShopAnalyticsRoute
   ShopBillingRoute: typeof ShopBillingRoute
   ShopCalendarRoute: typeof ShopCalendarRoute
@@ -634,6 +686,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
@@ -737,6 +796,27 @@ declare module '@tanstack/react-router' {
       path: '/shop/analytics'
       fullPath: '/shop/analytics'
       preLoaderRoute: typeof ShopAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/terms': {
+      id: '/legal/terms'
+      path: '/legal/terms'
+      fullPath: '/legal/terms'
+      preLoaderRoute: typeof LegalTermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/refunds': {
+      id: '/legal/refunds'
+      path: '/legal/refunds'
+      fullPath: '/legal/refunds'
+      preLoaderRoute: typeof LegalRefundsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/legal/privacy': {
+      id: '/legal/privacy'
+      path: '/legal/privacy'
+      fullPath: '/legal/privacy'
+      preLoaderRoute: typeof LegalPrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hooks/booking-confirmation': {
@@ -986,11 +1066,15 @@ const rootRouteChildren: RootRouteChildren = {
   BookRoute: BookRouteWithChildren,
   LoginRoute: LoginRoute,
   SignupRoute: SignupRoute,
+  SupportRoute: SupportRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   HooksBookingAutomationsRoute: HooksBookingAutomationsRoute,
   HooksBookingConfirmationRoute: HooksBookingConfirmationRoute,
+  LegalPrivacyRoute: LegalPrivacyRoute,
+  LegalRefundsRoute: LegalRefundsRoute,
+  LegalTermsRoute: LegalTermsRoute,
   ShopAnalyticsRoute: ShopAnalyticsRoute,
   ShopBillingRoute: ShopBillingRoute,
   ShopCalendarRoute: ShopCalendarRoute,
