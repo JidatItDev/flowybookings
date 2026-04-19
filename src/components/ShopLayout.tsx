@@ -14,6 +14,7 @@ import {
   X,
   Sparkle,
   Search,
+  LifeBuoy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ const nav: NavItem[] = [
   { to: "/shop/analytics", labelKey: "shopNav.analytics", icon: BarChart3 },
   { to: "/shop/notifications", labelKey: "shopNav.notifications", icon: Bell, ownerOnly: true },
   { to: "/shop/settings", labelKey: "shopNav.settings", icon: Settings, ownerOnly: true },
+  { to: "/support", labelKey: "shopNav.support", icon: LifeBuoy },
 ];
 
 export function ShopLayout({ children }: { children: React.ReactNode }) {
