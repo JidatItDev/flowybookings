@@ -39,8 +39,24 @@ function UpgradePage() {
         source: "owner_upgrade",
       });
     },
-    onSuccess: (_d, planKey) => {
+    onSuccess: async (_d, planKey) => {
       toast.success(t("upgrade.toastApplied", { plan: planKey }));
+      // Drop a billing notification in the inbox so the change is visible everywhere.
+      if (activeShop) {
+        try {
+          await import("@/integrations/supabase/client").then(({ supabase }) =>
+            supabase.from("notifications").insert({
+              shop_id: activeShop.id,
+              type: "billing",
+              title: `Plan changed to ${planKey}`,
+              message: `Your shop is now on the ${planKey} plan. New features are unlocked immediately.`,
+              action_url: "/shop/upgrade",
+            }),
+          );
+        } catch {
+          /* best-effort */
+        }
+      }
       qc.invalidateQueries({ queryKey: ["auth", "shops"] });
       if (activeShop) qc.invalidateQueries({ queryKey: shopKeys.shopFull(activeShop.id) });
     },
