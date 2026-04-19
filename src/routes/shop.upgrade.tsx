@@ -40,7 +40,7 @@ function UpgradePage() {
         previousPlan: currentPlan,
         actorUserId: user?.id ?? null,
         actorEmail: user?.email ?? null,
-        source: "owner_downgrade",
+        source: "owner_upgrade",
       });
     },
     onSuccess: async (_d, planKey) => {
@@ -153,13 +153,20 @@ function UpgradePage() {
         ))}
       </div>
 
+      {/* Billing card (current plan, expiry, payment history, mock-confirm banner) */}
+      <div className="mb-6">
+        <ShopBillingCard />
+      </div>
+
       {/* Plans */}
       <div className="grid gap-4 lg:grid-cols-3">
         {plans.map((p) => {
           const isCurrent = currentPlan === p.key;
           const isDowngrade = TIER_RANK[p.tier] < TIER_RANK[currentTier] && !isCurrent;
           const featured = p.accent === "primary";
-          const busy = upgrade.isPending && upgrade.variables === p.key;
+          const busy =
+            (checkout.isPending && checkout.variables?.plan === p.key) ||
+            (downgrade.isPending && downgrade.variables === p.key);
           return (
             <div
               key={p.key}
@@ -206,8 +213,13 @@ function UpgradePage() {
                 onClick={() => {
                   if (!canManageBilling) return;
                   if (isCurrent) return;
-                  if (isDowngrade && !window.confirm(t("upgrade.confirmDowngrade", { plan: p.name }))) return;
-                  upgrade.mutate(p.key);
+                  if (isDowngrade) {
+                    if (!window.confirm(t("upgrade.confirmDowngrade", { plan: p.name }))) return;
+                    downgrade.mutate(p.key);
+                  } else {
+                    // Real upgrade flow → Mollie checkout (or mock checkout in dev).
+                    checkout.mutate({ plan: p.key, cycle: "monthly" });
+                  }
                 }}
               >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
