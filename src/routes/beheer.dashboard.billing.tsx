@@ -227,16 +227,36 @@ function AdminBillingPage() {
     <AdminLayout>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PageHeader title={t("adminBilling.title")} description={t("adminBilling.description")} />
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => sweep.mutate()}
-          disabled={sweep.isPending}
-          className="mt-1"
-        >
-          <RefreshCw className={cn("h-3.5 w-3.5", sweep.isPending && "animate-spin")} />
-          {sweep.isPending ? t("adminBilling.runningSweep") : t("adminBilling.runSweep")}
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="outline" size="sm" disabled={sweep.isPending} className="mt-1">
+              <RefreshCw className={cn("h-3.5 w-3.5", sweep.isPending && "animate-spin")} />
+              {sweep.isPending ? t("adminBilling.runningSweep") : t("adminBilling.runSweep")}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t("adminBilling.sweepConfirmTitle")}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {summary.expired === 0
+                  ? t("adminBilling.sweepConfirmNone")
+                  : t("adminBilling.sweepConfirmBody").replace(
+                      "{count}",
+                      String(summary.expired),
+                    )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => sweep.mutate()}
+                disabled={sweep.isPending}
+              >
+                {t("adminBilling.sweepConfirmRun")}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       {/* Top KPIs */}
