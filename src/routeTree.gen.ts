@@ -29,6 +29,7 @@ import { Route as ShopAnalyticsRouteImport } from './routes/shop.analytics'
 import { Route as LegalTermsRouteImport } from './routes/legal.terms'
 import { Route as LegalRefundsRouteImport } from './routes/legal.refunds'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
+import { Route as HooksWelcomeShopOwnerRouteImport } from './routes/hooks/welcome-shop-owner'
 import { Route as HooksTrialRemindersRouteImport } from './routes/hooks/trial-reminders'
 import { Route as HooksMollieRefreshTokensRouteImport } from './routes/hooks/mollie-refresh-tokens'
 import { Route as HooksBookingConfirmationRouteImport } from './routes/hooks/booking-confirmation'
@@ -167,6 +168,11 @@ const LegalRefundsRoute = LegalRefundsRouteImport.update({
 const LegalPrivacyRoute = LegalPrivacyRouteImport.update({
   id: '/legal/privacy',
   path: '/legal/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HooksWelcomeShopOwnerRoute = HooksWelcomeShopOwnerRouteImport.update({
+  id: '/hooks/welcome-shop-owner',
+  path: '/hooks/welcome-shop-owner',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HooksTrialRemindersRoute = HooksTrialRemindersRouteImport.update({
@@ -389,6 +395,7 @@ export interface FileRoutesByFullPath {
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
   '/hooks/mollie-refresh-tokens': typeof HooksMollieRefreshTokensRoute
   '/hooks/trial-reminders': typeof HooksTrialRemindersRoute
+  '/hooks/welcome-shop-owner': typeof HooksWelcomeShopOwnerRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/refunds': typeof LegalRefundsRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -450,6 +457,7 @@ export interface FileRoutesByTo {
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
   '/hooks/mollie-refresh-tokens': typeof HooksMollieRefreshTokensRoute
   '/hooks/trial-reminders': typeof HooksTrialRemindersRoute
+  '/hooks/welcome-shop-owner': typeof HooksWelcomeShopOwnerRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/refunds': typeof LegalRefundsRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -512,6 +520,7 @@ export interface FileRoutesById {
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
   '/hooks/mollie-refresh-tokens': typeof HooksMollieRefreshTokensRoute
   '/hooks/trial-reminders': typeof HooksTrialRemindersRoute
+  '/hooks/welcome-shop-owner': typeof HooksWelcomeShopOwnerRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/refunds': typeof LegalRefundsRoute
   '/legal/terms': typeof LegalTermsRoute
@@ -575,6 +584,7 @@ export interface FileRouteTypes {
     | '/hooks/booking-confirmation'
     | '/hooks/mollie-refresh-tokens'
     | '/hooks/trial-reminders'
+    | '/hooks/welcome-shop-owner'
     | '/legal/privacy'
     | '/legal/refunds'
     | '/legal/terms'
@@ -636,6 +646,7 @@ export interface FileRouteTypes {
     | '/hooks/booking-confirmation'
     | '/hooks/mollie-refresh-tokens'
     | '/hooks/trial-reminders'
+    | '/hooks/welcome-shop-owner'
     | '/legal/privacy'
     | '/legal/refunds'
     | '/legal/terms'
@@ -697,6 +708,7 @@ export interface FileRouteTypes {
     | '/hooks/booking-confirmation'
     | '/hooks/mollie-refresh-tokens'
     | '/hooks/trial-reminders'
+    | '/hooks/welcome-shop-owner'
     | '/legal/privacy'
     | '/legal/refunds'
     | '/legal/terms'
@@ -759,6 +771,7 @@ export interface RootRouteChildren {
   HooksBookingConfirmationRoute: typeof HooksBookingConfirmationRoute
   HooksMollieRefreshTokensRoute: typeof HooksMollieRefreshTokensRoute
   HooksTrialRemindersRoute: typeof HooksTrialRemindersRoute
+  HooksWelcomeShopOwnerRoute: typeof HooksWelcomeShopOwnerRoute
   LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalRefundsRoute: typeof LegalRefundsRoute
   LegalTermsRoute: typeof LegalTermsRoute
@@ -945,6 +958,13 @@ declare module '@tanstack/react-router' {
       path: '/legal/privacy'
       fullPath: '/legal/privacy'
       preLoaderRoute: typeof LegalPrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hooks/welcome-shop-owner': {
+      id: '/hooks/welcome-shop-owner'
+      path: '/hooks/welcome-shop-owner'
+      fullPath: '/hooks/welcome-shop-owner'
+      preLoaderRoute: typeof HooksWelcomeShopOwnerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hooks/trial-reminders': {
@@ -1259,6 +1279,7 @@ const rootRouteChildren: RootRouteChildren = {
   HooksBookingConfirmationRoute: HooksBookingConfirmationRoute,
   HooksMollieRefreshTokensRoute: HooksMollieRefreshTokensRoute,
   HooksTrialRemindersRoute: HooksTrialRemindersRoute,
+  HooksWelcomeShopOwnerRoute: HooksWelcomeShopOwnerRoute,
   LegalPrivacyRoute: LegalPrivacyRoute,
   LegalRefundsRoute: LegalRefundsRoute,
   LegalTermsRoute: LegalTermsRoute,
