@@ -167,7 +167,12 @@ export const updatePlatformBillingConfig = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const user = await assertSuperAdmin(data.accessToken);
-    const patch: Record<string, unknown> = { updated_by: user.id, updated_at: new Date().toISOString() };
+    const patch: {
+      updated_by: string;
+      updated_at: string;
+      mode?: "test" | "live";
+      webhook_url_override?: string | null;
+    } = { updated_by: user.id, updated_at: new Date().toISOString() };
     if (data.mode === "test" || data.mode === "live") patch.mode = data.mode;
     if (data.webhookUrlOverride !== undefined) {
       const v = (data.webhookUrlOverride ?? "").trim();
