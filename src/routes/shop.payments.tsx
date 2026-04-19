@@ -161,10 +161,18 @@ function PaymentsPage() {
                   {payments.map((p) => {
                     const booking = bookings.find((b) => b.id === p.booking_id);
                     const cust = customers.find((c) => c.id === booking?.customer_id);
+                    const meta = (p.metadata ?? {}) as { method?: string };
+                    const method = (meta.method ?? p.provider ?? "—").toString();
+                    const MethodIcon = method.toLowerCase().includes("ideal") ? Landmark : method.toLowerCase().includes("cash") ? Banknote : CreditCard;
                     return (
                       <tr key={p.id} className="hover:bg-muted/30">
                         <td className="px-6 py-4 font-medium">{cust?.full_name ?? "—"}</td>
-                        <td className="hidden px-6 py-4 text-muted-foreground sm:table-cell">{booking ? formatDate(booking.starts_at) : "—"}</td>
+                        <td className="hidden px-6 py-4 text-muted-foreground sm:table-cell">
+                          <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-xs font-medium">
+                            <MethodIcon className="h-3.5 w-3.5" /> {method}
+                          </span>
+                        </td>
+                        <td className="hidden px-6 py-4 text-muted-foreground md:table-cell">{booking ? formatDate(booking.starts_at) : "—"}</td>
                         <td className="px-6 py-4 font-medium">{formatCents(p.amount_cents, p.currency)}</td>
                         <td className="px-6 py-4">
                           <Select
