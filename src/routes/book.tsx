@@ -2,10 +2,10 @@
 // Persists customer + booking + unpaid payment row in one transaction-like sequence,
 // with a server-side overlap check to prevent double-booking the same staff member.
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, Check, Sparkle, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Sparkle, Loader2, Beaker } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +15,12 @@ import { useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { cn } from "@/lib/utils";
 
+type BookSearch = { shop?: string };
+
 export const Route = createFileRoute("/book")({
+  validateSearch: (s: Record<string, unknown>): BookSearch => ({
+    shop: typeof s.shop === "string" ? s.shop : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Een afspraak boeken — FlowyBookings" },
