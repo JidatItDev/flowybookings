@@ -19,7 +19,7 @@ const WelcomeShopOwnerEmail = ({
 }: WelcomeShopOwnerProps) => (
   <Html lang="nl" dir="ltr">
     <Head />
-    <Preview>Welkom bij FlowyBookings — je {trialDays}-daagse proefperiode is gestart</Preview>
+    <Preview>{`Welkom bij FlowyBookings — je ${trialDays}-daagse proefperiode is gestart`}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Heading style={h1}>
