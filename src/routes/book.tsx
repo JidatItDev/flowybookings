@@ -238,7 +238,7 @@ function BookingFlow() {
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="rounded-3xl border border-border bg-card p-6 shadow-soft sm:p-8">
-            {step === 0 && (
+            {logicalStep === 0 && (
               <Section title={t("book.chooseShop")} subtitle={t("book.chooseShopSub")}>
                 {shopsQ.isLoading ? <SkeletonGrid /> : (
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -260,7 +260,7 @@ function BookingFlow() {
               </Section>
             )}
 
-            {step === 1 && (
+            {logicalStep === 1 && (
               <Section title={t("book.chooseService")} subtitle={t("book.chooseServiceSub")}>
                 {servicesQ.isLoading ? <SkeletonGrid /> : (
                   <div className="space-y-2">
@@ -280,7 +280,7 @@ function BookingFlow() {
               </Section>
             )}
 
-            {step === 2 && (
+            {logicalStep === 2 && (
               <Section title={t("book.chooseStaff")} subtitle={t("book.chooseStaffSub")}>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <button onClick={() => setStaffId("any")}
@@ -305,7 +305,7 @@ function BookingFlow() {
               </Section>
             )}
 
-            {step === 3 && (
+            {logicalStep === 3 && (
               <Section title={t("book.pickDate")} subtitle={t("book.pickDateSub")}>
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-7">
                   {dates.map((d) => (
@@ -331,7 +331,7 @@ function BookingFlow() {
               </Section>
             )}
 
-            {step === 4 && (
+            {logicalStep === 4 && (
               <Section title={t("book.yourDetails")} subtitle={t("book.yourDetailsSub")}>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label={t("book.fullName")} value={name} onChange={setName} placeholder="Sophia Reyes" />
@@ -349,7 +349,7 @@ function BookingFlow() {
               </Section>
             )}
 
-            {step === 5 && (
+            {logicalStep === 5 && (
               <Section title={t("book.reviewConfirm")} subtitle={t("book.reviewSub")}>
                 <dl className="space-y-3 text-sm">
                   <Row label={t("book.shop")} value={selectedShop?.name ?? "—"} />
