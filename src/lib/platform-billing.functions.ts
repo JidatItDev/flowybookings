@@ -261,6 +261,7 @@ export const runPlatformBillingHealthCheck = createServerFn({ method: "POST" })
           actor_email: user.email ?? null,
           metadata: { error: `Mollie ${res.status}: ${txt.slice(0, 300)}`, mode },
         });
+        await persistHealth("failed", `Mollie returned ${res.status}`, mode);
         return {
           ok: false,
           message: `Mollie returned ${res.status}`,
@@ -276,9 +277,11 @@ export const runPlatformBillingHealthCheck = createServerFn({ method: "POST" })
         actor_email: user.email ?? null,
         metadata: { mode, methods_count: json.count ?? 0 },
       });
+      const okMsg = `Connected to Mollie (${mode}) — ${json.count ?? 0} payment methods available`;
+      await persistHealth("ok", okMsg, mode);
       return {
         ok: true,
-        message: `Connected to Mollie (${mode}) — ${json.count ?? 0} payment methods available`,
+        message: okMsg,
         mollieMode: mode,
         checkedAt,
       };
@@ -291,6 +294,7 @@ export const runPlatformBillingHealthCheck = createServerFn({ method: "POST" })
         actor_email: user.email ?? null,
         metadata: { error: message, mode },
       });
+      await persistHealth("failed", message, mode);
       return { ok: false, message, mollieMode: mode, checkedAt };
     }
   });
