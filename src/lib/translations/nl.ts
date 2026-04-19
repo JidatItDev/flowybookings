@@ -447,6 +447,14 @@ export const nl: Record<string, string> = {
   "mollie.onboarding.in_review": "In beoordeling",
   "mollie.onboarding.completed": "Voltooid",
   "mollie.onboarding.rejected": "Afgewezen",
+  "mollie.nudge.title": "Sneller betaald worden — koppel Mollie",
+  "mollie.nudge.body": "Accepteer iDEAL, kaarten en Bancontact bij het boeken. Betalingen komen direct op jouw Mollie-account, met aanbetalingen tegen no-shows.",
+  "mollie.nudge.benefit1": "Directe uitbetalingen",
+  "mollie.nudge.benefit2": "Minder no-shows via aanbetaling",
+  "mollie.nudge.benefit3": "Lage platformkosten",
+  "mollie.nudge.cta": "Mollie koppelen",
+  "mollie.nudge.notifTitle": "Koppel Mollie om betalingen te ontvangen",
+  "mollie.nudge.notifMessage": "Je shop heeft nog geen betaalprovider gekoppeld. Koppel Mollie om aanbetalingen te accepteren en no-shows te verminderen.",
 
   // ── Admin: Providers ──
   "adminProviders.title": "Betalingsproviders",

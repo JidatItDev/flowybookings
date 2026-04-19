@@ -8,6 +8,7 @@ import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyState, NoShopState } from "@/components/EmptyState";
+import { MollieNudge } from "@/components/MollieNudge";
 import { useActiveShopId } from "@/lib/shop-context";
 import { paymentsQuery, bookingsQuery, customersQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +41,7 @@ function PaymentsPage() {
       <PageHeader title={t("payments.title")} description={t("payments.description")} actions={<><Button variant="outline"><ArrowDownToLine className="h-4 w-4" /> {t("payments.export")}</Button><Button variant="hero">{t("payments.connectStripe")}</Button></>} />
       {!shopId ? <NoShopState /> : (
         <>
+          <div className="mb-4"><MollieNudge shopId={shopId} /></div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard label={t("payments.collected")} value={formatCents(collected)} icon={CircleDollarSign} accent="mint" />
             <StatCard label={t("payments.pendingBalance")} value={formatCents(pending)} icon={Wallet} accent="primary" />
