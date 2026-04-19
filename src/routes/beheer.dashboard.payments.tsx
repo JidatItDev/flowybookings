@@ -1,13 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CircleDollarSign, TrendingUp, RotateCcw, Wallet, Plug, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { AdminLayout } from "@/components/AdminLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { adminPaymentsQuery, adminStatsQuery } from "@/lib/admin-queries";
-import { adminPaymentProvidersQuery, type ConnectionStatus } from "@/lib/payment-providers";
+import { adminPaymentProvidersQuery, paymentProviderKeys, type ConnectionStatus } from "@/lib/payment-providers";
 import { formatCents, relativeFromNow } from "@/lib/format";
 import { useT } from "@/lib/i18n";
 
@@ -15,11 +18,53 @@ export const Route = createFileRoute("/beheer/dashboard/payments")({ head: () =>
 
 function AdminPayments() {
   const { t } = useT();
+  const qc = useQueryClient();
   const { data: stats, isLoading: statsLoading } = useQuery(adminStatsQuery());
   const { data: payments, isLoading } = useQuery(adminPaymentsQuery());
   const { data: providers, isLoading: providersLoading } = useQuery(adminPaymentProvidersQuery());
   const refundedCount = (payments ?? []).filter((p) => p.status === "refunded").length;
   const refundedAmount = (payments ?? []).filter((p) => p.status === "refunded").reduce((s, p) => s + p.amount_cents, 0);
+
+  // Per-shop revenue + fee rollup
+  const perShop = new Map<string, { name: string; revenue: number; fees: number; count: number }>();
+  (payments ?? []).forEach((p) => {
+    const key = p.shop_id;
+    const cur = perShop.get(key) ?? { name: p.shop_name ?? "—", revenue: 0, fees: 0, count: 0 };
+    cur.revenue += p.amount_cents;
+    cur.fees += p.application_fee_cents;
+    cur.count += 1;
+    perShop.set(key, cur);
+  });
+  const perShopRows = [...perShop.entries()]
+    .map(([id, v]) => ({ id, ...v }))
+    .sort((a, b) => b.fees - a.fees)
+    .slice(0, 10);
+
+  const setStatus = useMutation({
+    mutationFn: async ({ id, shop_id, status }: { id?: string; shop_id: string; status: ConnectionStatus }) => {
+      const patch: Record<string, unknown> = {
+        connection_status: status,
+        onboarding_status: status === "connected" ? "completed" : status === "pending" ? "in_review" : "not_started",
+        connected_at: status === "connected" ? new Date().toISOString() : null,
+        disconnected_at: status === "disconnected" ? new Date().toISOString() : null,
+      };
+      if (id) {
+        const { error } = await (supabase as any).from("shop_payment_providers").update(patch).eq("id", id);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("shop_payment_providers").upsert(
+          { shop_id, provider: "mollie", application_fee_enabled: true, application_fee_percent: 2.0, ...patch },
+          { onConflict: "shop_id,provider" },
+        );
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(t("adminProviders.updated"));
+      qc.invalidateQueries({ queryKey: paymentProviderKeys.adminAll() });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   return (
     <AdminLayout>
@@ -59,11 +104,53 @@ function AdminPayments() {
                   </p>
                 </div>
                 <ProviderStatusPill status={p.connection_status} />
+                <div className="flex flex-none gap-1.5">
+                  {p.connection_status !== "connected" && (
+                    <Button size="sm" variant="outline" onClick={() => setStatus.mutate({ id: p.id, shop_id: p.shop_id, status: "connected" })} disabled={setStatus.isPending}>
+                      {t("adminProviders.markConnected")}
+                    </Button>
+                  )}
+                  {p.connection_status !== "disconnected" && p.connection_status !== "not_connected" && (
+                    <Button size="sm" variant="ghost" onClick={() => setStatus.mutate({ id: p.id, shop_id: p.shop_id, status: "disconnected" })} disabled={setStatus.isPending}>
+                      {t("adminProviders.disconnect")}
+                    </Button>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      {/* Per-shop revenue rollup */}
+      {!isLoading && perShopRows.length > 0 && (
+        <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+          <div className="border-b border-border px-4 py-4 sm:px-6">
+            <h2 className="text-base font-semibold">{t("adminProviders.revenueByShop")}</h2>
+            <p className="text-xs text-muted-foreground">{t("adminProviders.revenueByShopDesc")}</p>
+          </div>
+          <ul className="divide-y divide-border">
+            {perShopRows.map((r) => (
+              <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{r.name}</p>
+                  <p className="text-xs text-muted-foreground">{t("adminPayments.events", { n: r.count })}</p>
+                </div>
+                <div className="flex flex-none items-center gap-4 text-right">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("adminPayments.totalRevenue")}</p>
+                    <p className="text-sm font-semibold">{formatCents(r.revenue)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("adminPayments.platformFees")}</p>
+                    <p className="text-sm font-semibold text-primary">{formatCents(r.fees)}</p>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {isLoading ? <div className="mt-6 space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div> : (
         <div className="mt-6 overflow-x-auto rounded-2xl border border-border bg-card shadow-soft">

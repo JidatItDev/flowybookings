@@ -43,6 +43,7 @@ import { Route as BeheerDashboardLogsRouteImport } from './routes/beheer.dashboa
 import { Route as BeheerDashboardDemoRouteImport } from './routes/beheer.dashboard.demo'
 import { Route as BeheerDashboardBookingsRouteImport } from './routes/beheer.dashboard.bookings'
 import { Route as BeheerAdLoginRouteImport } from './routes/beheer.ad.login'
+import { Route as ApiMollieWebhookRouteImport } from './routes/api.mollie.webhook'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -221,6 +222,11 @@ const BeheerAdLoginRoute = BeheerAdLoginRouteImport.update({
   path: '/beheer/ad/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMollieWebhookRoute = ApiMollieWebhookRouteImport.update({
+  id: '/api/mollie/webhook',
+  path: '/api/mollie/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LovableEmailTransactionalSendRoute =
   LovableEmailTransactionalSendRouteImport.update({
     id: '/lovable/email/transactional/send',
@@ -270,6 +276,7 @@ export interface FileRoutesByFullPath {
   '/shop/staff': typeof ShopStaffRoute
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop/': typeof ShopIndexRoute
+  '/api/mollie/webhook': typeof ApiMollieWebhookRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
   '/beheer/dashboard/demo': typeof BeheerDashboardDemoRoute
@@ -311,6 +318,7 @@ export interface FileRoutesByTo {
   '/shop/staff': typeof ShopStaffRoute
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop': typeof ShopIndexRoute
+  '/api/mollie/webhook': typeof ApiMollieWebhookRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
   '/beheer/dashboard/demo': typeof BeheerDashboardDemoRoute
@@ -353,6 +361,7 @@ export interface FileRoutesById {
   '/shop/staff': typeof ShopStaffRoute
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop/': typeof ShopIndexRoute
+  '/api/mollie/webhook': typeof ApiMollieWebhookRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
   '/beheer/dashboard/demo': typeof BeheerDashboardDemoRoute
@@ -396,6 +405,7 @@ export interface FileRouteTypes {
     | '/shop/staff'
     | '/shop/upgrade'
     | '/shop/'
+    | '/api/mollie/webhook'
     | '/beheer/ad/login'
     | '/beheer/dashboard/bookings'
     | '/beheer/dashboard/demo'
@@ -437,6 +447,7 @@ export interface FileRouteTypes {
     | '/shop/staff'
     | '/shop/upgrade'
     | '/shop'
+    | '/api/mollie/webhook'
     | '/beheer/ad/login'
     | '/beheer/dashboard/bookings'
     | '/beheer/dashboard/demo'
@@ -478,6 +489,7 @@ export interface FileRouteTypes {
     | '/shop/staff'
     | '/shop/upgrade'
     | '/shop/'
+    | '/api/mollie/webhook'
     | '/beheer/ad/login'
     | '/beheer/dashboard/bookings'
     | '/beheer/dashboard/demo'
@@ -520,6 +532,7 @@ export interface RootRouteChildren {
   ShopStaffRoute: typeof ShopStaffRoute
   ShopUpgradeRoute: typeof ShopUpgradeRoute
   ShopIndexRoute: typeof ShopIndexRoute
+  ApiMollieWebhookRoute: typeof ApiMollieWebhookRoute
   BeheerAdLoginRoute: typeof BeheerAdLoginRoute
   BeheerDashboardBookingsRoute: typeof BeheerDashboardBookingsRoute
   BeheerDashboardDemoRoute: typeof BeheerDashboardDemoRoute
@@ -780,6 +793,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerAdLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/mollie/webhook': {
+      id: '/api/mollie/webhook'
+      path: '/api/mollie/webhook'
+      fullPath: '/api/mollie/webhook'
+      preLoaderRoute: typeof ApiMollieWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/transactional/send': {
       id: '/lovable/email/transactional/send'
       path: '/lovable/email/transactional/send'
@@ -860,6 +880,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShopStaffRoute: ShopStaffRoute,
   ShopUpgradeRoute: ShopUpgradeRoute,
   ShopIndexRoute: ShopIndexRoute,
+  ApiMollieWebhookRoute: ApiMollieWebhookRoute,
   BeheerAdLoginRoute: BeheerAdLoginRoute,
   BeheerDashboardBookingsRoute: BeheerDashboardBookingsRoute,
   BeheerDashboardDemoRoute: BeheerDashboardDemoRoute,
