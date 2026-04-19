@@ -36,9 +36,18 @@ function PaymentsPage() {
 
   // BOOKING PAYMENTS ONLY — strictly exclude platform subscription rows.
   // Subscription billing lives at /shop/billing (alias of /shop/upgrade).
-  const payments = allPayments.filter(
+  const allBookingPayments = allPayments.filter(
     (p) => p.provider !== PLATFORM_PROVIDER && p.booking_id !== null,
   );
+
+  // Apply user-selected status filter
+  const payments = allBookingPayments.filter((p) => {
+    if (statusFilter === "all") return true;
+    if (statusFilter === "paid") return p.status === "paid" || p.status === "deposit_paid";
+    if (statusFilter === "pending") return p.status === "unpaid";
+    if (statusFilter === "failed") return p.status === "failed" || p.status === "refunded";
+    return true;
+  });
 
   type PaymentStatus = (typeof paymentStatuses)[number];
   const updateStatus = useMutation({
