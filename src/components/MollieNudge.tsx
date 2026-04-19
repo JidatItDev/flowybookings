@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { Link } from "@tanstack/react-router";
 import { Wallet, ArrowRight, ShieldCheck, Zap, BadgePercent } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -8,8 +9,6 @@ import { useT } from "@/lib/i18n";
 
 interface Props {
   shopId: string;
-  /** Scroll target id for the connect card. */
-  connectAnchor?: string;
 }
 
 /**
