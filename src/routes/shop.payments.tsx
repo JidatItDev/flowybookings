@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CircleDollarSign, ArrowDownToLine, RotateCcw, Wallet, CreditCard } from "lucide-react";
+import { CircleDollarSign, ArrowDownToLine, RotateCcw, Wallet, CreditCard, Receipt } from "lucide-react";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -9,25 +9,44 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyState, NoShopState } from "@/components/EmptyState";
 import { MollieNudge } from "@/components/MollieNudge";
+import { MollieConnectCard } from "@/components/MollieConnectCard";
 import { useActiveShopId } from "@/lib/shop-context";
 import { paymentsQuery, bookingsQuery, customersQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCents, formatDate } from "@/lib/format";
 import { useT } from "@/lib/i18n";
+import { PLATFORM_PROVIDER } from "@/lib/platform-billing";
 
-export const Route = createFileRoute("/shop/payments")({ head: () => ({ meta: [{ title: "Payments — FlowyBookings" }] }), component: PaymentsPage });
+export const Route = createFileRoute("/shop/payments")({
+  head: () => ({ meta: [{ title: "Booking payments — FlowyBookings" }] }),
+  component: PaymentsPage,
+});
 const paymentStatuses = ["unpaid", "deposit_paid", "paid", "refunded", "failed"] as const;
 
 function PaymentsPage() {
-  const shopId = useActiveShopId(); const qc = useQueryClient(); const { t } = useT();
-  const { data: payments = [], isLoading } = useQuery({ ...paymentsQuery(shopId ?? ""), enabled: !!shopId });
+  const shopId = useActiveShopId();
+  const qc = useQueryClient();
+  const { t } = useT();
+  const { data: allPayments = [], isLoading } = useQuery({ ...paymentsQuery(shopId ?? ""), enabled: !!shopId });
   const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
   const { data: customers = [] } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
 
+  // BOOKING PAYMENTS ONLY — strictly exclude platform subscription rows.
+  // Subscription billing lives at /shop/billing (alias of /shop/upgrade).
+  const payments = allPayments.filter(
+    (p) => p.provider !== PLATFORM_PROVIDER && p.booking_id !== null,
+  );
+
   type PaymentStatus = (typeof paymentStatuses)[number];
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: PaymentStatus }) => { const { error } = await supabase.from("payments").update({ status }).eq("id", id); if (error) throw error; },
-    onSuccess: () => { toast.success(t("payments.updated")); if (shopId) qc.invalidateQueries({ queryKey: shopKeys.payments(shopId) }); },
+    mutationFn: async ({ id, status }: { id: string; status: PaymentStatus }) => {
+      const { error } = await supabase.from("payments").update({ status }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(t("payments.updated"));
+      if (shopId) qc.invalidateQueries({ queryKey: shopKeys.payments(shopId) });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -38,25 +57,62 @@ function PaymentsPage() {
 
   return (
     <ShopLayout>
-      <PageHeader title={t("payments.title")} description={t("payments.description")} actions={<><Button variant="outline"><ArrowDownToLine className="h-4 w-4" /> {t("payments.export")}</Button><Button variant="hero">{t("payments.connectStripe")}</Button></>} />
-      {!shopId ? <NoShopState /> : (
+      <PageHeader
+        title={t("shopPayments.title")}
+        description={t("shopPayments.description")}
+        actions={
+          <Button variant="outline">
+            <ArrowDownToLine className="h-4 w-4" /> {t("shopPayments.export")}
+          </Button>
+        }
+      />
+      {!shopId ? (
+        <NoShopState />
+      ) : (
         <>
-          <div className="mb-4"><MollieNudge shopId={shopId} /></div>
+          {/* Cross-link to subscription billing so the two systems are obviously separate */}
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-border bg-muted/30 px-4 py-3 text-xs">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Receipt className="h-4 w-4" />
+              <span>{t("shopPayments.notSubscription")}</span>
+            </div>
+            <Link to="/shop/billing" className="font-medium text-primary hover:underline">
+              {t("shopPayments.openBilling")} →
+            </Link>
+          </div>
+
+          {/* Inline Mollie nudge (auto-hides when connected) */}
+          <div className="mb-4">
+            <MollieNudge shopId={shopId} />
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard label={t("payments.collected")} value={formatCents(collected)} icon={CircleDollarSign} accent="mint" />
             <StatCard label={t("payments.pendingBalance")} value={formatCents(pending)} icon={Wallet} accent="primary" />
             <StatCard label={t("payments.refunds")} value={formatCents(refunds)} icon={RotateCcw} accent="pink" />
             <StatCard label={t("payments.avgTransaction")} value={formatCents(avgTx)} icon={CircleDollarSign} accent="peach" />
           </div>
-          <div className="mt-6 rounded-2xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning-foreground">
-            <p className="font-semibold">{t("payments.stripeNotice")}</p>
-            <p className="mt-1 text-xs opacity-80">{t("payments.stripeNoticeDesc")}</p>
+
+          {/* Mollie Connect provider settings — booking payments only */}
+          <div className="mt-6">
+            <MollieConnectCard shopId={shopId} />
           </div>
-          {isLoading ? <div className="mt-6 h-72 animate-pulse rounded-2xl border border-border bg-card" /> : payments.length === 0 ? (
-            <div className="mt-6"><EmptyState icon={CreditCard} title={t("payments.noPayments")} description={t("payments.noPaymentsDesc")} /></div>
+
+          {isLoading ? (
+            <div className="mt-6 h-72 animate-pulse rounded-2xl border border-border bg-card" />
+          ) : payments.length === 0 ? (
+            <div className="mt-6">
+              <EmptyState
+                icon={CreditCard}
+                title={t("payments.noPayments")}
+                description={t("payments.noPaymentsDesc")}
+              />
+            </div>
           ) : (
             <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-              <div className="border-b border-border px-6 py-4"><h2 className="text-base font-semibold">{t("payments.recentTransactions")}</h2></div>
+              <div className="border-b border-border px-6 py-4">
+                <h2 className="text-base font-semibold">{t("payments.recentTransactions")}</h2>
+              </div>
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
@@ -77,9 +133,20 @@ function PaymentsPage() {
                         <td className="hidden px-6 py-4 text-muted-foreground sm:table-cell">{booking ? formatDate(booking.starts_at) : "—"}</td>
                         <td className="px-6 py-4 font-medium">{formatCents(p.amount_cents, p.currency)}</td>
                         <td className="px-6 py-4">
-                          <Select value={p.status} onValueChange={(v) => updateStatus.mutate({ id: p.id, status: v as PaymentStatus })}>
-                            <SelectTrigger className="h-8 w-[140px] text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>{paymentStatuses.map((s) => <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>)}</SelectContent>
+                          <Select
+                            value={p.status}
+                            onValueChange={(v) => updateStatus.mutate({ id: p.id, status: v as PaymentStatus })}
+                          >
+                            <SelectTrigger className="h-8 w-[140px] text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {paymentStatuses.map((s) => (
+                                <SelectItem key={s} value={s}>
+                                  {s.replace("_", " ")}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
                           </Select>
                         </td>
                         <td className="hidden px-6 py-4 text-muted-foreground lg:table-cell">{formatDate(p.created_at)}</td>
