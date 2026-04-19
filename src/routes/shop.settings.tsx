@@ -222,8 +222,34 @@ function SettingsPage() {
             <div className="mt-3"><NumField label={t("settings.defaultDeposit")} value={rules.defaultDepositPct} onChange={(v) => updateRule("defaultDepositPct", v)} /></div>
           </Card>
 
+          {/* SECTIE — Betalingen van klanten */}
           <div className="lg:col-span-3">
+            <h2 className="mb-3 text-base font-semibold">{t("settings.customerPayments")}</h2>
+            <p className="mb-4 text-xs text-muted-foreground">{t("settings.platformFee", { pct: String(planInfo.fee) })} {currentPlan !== "premium" && `· ${t("settings.upgradeFee")}`}</p>
             <MollieConnectCard shopId={shopId} />
+          </div>
+
+          {/* Stripe placeholder */}
+          <div className="lg:col-span-3">
+            <div className="rounded-2xl border border-border border-dashed bg-card p-4 shadow-soft sm:p-6 opacity-75">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                    <CreditCard className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-base font-semibold">{t("settings.stripeTitle")}</h3>
+                    <p className="text-xs text-muted-foreground sm:text-sm">{t("settings.stripeDesc")}</p>
+                  </div>
+                </div>
+                <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                  {t("settings.stripeComingSoon")}
+                </span>
+              </div>
+              <Button disabled variant="outline" className="mt-4">
+                {t("settings.stripeComingSoon")}
+              </Button>
+            </div>
           </div>
         </div>
       )}
