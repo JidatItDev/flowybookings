@@ -35,10 +35,12 @@ export const Route = createFileRoute('/hooks/booking-automations')({
         // 1. Pull all shops with their automation rows
         const { data: automations, error: aErr } = await supabase
           .from('shop_automations')
-          .select('shop_id, reminder_24h_enabled, reminder_2h_enabled, followup_enabled, followup_delay_minutes')
+          .select('shop_id, reminder_24h_enabled, reminder_2h_enabled, reminder_sms_enabled, followup_enabled, followup_delay_minutes')
         if (aErr) {
           return Response.json({ error: aErr.message }, { status: 500 })
         }
+
+        const smsCounters = { sent: 0, skipped_no_credits: 0, skipped_no_phone: 0, errors: 0 }
 
         for (const auto of automations ?? []) {
           // ---- 24h reminder ----
@@ -50,13 +52,18 @@ export const Route = createFileRoute('/hooks/booking-automations')({
             counters.reminder24h += sent
           }
 
-          // ---- 2h reminder ----
+          // ---- 2h reminder (email + optional SMS) ----
           if (auto.reminder_2h_enabled) {
             const target = new Date(now.getTime() + 2 * 60 * 60 * 1000)
             const lo = new Date(target.getTime() - WINDOW_MIN * 60 * 1000)
             const hi = new Date(target.getTime() + WINDOW_MIN * 60 * 1000)
             const sent = await sendForWindow(supabase, auto.shop_id, lo, hi, 'reminder-2h', counters)
             counters.reminder2h += sent
+
+            // Reminder-SMS — runs alongside the email reminder window
+            if (auto.reminder_sms_enabled) {
+              await sendReminderSmsWindow(supabase, auto.shop_id, lo, hi, smsCounters)
+            }
           }
 
           // ---- Follow-up (X minutes after appointment ENDS) ----
@@ -70,7 +77,7 @@ export const Route = createFileRoute('/hooks/booking-automations')({
           }
         }
 
-        return Response.json({ ok: true, ranAt: now.toISOString(), ...counters })
+        return Response.json({ ok: true, ranAt: now.toISOString(), ...counters, sms: smsCounters })
       },
     },
   },
