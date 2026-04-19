@@ -246,6 +246,7 @@ function AdminPayments() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </AdminLayout>
