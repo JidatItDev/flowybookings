@@ -228,9 +228,16 @@ function UpgradePage() {
               <p className="mt-1 text-sm text-muted-foreground">{p.tagline}</p>
 
               <p className="mt-4 text-4xl font-semibold tracking-tight">
-                €{p.price}
-                <span className="text-sm font-normal text-muted-foreground">{t("upgrade.perMonth")}</span>
+                €{cycle === "yearly" ? p.price * 10 : p.price}
+                <span className="text-sm font-normal text-muted-foreground">
+                  {cycle === "yearly" ? t("upgrade.perYear") : t("upgrade.perMonth")}
+                </span>
               </p>
+              {cycle === "yearly" && (
+                <p className="mt-1 text-xs font-medium text-success-foreground">
+                  {t("upgrade.cycle.savingHint", { months: 2 })}
+                </p>
+              )}
 
               <ul className="mt-5 flex-1 space-y-2.5 text-sm">
                 {p.features.map((f) => (
