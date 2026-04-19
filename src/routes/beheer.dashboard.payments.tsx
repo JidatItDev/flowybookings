@@ -104,11 +104,53 @@ function AdminPayments() {
                   </p>
                 </div>
                 <ProviderStatusPill status={p.connection_status} />
+                <div className="flex flex-none gap-1.5">
+                  {p.connection_status !== "connected" && (
+                    <Button size="sm" variant="outline" onClick={() => setStatus.mutate({ id: p.id, shop_id: p.shop_id, status: "connected" })} disabled={setStatus.isPending}>
+                      {t("adminProviders.markConnected")}
+                    </Button>
+                  )}
+                  {p.connection_status !== "disconnected" && p.connection_status !== "not_connected" && (
+                    <Button size="sm" variant="ghost" onClick={() => setStatus.mutate({ id: p.id, shop_id: p.shop_id, status: "disconnected" })} disabled={setStatus.isPending}>
+                      {t("adminProviders.disconnect")}
+                    </Button>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
         )}
       </div>
+
+      {/* Per-shop revenue rollup */}
+      {!isLoading && perShopRows.length > 0 && (
+        <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+          <div className="border-b border-border px-4 py-4 sm:px-6">
+            <h2 className="text-base font-semibold">{t("adminProviders.revenueByShop")}</h2>
+            <p className="text-xs text-muted-foreground">{t("adminProviders.revenueByShopDesc")}</p>
+          </div>
+          <ul className="divide-y divide-border">
+            {perShopRows.map((r) => (
+              <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium">{r.name}</p>
+                  <p className="text-xs text-muted-foreground">{t("adminPayments.events", { n: r.count })}</p>
+                </div>
+                <div className="flex flex-none items-center gap-4 text-right">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("adminPayments.totalRevenue")}</p>
+                    <p className="text-sm font-semibold">{formatCents(r.revenue)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{t("adminPayments.platformFees")}</p>
+                    <p className="text-sm font-semibold text-primary">{formatCents(r.fees)}</p>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {isLoading ? <div className="mt-6 space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div> : (
         <div className="mt-6 overflow-x-auto rounded-2xl border border-border bg-card shadow-soft">
