@@ -68,10 +68,10 @@ export const Route = createFileRoute("/hooks/mollie-refresh-tokens")({
                   access_token_enc: newAccess,
                   refresh_token_enc: newRefresh,
                   token_expires_at: fresh.expires_at,
-                  scopes: fresh.scope ?? meta.scopes ?? null,
+                  scopes: fresh.scope ?? (meta.scopes as string | null) ?? null,
                   last_refresh_at: new Date().toISOString(),
                   last_refresh_error: null,
-                },
+                } as never,
                 last_synced_at: new Date().toISOString(),
               })
               .eq("id", row.id);
