@@ -9,6 +9,7 @@ import {
   Gift,
   Plus,
   Receipt,
+  RefreshCw,
   Save,
   StickyNote,
   TrendingUp,
@@ -46,6 +47,7 @@ import {
 } from "@/lib/billing-analytics";
 import { useAuth } from "@/lib/auth-context";
 import { useT } from "@/lib/i18n";
+import { runExpireSweep } from "@/lib/expire-sweep.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/beheer/dashboard/billing")({
