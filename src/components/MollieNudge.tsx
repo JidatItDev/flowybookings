@@ -33,7 +33,7 @@ export function MollieNudge({ shopId }: Props) {
         .select("id")
         .eq("shop_id", shopId)
         .eq("type", "billing")
-        .contains("metadata", { kind: "mollie_not_connected" })
+        .contains("metadata", { kind: "provider" })
         .eq("is_read", false)
         .limit(1);
       if (existing && existing.length > 0) return;
@@ -43,7 +43,8 @@ export function MollieNudge({ shopId }: Props) {
         title: t("mollie.nudge.notifTitle"),
         message: t("mollie.nudge.notifMessage"),
         action_url: "/shop/payments",
-        metadata: { kind: "mollie_not_connected" },
+        // metadata.kind = "provider" separates booking-payment provider events from subscription billing events.
+        metadata: { kind: "provider", subkind: "mollie_not_connected" },
       });
     })();
   }, [needsConnect, shopId, t]);
@@ -67,7 +68,7 @@ export function MollieNudge({ shopId }: Props) {
           </ul>
 
           <div className="mt-4">
-            <Link to="/shop/settings">
+            <Link to="/shop/payments">
               <Button variant="hero" size="sm">
                 {t("mollie.nudge.cta")} <ArrowRight className="h-3.5 w-3.5" />
               </Button>
