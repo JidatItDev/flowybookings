@@ -5,7 +5,7 @@ export const en: Record<string, string> = {
   "app.copyright": "© {year}",
   "nav.features": "Features",
   "nav.pricing": "Pricing",
-  "nav.lovedBy": "Loved by",
+  "nav.lovedBy": "Why us",
   "nav.signIn": "Sign in",
   "nav.getStarted": "Get started",
   "nav.terms": "Terms",
@@ -56,7 +56,7 @@ export const en: Record<string, string> = {
   "features.customerProfiles": "Customer profiles",
   "features.customerProfilesDesc": "Notes, preferences, history and lifetime spend in one view.",
   "features.payments": "Payments & deposits",
-  "features.paymentsDesc": "Stripe & Mollie ready. Track paid, unpaid and refunds.",
+  "features.paymentsDesc": "Mollie integration with iDEAL, Bancontact and credit card. Track paid, unpaid and refunds.",
   "features.reminders": "Reminders that work",
   "features.remindersDesc": "Email, SMS and WhatsApp at 24h and 2h before the slot.",
   "features.analytics": "Insightful analytics",
@@ -73,8 +73,21 @@ export const en: Record<string, string> = {
   "builtFor.hair": "Hair",
   "builtFor.petGrooming": "Pet grooming",
 
-  // ── Testimonials ──
-  "testimonials.title": "Loved by independent studios and growing chains",
+  // ── Why us (real value props, no fake testimonials) ──
+  "whyUs.title": "Built for the Benelux, not Silicon Valley",
+  "whyUs.sub": "No made-up reviews. Just concrete benefits you feel from day one.",
+  "whyUs.localTitle": "Local payments",
+  "whyUs.localDesc": "iDEAL, Bancontact and credit card via Mollie — no clunky US-only providers.",
+  "whyUs.noShowTitle": "Fewer no-shows",
+  "whyUs.noShowDesc": "Automatic reminders 24h and 2h before the slot. Optional deposit per customer.",
+  "whyUs.fastTitle": "Book in 60 seconds",
+  "whyUs.fastDesc": "Mobile-first flow with no account required. Customers pick a service, a time, and they're done.",
+  "whyUs.ownTitle": "Your data, your customers",
+  "whyUs.ownDesc": "Fully EU-hosted. We never sell customer data and use no tracking cookies.",
+  "whyUs.transparentTitle": "Transparent pricing",
+  "whyUs.transparentDesc": "Flat monthly fee plus a low transaction fee. No hidden costs or multi-year contracts.",
+  "whyUs.supportTitle": "Dutch-speaking support",
+  "whyUs.supportDesc": "Real humans who understand your business — reachable by email and chat.",
 
   // ── Pricing ──
   "pricing.title": "Simple pricing",
@@ -85,7 +98,7 @@ export const en: Record<string, string> = {
 
   // ── CTA ──
   "cta.title": "Ready to fill your calendar?",
-  "cta.sub": "Join 470+ shops booking smarter with FlowyBookings.",
+  "cta.sub": "Try FlowyBookings free for 14 days. No credit card, no commitment.",
   "cta.tryBooking": "Try the booking flow",
   "cta.exploreDashboard": "Explore dashboard →",
 

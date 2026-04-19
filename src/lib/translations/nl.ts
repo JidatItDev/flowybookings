@@ -5,7 +5,7 @@ export const nl: Record<string, string> = {
   "app.copyright": "© {year}",
   "nav.features": "Functies",
   "nav.pricing": "Tarieven",
-  "nav.lovedBy": "Ervaringen",
+  "nav.lovedBy": "Waarom wij",
   "nav.signIn": "Inloggen",
   "nav.getStarted": "Aan de slag",
   "nav.terms": "Voorwaarden",
@@ -56,7 +56,7 @@ export const nl: Record<string, string> = {
   "features.customerProfiles": "Klantprofielen",
   "features.customerProfilesDesc": "Notities, voorkeuren, historie en totale besteding in één overzicht.",
   "features.payments": "Betalingen & aanbetalingen",
-  "features.paymentsDesc": "Stripe & Mollie ready. Volg betaald, onbetaald en terugbetalingen.",
+  "features.paymentsDesc": "Mollie-integratie met iDEAL, Bancontact en creditcard. Volg betaald, onbetaald en terugbetalingen.",
   "features.reminders": "Herinneringen die werken",
   "features.remindersDesc": "E-mail, SMS en WhatsApp op 24u en 2u voor de afspraak.",
   "features.analytics": "Waardevolle statistieken",
@@ -73,8 +73,21 @@ export const nl: Record<string, string> = {
   "builtFor.hair": "Haar",
   "builtFor.petGrooming": "Trimsalon",
 
-  // ── Testimonials ──
-  "testimonials.title": "Geliefd bij onafhankelijke studio's en groeiende ketens",
+  // ── Why us (echte waardepropositie i.p.v. nep-testimonials) ──
+  "whyUs.title": "Gemaakt voor de Benelux, niet voor Silicon Valley",
+  "whyUs.sub": "Geen verzonnen reviews. Wel concrete voordelen die je vanaf dag één voelt in je zaak.",
+  "whyUs.localTitle": "Lokale betalingen",
+  "whyUs.localDesc": "iDEAL, Bancontact en creditcard via Mollie — geen omslachtige Amerikaanse providers.",
+  "whyUs.noShowTitle": "Minder no-shows",
+  "whyUs.noShowDesc": "Automatische herinneringen 24u en 2u voor de afspraak. Optionele aanbetaling per klant.",
+  "whyUs.fastTitle": "Boeken in 60 seconden",
+  "whyUs.fastDesc": "Mobile-first flow zonder account. Klanten kiezen dienst, tijd en zijn klaar.",
+  "whyUs.ownTitle": "Jouw data, jouw klanten",
+  "whyUs.ownDesc": "Volledig in de EU gehost. Geen verkoop van klantdata, geen tracking-cookies.",
+  "whyUs.transparentTitle": "Transparante tarieven",
+  "whyUs.transparentDesc": "Vast maandbedrag plus een lage transactiefee. Geen verborgen kosten of meerjarige contracten.",
+  "whyUs.supportTitle": "Nederlandstalige support",
+  "whyUs.supportDesc": "Echte mensen die je zaak begrijpen — bereikbaar via e-mail en chat.",
 
   // ── Pricing ──
   "pricing.title": "Eenvoudige tarieven",
@@ -85,7 +98,7 @@ export const nl: Record<string, string> = {
 
   // ── CTA ──
   "cta.title": "Klaar om je agenda te vullen?",
-  "cta.sub": "Sluit je aan bij 470+ zaken die slimmer boeken met FlowyBookings.",
+  "cta.sub": "Probeer FlowyBookings 14 dagen gratis. Geen creditcard, geen verplichtingen.",
   "cta.tryBooking": "Probeer het boekingsproces",
   "cta.exploreDashboard": "Bekijk dashboard →",
 
