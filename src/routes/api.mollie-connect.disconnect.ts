@@ -51,6 +51,8 @@ export const Route = createFileRoute("/api/mollie-connect/disconnect")({
             ...meta,
             access_token: null,
             refresh_token: null,
+            access_token_enc: null,
+            refresh_token_enc: null,
             token_expires_at: null,
           };
 
