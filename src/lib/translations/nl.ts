@@ -443,6 +443,10 @@ export const nl: Record<string, string> = {
   "services.createService": "Dienst aanmaken",
   "services.saving": "Bezig met opslaan…",
   "services.setDetails": "Stel de naam, duur en prijs in voor deze dienst.",
+  "services.depositHint": "Optioneel. Klant betaalt dit bedrag online bij het boeken.",
+  "services.depositTooHigh": "Aanbetaling mag niet hoger zijn dan de prijs.",
+  "services.depositNegative": "Aanbetaling kan niet negatief zijn.",
+  "services.priceNegative": "Prijs kan niet negatief zijn.",
 
   // ── Staff ──
   "staff.title": "Personeel",

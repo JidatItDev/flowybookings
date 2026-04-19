@@ -94,10 +94,23 @@ function ServiceFormDialog({ open, onClose, service, shopId }: { open: boolean; 
     setForm({ name: s?.name ?? "", category: s?.category ?? "", duration_minutes: s?.duration_minutes ?? 30, price: s ? s.price_cents / 100 : 0, deposit: s ? s.deposit_cents / 100 : 0, is_active: s?.is_active ?? true, description: s?.description ?? "" });
   }, [open, service?.id]);
 
+  // Validation: deposit must be ≥ 0 and ≤ price; price must be ≥ 0.
+  const priceNum = Number(form.price) || 0;
+  const depositNum = Number(form.deposit) || 0;
+  const priceError = priceNum < 0 ? t("services.priceNegative") : null;
+  const depositError =
+    depositNum < 0
+      ? t("services.depositNegative")
+      : depositNum > priceNum
+        ? t("services.depositTooHigh")
+        : null;
+  const hasErrors = !!priceError || !!depositError;
+
   const save = useMutation({
     mutationFn: async () => {
       if (!shopId) throw new Error(t("errors.noActiveShop"));
-      const payload = { shop_id: shopId, name: form.name.trim(), category: form.category.trim() || null, description: form.description.trim() || null, duration_minutes: Number(form.duration_minutes) || 30, price_cents: Math.round(Number(form.price) * 100), deposit_cents: Math.round(Number(form.deposit) * 100), is_active: form.is_active };
+      if (hasErrors) throw new Error(depositError ?? priceError ?? "Invalid input");
+      const payload = { shop_id: shopId, name: form.name.trim(), category: form.category.trim() || null, description: form.description.trim() || null, duration_minutes: Number(form.duration_minutes) || 30, price_cents: Math.round(priceNum * 100), deposit_cents: Math.round(depositNum * 100), is_active: form.is_active };
       if (service) { const { error } = await supabase.from("services").update(payload).eq("id", service.id); if (error) throw error; }
       else { const { error } = await supabase.from("services").insert(payload); if (error) throw error; }
     },
@@ -113,18 +126,26 @@ function ServiceFormDialog({ open, onClose, service, shopId }: { open: boolean; 
           <div><Label htmlFor="name">{t("services.name")}</Label><Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
           <div className="grid grid-cols-2 gap-3">
             <div><Label htmlFor="cat">{t("services.category")}</Label><Input id="cat" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} /></div>
-            <div><Label htmlFor="dur">{t("services.durationMin")}</Label><Input id="dur" type="number" value={form.duration_minutes} onChange={(e) => setForm({ ...form, duration_minutes: Number(e.target.value) })} /></div>
+            <div><Label htmlFor="dur">{t("services.durationMin")}</Label><Input id="dur" type="number" min={1} value={form.duration_minutes} onChange={(e) => setForm({ ...form, duration_minutes: Number(e.target.value) })} /></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><Label htmlFor="price">{t("services.priceEur")}</Label><Input id="price" type="number" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} /></div>
-            <div><Label htmlFor="dep">{t("services.depositEur")}</Label><Input id="dep" type="number" value={form.deposit} onChange={(e) => setForm({ ...form, deposit: Number(e.target.value) })} /></div>
+            <div>
+              <Label htmlFor="price">{t("services.priceEur")}</Label>
+              <Input id="price" type="number" min={0} step="0.01" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} aria-invalid={!!priceError} className={priceError ? "border-destructive" : ""} />
+              {priceError && <p className="mt-1 text-xs text-destructive">{priceError}</p>}
+            </div>
+            <div>
+              <Label htmlFor="dep">{t("services.depositEur")}</Label>
+              <Input id="dep" type="number" min={0} step="0.01" max={priceNum || undefined} value={form.deposit} onChange={(e) => setForm({ ...form, deposit: Number(e.target.value) })} aria-invalid={!!depositError} className={depositError ? "border-destructive" : ""} />
+              {depositError ? <p className="mt-1 text-xs text-destructive">{depositError}</p> : <p className="mt-1 text-xs text-muted-foreground">{t("services.depositHint")}</p>}
+            </div>
           </div>
           <div><Label htmlFor="desc">{t("services.descriptionLabel")}</Label><Textarea id="desc" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} /></div>
           <div className="flex items-center justify-between rounded-xl border border-border p-3"><div><p className="text-sm font-medium">{t("services.activeLabel")}</p><p className="text-xs text-muted-foreground">{t("services.bookable")}</p></div><Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} /></div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{t("services.cancel")}</Button>
-          <Button variant="hero" onClick={() => save.mutate()} disabled={!form.name.trim() || save.isPending}>{save.isPending ? t("services.saving") : service ? t("services.saveChanges") : t("services.createService")}</Button>
+          <Button variant="hero" onClick={() => save.mutate()} disabled={!form.name.trim() || hasErrors || save.isPending}>{save.isPending ? t("services.saving") : service ? t("services.saveChanges") : t("services.createService")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

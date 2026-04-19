@@ -443,6 +443,10 @@ export const en: Record<string, string> = {
   "services.createService": "Create service",
   "services.saving": "Saving…",
   "services.setDetails": "Set the name, duration and pricing for this service.",
+  "services.depositHint": "Optional. Customer pays this amount online when booking.",
+  "services.depositTooHigh": "Deposit cannot exceed the price.",
+  "services.depositNegative": "Deposit cannot be negative.",
+  "services.priceNegative": "Price cannot be negative.",
 
   // ── Staff ──
   "staff.title": "Staff",
