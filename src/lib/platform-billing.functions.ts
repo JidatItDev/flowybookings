@@ -16,6 +16,7 @@ export type PlatformBillingStatus = {
   apiKeyMasked: string | null;
   clientIdPresent: boolean;
   clientSecretPresent: boolean;
+  webhookSecretPresent: boolean;
   webhookConfigured: boolean;
   webhookUrl: string;
   // Admin-managed config (DB).
@@ -42,6 +43,7 @@ export const PLATFORM_BILLING_SECRETS = {
   apiKey: "MOLLIE_API_KEY",
   clientId: "MOLLIE_CLIENT_ID",
   clientSecret: "MOLLIE_CLIENT_SECRET",
+  webhookSecret: "MOLLIE_WEBHOOK_SECRET",
 } as const;
 
 async function assertSuperAdmin(token: string) {
@@ -70,6 +72,7 @@ export const getPlatformBillingStatus = createServerFn({ method: "POST" })
     const apiKey = process.env.MOLLIE_API_KEY;
     const clientId = process.env.MOLLIE_CLIENT_ID;
     const clientSecret = process.env.MOLLIE_CLIENT_SECRET;
+    const webhookSecret = process.env.MOLLIE_WEBHOOK_SECRET;
     const webhookBase = process.env.PUBLIC_APP_URL || process.env.SITE_URL || "";
 
     let mode: PlatformBillingStatus["apiKeyMode"] = "missing";
@@ -141,6 +144,7 @@ export const getPlatformBillingStatus = createServerFn({ method: "POST" })
       apiKeyMasked: maskKey(apiKey),
       clientIdPresent: Boolean(clientId),
       clientSecretPresent: Boolean(clientSecret),
+      webhookSecretPresent: Boolean(webhookSecret),
       webhookConfigured: Boolean(baseWebhook),
       webhookUrl: finalWebhookUrl,
       configuredMode,

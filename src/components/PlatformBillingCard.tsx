@@ -480,6 +480,11 @@ function ManageSecretsDialog({
       present: !!status?.clientSecretPresent,
       required: false,
     },
+    {
+      name: PLATFORM_BILLING_SECRETS.webhookSecret,
+      present: !!status?.webhookSecretPresent,
+      required: false,
+    },
   ];
 
   return (
