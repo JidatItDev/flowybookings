@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CircleDollarSign, TrendingUp, RotateCcw, Wallet, Plug, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { CircleDollarSign, TrendingUp, RotateCcw, Wallet, Plug, CheckCircle2, AlertCircle, Loader2, Search } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AdminLayout } from "@/components/AdminLayout";
@@ -9,12 +10,18 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { adminPaymentsQuery, adminStatsQuery } from "@/lib/admin-queries";
+import { adminPaymentsQuery, adminStatsQuery, adminShopsQuery } from "@/lib/admin-queries";
 import { adminPaymentProvidersQuery, paymentProviderKeys, type ConnectionStatus } from "@/lib/payment-providers";
 import { formatCents, relativeFromNow } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/beheer/dashboard/payments")({ head: () => ({ meta: [{ title: "Payments — Platform" }] }), component: AdminPayments });
+
+const STATUS_FILTERS = ["all", "paid", "unpaid", "deposit_paid", "refunded", "failed"] as const;
+const PLAN_FILTERS = ["all", "trial", "starter", "pro", "premium"] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number];
+type PlanFilter = (typeof PLAN_FILTERS)[number];
 
 function AdminPayments() {
   const { t } = useT();
