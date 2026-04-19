@@ -170,13 +170,53 @@ async function handleSubscriptionLifecycle(opts: {
     const expiry = nextExpiry(new Date(), cycle).toISOString();
     const { data: prevShop } = await supabaseAdmin
       .from("shops")
-      .select("plan, plan_expires_at")
+      .select("plan, plan_expires_at, onboarding, name")
       .eq("id", opts.shopId)
       .maybeSingle();
 
+    const onboarding = ((prevShop?.onboarding ?? {}) as Record<string, unknown>);
+    const mollieKey = process.env.MOLLIE_API_KEY;
+    const mollieCustomerId =
+      (opts.metadata.mollie_customer_id as string | undefined) ??
+      (onboarding.mollie_customer_id as string | undefined) ??
+      null;
+
+    // If this was a sequenceType:first payment, create the actual recurring Subscription on Mollie now.
+    let mollieSubscriptionId: string | null = (onboarding.mollie_subscription_id as string | undefined) ?? null;
+    if (mollieKey && mollieCustomerId && !mollieSubscriptionId && opts.metadata.kind === "subscription_first") {
+      const amountValue = ((subscriptionAmountCents(plan, cycle)) / 100).toFixed(2);
+      const subRes = await fetch(`https://api.mollie.com/v2/customers/${mollieCustomerId}/subscriptions`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${mollieKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: { currency: "EUR", value: amountValue },
+          interval: cycle === "yearly" ? "12 months" : "1 month",
+          description: `FlowyBookings ${plan.toUpperCase()} abonnement`,
+          webhookUrl: new URL("/api/mollie/webhook", process.env.APP_URL ?? "https://www.flowybookings.com").toString(),
+          metadata: { shop_id: opts.shopId, plan, cycle, kind: "subscription_recurring" },
+        }),
+      });
+      if (subRes.ok) {
+        const sub = (await subRes.json()) as { id: string };
+        mollieSubscriptionId = sub.id;
+      } else {
+        console.error("[mollie/webhook] subscription_create_failed", await subRes.text());
+      }
+    }
+
     await supabaseAdmin
       .from("shops")
-      .update({ plan, plan_expires_at: expiry, plan_billing_cycle: cycle })
+      .update({
+        plan,
+        plan_expires_at: expiry,
+        plan_billing_cycle: cycle,
+        onboarding: {
+          ...onboarding,
+          ...(mollieCustomerId ? { mollie_customer_id: mollieCustomerId } : {}),
+          ...(mollieSubscriptionId ? { mollie_subscription_id: mollieSubscriptionId } : {}),
+          subscription_status: "active",
+        },
+      })
       .eq("id", opts.shopId);
 
     await supabaseAdmin.from("activity_log").insert({
@@ -190,18 +230,30 @@ async function handleSubscriptionLifecycle(opts: {
         previous_plan: prevShop?.plan ?? null,
         previous_expires_at: prevShop?.plan_expires_at ?? null,
         new_expires_at: expiry,
+        mollie_subscription_id: mollieSubscriptionId,
       },
     });
 
     await supabaseAdmin.from("notifications").insert({
       shop_id: opts.shopId,
       type: "billing",
-      title: `Plan activated: ${plan.toUpperCase()}`,
-      message: `Your subscription is active until ${new Date(expiry).toLocaleDateString()}.`,
-      action_url: "/shop/billing",
+      title: `Plan geactiveerd: ${plan.toUpperCase()}`,
+      message: `Je abonnement is actief. Volgende incasso op ${new Date(expiry).toLocaleDateString("nl-NL")}.`,
+      action_url: "/shop/settings",
       metadata: { kind: "subscription", subkind: "activated", plan, cycle },
     });
   } else if (opts.effectiveStatus === "failed") {
+    const { data: prevShop } = await supabaseAdmin
+      .from("shops")
+      .select("onboarding")
+      .eq("id", opts.shopId)
+      .maybeSingle();
+    const onboarding = ((prevShop?.onboarding ?? {}) as Record<string, unknown>);
+    await supabaseAdmin
+      .from("shops")
+      .update({ onboarding: { ...onboarding, subscription_status: "payment_failed" } })
+      .eq("id", opts.shopId);
+
     await supabaseAdmin.from("activity_log").insert({
       entity: BILLING_ENTITY,
       action: "subscription_payment_failed",
@@ -211,10 +263,17 @@ async function handleSubscriptionLifecycle(opts: {
     await supabaseAdmin.from("notifications").insert({
       shop_id: opts.shopId,
       type: "billing",
-      title: "Plan payment failed",
-      message: `We couldn't complete your ${plan.toUpperCase()} upgrade. Please try again.`,
-      action_url: "/shop/billing",
+      title: "Betaling abonnement mislukt",
+      message: `We konden je ${plan.toUpperCase()}-betaling niet verwerken. Probeer het opnieuw.`,
+      action_url: "/shop/settings",
       metadata: { kind: "subscription", subkind: "failed", plan, cycle },
     });
   }
+}
+
+// Local helper — keeps webhook self-contained without circular import on platform-billing.
+function subscriptionAmountCents(plan: DbPlan, cycle: BillingCycle): number {
+  const monthly: Record<string, number> = { starter: 1900, pro: 4900, premium: 9900 };
+  const base = monthly[plan] ?? 0;
+  return cycle === "yearly" ? base * 10 : base;
 }

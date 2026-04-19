@@ -28,6 +28,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatCents, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth-context";
+import { getTrialState } from "@/lib/trial";
 
 export const Route = createFileRoute("/shop/calendar")({
   head: () => ({ meta: [{ title: "Calendar — FlowyBookings" }] }),
@@ -38,6 +40,8 @@ const statuses = ["all", "pending", "confirmed", "completed", "cancelled", "no_s
 
 function CalendarPage() {
   const shopId = useActiveShopId();
+  const { activeShop } = useAuth();
+  const trial = getTrialState(activeShop as never);
   const qc = useQueryClient();
   const { t } = useT();
   const [filter, setFilter] = useState<(typeof statuses)[number]>("all");
@@ -109,7 +113,12 @@ function CalendarPage() {
         title={t("calendar.title")}
         description={t("calendar.description")}
         actions={
-          <Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId}>
+          <Button
+            variant="hero"
+            onClick={() => setCreating(true)}
+            disabled={!shopId || trial.isExpired}
+            title={trial.isExpired ? "Je proefperiode is verlopen — kies een plan om nieuwe afspraken aan te maken." : undefined}
+          >
             <Plus className="h-4 w-4" /> {t("calendar.newBooking")}
           </Button>
         }
@@ -182,7 +191,7 @@ function CalendarPage() {
               title={filter === "all" ? t("calendar.noBookings") : t("calendar.noMatch")}
               description={filter === "all" ? t("calendar.noBookingsDesc") : t("calendar.noMatchDesc")}
               action={filter === "all" && (
-                <Button variant="hero" onClick={() => setCreating(true)}>
+                <Button variant="hero" onClick={() => setCreating(true)} disabled={trial.isExpired}>
                   <Plus className="h-4 w-4" /> {t("calendar.newBooking")}
                 </Button>
               )}
