@@ -10,6 +10,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BILLING_ENTITY, PLATFORM_PROVIDER, nextExpiry, type BillingCycle } from "@/lib/platform-billing";
 import type { DbPlan } from "@/lib/plans";
+import { enqueueBookingEmail } from "@/lib/email/enqueue-booking-email";
 
 type MolliePayment = {
   id: string;
@@ -268,6 +269,43 @@ async function handleSubscriptionLifecycle(opts: {
       action_url: "/shop/settings",
       metadata: { kind: "subscription", subkind: "failed", plan, cycle },
     });
+
+    // Email the shop owner so they actually see it.
+    try {
+      const { data: shop } = await supabaseAdmin
+        .from("shops")
+        .select("id, name, owner_id, email")
+        .eq("id", opts.shopId)
+        .maybeSingle();
+      if (shop) {
+        let recipient = (shop.email ?? "").trim();
+        if (!recipient) {
+          const { data: prof } = await supabaseAdmin
+            .from("profiles").select("email").eq("id", shop.owner_id).maybeSingle();
+          recipient = (prof?.email ?? "").trim();
+        }
+        if (recipient) {
+          const cents = (opts.metadata.amount_cents as number | undefined)
+            ?? subscriptionAmountCents(plan, cycle);
+          const amountLabel = `€${(cents / 100).toFixed(2).replace(".", ",")}`;
+          const appUrl = process.env.APP_URL ?? "https://www.flowybookings.com";
+          const planLabel = `${plan.charAt(0).toUpperCase()}${plan.slice(1)} plan (${cycle === "yearly" ? "jaarlijks" : "maandelijks"})`;
+          await enqueueBookingEmail({
+            templateName: "platform-payment-failed",
+            recipientEmail: recipient,
+            idempotencyKey: `platform-payment-failed-${opts.paymentId}`,
+            templateData: {
+              shopName: shop.name,
+              planLabel,
+              amountLabel,
+              retryUrl: `${appUrl}/shop/settings`,
+            },
+          });
+        }
+      }
+    } catch (err) {
+      console.error("[mollie/webhook] platform-payment-failed email error", err);
+    }
   }
 }
 
