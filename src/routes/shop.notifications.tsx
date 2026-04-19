@@ -273,6 +273,7 @@ type AutomationRow = {
   confirmation_enabled: boolean;
   reminder_24h_enabled: boolean;
   reminder_2h_enabled: boolean;
+  reminder_sms_enabled: boolean;
   followup_enabled: boolean;
 };
 
@@ -280,7 +281,14 @@ const AUTO_DEFAULTS: AutomationRow = {
   confirmation_enabled: true,
   reminder_24h_enabled: true,
   reminder_2h_enabled: true,
+  reminder_sms_enabled: false,
   followup_enabled: false,
+};
+
+type SmsCreditsRow = {
+  balance: number;
+  total_used: number;
+  free_credits_granted: number;
 };
 
 function AutomationSettings({ shopId }: { shopId: string }) {
@@ -294,11 +302,25 @@ function AutomationSettings({ shopId }: { shopId: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shop_automations")
-        .select("confirmation_enabled, reminder_24h_enabled, reminder_2h_enabled, followup_enabled")
+        .select("confirmation_enabled, reminder_24h_enabled, reminder_2h_enabled, reminder_sms_enabled, followup_enabled")
         .eq("shop_id", shopId)
         .maybeSingle();
       if (error) throw error;
       return data ?? AUTO_DEFAULTS;
+    },
+    enabled: !!shopId,
+  });
+
+  const credits = useQuery({
+    queryKey: ["shop_sms_credits", shopId],
+    queryFn: async (): Promise<SmsCreditsRow> => {
+      const { data, error } = await supabase
+        .from("shop_sms_credits")
+        .select("balance, total_used, free_credits_granted")
+        .eq("shop_id", shopId)
+        .maybeSingle();
+      if (error) throw error;
+      return data ?? { balance: 0, total_used: 0, free_credits_granted: 0 };
     },
     enabled: !!shopId,
   });
@@ -329,40 +351,88 @@ function AutomationSettings({ shopId }: { shopId: string }) {
     { key: "confirmation_enabled", titleKey: "automations.confirmation", descKey: "automations.confirmationDesc" },
     { key: "reminder_24h_enabled", titleKey: "automations.reminder24", descKey: "automations.reminder24Desc" },
     { key: "reminder_2h_enabled", titleKey: "automations.reminder2", descKey: "automations.reminder2Desc" },
+    { key: "reminder_sms_enabled", titleKey: "automations.reminderSms", descKey: "automations.reminderSmsDesc" },
     { key: "followup_enabled", titleKey: "automations.followup", descKey: "automations.followupDesc" },
   ];
 
+  const balance = credits.data?.balance ?? 0;
+  const balanceTone =
+    balance === 0 ? "bg-destructive/15 text-destructive" :
+    balance < 5 ? "bg-peach text-peach-foreground" :
+    "bg-mint/40 text-mint-foreground";
+
   return (
-    <div className="mt-6 rounded-2xl border border-border bg-card shadow-soft">
-      <div className="flex items-start justify-between gap-3 border-b border-border px-6 py-4">
-        <div>
-          <h2 className="text-base font-semibold">{t("automations.title")}</h2>
-          <p className="text-xs text-muted-foreground">{t("automations.sub")}</p>
-        </div>
-        <span className="rounded-full bg-mint/40 px-2.5 py-1 text-[11px] font-medium text-mint-foreground">
-          {t("automations.statusActive")}
-        </span>
-      </div>
-      <div className="divide-y divide-border">
-        {items.map((it) => (
-          <div key={it.key} className="flex items-center justify-between px-6 py-4">
-            <div>
-              <p className="font-medium">{t(it.titleKey)}</p>
-              <p className="text-xs text-muted-foreground">{t(it.descKey)}</p>
+    <>
+      {/* SMS credits widget */}
+      <div className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-soft">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
+              <Smartphone className="h-5 w-5" />
             </div>
-            <Toggle
-              on={row[it.key]}
-              onChange={() => { setRow((r) => ({ ...r, [it.key]: !r[it.key] })); setDirty(true); }}
-            />
+            <div>
+              <h3 className="text-base font-semibold">{t("automations.smsCreditsTitle")}</h3>
+              <p className="text-xs text-muted-foreground">{t("automations.smsCreditsHint")}</p>
+            </div>
           </div>
-        ))}
+          <span className={cn("inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold", balanceTone)}>
+            {balance}
+          </span>
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+          <div className="rounded-xl bg-muted/40 px-3 py-2">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("automations.smsCreditsBalance")}</p>
+            <p className="mt-0.5 text-base font-semibold">{balance}</p>
+          </div>
+          <div className="rounded-xl bg-muted/40 px-3 py-2">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("automations.smsCreditsUsed")}</p>
+            <p className="mt-0.5 text-base font-semibold">{credits.data?.total_used ?? 0}</p>
+          </div>
+          <div className="rounded-xl bg-muted/40 px-3 py-2">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{t("automations.smsCreditsFree")}</p>
+            <p className="mt-0.5 text-base font-semibold">{credits.data?.free_credits_granted ?? 0}</p>
+          </div>
+        </div>
+        {balance === 0 && (
+          <p className="mt-3 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">{t("automations.smsCreditsEmpty")}</p>
+        )}
+        {balance > 0 && balance < 5 && (
+          <p className="mt-3 rounded-lg bg-peach/30 px-3 py-2 text-xs text-peach-foreground">{t("automations.smsCreditsLow")}</p>
+        )}
+        <p className="mt-3 text-[11px] italic text-muted-foreground">{t("automations.smsProviderPending")}</p>
       </div>
-      <div className="flex items-center justify-between border-t border-border px-6 py-4">
-        <span className="text-[11px] text-muted-foreground">{t("automations.poweredBy")}</span>
-        <Button variant="hero" onClick={() => save.mutate()} disabled={!dirty || save.isPending}>
-          {save.isPending ? t("notifications.saving") : t("notifications.saveChanges")}
-        </Button>
+
+      <div className="mt-6 rounded-2xl border border-border bg-card shadow-soft">
+        <div className="flex items-start justify-between gap-3 border-b border-border px-6 py-4">
+          <div>
+            <h2 className="text-base font-semibold">{t("automations.title")}</h2>
+            <p className="text-xs text-muted-foreground">{t("automations.sub")}</p>
+          </div>
+          <span className="rounded-full bg-mint/40 px-2.5 py-1 text-[11px] font-medium text-mint-foreground">
+            {t("automations.statusActive")}
+          </span>
+        </div>
+        <div className="divide-y divide-border">
+          {items.map((it) => (
+            <div key={it.key} className="flex items-center justify-between px-6 py-4">
+              <div>
+                <p className="font-medium">{t(it.titleKey)}</p>
+                <p className="text-xs text-muted-foreground">{t(it.descKey)}</p>
+              </div>
+              <Toggle
+                on={row[it.key]}
+                onChange={() => { setRow((r) => ({ ...r, [it.key]: !r[it.key] })); setDirty(true); }}
+              />
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center justify-between border-t border-border px-6 py-4">
+          <span className="text-[11px] text-muted-foreground">{t("automations.poweredBy")}</span>
+          <Button variant="hero" onClick={() => save.mutate()} disabled={!dirty || save.isPending}>
+            {save.isPending ? t("notifications.saving") : t("notifications.saveChanges")}
+          </Button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
