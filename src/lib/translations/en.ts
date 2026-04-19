@@ -462,6 +462,11 @@ export const en: Record<string, string> = {
   "adminProviders.empty": "No shops have started a Mollie connection yet.",
   "adminProviders.account": "Account",
   "adminProviders.fee": "Fee",
+  "adminProviders.markConnected": "Mark connected",
+  "adminProviders.disconnect": "Disconnect",
+  "adminProviders.updated": "Provider status updated",
+  "adminProviders.revenueByShop": "Revenue by shop",
+  "adminProviders.revenueByShopDesc": "Top shops ranked by collected platform fees.",
 
   "common.yes": "Yes",
   "common.no": "No",

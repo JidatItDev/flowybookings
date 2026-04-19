@@ -462,6 +462,11 @@ export const nl: Record<string, string> = {
   "adminProviders.empty": "Nog geen shops met een Mollie-koppeling.",
   "adminProviders.account": "Account",
   "adminProviders.fee": "Kosten",
+  "adminProviders.markConnected": "Markeer als gekoppeld",
+  "adminProviders.disconnect": "Ontkoppelen",
+  "adminProviders.updated": "Providerstatus bijgewerkt",
+  "adminProviders.revenueByShop": "Omzet per shop",
+  "adminProviders.revenueByShopDesc": "Topshops gerangschikt op verzamelde platformkosten.",
 
   "common.yes": "Ja",
   "common.no": "Nee",
