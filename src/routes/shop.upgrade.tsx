@@ -28,7 +28,10 @@ function UpgradePage() {
   const currentPlan = (activeShop?.plan ?? "trial") as DbPlan;
   const currentTier = tierOf(currentPlan);
 
-  const upgrade = useMutation({
+  const checkout = usePlanCheckout();
+
+  // Downgrades don't require payment — keep them as direct plan changes.
+  const downgrade = useMutation({
     mutationFn: async (newPlan: PlanKey) => {
       if (!activeShop) throw new Error("No active shop");
       await changeShopPlan({
@@ -37,12 +40,11 @@ function UpgradePage() {
         previousPlan: currentPlan,
         actorUserId: user?.id ?? null,
         actorEmail: user?.email ?? null,
-        source: "owner_upgrade",
+        source: "owner_downgrade",
       });
     },
     onSuccess: async (_d, planKey) => {
       toast.success(t("upgrade.toastApplied", { plan: planKey }));
-      // Drop a billing notification in the inbox so the change is visible everywhere.
       if (activeShop) {
         try {
           await import("@/integrations/supabase/client").then(({ supabase }) =>
@@ -50,7 +52,7 @@ function UpgradePage() {
               shop_id: activeShop.id,
               type: "billing",
               title: `Plan changed to ${planKey}`,
-              message: `Your shop is now on the ${planKey} plan. New features are unlocked immediately.`,
+              message: `Your shop is now on the ${planKey} plan.`,
               action_url: "/shop/upgrade",
             }),
           );
