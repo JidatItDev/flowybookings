@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { recordConsent } from "@/lib/legal-consent";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Create account — FlowyBookings" }] }),
@@ -35,10 +36,20 @@ function SignupPage() {
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email, password,
       options: { emailRedirectTo: `${window.location.origin}/shop`, data: { full_name: fullName } },
     });
+    if (!error && data.user) {
+      // Pin the policy versions the user agreed to. Profile row is created by a
+      // DB trigger, so retry briefly until it exists.
+      const userId = data.user.id;
+      void (async () => {
+        for (let i = 0; i < 5; i++) {
+          try { await recordConsent(userId); break; } catch { await new Promise((r) => setTimeout(r, 250)); }
+        }
+      })();
+    }
     setSubmitting(false);
     if (error) toast.error(error.message);
     else { toast.success(t("auth.accountCreated")); navigate({ to: "/shop" }); }

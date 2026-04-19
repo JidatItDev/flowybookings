@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { ShopPicker } from "@/components/ShopPicker";
 import { RequireShopAccess } from "@/components/RouteGuard";
 import { ShopOnboarding } from "@/components/ShopOnboarding";
+import { LegalReconsentDialog } from "@/components/LegalReconsentDialog";
 import { useAuth } from "@/lib/auth-context";
 import { useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -189,6 +190,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
 
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>
+      <LegalReconsentDialog />
     </div>
   );
 }
