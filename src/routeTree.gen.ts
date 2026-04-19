@@ -45,12 +45,14 @@ import { Route as BeheerDashboardUsersRouteImport } from './routes/beheer.dashbo
 import { Route as BeheerDashboardSupportRouteImport } from './routes/beheer.dashboard.support'
 import { Route as BeheerDashboardShopsRouteImport } from './routes/beheer.dashboard.shops'
 import { Route as BeheerDashboardSettingsRouteImport } from './routes/beheer.dashboard.settings'
+import { Route as BeheerDashboardRevenueRouteImport } from './routes/beheer.dashboard.revenue'
 import { Route as BeheerDashboardProvidersRouteImport } from './routes/beheer.dashboard.providers'
 import { Route as BeheerDashboardPlansRouteImport } from './routes/beheer.dashboard.plans'
 import { Route as BeheerDashboardPaymentsRouteImport } from './routes/beheer.dashboard.payments'
 import { Route as BeheerDashboardMessagesRouteImport } from './routes/beheer.dashboard.messages'
 import { Route as BeheerDashboardLogsRouteImport } from './routes/beheer.dashboard.logs'
 import { Route as BeheerDashboardDemoRouteImport } from './routes/beheer.dashboard.demo'
+import { Route as BeheerDashboardCustomersRouteImport } from './routes/beheer.dashboard.customers'
 import { Route as BeheerDashboardBookingsRouteImport } from './routes/beheer.dashboard.bookings'
 import { Route as BeheerDashboardBillingRouteImport } from './routes/beheer.dashboard.billing'
 import { Route as BeheerAdLoginRouteImport } from './routes/beheer.ad.login'
@@ -253,6 +255,11 @@ const BeheerDashboardSettingsRoute = BeheerDashboardSettingsRouteImport.update({
   path: '/beheer/dashboard/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BeheerDashboardRevenueRoute = BeheerDashboardRevenueRouteImport.update({
+  id: '/beheer/dashboard/revenue',
+  path: '/beheer/dashboard/revenue',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BeheerDashboardProvidersRoute =
   BeheerDashboardProvidersRouteImport.update({
     id: '/beheer/dashboard/providers',
@@ -284,6 +291,12 @@ const BeheerDashboardDemoRoute = BeheerDashboardDemoRouteImport.update({
   path: '/beheer/dashboard/demo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BeheerDashboardCustomersRoute =
+  BeheerDashboardCustomersRouteImport.update({
+    id: '/beheer/dashboard/customers',
+    path: '/beheer/dashboard/customers',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const BeheerDashboardBookingsRoute = BeheerDashboardBookingsRouteImport.update({
   id: '/beheer/dashboard/bookings',
   path: '/beheer/dashboard/bookings',
@@ -423,12 +436,14 @@ export interface FileRoutesByFullPath {
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/billing': typeof BeheerDashboardBillingRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
+  '/beheer/dashboard/customers': typeof BeheerDashboardCustomersRoute
   '/beheer/dashboard/demo': typeof BeheerDashboardDemoRoute
   '/beheer/dashboard/logs': typeof BeheerDashboardLogsRoute
   '/beheer/dashboard/messages': typeof BeheerDashboardMessagesRoute
   '/beheer/dashboard/payments': typeof BeheerDashboardPaymentsRoute
   '/beheer/dashboard/plans': typeof BeheerDashboardPlansRoute
   '/beheer/dashboard/providers': typeof BeheerDashboardProvidersRoute
+  '/beheer/dashboard/revenue': typeof BeheerDashboardRevenueRoute
   '/beheer/dashboard/settings': typeof BeheerDashboardSettingsRoute
   '/beheer/dashboard/shops': typeof BeheerDashboardShopsRoute
   '/beheer/dashboard/support': typeof BeheerDashboardSupportRoute
@@ -485,12 +500,14 @@ export interface FileRoutesByTo {
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/billing': typeof BeheerDashboardBillingRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
+  '/beheer/dashboard/customers': typeof BeheerDashboardCustomersRoute
   '/beheer/dashboard/demo': typeof BeheerDashboardDemoRoute
   '/beheer/dashboard/logs': typeof BeheerDashboardLogsRoute
   '/beheer/dashboard/messages': typeof BeheerDashboardMessagesRoute
   '/beheer/dashboard/payments': typeof BeheerDashboardPaymentsRoute
   '/beheer/dashboard/plans': typeof BeheerDashboardPlansRoute
   '/beheer/dashboard/providers': typeof BeheerDashboardProvidersRoute
+  '/beheer/dashboard/revenue': typeof BeheerDashboardRevenueRoute
   '/beheer/dashboard/settings': typeof BeheerDashboardSettingsRoute
   '/beheer/dashboard/shops': typeof BeheerDashboardShopsRoute
   '/beheer/dashboard/support': typeof BeheerDashboardSupportRoute
@@ -548,12 +565,14 @@ export interface FileRoutesById {
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/billing': typeof BeheerDashboardBillingRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
+  '/beheer/dashboard/customers': typeof BeheerDashboardCustomersRoute
   '/beheer/dashboard/demo': typeof BeheerDashboardDemoRoute
   '/beheer/dashboard/logs': typeof BeheerDashboardLogsRoute
   '/beheer/dashboard/messages': typeof BeheerDashboardMessagesRoute
   '/beheer/dashboard/payments': typeof BeheerDashboardPaymentsRoute
   '/beheer/dashboard/plans': typeof BeheerDashboardPlansRoute
   '/beheer/dashboard/providers': typeof BeheerDashboardProvidersRoute
+  '/beheer/dashboard/revenue': typeof BeheerDashboardRevenueRoute
   '/beheer/dashboard/settings': typeof BeheerDashboardSettingsRoute
   '/beheer/dashboard/shops': typeof BeheerDashboardShopsRoute
   '/beheer/dashboard/support': typeof BeheerDashboardSupportRoute
@@ -612,12 +631,14 @@ export interface FileRouteTypes {
     | '/beheer/ad/login'
     | '/beheer/dashboard/billing'
     | '/beheer/dashboard/bookings'
+    | '/beheer/dashboard/customers'
     | '/beheer/dashboard/demo'
     | '/beheer/dashboard/logs'
     | '/beheer/dashboard/messages'
     | '/beheer/dashboard/payments'
     | '/beheer/dashboard/plans'
     | '/beheer/dashboard/providers'
+    | '/beheer/dashboard/revenue'
     | '/beheer/dashboard/settings'
     | '/beheer/dashboard/shops'
     | '/beheer/dashboard/support'
@@ -674,12 +695,14 @@ export interface FileRouteTypes {
     | '/beheer/ad/login'
     | '/beheer/dashboard/billing'
     | '/beheer/dashboard/bookings'
+    | '/beheer/dashboard/customers'
     | '/beheer/dashboard/demo'
     | '/beheer/dashboard/logs'
     | '/beheer/dashboard/messages'
     | '/beheer/dashboard/payments'
     | '/beheer/dashboard/plans'
     | '/beheer/dashboard/providers'
+    | '/beheer/dashboard/revenue'
     | '/beheer/dashboard/settings'
     | '/beheer/dashboard/shops'
     | '/beheer/dashboard/support'
@@ -736,12 +759,14 @@ export interface FileRouteTypes {
     | '/beheer/ad/login'
     | '/beheer/dashboard/billing'
     | '/beheer/dashboard/bookings'
+    | '/beheer/dashboard/customers'
     | '/beheer/dashboard/demo'
     | '/beheer/dashboard/logs'
     | '/beheer/dashboard/messages'
     | '/beheer/dashboard/payments'
     | '/beheer/dashboard/plans'
     | '/beheer/dashboard/providers'
+    | '/beheer/dashboard/revenue'
     | '/beheer/dashboard/settings'
     | '/beheer/dashboard/shops'
     | '/beheer/dashboard/support'
@@ -799,12 +824,14 @@ export interface RootRouteChildren {
   BeheerAdLoginRoute: typeof BeheerAdLoginRoute
   BeheerDashboardBillingRoute: typeof BeheerDashboardBillingRoute
   BeheerDashboardBookingsRoute: typeof BeheerDashboardBookingsRoute
+  BeheerDashboardCustomersRoute: typeof BeheerDashboardCustomersRoute
   BeheerDashboardDemoRoute: typeof BeheerDashboardDemoRoute
   BeheerDashboardLogsRoute: typeof BeheerDashboardLogsRoute
   BeheerDashboardMessagesRoute: typeof BeheerDashboardMessagesRoute
   BeheerDashboardPaymentsRoute: typeof BeheerDashboardPaymentsRoute
   BeheerDashboardPlansRoute: typeof BeheerDashboardPlansRoute
   BeheerDashboardProvidersRoute: typeof BeheerDashboardProvidersRoute
+  BeheerDashboardRevenueRoute: typeof BeheerDashboardRevenueRoute
   BeheerDashboardSettingsRoute: typeof BeheerDashboardSettingsRoute
   BeheerDashboardShopsRoute: typeof BeheerDashboardShopsRoute
   BeheerDashboardSupportRoute: typeof BeheerDashboardSupportRoute
@@ -1072,6 +1099,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerDashboardSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/beheer/dashboard/revenue': {
+      id: '/beheer/dashboard/revenue'
+      path: '/beheer/dashboard/revenue'
+      fullPath: '/beheer/dashboard/revenue'
+      preLoaderRoute: typeof BeheerDashboardRevenueRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/beheer/dashboard/providers': {
       id: '/beheer/dashboard/providers'
       path: '/beheer/dashboard/providers'
@@ -1112,6 +1146,13 @@ declare module '@tanstack/react-router' {
       path: '/beheer/dashboard/demo'
       fullPath: '/beheer/dashboard/demo'
       preLoaderRoute: typeof BeheerDashboardDemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/beheer/dashboard/customers': {
+      id: '/beheer/dashboard/customers'
+      path: '/beheer/dashboard/customers'
+      fullPath: '/beheer/dashboard/customers'
+      preLoaderRoute: typeof BeheerDashboardCustomersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/beheer/dashboard/bookings': {
@@ -1307,12 +1348,14 @@ const rootRouteChildren: RootRouteChildren = {
   BeheerAdLoginRoute: BeheerAdLoginRoute,
   BeheerDashboardBillingRoute: BeheerDashboardBillingRoute,
   BeheerDashboardBookingsRoute: BeheerDashboardBookingsRoute,
+  BeheerDashboardCustomersRoute: BeheerDashboardCustomersRoute,
   BeheerDashboardDemoRoute: BeheerDashboardDemoRoute,
   BeheerDashboardLogsRoute: BeheerDashboardLogsRoute,
   BeheerDashboardMessagesRoute: BeheerDashboardMessagesRoute,
   BeheerDashboardPaymentsRoute: BeheerDashboardPaymentsRoute,
   BeheerDashboardPlansRoute: BeheerDashboardPlansRoute,
   BeheerDashboardProvidersRoute: BeheerDashboardProvidersRoute,
+  BeheerDashboardRevenueRoute: BeheerDashboardRevenueRoute,
   BeheerDashboardSettingsRoute: BeheerDashboardSettingsRoute,
   BeheerDashboardShopsRoute: BeheerDashboardShopsRoute,
   BeheerDashboardSupportRoute: BeheerDashboardSupportRoute,
