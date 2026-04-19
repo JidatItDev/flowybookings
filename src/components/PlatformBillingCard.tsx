@@ -1,11 +1,13 @@
-import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMemo, useState, useEffect } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   CheckCircle2,
   Copy,
+  ExternalLink,
   KeyRound,
   Loader2,
+  Lock,
   PlayCircle,
   ShieldCheck,
   Webhook,
@@ -13,12 +15,22 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth-context";
 import { useT } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import {
   getPlatformBillingStatus,
   runPlatformBillingHealthCheck,
+  updatePlatformBillingConfig,
+  PLATFORM_BILLING_SECRETS,
   type PlatformBillingHealthResult,
   type PlatformBillingStatus,
 } from "@/lib/platform-billing.functions";
@@ -32,19 +44,32 @@ async function getAccessToken(): Promise<string> {
   return token;
 }
 
+const STATUS_QUERY_KEY = ["platform-billing-status"] as const;
+
 export function PlatformBillingCard() {
   const { t } = useT();
   const { user } = useAuth();
+  const qc = useQueryClient();
   const [lastCheck, setLastCheck] = useState<PlatformBillingHealthResult | null>(null);
+  const [secretsOpen, setSecretsOpen] = useState(false);
+  const [editingMode, setEditingMode] = useState(false);
+  const [draftMode, setDraftMode] = useState<"test" | "live">("test");
 
   const statusQuery = useQuery({
-    queryKey: ["platform-billing-status", user?.id],
+    queryKey: [...STATUS_QUERY_KEY, user?.id],
     enabled: !!user,
     queryFn: async () => {
       const accessToken = await getAccessToken();
       return getPlatformBillingStatus({ data: { accessToken } });
     },
   });
+
+  const status = statusQuery.data;
+  useEffect(() => {
+    if (status) setDraftMode(status.configuredMode);
+  }, [status?.configuredMode]);
+
+  const refresh = () => qc.invalidateQueries({ queryKey: STATUS_QUERY_KEY });
 
   const healthCheck = useMutation({
     mutationFn: async () => {
@@ -55,12 +80,23 @@ export function PlatformBillingCard() {
       setLastCheck(res);
       if (res.ok) toast.success(res.message);
       else toast.error(res.message);
-      statusQuery.refetch();
+      refresh();
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const status = statusQuery.data;
+  const saveMode = useMutation({
+    mutationFn: async (mode: "test" | "live") => {
+      const accessToken = await getAccessToken();
+      return updatePlatformBillingConfig({ data: { accessToken, mode } });
+    },
+    onSuccess: () => {
+      toast.success(t("platformBilling.modeSaved"));
+      setEditingMode(false);
+      refresh();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 shadow-soft sm:p-6 lg:col-span-2">
@@ -77,19 +113,25 @@ export function PlatformBillingCard() {
             </p>
           </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={healthCheck.isPending || statusQuery.isLoading}
-          onClick={() => healthCheck.mutate()}
-        >
-          {healthCheck.isPending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <PlayCircle className="h-3.5 w-3.5" />
-          )}
-          {t("platformBilling.runCheck")}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="default" size="sm" onClick={() => setSecretsOpen(true)}>
+            <KeyRound className="h-3.5 w-3.5" />
+            {t("platformBilling.manageSecrets")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={healthCheck.isPending || statusQuery.isLoading}
+            onClick={() => healthCheck.mutate()}
+          >
+            {healthCheck.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <PlayCircle className="h-3.5 w-3.5" />
+            )}
+            {t("platformBilling.runCheck")}
+          </Button>
+        </div>
       </div>
 
       {statusQuery.isLoading ? (
@@ -101,13 +143,32 @@ export function PlatformBillingCard() {
       ) : status ? (
         <>
           <ReadinessChecklist status={status} />
-          <StatusGrid status={status} />
+          <StatusGrid
+            status={status}
+            editingMode={editingMode}
+            draftMode={draftMode}
+            setDraftMode={setDraftMode}
+            onEdit={() => setEditingMode(true)}
+            onCancel={() => {
+              setEditingMode(false);
+              setDraftMode(status.configuredMode);
+            }}
+            onSave={() => saveMode.mutate(draftMode)}
+            saving={saveMode.isPending}
+          />
           <WebhookRow status={status} />
-          {(lastCheck || status.lastErrorMessage) && (
-            <LastEvents status={status} lastCheck={lastCheck} />
-          )}
+          <LastEvents status={status} lastCheck={lastCheck} />
         </>
       ) : null}
+
+      <ManageSecretsDialog
+        open={secretsOpen}
+        onOpenChange={(o) => {
+          setSecretsOpen(o);
+          if (!o) refresh();
+        }}
+        status={status}
+      />
     </div>
   );
 }
@@ -160,7 +221,25 @@ function ReadinessChecklist({ status }: { status: PlatformBillingStatus }) {
   );
 }
 
-function StatusGrid({ status }: { status: PlatformBillingStatus }) {
+function StatusGrid({
+  status,
+  editingMode,
+  draftMode,
+  setDraftMode,
+  onEdit,
+  onCancel,
+  onSave,
+  saving,
+}: {
+  status: PlatformBillingStatus;
+  editingMode: boolean;
+  draftMode: "test" | "live";
+  setDraftMode: (m: "test" | "live") => void;
+  onEdit: () => void;
+  onCancel: () => void;
+  onSave: () => void;
+  saving: boolean;
+}) {
   const { t } = useT();
   const modeBadge =
     status.apiKeyMode === "live"
@@ -173,15 +252,60 @@ function StatusGrid({ status }: { status: PlatformBillingStatus }) {
 
   return (
     <div className="mt-4 grid gap-3 sm:grid-cols-2">
-      <Field
-        icon={<KeyRound className="h-3.5 w-3.5" />}
-        label={t("platformBilling.field.mode")}
-        value={
-          <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium", modeBadge.tone)}>
-            {modeBadge.label}
-          </span>
-        }
-      />
+      <div className="rounded-xl border border-border bg-background p-3">
+        <div className="flex items-center justify-between gap-2">
+          <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">
+            <KeyRound className="h-3.5 w-3.5" />
+            {t("platformBilling.field.mode")}
+          </p>
+          {!editingMode ? (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="text-[11px] font-medium text-primary hover:underline"
+            >
+              {t("platformBilling.editMode")}
+            </button>
+          ) : null}
+        </div>
+        {!editingMode ? (
+          <div className="mt-1 flex items-center gap-2">
+            <span className={cn("inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium", modeBadge.tone)}>
+              {modeBadge.label}
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              ({status.configuredMode === "live" ? "live" : "test"})
+            </span>
+          </div>
+        ) : (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <div className="inline-flex rounded-lg border border-border bg-card p-0.5">
+              {(["test", "live"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setDraftMode(m)}
+                  className={cn(
+                    "rounded-md px-2.5 py-1 text-[11px] font-medium capitalize transition",
+                    draftMode === m
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+            <Button size="sm" onClick={onSave} disabled={saving}>
+              {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+              {t("platformBilling.saveMode")}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={onCancel} disabled={saving}>
+              {t("platformBilling.cancel")}
+            </Button>
+          </div>
+        )}
+      </div>
       <Field
         icon={<KeyRound className="h-3.5 w-3.5" />}
         label={t("platformBilling.field.apiKey")}
@@ -244,6 +368,11 @@ function LastEvents({
   lastCheck: PlatformBillingHealthResult | null;
 }) {
   const { t } = useT();
+  // Prefer the freshest in-memory result; otherwise use what's persisted in DB.
+  const persistedOk = status.lastHealthStatus === "ok";
+  const showPersisted =
+    !lastCheck && (status.lastHealthMessage || status.lastHealthAt);
+
   return (
     <div className="mt-3 space-y-2">
       {lastCheck && (
@@ -257,9 +386,30 @@ function LastEvents({
         >
           <p className="font-medium">{t("platformBilling.lastTest")}</p>
           <p className="mt-0.5">{lastCheck.message}</p>
+          <p className="mt-1 text-[11px] opacity-80">
+            {t("platformBilling.lastChecked")}: {relativeFromNow(lastCheck.checkedAt)}
+          </p>
         </div>
       )}
-      {status.lastErrorMessage && !lastCheck && (
+      {showPersisted && (
+        <div
+          className={cn(
+            "rounded-xl border p-3 text-xs",
+            persistedOk
+              ? "border-success/30 bg-success/10 text-success-foreground"
+              : "border-destructive/30 bg-destructive/10 text-destructive",
+          )}
+        >
+          <p className="font-medium">{t("platformBilling.lastTest")}</p>
+          {status.lastHealthMessage && <p className="mt-0.5">{status.lastHealthMessage}</p>}
+          {status.lastHealthAt && (
+            <p className="mt-1 text-[11px] opacity-80">
+              {t("platformBilling.lastChecked")}: {relativeFromNow(status.lastHealthAt)}
+            </p>
+          )}
+        </div>
+      )}
+      {status.lastErrorMessage && !lastCheck && !showPersisted && (
         <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
           <p className="font-medium">{t("platformBilling.lastError")}</p>
           <p className="mt-0.5 break-words">{status.lastErrorMessage}</p>
@@ -267,6 +417,11 @@ function LastEvents({
             <p className="mt-1 text-[11px] opacity-80">{relativeFromNow(status.lastErrorAt)}</p>
           )}
         </div>
+      )}
+      {status.configUpdatedAt && (
+        <p className="text-[11px] text-muted-foreground">
+          {t("platformBilling.lastUpdated")}: {relativeFromNow(status.configUpdatedAt)}
+        </p>
       )}
     </div>
   );
@@ -296,5 +451,94 @@ function PresenceBadge({ present }: { present: boolean }) {
       {present ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
       {present ? t("platformBilling.present") : t("platformBilling.absent")}
     </span>
+  );
+}
+
+function ManageSecretsDialog({
+  open,
+  onOpenChange,
+  status,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  status: PlatformBillingStatus | undefined;
+}) {
+  const { t } = useT();
+  const rows: Array<{ name: string; present: boolean; required: boolean }> = [
+    {
+      name: PLATFORM_BILLING_SECRETS.apiKey,
+      present: !!status?.apiKeyPresent,
+      required: true,
+    },
+    {
+      name: PLATFORM_BILLING_SECRETS.clientId,
+      present: !!status?.clientIdPresent,
+      required: false,
+    },
+    {
+      name: PLATFORM_BILLING_SECRETS.clientSecret,
+      present: !!status?.clientSecretPresent,
+      required: false,
+    },
+  ];
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Lock className="h-4 w-4 text-primary" />
+            {t("platformBilling.manageSecretsTitle")}
+          </DialogTitle>
+          <DialogDescription className="text-xs leading-relaxed">
+            {t("platformBilling.manageSecretsIntro")}
+          </DialogDescription>
+        </DialogHeader>
+
+        <ul className="space-y-2">
+          {rows.map((row) => (
+            <li
+              key={row.name}
+              className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background p-3"
+            >
+              <div className="min-w-0 flex-1">
+                <code className="block truncate font-mono text-xs">{row.name}</code>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  {row.required ? t("platformBilling.required") : t("platformBilling.optional")}
+                </p>
+              </div>
+              <PresenceBadge present={row.present} />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(row.name);
+                  toast.success(t("platformBilling.copied"));
+                }}
+                title={t("platformBilling.copyName")}
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t("platformBilling.cancel")}
+          </Button>
+          <Button asChild>
+            <a
+              href="https://lovable.dev/projects/52514f54-14d9-4c88-901a-5bdc9ecb06a0/settings/secrets"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              {t("platformBilling.openSecrets")}
+            </a>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
