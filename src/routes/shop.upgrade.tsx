@@ -261,7 +261,7 @@ function UpgradePage() {
                     downgrade.mutate(p.key);
                   } else {
                     // Real upgrade flow → Mollie checkout (or mock checkout in dev).
-                    checkout.mutate({ plan: p.key, cycle: "monthly" });
+                    checkout.mutate({ plan: p.key, cycle });
                   }
                 }}
               >
