@@ -513,7 +513,7 @@ function AdminNotesDialog({
         />
         <DialogFooter>
           <Button variant="ghost" onClick={() => setOpen(false)}>
-            {t("common.cancel")}
+            {t("calendar.cancel")}
           </Button>
           <Button
             onClick={() => {
@@ -523,7 +523,7 @@ function AdminNotesDialog({
             disabled={saving}
           >
             <Save className="h-3.5 w-3.5" />
-            {t("common.save")}
+            {t("calendar.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
