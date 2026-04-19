@@ -181,7 +181,13 @@ function AdminPayments() {
         </div>
       )}
 
-      {isLoading ? <div className="mt-6 space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div> : (
+      {isLoading ? (
+        <div className="mt-6 space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-16 rounded-xl" />
+          ))}
+        </div>
+      ) : (
         <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
           <div className="space-y-3 border-b border-border px-4 py-4 sm:px-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
