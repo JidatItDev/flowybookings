@@ -143,6 +143,7 @@ export const getPlatformBillingStatus = createServerFn({ method: "POST" })
       apiKeyMasked: maskKey(apiKey),
       clientIdPresent: Boolean(clientId),
       clientSecretPresent: Boolean(clientSecret),
+      webhookSecretPresent: Boolean(webhookSecret),
       webhookConfigured: Boolean(baseWebhook),
       webhookUrl: finalWebhookUrl,
       configuredMode,
