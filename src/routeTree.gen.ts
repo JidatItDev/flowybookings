@@ -44,6 +44,7 @@ import { Route as BeheerDashboardDemoRouteImport } from './routes/beheer.dashboa
 import { Route as BeheerDashboardBookingsRouteImport } from './routes/beheer.dashboard.bookings'
 import { Route as BeheerAdLoginRouteImport } from './routes/beheer.ad.login'
 import { Route as ApiMollieWebhookRouteImport } from './routes/api.mollie.webhook'
+import { Route as ApiBillingPlanCheckoutRouteImport } from './routes/api.billing.plan-checkout'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -227,6 +228,11 @@ const ApiMollieWebhookRoute = ApiMollieWebhookRouteImport.update({
   path: '/api/mollie/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBillingPlanCheckoutRoute = ApiBillingPlanCheckoutRouteImport.update({
+  id: '/api/billing/plan-checkout',
+  path: '/api/billing/plan-checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LovableEmailTransactionalSendRoute =
   LovableEmailTransactionalSendRouteImport.update({
     id: '/lovable/email/transactional/send',
@@ -276,6 +282,7 @@ export interface FileRoutesByFullPath {
   '/shop/staff': typeof ShopStaffRoute
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop/': typeof ShopIndexRoute
+  '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
@@ -318,6 +325,7 @@ export interface FileRoutesByTo {
   '/shop/staff': typeof ShopStaffRoute
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop': typeof ShopIndexRoute
+  '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
@@ -361,6 +369,7 @@ export interface FileRoutesById {
   '/shop/staff': typeof ShopStaffRoute
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop/': typeof ShopIndexRoute
+  '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
@@ -405,6 +414,7 @@ export interface FileRouteTypes {
     | '/shop/staff'
     | '/shop/upgrade'
     | '/shop/'
+    | '/api/billing/plan-checkout'
     | '/api/mollie/webhook'
     | '/beheer/ad/login'
     | '/beheer/dashboard/bookings'
@@ -447,6 +457,7 @@ export interface FileRouteTypes {
     | '/shop/staff'
     | '/shop/upgrade'
     | '/shop'
+    | '/api/billing/plan-checkout'
     | '/api/mollie/webhook'
     | '/beheer/ad/login'
     | '/beheer/dashboard/bookings'
@@ -489,6 +500,7 @@ export interface FileRouteTypes {
     | '/shop/staff'
     | '/shop/upgrade'
     | '/shop/'
+    | '/api/billing/plan-checkout'
     | '/api/mollie/webhook'
     | '/beheer/ad/login'
     | '/beheer/dashboard/bookings'
@@ -532,6 +544,7 @@ export interface RootRouteChildren {
   ShopStaffRoute: typeof ShopStaffRoute
   ShopUpgradeRoute: typeof ShopUpgradeRoute
   ShopIndexRoute: typeof ShopIndexRoute
+  ApiBillingPlanCheckoutRoute: typeof ApiBillingPlanCheckoutRoute
   ApiMollieWebhookRoute: typeof ApiMollieWebhookRoute
   BeheerAdLoginRoute: typeof BeheerAdLoginRoute
   BeheerDashboardBookingsRoute: typeof BeheerDashboardBookingsRoute
@@ -800,6 +813,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMollieWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/billing/plan-checkout': {
+      id: '/api/billing/plan-checkout'
+      path: '/api/billing/plan-checkout'
+      fullPath: '/api/billing/plan-checkout'
+      preLoaderRoute: typeof ApiBillingPlanCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/transactional/send': {
       id: '/lovable/email/transactional/send'
       path: '/lovable/email/transactional/send'
@@ -880,6 +900,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShopStaffRoute: ShopStaffRoute,
   ShopUpgradeRoute: ShopUpgradeRoute,
   ShopIndexRoute: ShopIndexRoute,
+  ApiBillingPlanCheckoutRoute: ApiBillingPlanCheckoutRoute,
   ApiMollieWebhookRoute: ApiMollieWebhookRoute,
   BeheerAdLoginRoute: BeheerAdLoginRoute,
   BeheerDashboardBookingsRoute: BeheerDashboardBookingsRoute,
