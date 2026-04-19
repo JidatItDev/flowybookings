@@ -639,6 +639,16 @@ export const nl: Record<string, string> = {
   "automations.saved": "Automatiseringen opgeslagen",
   "automations.statusActive": "Actief · cron elke 5 min",
   "automations.poweredBy": "Aangedreven door FlowyBookings e-mail",
+  "automations.reminderSms": "Reminder-SMS (2 uur)",
+  "automations.reminderSmsDesc": "Stuur óók een SMS ~2u voor de afspraak. Vereist saldo en telefoonnummer.",
+  "automations.smsCreditsTitle": "SMS-saldo",
+  "automations.smsCreditsBalance": "Resterend saldo",
+  "automations.smsCreditsUsed": "Verbruikt",
+  "automations.smsCreditsFree": "Gratis ontvangen",
+  "automations.smsCreditsHint": "Elke verzonden reminder-SMS verbruikt 1 credit. Top-up komt binnenkort.",
+  "automations.smsCreditsLow": "Laag saldo — herinneringen worden overgeslagen zodra het saldo 0 is.",
+  "automations.smsCreditsEmpty": "Geen credits — SMS-herinneringen zijn uitgeschakeld tot er nieuwe credits zijn.",
+  "automations.smsProviderPending": "Verzending wordt geactiveerd zodra de SMS-provider gekoppeld is.",
 
   // ── Settings ──
   "settings.title": "Instellingen",

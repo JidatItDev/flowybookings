@@ -570,6 +570,7 @@ export type Database = {
           id: string
           reminder_24h_enabled: boolean
           reminder_2h_enabled: boolean
+          reminder_sms_enabled: boolean
           settings: Json
           shop_id: string
           updated_at: string
@@ -582,6 +583,7 @@ export type Database = {
           id?: string
           reminder_24h_enabled?: boolean
           reminder_2h_enabled?: boolean
+          reminder_sms_enabled?: boolean
           settings?: Json
           shop_id: string
           updated_at?: string
@@ -594,6 +596,7 @@ export type Database = {
           id?: string
           reminder_24h_enabled?: boolean
           reminder_2h_enabled?: boolean
+          reminder_sms_enabled?: boolean
           settings?: Json
           shop_id?: string
           updated_at?: string
@@ -670,6 +673,39 @@ export type Database = {
           },
         ]
       }
+      shop_sms_credits: {
+        Row: {
+          balance: number
+          created_at: string
+          free_credits_granted: number
+          id: string
+          shop_id: string
+          total_purchased: number
+          total_used: number
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          free_credits_granted?: number
+          id?: string
+          shop_id: string
+          total_purchased?: number
+          total_used?: number
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          free_credits_granted?: number
+          id?: string
+          shop_id?: string
+          total_purchased?: number
+          total_used?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       shops: {
         Row: {
           address: string | null
@@ -739,6 +775,54 @@ export type Database = {
           status?: Database["public"]["Enums"]["shop_status"]
           timezone?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      sms_send_log: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          credits_used: number
+          customer_id: string | null
+          error_message: string | null
+          id: string
+          message: string
+          phone: string
+          provider: string | null
+          provider_message_id: string | null
+          shop_id: string
+          status: string
+          template: string
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          credits_used?: number
+          customer_id?: string | null
+          error_message?: string | null
+          id?: string
+          message: string
+          phone: string
+          provider?: string | null
+          provider_message_id?: string | null
+          shop_id: string
+          status?: string
+          template?: string
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          credits_used?: number
+          customer_id?: string | null
+          error_message?: string | null
+          id?: string
+          message?: string
+          phone?: string
+          provider?: string | null
+          provider_message_id?: string | null
+          shop_id?: string
+          status?: string
+          template?: string
         }
         Relationships: []
       }
@@ -894,6 +978,7 @@ export type Database = {
         }
         Returns: number
       }
+      consume_sms_credit: { Args: { _shop_id: string }; Returns: boolean }
       decrypt_mollie_token: { Args: { ciphertext: string }; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
