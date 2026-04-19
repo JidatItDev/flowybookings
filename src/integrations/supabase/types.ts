@@ -625,6 +625,7 @@ export type Database = {
       shops: {
         Row: {
           address: string | null
+          admin_notes: string | null
           branding: Json
           business_hours: Json
           created_at: string
@@ -647,6 +648,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          admin_notes?: string | null
           branding?: Json
           business_hours?: Json
           created_at?: string
@@ -669,6 +671,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          admin_notes?: string | null
           branding?: Json
           business_hours?: Json
           created_at?: string

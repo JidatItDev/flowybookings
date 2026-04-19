@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CircleDollarSign, TrendingUp, RotateCcw, Wallet, Plug, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { CircleDollarSign, TrendingUp, RotateCcw, Wallet, Plug, CheckCircle2, AlertCircle, Loader2, Search } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AdminLayout } from "@/components/AdminLayout";
@@ -9,12 +10,18 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { adminPaymentsQuery, adminStatsQuery } from "@/lib/admin-queries";
+import { adminPaymentsQuery, adminStatsQuery, adminShopsQuery } from "@/lib/admin-queries";
 import { adminPaymentProvidersQuery, paymentProviderKeys, type ConnectionStatus } from "@/lib/payment-providers";
 import { formatCents, relativeFromNow } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/beheer/dashboard/payments")({ head: () => ({ meta: [{ title: "Payments — Platform" }] }), component: AdminPayments });
+
+const STATUS_FILTERS = ["all", "paid", "unpaid", "deposit_paid", "refunded", "failed"] as const;
+const PLAN_FILTERS = ["all", "trial", "starter", "pro", "premium"] as const;
+type StatusFilter = (typeof STATUS_FILTERS)[number];
+type PlanFilter = (typeof PLAN_FILTERS)[number];
 
 function AdminPayments() {
   const { t } = useT();
@@ -22,12 +29,34 @@ function AdminPayments() {
   const { data: stats, isLoading: statsLoading } = useQuery(adminStatsQuery());
   const { data: payments, isLoading } = useQuery(adminPaymentsQuery());
   const { data: providers, isLoading: providersLoading } = useQuery(adminPaymentProvidersQuery());
-  const refundedCount = (payments ?? []).filter((p) => p.status === "refunded").length;
-  const refundedAmount = (payments ?? []).filter((p) => p.status === "refunded").reduce((s, p) => s + p.amount_cents, 0);
+  const { data: shops } = useQuery(adminShopsQuery());
 
-  // Per-shop revenue + fee rollup
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [planFilter, setPlanFilter] = useState<PlanFilter>("all");
+  const [search, setSearch] = useState("");
+
+  const planByShop = useMemo(() => {
+    const m = new Map<string, string>();
+    (shops ?? []).forEach((s) => m.set(s.id, s.plan));
+    return m;
+  }, [shops]);
+
+  const visiblePayments = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (payments ?? []).filter((p) => {
+      if (statusFilter !== "all" && p.status !== statusFilter) return false;
+      if (planFilter !== "all" && planByShop.get(p.shop_id) !== planFilter) return false;
+      if (q && !(p.shop_name ?? "").toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [payments, statusFilter, planFilter, search, planByShop]);
+
+  const refundedCount = visiblePayments.filter((p) => p.status === "refunded").length;
+  const refundedAmount = visiblePayments.filter((p) => p.status === "refunded").reduce((s, p) => s + p.amount_cents, 0);
+
+  // Per-shop revenue + fee rollup (uses filtered payments so admin can scope)
   const perShop = new Map<string, { name: string; revenue: number; fees: number; count: number }>();
-  (payments ?? []).forEach((p) => {
+  visiblePayments.forEach((p) => {
     const key = p.shop_id;
     const cur = perShop.get(key) ?? { name: p.shop_name ?? "—", revenue: 0, fees: 0, count: 0 };
     cur.revenue += p.amount_cents;
@@ -153,15 +182,59 @@ function AdminPayments() {
       )}
 
       {isLoading ? <div className="mt-6 space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div> : (
-        <div className="mt-6 overflow-x-auto rounded-2xl border border-border bg-card shadow-soft">
-          <div className="border-b border-border px-4 py-4 sm:px-6"><h2 className="text-base font-semibold">{t("adminPayments.allTransactions")}</h2></div>
+        <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+          <div className="space-y-3 border-b border-border px-4 py-4 sm:px-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-base font-semibold">{t("adminPayments.allTransactions")}</h2>
+              <span className="text-xs text-muted-foreground">{t("adminPayments.events", { n: visiblePayments.length })}</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex h-9 min-w-[180px] flex-1 items-center gap-2 rounded-xl border border-border bg-background px-3 sm:max-w-xs">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={t("adminPayments.searchShop")}
+                  className="h-full flex-1 bg-transparent text-sm outline-none"
+                />
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {STATUS_FILTERS.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setStatusFilter(s)}
+                    className={cn(
+                      "rounded-full border px-2.5 py-1 text-[11px] font-medium capitalize transition-colors",
+                      statusFilter === s
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-card text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {s === "all" ? t("adminBilling.filter.all") : s.replace("_", " ")}
+                  </button>
+                ))}
+              </div>
+              <select
+                value={planFilter}
+                onChange={(e) => setPlanFilter(e.target.value as PlanFilter)}
+                className="h-8 rounded-full border border-border bg-card px-3 text-[11px] font-medium"
+              >
+                {PLAN_FILTERS.map((p) => (
+                  <option key={p} value={p}>
+                    {p === "all" ? t("adminPayments.allPlans") : p}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
           <table className="w-full min-w-[480px] text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground"><tr>
               <th className="px-4 py-3 text-left sm:px-6">{t("adminPayments.shop")}</th><th className="px-4 py-3 text-left sm:px-6">{t("adminPayments.amount")}</th><th className="hidden px-6 py-3 text-left md:table-cell">{t("adminPayments.fee")}</th><th className="px-4 py-3 text-left sm:px-6">{t("adminPayments.status")}</th><th className="hidden px-6 py-3 text-left lg:table-cell">{t("adminPayments.provider")}</th><th className="hidden px-6 py-3 text-left xl:table-cell">{t("adminPayments.date")}</th>
             </tr></thead>
             <tbody className="divide-y divide-border">
-              {(payments ?? []).length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">{t("adminPayments.noPayments")}</td></tr>}
-              {(payments ?? []).map((p) => (
+              {visiblePayments.length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">{t("adminPayments.noPayments")}</td></tr>}
+              {visiblePayments.map((p) => (
                 <tr key={p.id} className="hover:bg-muted/30">
                   <td className="px-4 py-4 font-medium sm:px-6">{p.shop_name ?? "—"}</td>
                   <td className="px-4 py-4 font-medium sm:px-6">{formatCents(p.amount_cents, p.currency)}</td>
@@ -173,6 +246,7 @@ function AdminPayments() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </AdminLayout>
