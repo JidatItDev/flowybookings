@@ -58,6 +58,7 @@ import { Route as ApiMollieConnectWebhookRouteImport } from './routes/api.mollie
 import { Route as ApiMollieConnectDisconnectRouteImport } from './routes/api.mollie-connect.disconnect'
 import { Route as ApiMollieConnectCallbackRouteImport } from './routes/api.mollie-connect.callback'
 import { Route as ApiMollieConnectAuthorizeRouteImport } from './routes/api.mollie-connect.authorize'
+import { Route as ApiBookingsRefundRouteImport } from './routes/api.bookings.refund'
 import { Route as ApiBookingsCheckoutRouteImport } from './routes/api.bookings.checkout'
 import { Route as ApiBillingPlanConfirmRouteImport } from './routes/api.billing.plan-confirm'
 import { Route as ApiBillingPlanCheckoutRouteImport } from './routes/api.billing.plan-checkout'
@@ -320,6 +321,11 @@ const ApiMollieConnectAuthorizeRoute =
     path: '/api/mollie-connect/authorize',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiBookingsRefundRoute = ApiBookingsRefundRouteImport.update({
+  id: '/api/bookings/refund',
+  path: '/api/bookings/refund',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiBookingsCheckoutRoute = ApiBookingsCheckoutRouteImport.update({
   id: '/api/bookings/checkout',
   path: '/api/bookings/checkout',
@@ -401,6 +407,7 @@ export interface FileRoutesByFullPath {
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
   '/api/bookings/checkout': typeof ApiBookingsCheckoutRoute
+  '/api/bookings/refund': typeof ApiBookingsRefundRoute
   '/api/mollie-connect/authorize': typeof ApiMollieConnectAuthorizeRoute
   '/api/mollie-connect/callback': typeof ApiMollieConnectCallbackRoute
   '/api/mollie-connect/disconnect': typeof ApiMollieConnectDisconnectRoute
@@ -461,6 +468,7 @@ export interface FileRoutesByTo {
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
   '/api/bookings/checkout': typeof ApiBookingsCheckoutRoute
+  '/api/bookings/refund': typeof ApiBookingsRefundRoute
   '/api/mollie-connect/authorize': typeof ApiMollieConnectAuthorizeRoute
   '/api/mollie-connect/callback': typeof ApiMollieConnectCallbackRoute
   '/api/mollie-connect/disconnect': typeof ApiMollieConnectDisconnectRoute
@@ -522,6 +530,7 @@ export interface FileRoutesById {
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
   '/api/bookings/checkout': typeof ApiBookingsCheckoutRoute
+  '/api/bookings/refund': typeof ApiBookingsRefundRoute
   '/api/mollie-connect/authorize': typeof ApiMollieConnectAuthorizeRoute
   '/api/mollie-connect/callback': typeof ApiMollieConnectCallbackRoute
   '/api/mollie-connect/disconnect': typeof ApiMollieConnectDisconnectRoute
@@ -584,6 +593,7 @@ export interface FileRouteTypes {
     | '/api/billing/plan-checkout'
     | '/api/billing/plan-confirm'
     | '/api/bookings/checkout'
+    | '/api/bookings/refund'
     | '/api/mollie-connect/authorize'
     | '/api/mollie-connect/callback'
     | '/api/mollie-connect/disconnect'
@@ -644,6 +654,7 @@ export interface FileRouteTypes {
     | '/api/billing/plan-checkout'
     | '/api/billing/plan-confirm'
     | '/api/bookings/checkout'
+    | '/api/bookings/refund'
     | '/api/mollie-connect/authorize'
     | '/api/mollie-connect/callback'
     | '/api/mollie-connect/disconnect'
@@ -704,6 +715,7 @@ export interface FileRouteTypes {
     | '/api/billing/plan-checkout'
     | '/api/billing/plan-confirm'
     | '/api/bookings/checkout'
+    | '/api/bookings/refund'
     | '/api/mollie-connect/authorize'
     | '/api/mollie-connect/callback'
     | '/api/mollie-connect/disconnect'
@@ -765,6 +777,7 @@ export interface RootRouteChildren {
   ApiBillingPlanCheckoutRoute: typeof ApiBillingPlanCheckoutRoute
   ApiBillingPlanConfirmRoute: typeof ApiBillingPlanConfirmRoute
   ApiBookingsCheckoutRoute: typeof ApiBookingsCheckoutRoute
+  ApiBookingsRefundRoute: typeof ApiBookingsRefundRoute
   ApiMollieConnectAuthorizeRoute: typeof ApiMollieConnectAuthorizeRoute
   ApiMollieConnectCallbackRoute: typeof ApiMollieConnectCallbackRoute
   ApiMollieConnectDisconnectRoute: typeof ApiMollieConnectDisconnectRoute
@@ -1137,6 +1150,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMollieConnectAuthorizeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/bookings/refund': {
+      id: '/api/bookings/refund'
+      path: '/api/bookings/refund'
+      fullPath: '/api/bookings/refund'
+      preLoaderRoute: typeof ApiBookingsRefundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/bookings/checkout': {
       id: '/api/bookings/checkout'
       path: '/api/bookings/checkout'
@@ -1257,6 +1277,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBillingPlanCheckoutRoute: ApiBillingPlanCheckoutRoute,
   ApiBillingPlanConfirmRoute: ApiBillingPlanConfirmRoute,
   ApiBookingsCheckoutRoute: ApiBookingsCheckoutRoute,
+  ApiBookingsRefundRoute: ApiBookingsRefundRoute,
   ApiMollieConnectAuthorizeRoute: ApiMollieConnectAuthorizeRoute,
   ApiMollieConnectCallbackRoute: ApiMollieConnectCallbackRoute,
   ApiMollieConnectDisconnectRoute: ApiMollieConnectDisconnectRoute,

@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EmptyState, NoShopState } from "@/components/EmptyState";
 import { MollieNudge } from "@/components/MollieNudge";
 import { MollieConnectCard } from "@/components/MollieConnectCard";
+import { MollieConnectPayments } from "@/components/MollieConnectPayments";
 import { useActiveShopId } from "@/lib/shop-context";
 import { paymentsQuery, bookingsQuery, customersQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
@@ -109,6 +110,9 @@ function PaymentsPage() {
           <div className="mt-6">
             <MollieConnectCard shopId={shopId} />
           </div>
+
+          {/* Incoming Mollie Connect payments with refund action */}
+          <MollieConnectPayments shopId={shopId} />
 
           {/* Status filter pills */}
           <div className="mt-6 flex flex-wrap items-center gap-2">

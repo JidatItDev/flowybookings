@@ -1216,6 +1216,25 @@ export const en: Record<string, string> = {
   "shopPayments.providerEmptyTitle": "No payment provider connected yet",
   "shopPayments.export": "Export",
 
+  // ── Mollie Connect incoming booking payments ──
+  "mollieConnect.payments.title": "Mollie Connect payments",
+  "mollieConnect.payments.description": "Deposits collected directly into your own Mollie account.",
+  "mollieConnect.payments.empty": "No Mollie Connect payments received yet.",
+  "mollieConnect.payments.customer": "Customer",
+  "mollieConnect.payments.amount": "Amount",
+  "mollieConnect.payments.fee": "Platform fee",
+  "mollieConnect.payments.status": "Status",
+  "mollieConnect.payments.molliePaymentId": "Mollie ID",
+  "mollieConnect.payments.actions": "Actions",
+  "mollieConnect.payments.refund": "Refund",
+  "mollieConnect.payments.refunding": "Working…",
+  "mollieConnect.payments.refundConfirmTitle": "Refund the full amount?",
+  "mollieConnect.payments.refundConfirmDesc": "This refunds {amount} to the customer via Mollie. This action cannot be undone.",
+  "mollieConnect.payments.refundConfirm": "Yes, refund",
+  "mollieConnect.payments.refundCancel": "Cancel",
+  "mollieConnect.payments.refundSuccess": "Refund initiated",
+  "mollieConnect.payments.refundError": "Refund failed",
+
   // ── Admin: Booking Payment Providers (separate page) ──
   "adminProvidersPage.title": "Booking payment providers",
   "adminProvidersPage.description": "Mollie Connect status, onboarding state, and platform fee config for every shop. Subscription billing lives separately under Platform billing.",
