@@ -78,7 +78,8 @@ export const Route = createFileRoute("/api/billing/expire-sweep")({
             type: "billing",
             title: "Plan expired — downgraded to Starter",
             message: `Your ${shop.plan.toUpperCase()} plan expired and was downgraded to Starter. Renew anytime to restore your features.`,
-            action_url: "/shop/upgrade",
+            action_url: "/shop/billing",
+            metadata: { kind: "subscription", subkind: "auto_downgraded", previous_plan: shop.plan },
           });
 
           results.push({ shop_id: shop.id, previous_plan: shop.plan });
