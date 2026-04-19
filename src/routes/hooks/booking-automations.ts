@@ -223,3 +223,135 @@ async function loadContext(supabase: any, b: any) {
     }),
   }
 }
+
+// ============================================================
+// SMS reminder window — verbruikt 1 credit per verzending.
+// Provider-call is een TODO-stub; logt naar sms_send_log.
+// Zodra Twilio (of andere provider) gekoppeld is: vervang sendSmsViaProvider().
+// ============================================================
+async function sendReminderSmsWindow(
+  supabase: any,
+  shopId: string,
+  lo: Date, hi: Date,
+  counters: { sent: number; skipped_no_credits: number; skipped_no_phone: number; errors: number },
+): Promise<void> {
+  const { data: bookings, error } = await supabase
+    .from('bookings')
+    .select('id, shop_id, starts_at, customer_id, service_id, staff_id, status')
+    .eq('shop_id', shopId)
+    .in('status', ['pending', 'confirmed'])
+    .gte('starts_at', lo.toISOString())
+    .lte('starts_at', hi.toISOString())
+    .limit(50)
+  if (error) { counters.errors++; return }
+
+  for (const b of bookings ?? []) {
+    try {
+      // Idempotency: skip if we already logged a sent SMS for this booking
+      const { data: existing } = await supabase
+        .from('sms_send_log')
+        .select('id')
+        .eq('booking_id', b.id)
+        .eq('template', 'reminder')
+        .eq('status', 'sent')
+        .maybeSingle()
+      if (existing) continue
+
+      const ctx = await loadSmsContext(supabase, b)
+      if (!ctx?.phone) {
+        await supabase.from('sms_send_log').insert({
+          shop_id: shopId, booking_id: b.id, customer_id: b.customer_id,
+          phone: '', message: '', template: 'reminder', status: 'skipped_no_phone',
+        })
+        counters.skipped_no_phone++
+        continue
+      }
+
+      const message = buildReminderSms(ctx)
+
+      // Try to consume a credit atomically
+      const { data: consumed, error: cErr } = await supabase.rpc('consume_sms_credit', { _shop_id: shopId })
+      if (cErr || !consumed) {
+        await supabase.from('sms_send_log').insert({
+          shop_id: shopId, booking_id: b.id, customer_id: b.customer_id,
+          phone: ctx.phone, message, template: 'reminder', status: 'skipped_no_credits',
+        })
+        counters.skipped_no_credits++
+        continue
+      }
+
+      // TODO(provider): vervang door echte SMS-call (Twilio etc.)
+      const result = await sendSmsViaProvider(ctx.phone, message)
+
+      if (result.ok) {
+        await supabase.from('sms_send_log').insert({
+          shop_id: shopId, booking_id: b.id, customer_id: b.customer_id,
+          phone: ctx.phone, message, template: 'reminder', status: 'sent',
+          provider: result.provider, provider_message_id: result.messageId, credits_used: 1,
+        })
+        counters.sent++
+      } else {
+        await supabase.from('sms_send_log').insert({
+          shop_id: shopId, booking_id: b.id, customer_id: b.customer_id,
+          phone: ctx.phone, message, template: 'reminder', status: 'failed',
+          provider: result.provider, error_message: result.error, credits_used: 0,
+        })
+        counters.errors++
+      }
+    } catch (err) {
+      console.error('reminder-sms failed', { booking: b.id, err })
+      counters.errors++
+    }
+  }
+}
+
+async function loadSmsContext(supabase: any, b: any) {
+  const [{ data: customer }, { data: shop }, { data: service }] = await Promise.all([
+    b.customer_id
+      ? supabase.from('customers').select('full_name, phone').eq('id', b.customer_id).maybeSingle()
+      : Promise.resolve({ data: null } as any),
+    supabase.from('shops').select('name').eq('id', b.shop_id).maybeSingle(),
+    b.service_id
+      ? supabase.from('services').select('name').eq('id', b.service_id).maybeSingle()
+      : Promise.resolve({ data: null } as any),
+  ])
+  const startsAt = new Date(b.starts_at)
+  return {
+    phone: (customer?.phone as string | null) ?? null,
+    firstName: (customer?.full_name as string | null)?.split(' ')[0] ?? '',
+    shopName: (shop?.name as string | undefined) ?? 'FlowyBookings',
+    serviceName: (service?.name as string | undefined) ?? '',
+    whenLabel: startsAt.toLocaleString('nl-NL', {
+      weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+    }),
+  }
+}
+
+function buildReminderSms(ctx: { firstName: string; shopName: string; serviceName: string; whenLabel: string }): string {
+  const greeting = ctx.firstName ? `Hi ${ctx.firstName}` : 'Hi'
+  return `${greeting}, herinnering: ${ctx.serviceName ? ctx.serviceName + ' ' : ''}om ${ctx.whenLabel} bij ${ctx.shopName}. Tot zo!`
+}
+
+// =============================================================
+// PROVIDER STUB — vervang dit met echte Twilio/MessageBird-call.
+// Voor nu: log + return ok zodat de flow werkt zonder credentials.
+// =============================================================
+async function sendSmsViaProvider(
+  phone: string,
+  message: string,
+): Promise<{ ok: true; provider: string; messageId: string } | { ok: false; provider: string; error: string }> {
+  // TODO: Wire to Twilio (or MessageBird/Spryng).
+  // const accountSid = process.env.TWILIO_ACCOUNT_SID
+  // const authToken  = process.env.TWILIO_AUTH_TOKEN
+  // const fromNumber = process.env.TWILIO_FROM_NUMBER
+  // const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+  //   method: 'POST',
+  //   headers: { Authorization: 'Basic ' + btoa(`${accountSid}:${authToken}`), 'Content-Type': 'application/x-www-form-urlencoded' },
+  //   body: new URLSearchParams({ To: phone, From: fromNumber!, Body: message }),
+  // })
+  // const json = await res.json()
+  // return res.ok ? { ok: true, provider: 'twilio', messageId: json.sid } : { ok: false, provider: 'twilio', error: json.message }
+
+  console.info('[sms-stub] would send SMS', { phone, message })
+  return { ok: true, provider: 'stub', messageId: `stub-${Date.now()}` }
+}
