@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { changeShopPlan, tierOf, TIER_RANK, type DbPlan } from "@/lib/plans";
 import { usePermissions } from "@/lib/use-permissions";
 import { shopKeys } from "@/lib/queries";
+import { ShopBillingCard, usePlanCheckout } from "@/components/ShopBillingCard";
 
 export const Route = createFileRoute("/shop/upgrade")({
   head: () => ({ meta: [{ title: "Upgrade — FlowyBookings" }] }),
