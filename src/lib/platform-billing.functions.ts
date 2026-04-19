@@ -18,6 +18,14 @@ export type PlatformBillingStatus = {
   clientSecretPresent: boolean;
   webhookConfigured: boolean;
   webhookUrl: string;
+  // Admin-managed config (DB).
+  configuredMode: "test" | "live";
+  webhookUrlOverride: string | null;
+  configUpdatedAt: string | null;
+  lastHealthStatus: string | null;
+  lastHealthMessage: string | null;
+  lastHealthAt: string | null;
+  lastHealthMode: string | null;
   // Activity signals.
   lastWebhookAt: string | null;
   lastSubscriptionPaymentAt: string | null;
@@ -28,6 +36,13 @@ export type PlatformBillingStatus = {
   // Readiness summary.
   isReady: boolean;
 };
+
+/** Required secret names — surfaced in the admin UI so admins know exactly what to add. */
+export const PLATFORM_BILLING_SECRETS = {
+  apiKey: "MOLLIE_API_KEY",
+  clientId: "MOLLIE_CLIENT_ID",
+  clientSecret: "MOLLIE_CLIENT_SECRET",
+} as const;
 
 async function assertSuperAdmin(token: string) {
   const { data, error } = await supabaseAdmin.auth.getUser(token);
@@ -105,14 +120,36 @@ export const getPlatformBillingStatus = createServerFn({ method: "POST" })
           ? errMeta.message
           : null;
 
+    // Admin-managed config row (singleton).
+    const { data: cfg } = await supabaseAdmin
+      .from("platform_billing_config")
+      .select(
+        "mode, webhook_url_override, updated_at, last_health_status, last_health_message, last_health_at, last_health_mode",
+      )
+      .eq("id", 1)
+      .maybeSingle();
+
+    const configuredMode: "test" | "live" = cfg?.mode === "live" ? "live" : "test";
+    const baseWebhook = cfg?.webhook_url_override?.trim() || webhookBase;
+    const finalWebhookUrl = baseWebhook
+      ? `${baseWebhook.replace(/\/$/, "")}/api/mollie/webhook`
+      : "/api/mollie/webhook";
+
     return {
       apiKeyPresent: Boolean(apiKey),
       apiKeyMode: mode,
       apiKeyMasked: maskKey(apiKey),
       clientIdPresent: Boolean(clientId),
       clientSecretPresent: Boolean(clientSecret),
-      webhookConfigured: Boolean(webhookBase),
-      webhookUrl: webhookBase ? `${webhookBase.replace(/\/$/, "")}/api/mollie/webhook` : "/api/mollie/webhook",
+      webhookConfigured: Boolean(baseWebhook),
+      webhookUrl: finalWebhookUrl,
+      configuredMode,
+      webhookUrlOverride: cfg?.webhook_url_override ?? null,
+      configUpdatedAt: cfg?.updated_at ?? null,
+      lastHealthStatus: cfg?.last_health_status ?? null,
+      lastHealthMessage: cfg?.last_health_message ?? null,
+      lastHealthAt: cfg?.last_health_at ?? null,
+      lastHealthMode: cfg?.last_health_mode ?? null,
       lastWebhookAt: lastWebhook?.created_at ?? null,
       lastSubscriptionPaymentAt: lastSub?.created_at ?? null,
       lastSubscriptionPaymentStatus: lastSub?.status ?? null,
@@ -121,6 +158,36 @@ export const getPlatformBillingStatus = createServerFn({ method: "POST" })
       lastErrorAt: lastError?.created_at ?? null,
       isReady: Boolean(apiKey),
     };
+  });
+
+/** Update the admin-editable, non-secret config (mode + webhook override). */
+export const updatePlatformBillingConfig = createServerFn({ method: "POST" })
+  .inputValidator(
+    (input: { accessToken: string; mode?: "test" | "live"; webhookUrlOverride?: string | null }) => input,
+  )
+  .handler(async ({ data }) => {
+    const user = await assertSuperAdmin(data.accessToken);
+    const patch: Record<string, unknown> = { updated_by: user.id, updated_at: new Date().toISOString() };
+    if (data.mode === "test" || data.mode === "live") patch.mode = data.mode;
+    if (data.webhookUrlOverride !== undefined) {
+      const v = (data.webhookUrlOverride ?? "").trim();
+      patch.webhook_url_override = v.length > 0 ? v : null;
+    }
+    const { error } = await supabaseAdmin
+      .from("platform_billing_config")
+      .update(patch)
+      .eq("id", 1);
+    if (error) throw new Error(error.message);
+
+    await supabaseAdmin.from("activity_log").insert({
+      entity: BILLING_ENTITY,
+      action: "config_updated",
+      actor_user_id: user.id,
+      actor_email: user.email ?? null,
+      metadata: { mode: data.mode ?? null, webhook_override_set: data.webhookUrlOverride !== undefined },
+    });
+
+    return { ok: true };
   });
 
 export type PlatformBillingHealthResult = {
