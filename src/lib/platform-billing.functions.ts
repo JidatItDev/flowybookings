@@ -71,6 +71,7 @@ export const getPlatformBillingStatus = createServerFn({ method: "POST" })
     const apiKey = process.env.MOLLIE_API_KEY;
     const clientId = process.env.MOLLIE_CLIENT_ID;
     const clientSecret = process.env.MOLLIE_CLIENT_SECRET;
+    const webhookSecret = process.env.MOLLIE_WEBHOOK_SECRET;
     const webhookBase = process.env.PUBLIC_APP_URL || process.env.SITE_URL || "";
 
     let mode: PlatformBillingStatus["apiKeyMode"] = "missing";
