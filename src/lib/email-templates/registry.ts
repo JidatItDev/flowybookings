@@ -12,6 +12,7 @@ export interface TemplateEntry {
 import { template as bookingConfirmation } from './booking-confirmation'
 import { template as bookingReminder } from './booking-reminder'
 import { template as bookingFollowup } from './booking-followup'
+import { template as trialEnding } from './trial-ending'
 
 /**
  * Template registry — maps template names to their React Email components.
@@ -20,4 +21,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'booking-confirmation': bookingConfirmation,
   'booking-reminder': bookingReminder,
   'booking-followup': bookingFollowup,
+  'trial-ending': trialEnding,
 }
