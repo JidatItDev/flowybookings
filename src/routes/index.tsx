@@ -5,17 +5,17 @@ import { useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   CalendarCheck, Sparkles, Bell, CreditCard, BarChart3, Users,
-  Sparkle, ArrowRight, Check, Star, ShieldCheck, Smartphone,
+  Sparkle, ArrowRight, Check, ShieldCheck, Smartphone, Zap, Euro, MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "FlowyBookings — Modern booking platform for service businesses" },
-      { name: "description", content: "All-in-one booking, payments, reminders and analytics for tattoo shops, barbers, nail salons, beauty studios and groomers." },
-      { property: "og:title", content: "FlowyBookings — Modern booking platform for service businesses" },
-      { property: "og:description", content: "Booking, payments, reminders and analytics — built for tattoo shops, barbers, nail bars, beauty studios and groomers." },
+      { title: "FlowyBookings — Modern boekingsplatform voor dienstverleners" },
+      { name: "description", content: "Boekingen, betalingen, herinneringen en statistieken voor tattooshops, kappers, nagelsalons, beautystudio's en trimsalons. Mollie, iDEAL en Bancontact ingebouwd." },
+      { property: "og:title", content: "FlowyBookings — Modern boekingsplatform voor dienstverleners" },
+      { property: "og:description", content: "Boekingen, betalingen en herinneringen — gebouwd voor zaken in de Benelux." },
     ],
   }),
   component: Landing,
@@ -45,10 +45,13 @@ function Landing() {
     t("builtFor.beauty"), t("builtFor.hair"), t("builtFor.petGrooming"),
   ];
 
-  const testimonials = [
-    { quote: "We cut no-shows by 60% in the first month. The reminders just work.", author: "Sophia Reyes", role: "Owner · Inkwell Studio" },
-    { quote: "Finally a dashboard that doesn't feel like 2012. Our team adopted it in a day.", author: "Marco Bianchi", role: "Manager · Sharp & Co." },
-    { quote: "Deposits + WhatsApp reminders changed how we run weekends.", author: "Iris Nakamura", role: "Founder · Bloom Nail Bar" },
+  const whyUs = [
+    { title: t("whyUs.localTitle"), desc: t("whyUs.localDesc"), icon: Euro, color: "bg-mint text-mint-foreground" },
+    { title: t("whyUs.noShowTitle"), desc: t("whyUs.noShowDesc"), icon: Bell, color: "bg-pink text-pink-foreground" },
+    { title: t("whyUs.fastTitle"), desc: t("whyUs.fastDesc"), icon: Zap, color: "bg-primary-soft text-primary" },
+    { title: t("whyUs.ownTitle"), desc: t("whyUs.ownDesc"), icon: ShieldCheck, color: "bg-info/15 text-info-foreground" },
+    { title: t("whyUs.transparentTitle"), desc: t("whyUs.transparentDesc"), icon: BarChart3, color: "bg-peach text-peach-foreground" },
+    { title: t("whyUs.supportTitle"), desc: t("whyUs.supportDesc"), icon: MessageCircle, color: "bg-secondary text-secondary-foreground" },
   ];
 
   const pricing = [
@@ -121,7 +124,7 @@ function Landing() {
                   <p className="mt-2 text-3xl font-semibold tracking-tight">€1,240</p>
                   <p className="text-sm text-muted-foreground">{t("landing.fromBookings", { count: 18 })}</p>
                   <div className="mt-6 space-y-2">
-                    {["10:00 · Sleeve Tattoo · Sophia", "11:30 · Beard Trim · Liam", "13:00 · Gel Manicure · Noah", "15:00 · Lash Extensions · Ava"].map((txt) => (
+                    {["10:00 · Sleeve tattoo · Sophie", "11:30 · Baard trimmen · Liam", "13:00 · Gel manicure · Noor", "15:00 · Wimperextensions · Ava"].map((txt) => (
                       <div key={txt} className="flex items-center gap-2 rounded-xl bg-card/70 px-3 py-2 text-sm shadow-xs">
                         <CalendarCheck className="h-4 w-4 text-primary" /> {txt}
                       </div>
@@ -185,18 +188,21 @@ function Landing() {
 
       <section id="testimonials" className="border-t border-border py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <h2 className="mx-auto max-w-2xl text-center text-3xl font-semibold tracking-tight sm:text-4xl">{t("testimonials.title")}</h2>
-          <div className="mt-14 grid gap-5 lg:grid-cols-3">
-            {testimonials.map((tm) => (
-              <figure key={tm.author} className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-                <div className="flex items-center gap-1 text-warning-foreground">{Array.from({ length: 5 }).map((_, i) => <Star key={i} className="h-4 w-4 fill-current" />)}</div>
-                <blockquote className="mt-4 text-sm leading-relaxed text-foreground">"{tm.quote}"</blockquote>
-                <figcaption className="mt-5 flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-warm text-sm font-semibold text-pink-foreground">{tm.author[0]}</div>
-                  <div><p className="text-sm font-medium">{tm.author}</p><p className="text-xs text-muted-foreground">{tm.role}</p></div>
-                </figcaption>
-              </figure>
-            ))}
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("whyUs.title")}</h2>
+            <p className="mt-4 text-muted-foreground">{t("whyUs.sub")}</p>
+          </div>
+          <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {whyUs.map((w) => {
+              const Icon = w.icon;
+              return (
+                <div key={w.title} className="rounded-2xl border border-border bg-card p-6 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-elevated">
+                  <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${w.color}`}><Icon className="h-5 w-5" /></div>
+                  <h3 className="mt-4 text-base font-semibold">{w.title}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">{w.desc}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
