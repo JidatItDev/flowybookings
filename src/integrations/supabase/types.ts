@@ -430,6 +430,51 @@ export type Database = {
           },
         ]
       }
+      platform_billing_config: {
+        Row: {
+          expects_client_id: boolean
+          expects_client_secret: boolean
+          id: number
+          last_health_at: string | null
+          last_health_message: string | null
+          last_health_mode: string | null
+          last_health_status: string | null
+          mode: string
+          notes: string | null
+          updated_at: string
+          updated_by: string | null
+          webhook_url_override: string | null
+        }
+        Insert: {
+          expects_client_id?: boolean
+          expects_client_secret?: boolean
+          id?: number
+          last_health_at?: string | null
+          last_health_message?: string | null
+          last_health_mode?: string | null
+          last_health_status?: string | null
+          mode?: string
+          notes?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          webhook_url_override?: string | null
+        }
+        Update: {
+          expects_client_id?: boolean
+          expects_client_secret?: boolean
+          id?: number
+          last_health_at?: string | null
+          last_health_message?: string | null
+          last_health_mode?: string | null
+          last_health_status?: string | null
+          mode?: string
+          notes?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          webhook_url_override?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
