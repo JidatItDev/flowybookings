@@ -50,11 +50,6 @@ export function MollieNudge({ shopId }: Props) {
 
   if (isLoading || !needsConnect) return null;
 
-  const scrollToConnect = () => {
-    const el = document.getElementById(connectAnchor);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
   return (
     <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-primary-soft/40 p-5 shadow-soft">
       <div className="flex items-start gap-4">
@@ -72,9 +67,11 @@ export function MollieNudge({ shopId }: Props) {
           </ul>
 
           <div className="mt-4">
-            <Button onClick={scrollToConnect} variant="hero" size="sm">
-              {t("mollie.nudge.cta")} <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
+            <Link to="/shop/settings">
+              <Button variant="hero" size="sm">
+                {t("mollie.nudge.cta")} <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
