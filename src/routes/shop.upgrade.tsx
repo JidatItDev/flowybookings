@@ -28,6 +28,7 @@ function UpgradePage() {
   const qc = useQueryClient();
   const currentPlan = (activeShop?.plan ?? "trial") as DbPlan;
   const currentTier = tierOf(currentPlan);
+  const [cycle, setCycle] = useState<"monthly" | "yearly">("monthly");
 
   const checkout = usePlanCheckout();
 
