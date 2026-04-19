@@ -1216,6 +1216,25 @@ export const nl: Record<string, string> = {
   "shopPayments.providerEmptyTitle": "Nog geen betaalprovider gekoppeld",
   "shopPayments.export": "Exporteren",
 
+  // ── Mollie Connect inkomende boekingsbetalingen ──
+  "mollieConnect.payments.title": "Mollie Connect-betalingen",
+  "mollieConnect.payments.description": "Aanbetalingen die direct op je eigen Mollie-account binnenkomen.",
+  "mollieConnect.payments.empty": "Nog geen Mollie Connect-betalingen ontvangen.",
+  "mollieConnect.payments.customer": "Klant",
+  "mollieConnect.payments.amount": "Bedrag",
+  "mollieConnect.payments.fee": "Platformkosten",
+  "mollieConnect.payments.status": "Status",
+  "mollieConnect.payments.molliePaymentId": "Mollie ID",
+  "mollieConnect.payments.actions": "Acties",
+  "mollieConnect.payments.refund": "Terugbetalen",
+  "mollieConnect.payments.refunding": "Bezig…",
+  "mollieConnect.payments.refundConfirmTitle": "Volledig terugbetalen?",
+  "mollieConnect.payments.refundConfirmDesc": "Dit boekt {amount} terug naar de klant via Mollie. Deze actie kan niet ongedaan worden gemaakt.",
+  "mollieConnect.payments.refundConfirm": "Ja, terugbetalen",
+  "mollieConnect.payments.refundCancel": "Annuleren",
+  "mollieConnect.payments.refundSuccess": "Terugbetaling gestart",
+  "mollieConnect.payments.refundError": "Terugbetaling mislukt",
+
   // ── Admin: Booking Payment Providers ──
   "adminProvidersPage.title": "Klantbetaling-providers",
   "adminProvidersPage.description": "Mollie Connect-status, onboarding en platformkosten per shop. Abonnementen staan apart onder Platform billing.",
