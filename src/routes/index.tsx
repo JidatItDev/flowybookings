@@ -55,10 +55,65 @@ function Landing() {
   ];
 
   const pricing = [
-    { name: "Trial", price: 0, period: "14d", fee: "0%", featured: false, features: ["1 staff", "Up to 30 bookings", "Email reminders"] },
-    { name: "Starter", price: 19, period: "mo", fee: "1.5%", featured: false, features: ["3 staff", "Unlimited bookings", "SMS + Email", "Basic analytics"] },
-    { name: "Pro", price: 49, period: "mo", fee: "1.0%", featured: true, features: ["10 staff", "WhatsApp reminders", "Advanced analytics", "Custom branding"] },
-    { name: "Premium", price: 99, period: "mo", fee: "0.5%", featured: false, features: ["Unlimited staff", "Multi-location", "Priority support", "API access"] },
+    {
+      name: "Trial",
+      price: 0,
+      period: t("pricing.period.trial"),
+      fee: "0%",
+      featured: false,
+      ctaKey: "pricing.cta.trial",
+      features: [
+        t("pricing.feat.trial.staff"),
+        t("pricing.feat.trial.bookings"),
+        t("pricing.feat.trial.reminders"),
+        t("pricing.feat.trial.fee"),
+      ],
+    },
+    {
+      name: "Starter",
+      price: 19,
+      period: t("pricing.period.month"),
+      fee: "1,5%",
+      featured: false,
+      ctaKey: "pricing.cta.starter",
+      features: [
+        t("pricing.feat.starter.staff"),
+        t("pricing.feat.starter.bookings"),
+        t("pricing.feat.starter.reminders"),
+        t("pricing.feat.starter.fee"),
+      ],
+    },
+    {
+      name: "Pro",
+      price: 49,
+      period: t("pricing.period.month"),
+      fee: "1,0%",
+      featured: true,
+      ctaKey: "pricing.cta.pro",
+      features: [
+        t("pricing.feat.pro.staff"),
+        t("pricing.feat.pro.bookings"),
+        t("pricing.feat.pro.reminders"),
+        t("pricing.feat.pro.analytics"),
+        t("pricing.feat.pro.branding"),
+        t("pricing.feat.pro.fee"),
+      ],
+    },
+    {
+      name: "Premium",
+      price: 99,
+      period: t("pricing.period.month"),
+      fee: "0,5%",
+      featured: false,
+      ctaKey: "pricing.cta.premium",
+      features: [
+        t("pricing.feat.premium.staff"),
+        t("pricing.feat.premium.multilocation"),
+        t("pricing.feat.premium.support"),
+        t("pricing.feat.premium.api"),
+        t("pricing.feat.premium.fee"),
+      ],
+    },
   ];
 
   return (
@@ -224,11 +279,14 @@ function Landing() {
                   {p.features.map((f) => <li key={f} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-success-foreground" />{f}</li>)}
                 </ul>
                 <Button asChild variant={p.featured ? "hero" : "outline"} className="mt-6">
-                  <Link to="/shop">{t("pricing.start", { plan: p.name })}</Link>
+                  <Link to="/signup">{t(p.ctaKey)}</Link>
                 </Button>
               </div>
             ))}
           </div>
+          <p className="mx-auto mt-10 max-w-3xl text-center text-xs text-muted-foreground">
+            {t("pricing.footnote")}
+          </p>
         </div>
       </section>
 
@@ -238,8 +296,8 @@ function Landing() {
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("cta.title")}</h2>
             <p className="mx-auto mt-3 max-w-xl text-sm opacity-90 sm:text-base">{t("cta.sub")}</p>
             <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button asChild size="xl" className="bg-card text-foreground hover:bg-card/90"><Link to="/book">{t("cta.tryBooking")}</Link></Button>
-              <Button asChild size="xl" variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10"><Link to="/shop">{t("cta.exploreDashboard")}</Link></Button>
+              <Button asChild size="xl" className="bg-card text-foreground hover:bg-card/90"><Link to="/demo">{t("cta.tryBooking")}</Link></Button>
+              <Button asChild size="xl" variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10"><Link to="/login">{t("cta.exploreDashboard")}</Link></Button>
             </div>
           </div>
         </div>
