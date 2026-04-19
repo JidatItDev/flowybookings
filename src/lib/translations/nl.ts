@@ -1036,4 +1036,47 @@ export const nl: Record<string, string> = {
   "shopBilling.cycle.monthly": "Maandelijks",
   "shopBilling.cycle.yearly": "Jaarlijks",
 
+  // ── System separation labels ──
+  "system.subscription.label": "Abonnement",
+  "system.subscription.tagline": "Jouw FlowyBookings software-abonnement",
+  "system.booking.label": "Klantbetalingen",
+  "system.booking.tagline": "Betalingen die je klanten aan jou doen",
+
+  // ── Shop /payments (booking payments only) ──
+  "shopPayments.title": "Klantbetalingen",
+  "shopPayments.description": "Betalingen van je klanten aan je shop. Direct uitbetaald naar je eigen Mollie-account.",
+  "shopPayments.notSubscription": "Op zoek naar je software-abonnement? Open Abonnement →",
+  "shopPayments.openBilling": "Open abonnement",
+  "shopPayments.providerEmpty": "Koppel hieronder Mollie om klantbetalingen te accepteren.",
+  "shopPayments.providerEmptyTitle": "Nog geen betaalprovider gekoppeld",
+  "shopPayments.export": "Exporteren",
+
+  // ── Admin: Booking Payment Providers ──
+  "adminProvidersPage.title": "Klantbetaling-providers",
+  "adminProvidersPage.description": "Mollie Connect-status, onboarding en platformkosten per shop. Abonnementen staan apart onder Platform billing.",
+  "adminProvidersPage.connected": "Gekoppeld",
+  "adminProvidersPage.pending": "In behandeling",
+  "adminProvidersPage.notConnected": "Niet gekoppeld",
+  "adminProvidersPage.errors": "Fouten",
+  "adminProvidersPage.searchPlaceholder": "Zoek shop of e-mail van eigenaar…",
+  "adminProvidersPage.shopsTitle": "Shops & providers",
+  "adminProvidersPage.shopsDesc": "Eén regel per shop. Abonnementsstatus staat NIET hier — open Platform billing.",
+  "adminProvidersPage.empty": "Geen shops voldoen aan deze filter.",
+  "adminProvidersPage.onboarding": "Onboarding",
+  "adminProvidersPage.connectedAt": "gekoppeld",
+  "adminProvidersPage.scopeHint": "Alleen klantbetalingen. Voor abonnementen ga je naar Platform billing.",
+
+  // ── Admin nav additions ──
+  "adminNav.providers": "Providers",
+
+  // ── Admin payments: kind separation ──
+  "adminPayments.kind.all": "Alle betalingen",
+  "adminPayments.kind.subscription": "Alleen abonnement",
+  "adminPayments.kind.booking": "Alleen klantbetalingen",
+  "adminPayments.kindLabel": "Type",
+
+  // ── Inbox: notification kind label ──
+  "inbox.kind.subscription": "Abonnement",
+  "inbox.kind.provider": "Mollie",
+
 };

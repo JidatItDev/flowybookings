@@ -94,7 +94,8 @@ export const Route = createFileRoute("/api/billing/plan-confirm")({
               type: "billing",
               title: `Plan activated: ${String(plan).toUpperCase()}`,
               message: `Your subscription is active until ${new Date(expiry).toLocaleDateString()}.`,
-              action_url: "/shop/upgrade",
+              action_url: "/shop/billing",
+              metadata: { kind: "subscription", subkind: "activated", plan, cycle, source: "manual_confirm" },
             });
           } else if (outcome === "failed") {
             await supabaseAdmin.from("activity_log").insert({

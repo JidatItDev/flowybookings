@@ -168,7 +168,8 @@ async function handleSubscriptionLifecycle(opts: {
       type: "billing",
       title: `Plan activated: ${plan.toUpperCase()}`,
       message: `Your subscription is active until ${new Date(expiry).toLocaleDateString()}.`,
-      action_url: "/shop/upgrade",
+      action_url: "/shop/billing",
+      metadata: { kind: "subscription", subkind: "activated", plan, cycle },
     });
   } else if (opts.effectiveStatus === "failed") {
     await supabaseAdmin.from("activity_log").insert({
@@ -182,7 +183,8 @@ async function handleSubscriptionLifecycle(opts: {
       type: "billing",
       title: "Plan payment failed",
       message: `We couldn't complete your ${plan.toUpperCase()} upgrade. Please try again.`,
-      action_url: "/shop/upgrade",
+      action_url: "/shop/billing",
+      metadata: { kind: "subscription", subkind: "failed", plan, cycle },
     });
   }
 }

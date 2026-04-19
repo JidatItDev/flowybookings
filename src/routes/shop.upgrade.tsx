@@ -55,7 +55,8 @@ function UpgradePage() {
               type: "billing",
               title: `Plan changed to ${planKey}`,
               message: `Your shop is now on the ${planKey} plan.`,
-              action_url: "/shop/upgrade",
+              action_url: "/shop/billing",
+              metadata: { kind: "subscription", subkind: "downgrade", plan: planKey },
             }),
           );
         } catch {

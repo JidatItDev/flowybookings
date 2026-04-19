@@ -20,8 +20,10 @@ export const Route = createFileRoute("/beheer/dashboard/payments")({ head: () =>
 
 const STATUS_FILTERS = ["all", "paid", "unpaid", "deposit_paid", "refunded", "failed"] as const;
 const PLAN_FILTERS = ["all", "trial", "starter", "pro", "premium"] as const;
+const KIND_FILTERS = ["all", "subscription", "booking"] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
 type PlanFilter = (typeof PLAN_FILTERS)[number];
+type KindFilter = (typeof KIND_FILTERS)[number];
 
 function AdminPayments() {
   const { t } = useT();
@@ -33,6 +35,7 @@ function AdminPayments() {
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [planFilter, setPlanFilter] = useState<PlanFilter>("all");
+  const [kindFilter, setKindFilter] = useState<KindFilter>("all");
   const [search, setSearch] = useState("");
 
   const planByShop = useMemo(() => {
@@ -44,12 +47,16 @@ function AdminPayments() {
   const visiblePayments = useMemo(() => {
     const q = search.trim().toLowerCase();
     return (payments ?? []).filter((p) => {
+      // Kind: subscription = platform_mollie + no booking; booking = anything else.
+      const isSubscription = p.provider === "platform_mollie" && p.booking_id === null;
+      if (kindFilter === "subscription" && !isSubscription) return false;
+      if (kindFilter === "booking" && isSubscription) return false;
       if (statusFilter !== "all" && p.status !== statusFilter) return false;
       if (planFilter !== "all" && planByShop.get(p.shop_id) !== planFilter) return false;
       if (q && !(p.shop_name ?? "").toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [payments, statusFilter, planFilter, search, planByShop]);
+  }, [payments, statusFilter, planFilter, kindFilter, search, planByShop]);
 
   const refundedCount = visiblePayments.filter((p) => p.status === "refunded").length;
   const refundedAmount = visiblePayments.filter((p) => p.status === "refunded").reduce((s, p) => s + p.amount_cents, 0);
@@ -220,6 +227,18 @@ function AdminPayments() {
                   </button>
                 ))}
               </div>
+              <select
+                value={kindFilter}
+                onChange={(e) => setKindFilter(e.target.value as KindFilter)}
+                className="h-8 rounded-full border border-primary/40 bg-primary-soft px-3 text-[11px] font-semibold text-primary"
+                aria-label={t("adminPayments.kindLabel")}
+              >
+                {KIND_FILTERS.map((k) => (
+                  <option key={k} value={k}>
+                    {t(`adminPayments.kind.${k}`)}
+                  </option>
+                ))}
+              </select>
               <select
                 value={planFilter}
                 onChange={(e) => setPlanFilter(e.target.value as PlanFilter)}

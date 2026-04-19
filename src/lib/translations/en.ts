@@ -1036,4 +1036,47 @@ export const en: Record<string, string> = {
   "shopBilling.cycle.monthly": "Monthly",
   "shopBilling.cycle.yearly": "Yearly",
 
+  // ── System separation labels (subscription vs booking payments) ──
+  "system.subscription.label": "Subscription billing",
+  "system.subscription.tagline": "Your FlowyBookings software plan",
+  "system.booking.label": "Booking payments",
+  "system.booking.tagline": "Payments your customers make to you",
+
+  // ── Shop /payments page (booking payments only) ──
+  "shopPayments.title": "Booking payments",
+  "shopPayments.description": "Payments your customers make to your shop. Settled directly into your own Mollie account.",
+  "shopPayments.notSubscription": "Looking for your software plan? Open Subscription billing →",
+  "shopPayments.openBilling": "Open subscription billing",
+  "shopPayments.providerEmpty": "Connect Mollie below to start accepting customer payments.",
+  "shopPayments.providerEmptyTitle": "No payment provider connected yet",
+  "shopPayments.export": "Export",
+
+  // ── Admin: Booking Payment Providers (separate page) ──
+  "adminProvidersPage.title": "Booking payment providers",
+  "adminProvidersPage.description": "Mollie Connect status, onboarding state, and platform fee config for every shop. Subscription billing lives separately under Platform billing.",
+  "adminProvidersPage.connected": "Connected",
+  "adminProvidersPage.pending": "Pending",
+  "adminProvidersPage.notConnected": "Not connected",
+  "adminProvidersPage.errors": "Errors",
+  "adminProvidersPage.searchPlaceholder": "Search shop or owner email…",
+  "adminProvidersPage.shopsTitle": "Shops & providers",
+  "adminProvidersPage.shopsDesc": "One row per shop. Subscription state is NOT shown here — open Platform billing for that.",
+  "adminProvidersPage.empty": "No shops match this filter.",
+  "adminProvidersPage.onboarding": "Onboarding",
+  "adminProvidersPage.connectedAt": "connected",
+  "adminProvidersPage.scopeHint": "Booking payments only. For subscription plans go to Platform billing.",
+
+  // ── Admin nav additions ──
+  "adminNav.providers": "Booking providers",
+
+  // ── Admin payments: kind separation ──
+  "adminPayments.kind.all": "All payments",
+  "adminPayments.kind.subscription": "Subscription only",
+  "adminPayments.kind.booking": "Booking only",
+  "adminPayments.kindLabel": "Type",
+
+  // ── Inbox: notification kind label (uses metadata.kind) ──
+  "inbox.kind.subscription": "Plan",
+  "inbox.kind.provider": "Mollie",
+
 };

@@ -17,6 +17,7 @@ import {
   LogOut,
   Beaker,
   Receipt,
+  Plug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ const nav: NavItem[] = [
   { to: "/beheer/dashboard/users", labelKey: "adminNav.users", icon: Users },
   { to: "/beheer/dashboard/bookings", labelKey: "adminNav.bookings", icon: CalendarRange },
   { to: "/beheer/dashboard/payments", labelKey: "adminNav.payments", icon: CreditCard },
+  { to: "/beheer/dashboard/providers", labelKey: "adminNav.providers", icon: Plug },
   { to: "/beheer/dashboard/plans", labelKey: "adminNav.plans", icon: Layers },
   { to: "/beheer/dashboard/billing", labelKey: "adminNav.billing", icon: Receipt },
   { to: "/beheer/dashboard/messages", labelKey: "adminNav.messages", icon: Bell },
