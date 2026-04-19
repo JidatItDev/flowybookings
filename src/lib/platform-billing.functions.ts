@@ -206,6 +206,18 @@ export type PlatformBillingHealthResult = {
  * Safe live ping against Mollie's /v2/methods endpoint with the platform key.
  * Does NOT create payments. Logs result to activity_log so we can show "last test status".
  */
+async function persistHealth(status: "ok" | "failed", message: string, mode: string | null) {
+  await supabaseAdmin
+    .from("platform_billing_config")
+    .update({
+      last_health_status: status,
+      last_health_message: message,
+      last_health_mode: mode,
+      last_health_at: new Date().toISOString(),
+    })
+    .eq("id", 1);
+}
+
 export const runPlatformBillingHealthCheck = createServerFn({ method: "POST" })
   .inputValidator((input: { accessToken: string }) => input)
   .handler(async ({ data }): Promise<PlatformBillingHealthResult> => {
@@ -221,6 +233,7 @@ export const runPlatformBillingHealthCheck = createServerFn({ method: "POST" })
         actor_email: user.email ?? null,
         metadata: { error: "MOLLIE_API_KEY is not configured" },
       });
+      await persistHealth("failed", "MOLLIE_API_KEY is not configured", null);
       return {
         ok: false,
         message: "MOLLIE_API_KEY is not configured",
