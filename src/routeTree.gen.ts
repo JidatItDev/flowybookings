@@ -44,6 +44,7 @@ import { Route as BeheerDashboardDemoRouteImport } from './routes/beheer.dashboa
 import { Route as BeheerDashboardBookingsRouteImport } from './routes/beheer.dashboard.bookings'
 import { Route as BeheerAdLoginRouteImport } from './routes/beheer.ad.login'
 import { Route as ApiMollieWebhookRouteImport } from './routes/api.mollie.webhook'
+import { Route as ApiBillingPlanConfirmRouteImport } from './routes/api.billing.plan-confirm'
 import { Route as ApiBillingPlanCheckoutRouteImport } from './routes/api.billing.plan-checkout'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -228,6 +229,11 @@ const ApiMollieWebhookRoute = ApiMollieWebhookRouteImport.update({
   path: '/api/mollie/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBillingPlanConfirmRoute = ApiBillingPlanConfirmRouteImport.update({
+  id: '/api/billing/plan-confirm',
+  path: '/api/billing/plan-confirm',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiBillingPlanCheckoutRoute = ApiBillingPlanCheckoutRouteImport.update({
   id: '/api/billing/plan-checkout',
   path: '/api/billing/plan-checkout',
@@ -283,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop/': typeof ShopIndexRoute
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
+  '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
@@ -326,6 +333,7 @@ export interface FileRoutesByTo {
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop': typeof ShopIndexRoute
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
+  '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
@@ -370,6 +378,7 @@ export interface FileRoutesById {
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop/': typeof ShopIndexRoute
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
+  '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
@@ -415,6 +424,7 @@ export interface FileRouteTypes {
     | '/shop/upgrade'
     | '/shop/'
     | '/api/billing/plan-checkout'
+    | '/api/billing/plan-confirm'
     | '/api/mollie/webhook'
     | '/beheer/ad/login'
     | '/beheer/dashboard/bookings'
@@ -458,6 +468,7 @@ export interface FileRouteTypes {
     | '/shop/upgrade'
     | '/shop'
     | '/api/billing/plan-checkout'
+    | '/api/billing/plan-confirm'
     | '/api/mollie/webhook'
     | '/beheer/ad/login'
     | '/beheer/dashboard/bookings'
@@ -501,6 +512,7 @@ export interface FileRouteTypes {
     | '/shop/upgrade'
     | '/shop/'
     | '/api/billing/plan-checkout'
+    | '/api/billing/plan-confirm'
     | '/api/mollie/webhook'
     | '/beheer/ad/login'
     | '/beheer/dashboard/bookings'
@@ -545,6 +557,7 @@ export interface RootRouteChildren {
   ShopUpgradeRoute: typeof ShopUpgradeRoute
   ShopIndexRoute: typeof ShopIndexRoute
   ApiBillingPlanCheckoutRoute: typeof ApiBillingPlanCheckoutRoute
+  ApiBillingPlanConfirmRoute: typeof ApiBillingPlanConfirmRoute
   ApiMollieWebhookRoute: typeof ApiMollieWebhookRoute
   BeheerAdLoginRoute: typeof BeheerAdLoginRoute
   BeheerDashboardBookingsRoute: typeof BeheerDashboardBookingsRoute
@@ -813,6 +826,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMollieWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/billing/plan-confirm': {
+      id: '/api/billing/plan-confirm'
+      path: '/api/billing/plan-confirm'
+      fullPath: '/api/billing/plan-confirm'
+      preLoaderRoute: typeof ApiBillingPlanConfirmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/billing/plan-checkout': {
       id: '/api/billing/plan-checkout'
       path: '/api/billing/plan-checkout'
@@ -901,6 +921,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShopUpgradeRoute: ShopUpgradeRoute,
   ShopIndexRoute: ShopIndexRoute,
   ApiBillingPlanCheckoutRoute: ApiBillingPlanCheckoutRoute,
+  ApiBillingPlanConfirmRoute: ApiBillingPlanConfirmRoute,
   ApiMollieWebhookRoute: ApiMollieWebhookRoute,
   BeheerAdLoginRoute: BeheerAdLoginRoute,
   BeheerDashboardBookingsRoute: BeheerDashboardBookingsRoute,
