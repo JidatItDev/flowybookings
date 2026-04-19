@@ -18,11 +18,53 @@ export const Route = createFileRoute("/beheer/dashboard/payments")({ head: () =>
 
 function AdminPayments() {
   const { t } = useT();
+  const qc = useQueryClient();
   const { data: stats, isLoading: statsLoading } = useQuery(adminStatsQuery());
   const { data: payments, isLoading } = useQuery(adminPaymentsQuery());
   const { data: providers, isLoading: providersLoading } = useQuery(adminPaymentProvidersQuery());
   const refundedCount = (payments ?? []).filter((p) => p.status === "refunded").length;
   const refundedAmount = (payments ?? []).filter((p) => p.status === "refunded").reduce((s, p) => s + p.amount_cents, 0);
+
+  // Per-shop revenue + fee rollup
+  const perShop = new Map<string, { name: string; revenue: number; fees: number; count: number }>();
+  (payments ?? []).forEach((p) => {
+    const key = p.shop_id;
+    const cur = perShop.get(key) ?? { name: p.shop_name ?? "—", revenue: 0, fees: 0, count: 0 };
+    cur.revenue += p.amount_cents;
+    cur.fees += p.application_fee_cents;
+    cur.count += 1;
+    perShop.set(key, cur);
+  });
+  const perShopRows = [...perShop.entries()]
+    .map(([id, v]) => ({ id, ...v }))
+    .sort((a, b) => b.fees - a.fees)
+    .slice(0, 10);
+
+  const setStatus = useMutation({
+    mutationFn: async ({ id, shop_id, status }: { id?: string; shop_id: string; status: ConnectionStatus }) => {
+      const patch: Record<string, unknown> = {
+        connection_status: status,
+        onboarding_status: status === "connected" ? "completed" : status === "pending" ? "in_review" : "not_started",
+        connected_at: status === "connected" ? new Date().toISOString() : null,
+        disconnected_at: status === "disconnected" ? new Date().toISOString() : null,
+      };
+      if (id) {
+        const { error } = await (supabase as any).from("shop_payment_providers").update(patch).eq("id", id);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("shop_payment_providers").upsert(
+          { shop_id, provider: "mollie", application_fee_enabled: true, application_fee_percent: 2.0, ...patch },
+          { onConflict: "shop_id,provider" },
+        );
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(t("adminProviders.updated"));
+      qc.invalidateQueries({ queryKey: paymentProviderKeys.adminAll() });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   return (
     <AdminLayout>
