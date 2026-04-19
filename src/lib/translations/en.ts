@@ -1085,4 +1085,66 @@ export const en: Record<string, string> = {
   "inbox.kind.subscription": "Plan",
   "inbox.kind.provider": "Mollie",
 
+  // ── Support page ──
+  "support.title": "Support",
+  "support.subtitle": "Help, information, and policies",
+  "support.contact": "Contact us",
+  "support.legal": "Legal",
+  "support.legal.privacy": "Privacy Policy",
+  "support.legal.terms": "Terms & Conditions",
+  "support.legal.refunds": "Refund Policy",
+  "support.company": "FlowyBookings · KvK: 69444552",
+
+  // ── Support FAQ ──
+  "support.faq.payments.q": "How do I receive payments?",
+  "support.faq.payments.a": "Payments are processed through Mollie and paid directly to your connected account.",
+  "support.faq.connect.q": "How do I connect Mollie?",
+  "support.faq.connect.a": "Go to your dashboard → Payments → Connect Mollie and follow the steps.",
+  "support.faq.payouts.q": "When do I get paid?",
+  "support.faq.payouts.a": "Payouts are handled by Mollie and depend on your account settings.",
+  "support.faq.cancel.q": "Can customers cancel bookings?",
+  "support.faq.cancel.a": "Yes, depending on your cancellation policy set by the shop.",
+  "support.faq.refunds.q": "How do refunds work?",
+  "support.faq.refunds.a": "Refunds are handled by the shop. FlowyBookings does not process refunds directly.",
+
+  // ── Legal: shared ──
+  "legal.contact": "Contact",
+  "legal.company": "Company",
+  "legal.companyLine": "FlowyBookings",
+  "legal.kvk": "KvK: 69444552",
+  "legal.back": "Back",
+
+  // ── Legal: Privacy ──
+  "legal.privacy.title": "Privacy Policy",
+  "legal.privacy.metaDesc": "How FlowyBookings collects, uses, and protects your data.",
+  "legal.privacy.intro": "FlowyBookings respects your privacy. We collect only the data necessary to provide our booking and payment services.",
+  "legal.privacy.collectHeading": "Data we collect",
+  "legal.privacy.collect1": "Account information (name, email)",
+  "legal.privacy.collect2": "Booking data",
+  "legal.privacy.collect3": "Payment-related data via Mollie (we do NOT store payment details)",
+  "legal.privacy.useHeading": "We use this data to",
+  "legal.privacy.use1": "Provide and improve our platform",
+  "legal.privacy.use2": "Process bookings and payments",
+  "legal.privacy.use3": "Communicate with users",
+  "legal.privacy.shareHeading": "Sharing",
+  "legal.privacy.share": "We do not sell or share your data with third parties, except where necessary for payment processing (Mollie).",
+
+  // ── Legal: Terms ──
+  "legal.terms.title": "Terms & Conditions",
+  "legal.terms.metaDesc": "Terms and conditions for using FlowyBookings.",
+  "legal.terms.intro": "By using FlowyBookings, you agree to the following:",
+  "legal.terms.point1": "You are responsible for the information you provide",
+  "legal.terms.point2": "Shops are responsible for their services and bookings",
+  "legal.terms.point3": "FlowyBookings is not liable for disputes between customers and shops",
+  "legal.terms.point4": "Payments are processed via Mollie",
+  "legal.terms.suspend": "We reserve the right to suspend accounts in case of misuse.",
+
+  // ── Legal: Refunds ──
+  "legal.refunds.title": "Refund Policy",
+  "legal.refunds.metaDesc": "How refunds are handled on FlowyBookings.",
+  "legal.refunds.line1": "Refunds are handled by the individual shop unless stated otherwise.",
+  "legal.refunds.line2": "FlowyBookings does not process refunds directly, as payments are handled via Mollie and the shop.",
+  "legal.refunds.subHeading": "For subscription plans",
+  "legal.refunds.sub1": "Payments are non-refundable unless required by law",
+
 };
