@@ -11,6 +11,7 @@ import {
   MOLLIE_CONNECT_API_BASE,
   getActiveMollieAccessToken,
 } from "@/lib/mollie-connect";
+import { enqueueBookingEmail } from "@/lib/email/enqueue-booking-email";
 
 type MolliePayment = {
   id: string;
@@ -106,6 +107,9 @@ export const Route = createFileRoute("/api/mollie-connect/webhook")({
                 .update({ status: "cancelled", updated_at: new Date().toISOString() })
                 .eq("id", payment.booking_id)
                 .eq("status", "pending");
+
+              // Notify the customer that their deposit failed and they can retry.
+              await sendPaymentFailedEmail(payment.booking_id, payment.id);
             }
           }
 
