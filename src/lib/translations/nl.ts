@@ -1010,6 +1010,11 @@ export const nl: Record<string, string> = {
   "adminBilling.runSweep": "Verlopen-check nu uitvoeren",
   "adminBilling.runningSweep": "Bezig met controle…",
   "adminBilling.sweepDone": "Controle klaar: {downgraded} van {checked} shop(s) gedowngraded",
+  "adminBilling.sweepConfirmTitle": "Verlopen-check uitvoeren?",
+  "adminBilling.sweepConfirmBody": "{count} shop(s) hebben momenteel een verlopen betaald abonnement. De controle zet ze terug naar Starter, logt de wijziging en stuurt elke eigenaar een melding.",
+  "adminBilling.sweepConfirmNone": "Er zijn op dit moment geen shops met een verlopen abonnement. De controle uitvoeren is veilig — er wordt simpelweg bevestigd dat er niets te downgraden valt.",
+  "adminBilling.sweepConfirmRun": "Controle uitvoeren",
+  "adminBilling.sweepConfirmCancel": "Annuleren",
   "adminPayments.searchShop": "Zoek shop…",
   "adminPayments.allPlans": "Alle plannen",
 

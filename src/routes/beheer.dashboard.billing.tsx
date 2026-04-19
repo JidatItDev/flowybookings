@@ -247,7 +247,7 @@ function AdminBillingPage() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+              <AlertDialogCancel>{t("adminBilling.sweepConfirmCancel")}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => sweep.mutate()}
                 disabled={sweep.isPending}

@@ -1010,6 +1010,11 @@ export const en: Record<string, string> = {
   "adminBilling.runSweep": "Run expire sweep now",
   "adminBilling.runningSweep": "Running sweep…",
   "adminBilling.sweepDone": "Sweep complete: {downgraded} of {checked} shop(s) downgraded",
+  "adminBilling.sweepConfirmTitle": "Run expire sweep?",
+  "adminBilling.sweepConfirmBody": "{count} shop(s) currently have an expired paid plan. Running the sweep will downgrade them to Starter, log the change, and notify each owner.",
+  "adminBilling.sweepConfirmNone": "No shops are currently past their expiry date. Running the sweep is safe — it will simply confirm there is nothing to downgrade.",
+  "adminBilling.sweepConfirmRun": "Run sweep",
+  "adminBilling.sweepConfirmCancel": "Cancel",
   "adminPayments.searchShop": "Search shop…",
   "adminPayments.allPlans": "All plans",
 
