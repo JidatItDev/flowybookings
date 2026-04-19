@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarCheck, Clock, CircleDollarSign, AlertCircle, Plus } from "lucide-react";
+import { CalendarCheck, Clock, CircleDollarSign, AlertCircle, Plus, Users, TrendingDown } from "lucide-react";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -39,6 +39,15 @@ function ShopDashboard() {
   const pendingCount = bookings.filter((b) => b.status === "pending").length;
   const noShows7d = bookings.filter((b) => { if (b.status !== "no_show") return false; const diff = Date.now() - new Date(b.starts_at).getTime(); return diff <= 7 * 86400000 && diff >= 0; }).length;
 
+  // No-show rate over last 30 days
+  const last30 = bookings.filter((b) => { const diff = Date.now() - new Date(b.starts_at).getTime(); return diff <= 30 * 86400000 && diff >= 0; });
+  const noShows30 = last30.filter((b) => b.status === "no_show").length;
+  const noShowRate30 = last30.length > 0 ? Math.round((noShows30 / last30.length) * 100) : 0;
+
+  // Revenue this month
+  const monthStart = new Date(); monthStart.setUTCDate(1); monthStart.setUTCHours(0, 0, 0, 0);
+  const monthRevenue = bookings.filter((b) => new Date(b.starts_at) >= monthStart && b.status !== "cancelled" && b.status !== "no_show").reduce((s, b) => s + b.price_cents, 0);
+
   // Real weekly revenue (last 7 days)
   const weekly = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() - (6 - i));
@@ -70,6 +79,11 @@ function ShopDashboard() {
           <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
             <StatCard label={t("dashboard.todayBookings")} value={String(todayBookings.length)} icon={CalendarCheck} accent="primary" />
             <StatCard label={t("dashboard.todayRevenue")} value={formatCents(todayRevenue)} icon={CircleDollarSign} accent="mint" />
+            <StatCard label={t("dashboard.totalCustomers")} value={String(customers.length)} icon={Users} accent="peach" />
+            <StatCard label={t("dashboard.noShowRate30d")} value={`${noShowRate30}%`} delta={`${noShows30} no-shows`} trend={noShowRate30 > 10 ? "down" : "neutral"} icon={TrendingDown} accent="pink" />
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+            <StatCard label={t("dashboard.monthRevenue")} value={formatCents(monthRevenue)} icon={CircleDollarSign} accent="mint" />
             <StatCard label={t("dashboard.pending")} value={String(pendingCount)} delta={t("dashboard.needsReview")} trend="neutral" icon={Clock} accent="peach" />
             <StatCard label={t("dashboard.noShows7d")} value={String(noShows7d)} icon={AlertCircle} accent="pink" />
           </div>
