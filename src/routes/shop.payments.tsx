@@ -111,6 +111,9 @@ function PaymentsPage() {
             <MollieConnectCard shopId={shopId} />
           </div>
 
+          {/* Incoming Mollie Connect payments with refund action */}
+          <MollieConnectPayments shopId={shopId} />
+
           {/* Status filter pills */}
           <div className="mt-6 flex flex-wrap items-center gap-2">
             {([
