@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CircleDollarSign, ArrowDownToLine, RotateCcw, Wallet, CreditCard, Receipt } from "lucide-react";
+import { CircleDollarSign, ArrowDownToLine, RotateCcw, Wallet, CreditCard, Receipt, Landmark, Banknote } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -27,6 +29,7 @@ function PaymentsPage() {
   const shopId = useActiveShopId();
   const qc = useQueryClient();
   const { t } = useT();
+  const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "pending" | "failed">("all");
   const { data: allPayments = [], isLoading } = useQuery({ ...paymentsQuery(shopId ?? ""), enabled: !!shopId });
   const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
   const { data: customers = [] } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
