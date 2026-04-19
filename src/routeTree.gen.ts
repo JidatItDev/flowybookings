@@ -42,8 +42,11 @@ import { Route as BeheerDashboardMessagesRouteImport } from './routes/beheer.das
 import { Route as BeheerDashboardLogsRouteImport } from './routes/beheer.dashboard.logs'
 import { Route as BeheerDashboardDemoRouteImport } from './routes/beheer.dashboard.demo'
 import { Route as BeheerDashboardBookingsRouteImport } from './routes/beheer.dashboard.bookings'
+import { Route as BeheerDashboardBillingRouteImport } from './routes/beheer.dashboard.billing'
 import { Route as BeheerAdLoginRouteImport } from './routes/beheer.ad.login'
 import { Route as ApiMollieWebhookRouteImport } from './routes/api.mollie.webhook'
+import { Route as ApiBillingPlanConfirmRouteImport } from './routes/api.billing.plan-confirm'
+import { Route as ApiBillingPlanCheckoutRouteImport } from './routes/api.billing.plan-checkout'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -217,6 +220,11 @@ const BeheerDashboardBookingsRoute = BeheerDashboardBookingsRouteImport.update({
   path: '/beheer/dashboard/bookings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BeheerDashboardBillingRoute = BeheerDashboardBillingRouteImport.update({
+  id: '/beheer/dashboard/billing',
+  path: '/beheer/dashboard/billing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BeheerAdLoginRoute = BeheerAdLoginRouteImport.update({
   id: '/beheer/ad/login',
   path: '/beheer/ad/login',
@@ -225,6 +233,16 @@ const BeheerAdLoginRoute = BeheerAdLoginRouteImport.update({
 const ApiMollieWebhookRoute = ApiMollieWebhookRouteImport.update({
   id: '/api/mollie/webhook',
   path: '/api/mollie/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBillingPlanConfirmRoute = ApiBillingPlanConfirmRouteImport.update({
+  id: '/api/billing/plan-confirm',
+  path: '/api/billing/plan-confirm',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBillingPlanCheckoutRoute = ApiBillingPlanCheckoutRouteImport.update({
+  id: '/api/billing/plan-checkout',
+  path: '/api/billing/plan-checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LovableEmailTransactionalSendRoute =
@@ -276,8 +294,11 @@ export interface FileRoutesByFullPath {
   '/shop/staff': typeof ShopStaffRoute
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop/': typeof ShopIndexRoute
+  '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
+  '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
+  '/beheer/dashboard/billing': typeof BeheerDashboardBillingRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
   '/beheer/dashboard/demo': typeof BeheerDashboardDemoRoute
   '/beheer/dashboard/logs': typeof BeheerDashboardLogsRoute
@@ -318,8 +339,11 @@ export interface FileRoutesByTo {
   '/shop/staff': typeof ShopStaffRoute
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop': typeof ShopIndexRoute
+  '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
+  '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
+  '/beheer/dashboard/billing': typeof BeheerDashboardBillingRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
   '/beheer/dashboard/demo': typeof BeheerDashboardDemoRoute
   '/beheer/dashboard/logs': typeof BeheerDashboardLogsRoute
@@ -361,8 +385,11 @@ export interface FileRoutesById {
   '/shop/staff': typeof ShopStaffRoute
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop/': typeof ShopIndexRoute
+  '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
+  '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
+  '/beheer/dashboard/billing': typeof BeheerDashboardBillingRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
   '/beheer/dashboard/demo': typeof BeheerDashboardDemoRoute
   '/beheer/dashboard/logs': typeof BeheerDashboardLogsRoute
@@ -405,8 +432,11 @@ export interface FileRouteTypes {
     | '/shop/staff'
     | '/shop/upgrade'
     | '/shop/'
+    | '/api/billing/plan-checkout'
+    | '/api/billing/plan-confirm'
     | '/api/mollie/webhook'
     | '/beheer/ad/login'
+    | '/beheer/dashboard/billing'
     | '/beheer/dashboard/bookings'
     | '/beheer/dashboard/demo'
     | '/beheer/dashboard/logs'
@@ -447,8 +477,11 @@ export interface FileRouteTypes {
     | '/shop/staff'
     | '/shop/upgrade'
     | '/shop'
+    | '/api/billing/plan-checkout'
+    | '/api/billing/plan-confirm'
     | '/api/mollie/webhook'
     | '/beheer/ad/login'
+    | '/beheer/dashboard/billing'
     | '/beheer/dashboard/bookings'
     | '/beheer/dashboard/demo'
     | '/beheer/dashboard/logs'
@@ -489,8 +522,11 @@ export interface FileRouteTypes {
     | '/shop/staff'
     | '/shop/upgrade'
     | '/shop/'
+    | '/api/billing/plan-checkout'
+    | '/api/billing/plan-confirm'
     | '/api/mollie/webhook'
     | '/beheer/ad/login'
+    | '/beheer/dashboard/billing'
     | '/beheer/dashboard/bookings'
     | '/beheer/dashboard/demo'
     | '/beheer/dashboard/logs'
@@ -532,8 +568,11 @@ export interface RootRouteChildren {
   ShopStaffRoute: typeof ShopStaffRoute
   ShopUpgradeRoute: typeof ShopUpgradeRoute
   ShopIndexRoute: typeof ShopIndexRoute
+  ApiBillingPlanCheckoutRoute: typeof ApiBillingPlanCheckoutRoute
+  ApiBillingPlanConfirmRoute: typeof ApiBillingPlanConfirmRoute
   ApiMollieWebhookRoute: typeof ApiMollieWebhookRoute
   BeheerAdLoginRoute: typeof BeheerAdLoginRoute
+  BeheerDashboardBillingRoute: typeof BeheerDashboardBillingRoute
   BeheerDashboardBookingsRoute: typeof BeheerDashboardBookingsRoute
   BeheerDashboardDemoRoute: typeof BeheerDashboardDemoRoute
   BeheerDashboardLogsRoute: typeof BeheerDashboardLogsRoute
@@ -786,6 +825,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerDashboardBookingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/beheer/dashboard/billing': {
+      id: '/beheer/dashboard/billing'
+      path: '/beheer/dashboard/billing'
+      fullPath: '/beheer/dashboard/billing'
+      preLoaderRoute: typeof BeheerDashboardBillingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/beheer/ad/login': {
       id: '/beheer/ad/login'
       path: '/beheer/ad/login'
@@ -798,6 +844,20 @@ declare module '@tanstack/react-router' {
       path: '/api/mollie/webhook'
       fullPath: '/api/mollie/webhook'
       preLoaderRoute: typeof ApiMollieWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/billing/plan-confirm': {
+      id: '/api/billing/plan-confirm'
+      path: '/api/billing/plan-confirm'
+      fullPath: '/api/billing/plan-confirm'
+      preLoaderRoute: typeof ApiBillingPlanConfirmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/billing/plan-checkout': {
+      id: '/api/billing/plan-checkout'
+      path: '/api/billing/plan-checkout'
+      fullPath: '/api/billing/plan-checkout'
+      preLoaderRoute: typeof ApiBillingPlanCheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lovable/email/transactional/send': {
@@ -880,8 +940,11 @@ const rootRouteChildren: RootRouteChildren = {
   ShopStaffRoute: ShopStaffRoute,
   ShopUpgradeRoute: ShopUpgradeRoute,
   ShopIndexRoute: ShopIndexRoute,
+  ApiBillingPlanCheckoutRoute: ApiBillingPlanCheckoutRoute,
+  ApiBillingPlanConfirmRoute: ApiBillingPlanConfirmRoute,
   ApiMollieWebhookRoute: ApiMollieWebhookRoute,
   BeheerAdLoginRoute: BeheerAdLoginRoute,
+  BeheerDashboardBillingRoute: BeheerDashboardBillingRoute,
   BeheerDashboardBookingsRoute: BeheerDashboardBookingsRoute,
   BeheerDashboardDemoRoute: BeheerDashboardDemoRoute,
   BeheerDashboardLogsRoute: BeheerDashboardLogsRoute,
