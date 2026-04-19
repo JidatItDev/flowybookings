@@ -447,6 +447,14 @@ export const en: Record<string, string> = {
   "mollie.onboarding.in_review": "In review",
   "mollie.onboarding.completed": "Completed",
   "mollie.onboarding.rejected": "Rejected",
+  "mollie.nudge.title": "Get paid faster — connect Mollie",
+  "mollie.nudge.body": "Accept iDEAL, cards, and Bancontact at checkout. Funds settle directly into your own Mollie account, with deposits to reduce no-shows.",
+  "mollie.nudge.benefit1": "Direct payouts to you",
+  "mollie.nudge.benefit2": "Fewer no-shows with deposits",
+  "mollie.nudge.benefit3": "Low platform fee",
+  "mollie.nudge.cta": "Connect Mollie",
+  "mollie.nudge.notifTitle": "Connect Mollie to accept payments",
+  "mollie.nudge.notifMessage": "Your shop hasn't connected a payment provider yet. Connect Mollie to take deposits and reduce no-shows.",
 
   // ── Admin: Providers ──
   "adminProviders.title": "Payment providers",
