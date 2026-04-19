@@ -53,9 +53,11 @@ import { Route as BeheerDashboardBookingsRouteImport } from './routes/beheer.das
 import { Route as BeheerDashboardBillingRouteImport } from './routes/beheer.dashboard.billing'
 import { Route as BeheerAdLoginRouteImport } from './routes/beheer.ad.login'
 import { Route as ApiMollieWebhookRouteImport } from './routes/api.mollie.webhook'
+import { Route as ApiMollieConnectWebhookRouteImport } from './routes/api.mollie-connect.webhook'
 import { Route as ApiMollieConnectDisconnectRouteImport } from './routes/api.mollie-connect.disconnect'
 import { Route as ApiMollieConnectCallbackRouteImport } from './routes/api.mollie-connect.callback'
 import { Route as ApiMollieConnectAuthorizeRouteImport } from './routes/api.mollie-connect.authorize'
+import { Route as ApiBookingsCheckoutRouteImport } from './routes/api.bookings.checkout'
 import { Route as ApiBillingPlanConfirmRouteImport } from './routes/api.billing.plan-confirm'
 import { Route as ApiBillingPlanCheckoutRouteImport } from './routes/api.billing.plan-checkout'
 import { Route as ApiBillingExpireSweepRouteImport } from './routes/api.billing.expire-sweep'
@@ -288,6 +290,11 @@ const ApiMollieWebhookRoute = ApiMollieWebhookRouteImport.update({
   path: '/api/mollie/webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMollieConnectWebhookRoute = ApiMollieConnectWebhookRouteImport.update({
+  id: '/api/mollie-connect/webhook',
+  path: '/api/mollie-connect/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMollieConnectDisconnectRoute =
   ApiMollieConnectDisconnectRouteImport.update({
     id: '/api/mollie-connect/disconnect',
@@ -306,6 +313,11 @@ const ApiMollieConnectAuthorizeRoute =
     path: '/api/mollie-connect/authorize',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiBookingsCheckoutRoute = ApiBookingsCheckoutRouteImport.update({
+  id: '/api/bookings/checkout',
+  path: '/api/bookings/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiBillingPlanConfirmRoute = ApiBillingPlanConfirmRouteImport.update({
   id: '/api/billing/plan-confirm',
   path: '/api/billing/plan-confirm',
@@ -380,9 +392,11 @@ export interface FileRoutesByFullPath {
   '/api/billing/expire-sweep': typeof ApiBillingExpireSweepRoute
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
+  '/api/bookings/checkout': typeof ApiBookingsCheckoutRoute
   '/api/mollie-connect/authorize': typeof ApiMollieConnectAuthorizeRoute
   '/api/mollie-connect/callback': typeof ApiMollieConnectCallbackRoute
   '/api/mollie-connect/disconnect': typeof ApiMollieConnectDisconnectRoute
+  '/api/mollie-connect/webhook': typeof ApiMollieConnectWebhookRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/billing': typeof BeheerDashboardBillingRoute
@@ -437,9 +451,11 @@ export interface FileRoutesByTo {
   '/api/billing/expire-sweep': typeof ApiBillingExpireSweepRoute
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
+  '/api/bookings/checkout': typeof ApiBookingsCheckoutRoute
   '/api/mollie-connect/authorize': typeof ApiMollieConnectAuthorizeRoute
   '/api/mollie-connect/callback': typeof ApiMollieConnectCallbackRoute
   '/api/mollie-connect/disconnect': typeof ApiMollieConnectDisconnectRoute
+  '/api/mollie-connect/webhook': typeof ApiMollieConnectWebhookRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/billing': typeof BeheerDashboardBillingRoute
@@ -495,9 +511,11 @@ export interface FileRoutesById {
   '/api/billing/expire-sweep': typeof ApiBillingExpireSweepRoute
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
+  '/api/bookings/checkout': typeof ApiBookingsCheckoutRoute
   '/api/mollie-connect/authorize': typeof ApiMollieConnectAuthorizeRoute
   '/api/mollie-connect/callback': typeof ApiMollieConnectCallbackRoute
   '/api/mollie-connect/disconnect': typeof ApiMollieConnectDisconnectRoute
+  '/api/mollie-connect/webhook': typeof ApiMollieConnectWebhookRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/billing': typeof BeheerDashboardBillingRoute
@@ -554,9 +572,11 @@ export interface FileRouteTypes {
     | '/api/billing/expire-sweep'
     | '/api/billing/plan-checkout'
     | '/api/billing/plan-confirm'
+    | '/api/bookings/checkout'
     | '/api/mollie-connect/authorize'
     | '/api/mollie-connect/callback'
     | '/api/mollie-connect/disconnect'
+    | '/api/mollie-connect/webhook'
     | '/api/mollie/webhook'
     | '/beheer/ad/login'
     | '/beheer/dashboard/billing'
@@ -611,9 +631,11 @@ export interface FileRouteTypes {
     | '/api/billing/expire-sweep'
     | '/api/billing/plan-checkout'
     | '/api/billing/plan-confirm'
+    | '/api/bookings/checkout'
     | '/api/mollie-connect/authorize'
     | '/api/mollie-connect/callback'
     | '/api/mollie-connect/disconnect'
+    | '/api/mollie-connect/webhook'
     | '/api/mollie/webhook'
     | '/beheer/ad/login'
     | '/beheer/dashboard/billing'
@@ -668,9 +690,11 @@ export interface FileRouteTypes {
     | '/api/billing/expire-sweep'
     | '/api/billing/plan-checkout'
     | '/api/billing/plan-confirm'
+    | '/api/bookings/checkout'
     | '/api/mollie-connect/authorize'
     | '/api/mollie-connect/callback'
     | '/api/mollie-connect/disconnect'
+    | '/api/mollie-connect/webhook'
     | '/api/mollie/webhook'
     | '/beheer/ad/login'
     | '/beheer/dashboard/billing'
@@ -726,9 +750,11 @@ export interface RootRouteChildren {
   ApiBillingExpireSweepRoute: typeof ApiBillingExpireSweepRoute
   ApiBillingPlanCheckoutRoute: typeof ApiBillingPlanCheckoutRoute
   ApiBillingPlanConfirmRoute: typeof ApiBillingPlanConfirmRoute
+  ApiBookingsCheckoutRoute: typeof ApiBookingsCheckoutRoute
   ApiMollieConnectAuthorizeRoute: typeof ApiMollieConnectAuthorizeRoute
   ApiMollieConnectCallbackRoute: typeof ApiMollieConnectCallbackRoute
   ApiMollieConnectDisconnectRoute: typeof ApiMollieConnectDisconnectRoute
+  ApiMollieConnectWebhookRoute: typeof ApiMollieConnectWebhookRoute
   ApiMollieWebhookRoute: typeof ApiMollieWebhookRoute
   BeheerAdLoginRoute: typeof BeheerAdLoginRoute
   BeheerDashboardBillingRoute: typeof BeheerDashboardBillingRoute
@@ -1062,6 +1088,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMollieWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/mollie-connect/webhook': {
+      id: '/api/mollie-connect/webhook'
+      path: '/api/mollie-connect/webhook'
+      fullPath: '/api/mollie-connect/webhook'
+      preLoaderRoute: typeof ApiMollieConnectWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/mollie-connect/disconnect': {
       id: '/api/mollie-connect/disconnect'
       path: '/api/mollie-connect/disconnect'
@@ -1081,6 +1114,13 @@ declare module '@tanstack/react-router' {
       path: '/api/mollie-connect/authorize'
       fullPath: '/api/mollie-connect/authorize'
       preLoaderRoute: typeof ApiMollieConnectAuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/bookings/checkout': {
+      id: '/api/bookings/checkout'
+      path: '/api/bookings/checkout'
+      fullPath: '/api/bookings/checkout'
+      preLoaderRoute: typeof ApiBookingsCheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/billing/plan-confirm': {
@@ -1194,9 +1234,11 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBillingExpireSweepRoute: ApiBillingExpireSweepRoute,
   ApiBillingPlanCheckoutRoute: ApiBillingPlanCheckoutRoute,
   ApiBillingPlanConfirmRoute: ApiBillingPlanConfirmRoute,
+  ApiBookingsCheckoutRoute: ApiBookingsCheckoutRoute,
   ApiMollieConnectAuthorizeRoute: ApiMollieConnectAuthorizeRoute,
   ApiMollieConnectCallbackRoute: ApiMollieConnectCallbackRoute,
   ApiMollieConnectDisconnectRoute: ApiMollieConnectDisconnectRoute,
+  ApiMollieConnectWebhookRoute: ApiMollieConnectWebhookRoute,
   ApiMollieWebhookRoute: ApiMollieWebhookRoute,
   BeheerAdLoginRoute: BeheerAdLoginRoute,
   BeheerDashboardBillingRoute: BeheerDashboardBillingRoute,
