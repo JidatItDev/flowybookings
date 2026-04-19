@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSearch, useNavigate } from "@tanstack/react-router";
+import { useSearch } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { CheckCircle2, AlertCircle, Wallet, Plug, Loader2, Info, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ interface Props {
 export function MollieConnectCard({ shopId }: Props) {
   const { t } = useT();
   const qc = useQueryClient();
-  const navigate = useNavigate();
+  // (no navigate needed — we use window.location for OAuth redirects)
   // Read mollie_connect=ok|error from the callback redirect to show toast.
   const search = useSearch({ strict: false }) as { mollie_connect?: string; reason?: string };
   const { data: provider, isLoading } = useQuery(shopPaymentProviderQuery(shopId));
