@@ -143,3 +143,56 @@ function mapStatus(s: MolliePayment["status"] | undefined): "paid" | "failed" | 
   if (s === "open" || s === "pending") return "unpaid";
   return null;
 }
+
+// Send "betaling mislukt" email to the customer with a retry link.
+// Best-effort: any failure here is logged but never blocks the webhook ack.
+async function sendPaymentFailedEmail(bookingId: string, paymentId: string) {
+  try {
+    const { data: booking } = await supabaseAdmin
+      .from("bookings")
+      .select("id, shop_id, starts_at, customer_id, service_id, deposit_cents, currency")
+      .eq("id", bookingId)
+      .maybeSingle();
+    if (!booking) return;
+
+    const [{ data: customer }, { data: shop }, { data: service }] = await Promise.all([
+      booking.customer_id
+        ? supabaseAdmin.from("customers").select("full_name, email").eq("id", booking.customer_id).maybeSingle()
+        : Promise.resolve({ data: null } as any),
+      supabaseAdmin.from("shops").select("name, slug").eq("id", booking.shop_id).maybeSingle(),
+      booking.service_id
+        ? supabaseAdmin.from("services").select("name").eq("id", booking.service_id).maybeSingle()
+        : Promise.resolve({ data: null } as any),
+    ]);
+
+    if (!customer?.email) return;
+
+    const startsAt = new Date(booking.starts_at);
+    const whenLabel = startsAt.toLocaleString("nl-NL", {
+      weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+    });
+    const cents = booking.deposit_cents ?? 0;
+    const currency = booking.currency || "EUR";
+    const amountLabel = cents > 0
+      ? `${currency === "EUR" ? "€" : currency + " "}${(cents / 100).toFixed(2).replace(".", ",")}`
+      : undefined;
+    const appUrl = process.env.APP_URL ?? "https://www.flowybookings.com";
+    const retryUrl = shop?.slug ? `${appUrl}/book?shop=${shop.slug}` : `${appUrl}/book`;
+
+    await enqueueBookingEmail({
+      templateName: "booking-payment-failed",
+      recipientEmail: customer.email,
+      idempotencyKey: `booking-payment-failed-${paymentId}`,
+      templateData: {
+        customerName: customer.full_name?.split(" ")[0],
+        shopName: shop?.name,
+        serviceName: service?.name,
+        whenLabel,
+        amountLabel,
+        retryUrl,
+      },
+    });
+  } catch (err) {
+    console.error("[mollie-connect/webhook] sendPaymentFailedEmail error", err);
+  }
+}
