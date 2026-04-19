@@ -11,7 +11,8 @@ interface BookingReminderProps {
   staffName?: string
   whenLabel?: string
   shopAddress?: string
-  windowLabel?: string // e.g. "tomorrow" or "in 2 hours"
+  /** "morgen" of "over 2 uur" */
+  windowLabel?: string
 }
 
 const BookingReminderEmail = ({
@@ -21,29 +22,31 @@ const BookingReminderEmail = ({
   staffName,
   whenLabel,
   shopAddress,
-  windowLabel = 'soon',
+  windowLabel = 'binnenkort',
 }: BookingReminderProps) => (
-  <Html lang="en" dir="ltr">
+  <Html lang="nl" dir="ltr">
     <Head />
-    <Preview>Reminder: your appointment at {shopName} is {windowLabel}</Preview>
+    <Preview>{`Herinnering: je afspraak bij ${shopName} is ${windowLabel}`}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Heading style={h1}>
-          {customerName ? `Hi ${customerName}, see you ${windowLabel}!` : `Your appointment is ${windowLabel}`}
+          {customerName
+            ? `Hoi ${customerName}, tot ${windowLabel}!`
+            : `Je afspraak is ${windowLabel}`}
         </Heading>
         <Text style={text}>
-          A quick reminder of your upcoming visit at <strong>{shopName}</strong>:
+          Een korte herinnering aan je afspraak bij <strong>{shopName}</strong>:
         </Text>
         <Section style={card}>
-          {serviceName && <Row label="Service" value={serviceName} />}
-          {staffName && <Row label="With" value={staffName} />}
-          {whenLabel && <Row label="When" value={whenLabel} />}
-          {shopAddress && <Row label="Address" value={shopAddress} />}
+          {serviceName && <Row label="Dienst" value={serviceName} />}
+          {staffName && <Row label="Bij" value={staffName} />}
+          {whenLabel && <Row label="Wanneer" value={whenLabel} />}
+          {shopAddress && <Row label="Adres" value={shopAddress} />}
         </Section>
         <Text style={text}>
-          Need to reschedule? Just reply to this email and we'll sort it out.
+          Lukt het toch niet? Antwoord op deze e-mail dan vinden we samen een nieuw moment.
         </Text>
-        <Text style={footer}>See you {windowLabel} — the {shopName} team</Text>
+        <Text style={footer}>{`Tot ${windowLabel} — het team van ${shopName}`}</Text>
       </Container>
     </Body>
   </Html>
@@ -63,16 +66,16 @@ const Row = ({ label, value }: { label: string; value: string }) => (
 export const template = {
   component: BookingReminderEmail,
   subject: (d: Record<string, any>) =>
-    `Reminder: your ${d?.shopName ?? ''} appointment ${d?.windowLabel ?? 'soon'}`.replace(/\s+/g, ' ').trim(),
-  displayName: 'Booking reminder',
+    `Herinnering: je afspraak bij ${d?.shopName ?? 'ons'} ${d?.windowLabel ?? 'binnenkort'}`.trim(),
+  displayName: 'Boeking herinnering',
   previewData: {
-    customerName: 'Sophia',
+    customerName: 'Sophie',
     shopName: 'Aurora Studio',
-    serviceName: 'Haircut & Style',
+    serviceName: 'Knippen & stylen',
     staffName: 'Mia',
-    whenLabel: 'Fri 21 Mar · 14:30',
+    whenLabel: 'vr 21 mrt · 14:30',
     shopAddress: 'Keizersgracht 123, Amsterdam',
-    windowLabel: 'tomorrow',
+    windowLabel: 'morgen',
   },
 } satisfies TemplateEntry
 

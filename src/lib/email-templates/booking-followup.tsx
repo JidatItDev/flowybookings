@@ -15,22 +15,23 @@ const BookingFollowupEmail = ({
   shopName = 'FlowyBookings',
   serviceName,
 }: BookingFollowupProps) => (
-  <Html lang="en" dir="ltr">
+  <Html lang="nl" dir="ltr">
     <Head />
-    <Preview>Thanks for visiting {shopName}</Preview>
+    <Preview>{`Bedankt voor je bezoek aan ${shopName}`}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Heading style={h1}>
-          {customerName ? `Thanks, ${customerName}!` : 'Thanks for stopping by!'}
+          {customerName ? `Bedankt, ${customerName}!` : 'Bedankt voor je bezoek!'}
         </Heading>
         <Text style={text}>
-          We hope you enjoyed your{serviceName ? ` ${serviceName}` : ''} at <strong>{shopName}</strong>.
-          It was a pleasure having you in.
+          We hopen dat je{serviceName ? ` ${serviceName}` : ''} bij <strong>{shopName}</strong>
+          bevallen is. Het was leuk je te zien.
         </Text>
         <Text style={text}>
-          Ready to book again? Just reply to this email and we'll set it up — or pick a new slot online whenever it suits you.
+          Klaar voor je volgende afspraak? Antwoord op deze e-mail of boek online een nieuw moment
+          dat jou uitkomt.
         </Text>
-        <Text style={footer}>See you next time — the {shopName} team</Text>
+        <Text style={footer}>{`Tot snel — het team van ${shopName}`}</Text>
       </Container>
     </Body>
   </Html>
@@ -38,12 +39,12 @@ const BookingFollowupEmail = ({
 
 export const template = {
   component: BookingFollowupEmail,
-  subject: (d: Record<string, any>) => `Thanks for visiting ${d?.shopName ?? 'us'}`,
-  displayName: 'Booking follow-up',
+  subject: (d: Record<string, any>) => `Bedankt voor je bezoek aan ${d?.shopName ?? 'ons'}`,
+  displayName: 'Boeking follow-up',
   previewData: {
-    customerName: 'Sophia',
+    customerName: 'Sophie',
     shopName: 'Aurora Studio',
-    serviceName: 'Haircut & Style',
+    serviceName: 'Knippen & stylen',
   },
 } satisfies TemplateEntry
 

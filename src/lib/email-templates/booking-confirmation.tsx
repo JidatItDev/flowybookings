@@ -23,28 +23,30 @@ const BookingConfirmationEmail = ({
   priceLabel,
   shopAddress,
 }: BookingConfirmationProps) => (
-  <Html lang="en" dir="ltr">
+  <Html lang="nl" dir="ltr">
     <Head />
-    <Preview>Your booking at {shopName} is confirmed</Preview>
+    <Preview>{`Je afspraak bij ${shopName} is bevestigd`}</Preview>
     <Body style={main}>
       <Container style={container}>
         <Heading style={h1}>
-          {customerName ? `Hi ${customerName}, your booking is confirmed` : 'Your booking is confirmed'}
+          {customerName ? `Hoi ${customerName}, je afspraak is bevestigd` : 'Je afspraak is bevestigd'}
         </Heading>
         <Text style={text}>
-          Thanks for booking with <strong>{shopName}</strong>. We've reserved your spot — here are the details:
+          Bedankt voor je boeking bij <strong>{shopName}</strong>. We hebben je plekje vastgelegd —
+          dit zijn de details:
         </Text>
         <Section style={card}>
-          {serviceName && <Row label="Service" value={serviceName} />}
-          {staffName && <Row label="With" value={staffName} />}
-          {whenLabel && <Row label="When" value={whenLabel} />}
-          {priceLabel && <Row label="Total" value={priceLabel} />}
-          {shopAddress && <Row label="Address" value={shopAddress} />}
+          {serviceName && <Row label="Dienst" value={serviceName} />}
+          {staffName && <Row label="Bij" value={staffName} />}
+          {whenLabel && <Row label="Wanneer" value={whenLabel} />}
+          {priceLabel && <Row label="Bedrag" value={priceLabel} />}
+          {shopAddress && <Row label="Adres" value={shopAddress} />}
         </Section>
         <Text style={text}>
-          We'll send a friendly reminder before your appointment. If you need to reschedule or cancel, just reply to this email.
+          We sturen je voor je afspraak nog een vriendelijke herinnering. Wil je verzetten of
+          afzeggen? Antwoord gewoon op deze e-mail.
         </Text>
-        <Text style={footer}>See you soon — the {shopName} team</Text>
+        <Text style={footer}>{`Tot dan! — het team van ${shopName}`}</Text>
       </Container>
     </Body>
   </Html>
@@ -64,15 +66,15 @@ const Row = ({ label, value }: { label: string; value: string }) => (
 export const template = {
   component: BookingConfirmationEmail,
   subject: (d: Record<string, any>) =>
-    d?.shopName ? `Your booking at ${d.shopName} is confirmed` : 'Your booking is confirmed',
-  displayName: 'Booking confirmation',
+    d?.shopName ? `Bevestiging — je afspraak bij ${d.shopName}` : 'Je afspraak is bevestigd',
+  displayName: 'Boekingsbevestiging',
   previewData: {
-    customerName: 'Sophia',
+    customerName: 'Sophie',
     shopName: 'Aurora Studio',
-    serviceName: 'Haircut & Style',
+    serviceName: 'Knippen & stylen',
     staffName: 'Mia',
-    whenLabel: 'Fri 21 Mar · 14:30',
-    priceLabel: '€45.00',
+    whenLabel: 'vr 21 mrt · 14:30',
+    priceLabel: '€45,00',
     shopAddress: 'Keizersgracht 123, Amsterdam',
   },
 } satisfies TemplateEntry

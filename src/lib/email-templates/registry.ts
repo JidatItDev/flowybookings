@@ -13,6 +13,9 @@ import { template as bookingConfirmation } from './booking-confirmation'
 import { template as bookingReminder } from './booking-reminder'
 import { template as bookingFollowup } from './booking-followup'
 import { template as trialEnding } from './trial-ending'
+import { template as welcomeShopOwner } from './welcome-shop-owner'
+import { template as bookingPaymentFailed } from './booking-payment-failed'
+import { template as platformPaymentFailed } from './platform-payment-failed'
 
 /**
  * Template registry — maps template names to their React Email components.
@@ -22,4 +25,7 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'booking-reminder': bookingReminder,
   'booking-followup': bookingFollowup,
   'trial-ending': trialEnding,
+  'welcome-shop-owner': welcomeShopOwner,
+  'booking-payment-failed': bookingPaymentFailed,
+  'platform-payment-failed': platformPaymentFailed,
 }
