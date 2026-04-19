@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { changeShopPlan, tierOf, TIER_RANK, type DbPlan } from "@/lib/plans";
 import { usePermissions } from "@/lib/use-permissions";
 import { shopKeys } from "@/lib/queries";
+import { ShopBillingCard, usePlanCheckout } from "@/components/ShopBillingCard";
 
 export const Route = createFileRoute("/shop/upgrade")({
   head: () => ({ meta: [{ title: "Upgrade — FlowyBookings" }] }),
@@ -27,7 +28,10 @@ function UpgradePage() {
   const currentPlan = (activeShop?.plan ?? "trial") as DbPlan;
   const currentTier = tierOf(currentPlan);
 
-  const upgrade = useMutation({
+  const checkout = usePlanCheckout();
+
+  // Downgrades don't require payment — keep them as direct plan changes.
+  const downgrade = useMutation({
     mutationFn: async (newPlan: PlanKey) => {
       if (!activeShop) throw new Error("No active shop");
       await changeShopPlan({
@@ -41,7 +45,6 @@ function UpgradePage() {
     },
     onSuccess: async (_d, planKey) => {
       toast.success(t("upgrade.toastApplied", { plan: planKey }));
-      // Drop a billing notification in the inbox so the change is visible everywhere.
       if (activeShop) {
         try {
           await import("@/integrations/supabase/client").then(({ supabase }) =>
@@ -49,7 +52,7 @@ function UpgradePage() {
               shop_id: activeShop.id,
               type: "billing",
               title: `Plan changed to ${planKey}`,
-              message: `Your shop is now on the ${planKey} plan. New features are unlocked immediately.`,
+              message: `Your shop is now on the ${planKey} plan.`,
               action_url: "/shop/upgrade",
             }),
           );
@@ -150,13 +153,20 @@ function UpgradePage() {
         ))}
       </div>
 
+      {/* Billing card (current plan, expiry, payment history, mock-confirm banner) */}
+      <div className="mb-6">
+        <ShopBillingCard />
+      </div>
+
       {/* Plans */}
       <div className="grid gap-4 lg:grid-cols-3">
         {plans.map((p) => {
           const isCurrent = currentPlan === p.key;
           const isDowngrade = TIER_RANK[p.tier] < TIER_RANK[currentTier] && !isCurrent;
           const featured = p.accent === "primary";
-          const busy = upgrade.isPending && upgrade.variables === p.key;
+          const busy =
+            (checkout.isPending && checkout.variables?.plan === p.key) ||
+            (downgrade.isPending && downgrade.variables === p.key);
           return (
             <div
               key={p.key}
@@ -203,8 +213,13 @@ function UpgradePage() {
                 onClick={() => {
                   if (!canManageBilling) return;
                   if (isCurrent) return;
-                  if (isDowngrade && !window.confirm(t("upgrade.confirmDowngrade", { plan: p.name }))) return;
-                  upgrade.mutate(p.key);
+                  if (isDowngrade) {
+                    if (!window.confirm(t("upgrade.confirmDowngrade", { plan: p.name }))) return;
+                    downgrade.mutate(p.key);
+                  } else {
+                    // Real upgrade flow → Mollie checkout (or mock checkout in dev).
+                    checkout.mutate({ plan: p.key, cycle: "monthly" });
+                  }
                 }}
               >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
