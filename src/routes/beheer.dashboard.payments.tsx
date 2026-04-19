@@ -29,12 +29,34 @@ function AdminPayments() {
   const { data: stats, isLoading: statsLoading } = useQuery(adminStatsQuery());
   const { data: payments, isLoading } = useQuery(adminPaymentsQuery());
   const { data: providers, isLoading: providersLoading } = useQuery(adminPaymentProvidersQuery());
-  const refundedCount = (payments ?? []).filter((p) => p.status === "refunded").length;
-  const refundedAmount = (payments ?? []).filter((p) => p.status === "refunded").reduce((s, p) => s + p.amount_cents, 0);
+  const { data: shops } = useQuery(adminShopsQuery());
 
-  // Per-shop revenue + fee rollup
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [planFilter, setPlanFilter] = useState<PlanFilter>("all");
+  const [search, setSearch] = useState("");
+
+  const planByShop = useMemo(() => {
+    const m = new Map<string, string>();
+    (shops ?? []).forEach((s) => m.set(s.id, s.plan));
+    return m;
+  }, [shops]);
+
+  const visiblePayments = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (payments ?? []).filter((p) => {
+      if (statusFilter !== "all" && p.status !== statusFilter) return false;
+      if (planFilter !== "all" && planByShop.get(p.shop_id) !== planFilter) return false;
+      if (q && !(p.shop_name ?? "").toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [payments, statusFilter, planFilter, search, planByShop]);
+
+  const refundedCount = visiblePayments.filter((p) => p.status === "refunded").length;
+  const refundedAmount = visiblePayments.filter((p) => p.status === "refunded").reduce((s, p) => s + p.amount_cents, 0);
+
+  // Per-shop revenue + fee rollup (uses filtered payments so admin can scope)
   const perShop = new Map<string, { name: string; revenue: number; fees: number; count: number }>();
-  (payments ?? []).forEach((p) => {
+  visiblePayments.forEach((p) => {
     const key = p.shop_id;
     const cur = perShop.get(key) ?? { name: p.shop_name ?? "—", revenue: 0, fees: 0, count: 0 };
     cur.revenue += p.amount_cents;
