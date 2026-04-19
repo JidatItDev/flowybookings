@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CircleDollarSign, ArrowDownToLine, RotateCcw, Wallet, CreditCard, Receipt } from "lucide-react";
+import { CircleDollarSign, ArrowDownToLine, RotateCcw, Wallet, CreditCard, Receipt, Landmark, Banknote } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -27,15 +29,25 @@ function PaymentsPage() {
   const shopId = useActiveShopId();
   const qc = useQueryClient();
   const { t } = useT();
+  const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "pending" | "failed">("all");
   const { data: allPayments = [], isLoading } = useQuery({ ...paymentsQuery(shopId ?? ""), enabled: !!shopId });
   const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
   const { data: customers = [] } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
 
   // BOOKING PAYMENTS ONLY — strictly exclude platform subscription rows.
   // Subscription billing lives at /shop/billing (alias of /shop/upgrade).
-  const payments = allPayments.filter(
+  const allBookingPayments = allPayments.filter(
     (p) => p.provider !== PLATFORM_PROVIDER && p.booking_id !== null,
   );
+
+  // Apply user-selected status filter
+  const payments = allBookingPayments.filter((p) => {
+    if (statusFilter === "all") return true;
+    if (statusFilter === "paid") return p.status === "paid" || p.status === "deposit_paid";
+    if (statusFilter === "pending") return p.status === "unpaid";
+    if (statusFilter === "failed") return p.status === "failed" || p.status === "refunded";
+    return true;
+  });
 
   type PaymentStatus = (typeof paymentStatuses)[number];
   const updateStatus = useMutation({
@@ -98,10 +110,31 @@ function PaymentsPage() {
             <MollieConnectCard shopId={shopId} />
           </div>
 
+          {/* Status filter pills */}
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            {([
+              { k: "all", label: t("payments.filterAll") },
+              { k: "paid", label: t("payments.filterPaid") },
+              { k: "pending", label: t("payments.filterPending") },
+              { k: "failed", label: t("payments.filterFailed") },
+            ] as const).map((f) => (
+              <button
+                key={f.k}
+                onClick={() => setStatusFilter(f.k)}
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs font-medium",
+                  statusFilter === f.k ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted",
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
           {isLoading ? (
-            <div className="mt-6 h-72 animate-pulse rounded-2xl border border-border bg-card" />
+            <div className="mt-4 h-72 animate-pulse rounded-2xl border border-border bg-card" />
           ) : payments.length === 0 ? (
-            <div className="mt-6">
+            <div className="mt-4">
               <EmptyState
                 icon={CreditCard}
                 title={t("payments.noPayments")}
@@ -109,7 +142,7 @@ function PaymentsPage() {
               />
             </div>
           ) : (
-            <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+            <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
               <div className="border-b border-border px-6 py-4">
                 <h2 className="text-base font-semibold">{t("payments.recentTransactions")}</h2>
               </div>
@@ -117,7 +150,8 @@ function PaymentsPage() {
                 <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
                     <th className="px-6 py-3 text-left">{t("payments.customer")}</th>
-                    <th className="hidden px-6 py-3 text-left sm:table-cell">{t("payments.booking")}</th>
+                    <th className="hidden px-6 py-3 text-left sm:table-cell">{t("payments.method")}</th>
+                    <th className="hidden px-6 py-3 text-left md:table-cell">{t("payments.booking")}</th>
                     <th className="px-6 py-3 text-left">{t("payments.amount")}</th>
                     <th className="px-6 py-3 text-left">{t("payments.status")}</th>
                     <th className="hidden px-6 py-3 text-left lg:table-cell">{t("payments.date")}</th>
@@ -127,10 +161,18 @@ function PaymentsPage() {
                   {payments.map((p) => {
                     const booking = bookings.find((b) => b.id === p.booking_id);
                     const cust = customers.find((c) => c.id === booking?.customer_id);
+                    const meta = (p.metadata ?? {}) as { method?: string };
+                    const method = (meta.method ?? p.provider ?? "—").toString();
+                    const MethodIcon = method.toLowerCase().includes("ideal") ? Landmark : method.toLowerCase().includes("cash") ? Banknote : CreditCard;
                     return (
                       <tr key={p.id} className="hover:bg-muted/30">
                         <td className="px-6 py-4 font-medium">{cust?.full_name ?? "—"}</td>
-                        <td className="hidden px-6 py-4 text-muted-foreground sm:table-cell">{booking ? formatDate(booking.starts_at) : "—"}</td>
+                        <td className="hidden px-6 py-4 text-muted-foreground sm:table-cell">
+                          <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-xs font-medium">
+                            <MethodIcon className="h-3.5 w-3.5" /> {method}
+                          </span>
+                        </td>
+                        <td className="hidden px-6 py-4 text-muted-foreground md:table-cell">{booking ? formatDate(booking.starts_at) : "—"}</td>
                         <td className="px-6 py-4 font-medium">{formatCents(p.amount_cents, p.currency)}</td>
                         <td className="px-6 py-4">
                           <Select

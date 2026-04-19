@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState, NoShopState } from "@/components/EmptyState";
 import { useActiveShopId } from "@/lib/shop-context";
-import { customersQuery, shopKeys } from "@/lib/queries";
+import { customersQuery, bookingsQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCents, initials, relativeFromNow } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -37,6 +37,11 @@ function CustomersPage() {
   const [deleting, setDeleting] = useState<CustomerRow | null>(null);
 
   const { data: customers = [], isLoading } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
+  const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
+  const visitsByCustomer = bookings.reduce<Record<string, number>>((acc, b) => {
+    if (b.customer_id && (b.status === "completed" || b.status === "confirmed")) acc[b.customer_id] = (acc[b.customer_id] ?? 0) + 1;
+    return acc;
+  }, {});
 
   const remove = useMutation({
     mutationFn: async (id: string) => { const { error } = await supabase.from("customers").delete().eq("id", id); if (error) throw error; },
@@ -64,6 +69,7 @@ function CustomersPage() {
                   <tr>
                     <th className="px-6 py-3 text-left">{t("customers.customerCol")}</th>
                     <th className="hidden px-6 py-3 text-left md:table-cell">{t("customers.contact")}</th>
+                    <th className="hidden px-6 py-3 text-left sm:table-cell">Bezoeken</th>
                     <th className="hidden px-6 py-3 text-left sm:table-cell">{t("customers.totalSpent")}</th>
                     <th className="hidden px-6 py-3 text-left lg:table-cell">{t("customers.lastVisit")}</th>
                     <th className="hidden px-6 py-3 text-left sm:table-cell">{t("customers.noShows")}</th>
@@ -107,6 +113,7 @@ function CustomersPage() {
                         </div>
                       </td>
                       <td className="hidden px-6 py-4 text-xs text-muted-foreground md:table-cell">{c.email && <div className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" />{c.email}</div>}{c.phone && <div className="mt-1 flex items-center gap-2"><Phone className="h-3.5 w-3.5" />{c.phone}</div>}</td>
+                      <td className="hidden px-6 py-4 sm:table-cell"><span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{visitsByCustomer[c.id] ?? 0}</span></td>
                       <td className="hidden px-6 py-4 sm:table-cell">{formatCents(c.total_spent_cents)}</td>
                       <td className="hidden px-6 py-4 text-muted-foreground lg:table-cell">{relativeFromNow(c.last_visit_at)}</td>
                       <td className="hidden px-6 py-4 sm:table-cell">

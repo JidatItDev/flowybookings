@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { CreditCard, Lock, Crown } from "lucide-react";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { shopFullQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/shop/settings")({
   head: () => ({ meta: [{ title: "Settings — FlowyBookings" }] }),
@@ -95,6 +97,18 @@ function SettingsPage() {
 
   const dayLabelKey: Record<DayKey, string> = { mon: "settings.monday", tue: "settings.tuesday", wed: "settings.wednesday", thu: "settings.thursday", fri: "settings.friday", sat: "settings.saturday", sun: "settings.sunday" };
 
+  const planPrices: Record<string, { price: number; fee: number }> = {
+    trial: { price: 0, fee: 0 },
+    starter: { price: 19, fee: 1.5 },
+    pro: { price: 49, fee: 1.0 },
+    premium: { price: 99, fee: 0.5 },
+  };
+  const currentPlan = (shop?.plan ?? "trial") as keyof typeof planPrices;
+  const planInfo = planPrices[currentPlan];
+  const planExpiresAt = shop?.plan_expires_at ? new Date(shop.plan_expires_at) : null;
+  const daysLeft = planExpiresAt ? Math.max(0, Math.ceil((planExpiresAt.getTime() - Date.now()) / 86400000)) : null;
+  const planLabel = currentPlan === "trial" ? t("settings.planTrial") : (planExpiresAt && planExpiresAt < new Date()) ? t("settings.planExpired") : t("settings.planActive");
+
   return (
     <ShopLayout>
       <PageHeader
@@ -106,13 +120,58 @@ function SettingsPage() {
         <div className="h-72 animate-pulse rounded-2xl border border-border bg-card" />
       ) : (
         <div className="grid gap-6 lg:grid-cols-3">
-          <Card title={t("settings.shopProfile")} className="lg:col-span-2">
+          {/* SECTIE 1 — Jouw abonnement */}
+          <Card title={t("settings.subscription")} className="lg:col-span-3">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-soft text-primary">
+                  <Crown className="h-6 w-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-lg font-semibold capitalize">{currentPlan}</p>
+                    <span className={cn(
+                      "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+                      planLabel === t("settings.planActive") ? "bg-mint/40 text-mint-foreground" :
+                      planLabel === t("settings.planTrial") ? "bg-peach text-peach-foreground" :
+                      "bg-destructive/15 text-destructive",
+                    )}>{planLabel}</span>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    €{planInfo.price}/maand · {planInfo.fee}% platform fee
+                  </p>
+                  {planExpiresAt && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {currentPlan === "trial" && daysLeft !== null
+                        ? t("settings.daysLeft", { n: String(daysLeft) })
+                        : `${t("settings.nextPayment")}: ${planExpiresAt.toLocaleDateString("nl-NL", { day: "2-digit", month: "long", year: "numeric" })}`}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Link to="/shop/upgrade"><Button variant="hero">{t("settings.changePlan")}</Button></Link>
+                <Button variant="outline" disabled>{t("settings.cancelPlan")}</Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* SECTIE 2 — Bedrijfsgegevens */}
+          <Card title={t("settings.businessInfo")} className="lg:col-span-2">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label={t("settings.shopName")} value={profile.name} onChange={(v) => updateProfile("name", v)} />
               <Field label={t("settings.phone")} value={profile.phone} onChange={(v) => updateProfile("phone", v)} />
               <Field label={t("settings.email")} value={profile.email} onChange={(v) => updateProfile("email", v)} />
               <Field label={t("settings.timezone")} value={profile.timezone} onChange={(v) => updateProfile("timezone", v)} />
               <div className="sm:col-span-2"><Field label={t("settings.address")} value={profile.address} onChange={(v) => updateProfile("address", v)} /></div>
+              <div className="sm:col-span-2">
+                <Label className="mb-1.5 flex items-center gap-2">
+                  {t("settings.shopSlug")}
+                  <Lock className="h-3 w-3 text-muted-foreground" />
+                </Label>
+                <Input value={shop?.slug ?? ""} disabled className="h-10 font-mono text-xs" />
+                <p className="mt-1 text-xs text-muted-foreground">{t("settings.shopSlugHint")} · /book/{shop?.slug}</p>
+              </div>
             </div>
           </Card>
 
@@ -163,8 +222,34 @@ function SettingsPage() {
             <div className="mt-3"><NumField label={t("settings.defaultDeposit")} value={rules.defaultDepositPct} onChange={(v) => updateRule("defaultDepositPct", v)} /></div>
           </Card>
 
+          {/* SECTIE — Betalingen van klanten */}
           <div className="lg:col-span-3">
+            <h2 className="mb-3 text-base font-semibold">{t("settings.customerPayments")}</h2>
+            <p className="mb-4 text-xs text-muted-foreground">{t("settings.platformFee", { pct: String(planInfo.fee) })} {currentPlan !== "premium" && `· ${t("settings.upgradeFee")}`}</p>
             <MollieConnectCard shopId={shopId} />
+          </div>
+
+          {/* Stripe placeholder */}
+          <div className="lg:col-span-3">
+            <div className="rounded-2xl border border-border border-dashed bg-card p-4 shadow-soft sm:p-6 opacity-75">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-muted text-muted-foreground">
+                    <CreditCard className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-base font-semibold">{t("settings.stripeTitle")}</h3>
+                    <p className="text-xs text-muted-foreground sm:text-sm">{t("settings.stripeDesc")}</p>
+                  </div>
+                </div>
+                <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                  {t("settings.stripeComingSoon")}
+                </span>
+              </div>
+              <Button disabled variant="outline" className="mt-4">
+                {t("settings.stripeComingSoon")}
+              </Button>
+            </div>
           </div>
         </div>
       )}

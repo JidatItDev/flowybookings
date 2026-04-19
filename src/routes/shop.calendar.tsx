@@ -44,6 +44,7 @@ function CalendarPage() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<BookingWithRelations | null>(null);
   const [deleting, setDeleting] = useState<BookingWithRelations | null>(null);
+  const [dayOffset, setDayOffset] = useState<number | null>(0); // 0 = vandaag, null = alle
 
   const statusLabel: Record<string, string> = {
     all: t("calendar.filterAll"), pending: t("calendar.pending"), confirmed: t("calendar.confirmed"),
@@ -80,7 +81,27 @@ function CalendarPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const filtered = bookings.filter((b) => filter === "all" || b.status === filter);
+  const filtered = bookings.filter((b) => {
+    if (filter !== "all" && b.status !== filter) return false;
+    if (dayOffset !== null) {
+      const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0); dayStart.setUTCDate(dayStart.getUTCDate() + dayOffset);
+      const dayEnd = new Date(dayStart); dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
+      const t = new Date(b.starts_at).getTime();
+      if (t < dayStart.getTime() || t >= dayEnd.getTime()) return false;
+    }
+    return true;
+  });
+
+  // Genereer 14 dagen vooruit voor de dag-selector
+  const dayChips = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() + i);
+    const count = bookings.filter((b) => {
+      const t = new Date(b.starts_at).getTime();
+      const next = new Date(d); next.setUTCDate(next.getUTCDate() + 1);
+      return t >= d.getTime() && t < next.getTime();
+    }).length;
+    return { offset: i, date: d, count };
+  });
 
   return (
     <ShopLayout>
@@ -98,6 +119,47 @@ function CalendarPage() {
         <NoShopState />
       ) : (
         <>
+          {/* Dag-selector: horizontaal scrollbaar */}
+          <div className="mb-3 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            <div className="flex items-center gap-2 pb-2">
+              <button
+                onClick={() => setDayOffset(null)}
+                className={cn(
+                  "shrink-0 rounded-xl border px-3 py-2 text-xs font-medium transition-colors",
+                  dayOffset === null ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:bg-muted",
+                )}
+              >
+                {t("calendar.allUpcoming")}
+              </button>
+              {dayChips.map((c) => {
+                const isToday = c.offset === 0;
+                const active = dayOffset === c.offset;
+                return (
+                  <button
+                    key={c.offset}
+                    onClick={() => setDayOffset(c.offset)}
+                    className={cn(
+                      "shrink-0 rounded-xl border px-3 py-2 text-center transition-colors",
+                      active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted",
+                    )}
+                  >
+                    <div className="text-[10px] uppercase tracking-wider opacity-80">
+                      {isToday ? "Vandaag" : c.date.toLocaleDateString("nl-NL", { weekday: "short", timeZone: "UTC" })}
+                    </div>
+                    <div className="text-sm font-semibold">
+                      {c.date.toLocaleDateString("nl-NL", { day: "2-digit", month: "short", timeZone: "UTC" })}
+                    </div>
+                    {c.count > 0 && (
+                      <div className={cn("mt-0.5 text-[10px] font-medium", active ? "text-primary-foreground/90" : "text-primary")}>
+                        {c.count} {c.count === 1 ? "afspraak" : "afspraken"}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
             {statuses.map((s) => (
@@ -112,11 +174,6 @@ function CalendarPage() {
                 {statusLabel[s]}
               </button>
             ))}
-            <div className="ml-auto flex items-center gap-1">
-              <Button variant="ghost" size="icon"><ChevronLeft className="h-4 w-4" /></Button>
-              <span className="px-2 text-sm font-medium">{t("calendar.allUpcoming")}</span>
-              <Button variant="ghost" size="icon"><ChevronRight className="h-4 w-4" /></Button>
-            </div>
           </div>
 
           {filtered.length === 0 ? (
