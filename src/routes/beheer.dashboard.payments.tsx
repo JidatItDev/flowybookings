@@ -1,13 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CircleDollarSign, TrendingUp, RotateCcw, Wallet, Plug, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { AdminLayout } from "@/components/AdminLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { adminPaymentsQuery, adminStatsQuery } from "@/lib/admin-queries";
-import { adminPaymentProvidersQuery, type ConnectionStatus } from "@/lib/payment-providers";
+import { adminPaymentProvidersQuery, paymentProviderKeys, type ConnectionStatus } from "@/lib/payment-providers";
 import { formatCents, relativeFromNow } from "@/lib/format";
 import { useT } from "@/lib/i18n";
 
