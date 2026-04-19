@@ -110,10 +110,31 @@ function PaymentsPage() {
             <MollieConnectCard shopId={shopId} />
           </div>
 
+          {/* Status filter pills */}
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            {([
+              { k: "all", label: t("payments.filterAll") },
+              { k: "paid", label: t("payments.filterPaid") },
+              { k: "pending", label: t("payments.filterPending") },
+              { k: "failed", label: t("payments.filterFailed") },
+            ] as const).map((f) => (
+              <button
+                key={f.k}
+                onClick={() => setStatusFilter(f.k)}
+                className={cn(
+                  "rounded-full px-3 py-1 text-xs font-medium",
+                  statusFilter === f.k ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted",
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
           {isLoading ? (
-            <div className="mt-6 h-72 animate-pulse rounded-2xl border border-border bg-card" />
+            <div className="mt-4 h-72 animate-pulse rounded-2xl border border-border bg-card" />
           ) : payments.length === 0 ? (
-            <div className="mt-6">
+            <div className="mt-4">
               <EmptyState
                 icon={CreditCard}
                 title={t("payments.noPayments")}
@@ -121,7 +142,7 @@ function PaymentsPage() {
               />
             </div>
           ) : (
-            <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+            <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
               <div className="border-b border-border px-6 py-4">
                 <h2 className="text-base font-semibold">{t("payments.recentTransactions")}</h2>
               </div>
@@ -129,7 +150,8 @@ function PaymentsPage() {
                 <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
                   <tr>
                     <th className="px-6 py-3 text-left">{t("payments.customer")}</th>
-                    <th className="hidden px-6 py-3 text-left sm:table-cell">{t("payments.booking")}</th>
+                    <th className="hidden px-6 py-3 text-left sm:table-cell">{t("payments.method")}</th>
+                    <th className="hidden px-6 py-3 text-left md:table-cell">{t("payments.booking")}</th>
                     <th className="px-6 py-3 text-left">{t("payments.amount")}</th>
                     <th className="px-6 py-3 text-left">{t("payments.status")}</th>
                     <th className="hidden px-6 py-3 text-left lg:table-cell">{t("payments.date")}</th>
