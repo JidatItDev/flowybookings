@@ -173,7 +173,7 @@ function RevenuePage() {
                       border: "1px solid hsl(var(--border))",
                       borderRadius: 12,
                     }}
-                    formatter={(v: number) => `€${v.toFixed(2)}`}
+                    formatter={(v) => `€${Number(v ?? 0).toFixed(2)}`}
                   />
                   <Legend />
                   <Bar dataKey="Abonnementen" stackId="a" fill="hsl(var(--primary))" radius={[0, 0, 0, 0]} />
@@ -214,7 +214,7 @@ function RevenuePage() {
                       border: "1px solid hsl(var(--border))",
                       borderRadius: 12,
                     }}
-                    formatter={(v: number) => `€${v.toFixed(2)}`}
+                    formatter={(v) => `€${Number(v ?? 0).toFixed(2)}`}
                   />
                   <Legend />
                 </PieChart>
@@ -244,7 +244,7 @@ function RevenuePage() {
                     border: "1px solid hsl(var(--border))",
                     borderRadius: 12,
                   }}
-                  formatter={(v: number) => `€${v.toFixed(2)}`}
+                  formatter={(v) => `€${Number(v ?? 0).toFixed(2)}`}
                 />
                 <Line
                   type="monotone"
