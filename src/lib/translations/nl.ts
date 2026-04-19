@@ -1113,6 +1113,7 @@ export const nl: Record<string, string> = {
   "legal.companyLine": "FlowyBookings",
   "legal.kvk": "KvK: 69444552",
   "legal.back": "Terug",
+  "legal.lastUpdated": "Laatst bijgewerkt",
 
   // ── Juridisch: Privacy ──
   "legal.privacy.title": "Privacybeleid",

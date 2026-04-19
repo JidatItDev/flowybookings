@@ -1113,6 +1113,7 @@ export const en: Record<string, string> = {
   "legal.companyLine": "FlowyBookings",
   "legal.kvk": "KvK: 69444552",
   "legal.back": "Back",
+  "legal.lastUpdated": "Last updated",
 
   // ── Legal: Privacy ──
   "legal.privacy.title": "Privacy Policy",
