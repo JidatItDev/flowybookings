@@ -219,6 +219,22 @@ function BookingFlow() {
       </header>
 
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+        {isDemoShop && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary-soft/40 px-4 py-3">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-brand text-primary-foreground">
+                <Beaker className="h-3.5 w-3.5" />
+              </span>
+              <div>
+                <p className="font-semibold">{t("demo.bannerTitle")}</p>
+                <p className="text-xs text-muted-foreground">{t("demo.bannerSub")}</p>
+              </div>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/signup">{t("demo.startTrial")}</Link>
+            </Button>
+          </div>
+        )}
         <ol className="mb-8 flex flex-wrap items-center gap-2 text-xs">
           {stepLabels.map((s, i) => (
             <li key={s} className="flex items-center gap-2">
@@ -367,7 +383,12 @@ function BookingFlow() {
                     </>
                   )}
                 </dl>
-                <p className="mt-6 rounded-xl bg-mint/40 p-3 text-xs text-mint-foreground">{t("book.stripeNotice")}</p>
+                <p className={cn(
+                  "mt-6 rounded-xl p-3 text-xs",
+                  isDemoShop ? "bg-primary-soft/60 text-primary" : "bg-mint/40 text-mint-foreground",
+                )}>
+                  {isDemoShop ? t("demo.paymentNotice") : t("book.stripeNotice")}
+                </p>
               </Section>
             )}
 
