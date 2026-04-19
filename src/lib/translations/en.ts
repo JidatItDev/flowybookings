@@ -1007,6 +1007,9 @@ export const en: Record<string, string> = {
   "adminBilling.notesDesc": "Internal context only — not visible to the shop owner.",
   "adminBilling.notesPlaceholder": "Add billing exceptions, support context, manual override reasons…",
   "adminBilling.noteSaved": "Note saved",
+  "adminBilling.runSweep": "Run expire sweep now",
+  "adminBilling.runningSweep": "Running sweep…",
+  "adminBilling.sweepDone": "Sweep complete: {downgraded} of {checked} shop(s) downgraded",
   "adminPayments.searchShop": "Search shop…",
   "adminPayments.allPlans": "All plans",
 

@@ -1007,6 +1007,9 @@ export const nl: Record<string, string> = {
   "adminBilling.notesDesc": "Alleen interne context — niet zichtbaar voor de shop.",
   "adminBilling.notesPlaceholder": "Noteer uitzonderingen, support-context, redenen voor overrides…",
   "adminBilling.noteSaved": "Notitie opgeslagen",
+  "adminBilling.runSweep": "Verlopen-check nu uitvoeren",
+  "adminBilling.runningSweep": "Bezig met controle…",
+  "adminBilling.sweepDone": "Controle klaar: {downgraded} van {checked} shop(s) gedowngraded",
   "adminPayments.searchShop": "Zoek shop…",
   "adminPayments.allPlans": "Alle plannen",
 
