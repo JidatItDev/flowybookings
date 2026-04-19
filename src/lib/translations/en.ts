@@ -639,6 +639,16 @@ export const en: Record<string, string> = {
   "automations.saved": "Automations saved",
   "automations.statusActive": "Active · cron every 5 min",
   "automations.poweredBy": "Powered by FlowyBookings email",
+  "automations.reminderSms": "Reminder SMS (2 hours)",
+  "automations.reminderSmsDesc": "Also send an SMS ~2h before the appointment. Requires credits and a phone number.",
+  "automations.smsCreditsTitle": "SMS balance",
+  "automations.smsCreditsBalance": "Remaining balance",
+  "automations.smsCreditsUsed": "Used",
+  "automations.smsCreditsFree": "Granted free",
+  "automations.smsCreditsHint": "Each reminder SMS uses 1 credit. Top-up coming soon.",
+  "automations.smsCreditsLow": "Low balance — reminders will be skipped once the balance reaches 0.",
+  "automations.smsCreditsEmpty": "No credits — SMS reminders are disabled until new credits are added.",
+  "automations.smsProviderPending": "Sending will be activated once the SMS provider is connected.",
 
   // ── Settings ──
   "settings.title": "Settings",
