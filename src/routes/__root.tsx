@@ -81,6 +81,12 @@ export const Route = createRootRouteWithContext<RouterContext>()({
         { name: "twitter:description", content: desc },
         { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1b6d6f55-6752-45cf-9fdc-2c02b7a13251/id-preview-fb4dd5c5--52514f54-14d9-4c88-901a-5bdc9ecb06a0.lovable.app-1776453577888.png" },
         { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1b6d6f55-6752-45cf-9fdc-2c02b7a13251/id-preview-fb4dd5c5--52514f54-14d9-4c88-901a-5bdc9ecb06a0.lovable.app-1776453577888.png" },
+        { title: "Lovable App" },
+        { property: "og:title", content: "Lovable App" },
+        { name: "twitter:title", content: "Lovable App" },
+        { name: "description", content: "Harmony Bookings V2 is a modern SaaS platform for service businesses to manage appointments and operations." },
+        { property: "og:description", content: "Harmony Bookings V2 is a modern SaaS platform for service businesses to manage appointments and operations." },
+        { name: "twitter:description", content: "Harmony Bookings V2 is a modern SaaS platform for service businesses to manage appointments and operations." },
       ],
       links: [{ rel: "stylesheet", href: appCss }],
     };
