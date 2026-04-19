@@ -2,10 +2,10 @@
 // Persists customer + booking + unpaid payment row in one transaction-like sequence,
 // with a server-side overlap check to prevent double-booking the same staff member.
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, Check, Sparkle, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Sparkle, Loader2, Beaker } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +15,12 @@ import { useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { cn } from "@/lib/utils";
 
+type BookSearch = { shop?: string };
+
 export const Route = createFileRoute("/book")({
+  validateSearch: (s: Record<string, unknown>): BookSearch => ({
+    shop: typeof s.shop === "string" ? s.shop : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Een afspraak boeken — FlowyBookings" },
@@ -30,13 +35,15 @@ const TIME_SLOTS = ["09:00", "10:30", "11:30", "13:00", "14:30", "16:00", "17:30
 function BookingFlow() {
   const navigate = useNavigate();
   const { t } = useT();
-  const stepLabels = [
-    t("book.stepShop"), t("book.stepService"), t("book.stepStaff"),
-    t("book.stepDateTime"), t("book.stepDetails"), t("book.stepReview"),
-  ];
+  const search = Route.useSearch();
+  const presetShopId = search.shop ?? null;
+
+  const stepLabels = presetShopId
+    ? [t("book.stepService"), t("book.stepStaff"), t("book.stepDateTime"), t("book.stepDetails"), t("book.stepReview")]
+    : [t("book.stepShop"), t("book.stepService"), t("book.stepStaff"), t("book.stepDateTime"), t("book.stepDetails"), t("book.stepReview")];
 
   const [step, setStep] = useState(0);
-  const [shopId, setShopId] = useState<string | null>(null);
+  const [shopId, setShopId] = useState<string | null>(presetShopId);
   const [serviceId, setServiceId] = useState<string | null>(null);
   const [staffId, setStaffId] = useState<string | null>(null);
   const [date, setDate] = useState<string | null>(null);
@@ -46,6 +53,11 @@ function BookingFlow() {
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Keep shopId in sync if URL changes
+  useEffect(() => {
+    if (presetShopId && shopId !== presetShopId) setShopId(presetShopId);
+  }, [presetShopId, shopId]);
 
   // Public app settings (demo mode toggles)
   const { data: appSettings } = useQuery(publicAppSettingsQuery());
@@ -69,11 +81,26 @@ function BookingFlow() {
   const servicesQ = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
   const staffQ = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
 
-  const selectedShop = shopsQ.data?.find((s) => s.id === shopId);
+  // When preselected, fetch the single shop directly so summary works without the full list.
+  const presetShopQ = useQuery({
+    queryKey: ["shop-preset", presetShopId],
+    enabled: !!presetShopId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("shops").select("id, name, slug, address, is_demo").eq("id", presetShopId!).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const selectedShop = shopsQ.data?.find((s) => s.id === shopId) ?? presetShopQ.data ?? null;
+  const isDemoShop = !!selectedShop?.is_demo;
   const selectedService = servicesQ.data?.find((s) => s.id === serviceId);
   const selectedStaff = staffQ.data?.find((s) => s.id === staffId);
 
-  const canNext = [shopId, serviceId, staffId, date && time, name && phone && email, true][step];
+  // Logical-step index (0..5). When preset, we hide step 0 (shop) by mapping visible step n to logical n+1.
+  const logicalStep = presetShopId ? step + 1 : step;
+  const canNext = [shopId, serviceId, staffId, date && time, name && phone && email, true][logicalStep];
 
   const back = () => (step > 0 ? setStep(step - 1) : navigate({ to: "/" }));
 
@@ -192,6 +219,22 @@ function BookingFlow() {
       </header>
 
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+        {isDemoShop && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary-soft/40 px-4 py-3">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-brand text-primary-foreground">
+                <Beaker className="h-3.5 w-3.5" />
+              </span>
+              <div>
+                <p className="font-semibold">{t("demo.bannerTitle")}</p>
+                <p className="text-xs text-muted-foreground">{t("demo.bannerSub")}</p>
+              </div>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/signup">{t("demo.startTrial")}</Link>
+            </Button>
+          </div>
+        )}
         <ol className="mb-8 flex flex-wrap items-center gap-2 text-xs">
           {stepLabels.map((s, i) => (
             <li key={s} className="flex items-center gap-2">
@@ -211,7 +254,7 @@ function BookingFlow() {
 
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           <div className="rounded-3xl border border-border bg-card p-6 shadow-soft sm:p-8">
-            {step === 0 && (
+            {logicalStep === 0 && (
               <Section title={t("book.chooseShop")} subtitle={t("book.chooseShopSub")}>
                 {shopsQ.isLoading ? <SkeletonGrid /> : (
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -233,7 +276,7 @@ function BookingFlow() {
               </Section>
             )}
 
-            {step === 1 && (
+            {logicalStep === 1 && (
               <Section title={t("book.chooseService")} subtitle={t("book.chooseServiceSub")}>
                 {servicesQ.isLoading ? <SkeletonGrid /> : (
                   <div className="space-y-2">
@@ -253,7 +296,7 @@ function BookingFlow() {
               </Section>
             )}
 
-            {step === 2 && (
+            {logicalStep === 2 && (
               <Section title={t("book.chooseStaff")} subtitle={t("book.chooseStaffSub")}>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <button onClick={() => setStaffId("any")}
@@ -278,7 +321,7 @@ function BookingFlow() {
               </Section>
             )}
 
-            {step === 3 && (
+            {logicalStep === 3 && (
               <Section title={t("book.pickDate")} subtitle={t("book.pickDateSub")}>
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-7">
                   {dates.map((d) => (
@@ -304,7 +347,7 @@ function BookingFlow() {
               </Section>
             )}
 
-            {step === 4 && (
+            {logicalStep === 4 && (
               <Section title={t("book.yourDetails")} subtitle={t("book.yourDetailsSub")}>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label={t("book.fullName")} value={name} onChange={setName} placeholder="Sophia Reyes" />
@@ -322,7 +365,7 @@ function BookingFlow() {
               </Section>
             )}
 
-            {step === 5 && (
+            {logicalStep === 5 && (
               <Section title={t("book.reviewConfirm")} subtitle={t("book.reviewSub")}>
                 <dl className="space-y-3 text-sm">
                   <Row label={t("book.shop")} value={selectedShop?.name ?? "—"} />
@@ -340,7 +383,12 @@ function BookingFlow() {
                     </>
                   )}
                 </dl>
-                <p className="mt-6 rounded-xl bg-mint/40 p-3 text-xs text-mint-foreground">{t("book.stripeNotice")}</p>
+                <p className={cn(
+                  "mt-6 rounded-xl p-3 text-xs",
+                  isDemoShop ? "bg-primary-soft/60 text-primary" : "bg-mint/40 text-mint-foreground",
+                )}>
+                  {isDemoShop ? t("demo.paymentNotice") : t("book.stripeNotice")}
+                </p>
               </Section>
             )}
 

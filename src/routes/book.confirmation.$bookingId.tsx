@@ -2,7 +2,7 @@
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Calendar, MapPin, ArrowRight, Loader2 } from "lucide-react";
+import { CheckCircle2, Calendar, MapPin, ArrowRight, Loader2, LayoutDashboard, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
@@ -32,7 +32,7 @@ function ConfirmationPage() {
       if (!booking) return null;
 
       const [{ data: shop }, { data: service }] = await Promise.all([
-        supabase.from("shops").select("name, address").eq("id", booking.shop_id).maybeSingle(),
+        supabase.from("shops").select("name, address, is_demo").eq("id", booking.shop_id).maybeSingle(),
         booking.service_id
           ? supabase.from("services").select("name").eq("id", booking.service_id).maybeSingle()
           : Promise.resolve({ data: null }),
@@ -113,6 +113,28 @@ function ConfirmationPage() {
             <Link to="/">{t("book.backHome")}</Link>
           </Button>
         </div>
+
+        {shop?.is_demo && (
+          <div className="mt-8 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary-soft/60 to-pink/40 p-5 text-left">
+            <div className="flex items-start gap-3">
+              <span className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-gradient-brand text-primary-foreground">
+                <Sparkles className="h-4 w-4" />
+              </span>
+              <div className="flex-1">
+                <p className="text-sm font-semibold">{t("demo.convertTitle")}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t("demo.convertSub")}</p>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+              <Button asChild variant="hero" className="flex-1">
+                <Link to="/signup">{t("demo.startTrialCta")} <ArrowRight className="h-4 w-4" /></Link>
+              </Button>
+              <Button asChild variant="outline" className="flex-1">
+                <Link to="/shop"><LayoutDashboard className="h-4 w-4" /> {t("demo.viewDashboard")}</Link>
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
