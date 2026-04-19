@@ -16,6 +16,7 @@ export type PlatformBillingStatus = {
   apiKeyMasked: string | null;
   clientIdPresent: boolean;
   clientSecretPresent: boolean;
+  webhookSecretPresent: boolean;
   webhookConfigured: boolean;
   webhookUrl: string;
   // Admin-managed config (DB).
