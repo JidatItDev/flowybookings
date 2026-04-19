@@ -47,6 +47,7 @@ import { Route as BeheerAdLoginRouteImport } from './routes/beheer.ad.login'
 import { Route as ApiMollieWebhookRouteImport } from './routes/api.mollie.webhook'
 import { Route as ApiBillingPlanConfirmRouteImport } from './routes/api.billing.plan-confirm'
 import { Route as ApiBillingPlanCheckoutRouteImport } from './routes/api.billing.plan-checkout'
+import { Route as ApiBillingExpireSweepRouteImport } from './routes/api.billing.expire-sweep'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -245,6 +246,11 @@ const ApiBillingPlanCheckoutRoute = ApiBillingPlanCheckoutRouteImport.update({
   path: '/api/billing/plan-checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBillingExpireSweepRoute = ApiBillingExpireSweepRouteImport.update({
+  id: '/api/billing/expire-sweep',
+  path: '/api/billing/expire-sweep',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LovableEmailTransactionalSendRoute =
   LovableEmailTransactionalSendRouteImport.update({
     id: '/lovable/email/transactional/send',
@@ -294,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/shop/staff': typeof ShopStaffRoute
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop/': typeof ShopIndexRoute
+  '/api/billing/expire-sweep': typeof ApiBillingExpireSweepRoute
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
@@ -339,6 +346,7 @@ export interface FileRoutesByTo {
   '/shop/staff': typeof ShopStaffRoute
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop': typeof ShopIndexRoute
+  '/api/billing/expire-sweep': typeof ApiBillingExpireSweepRoute
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
@@ -385,6 +393,7 @@ export interface FileRoutesById {
   '/shop/staff': typeof ShopStaffRoute
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop/': typeof ShopIndexRoute
+  '/api/billing/expire-sweep': typeof ApiBillingExpireSweepRoute
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
@@ -432,6 +441,7 @@ export interface FileRouteTypes {
     | '/shop/staff'
     | '/shop/upgrade'
     | '/shop/'
+    | '/api/billing/expire-sweep'
     | '/api/billing/plan-checkout'
     | '/api/billing/plan-confirm'
     | '/api/mollie/webhook'
@@ -477,6 +487,7 @@ export interface FileRouteTypes {
     | '/shop/staff'
     | '/shop/upgrade'
     | '/shop'
+    | '/api/billing/expire-sweep'
     | '/api/billing/plan-checkout'
     | '/api/billing/plan-confirm'
     | '/api/mollie/webhook'
@@ -522,6 +533,7 @@ export interface FileRouteTypes {
     | '/shop/staff'
     | '/shop/upgrade'
     | '/shop/'
+    | '/api/billing/expire-sweep'
     | '/api/billing/plan-checkout'
     | '/api/billing/plan-confirm'
     | '/api/mollie/webhook'
@@ -568,6 +580,7 @@ export interface RootRouteChildren {
   ShopStaffRoute: typeof ShopStaffRoute
   ShopUpgradeRoute: typeof ShopUpgradeRoute
   ShopIndexRoute: typeof ShopIndexRoute
+  ApiBillingExpireSweepRoute: typeof ApiBillingExpireSweepRoute
   ApiBillingPlanCheckoutRoute: typeof ApiBillingPlanCheckoutRoute
   ApiBillingPlanConfirmRoute: typeof ApiBillingPlanConfirmRoute
   ApiMollieWebhookRoute: typeof ApiMollieWebhookRoute
@@ -860,6 +873,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBillingPlanCheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/billing/expire-sweep': {
+      id: '/api/billing/expire-sweep'
+      path: '/api/billing/expire-sweep'
+      fullPath: '/api/billing/expire-sweep'
+      preLoaderRoute: typeof ApiBillingExpireSweepRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/transactional/send': {
       id: '/lovable/email/transactional/send'
       path: '/lovable/email/transactional/send'
@@ -940,6 +960,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShopStaffRoute: ShopStaffRoute,
   ShopUpgradeRoute: ShopUpgradeRoute,
   ShopIndexRoute: ShopIndexRoute,
+  ApiBillingExpireSweepRoute: ApiBillingExpireSweepRoute,
   ApiBillingPlanCheckoutRoute: ApiBillingPlanCheckoutRoute,
   ApiBillingPlanConfirmRoute: ApiBillingPlanConfirmRoute,
   ApiMollieWebhookRoute: ApiMollieWebhookRoute,
