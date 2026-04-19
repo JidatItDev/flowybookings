@@ -250,12 +250,13 @@ function BookingFlow() {
         customerId = newCust.id;
       }
 
-      const isPaid = selectedService.price_cents > 0;
-      // Demo shops & paid services: simuleer betaling → status "confirmed"
-      // Gratis services: meteen "confirmed"
-      // Echte (live) betaalde shops: "pending" tot Mollie webhook bevestigt
-      const bookingStatus: "pending" | "confirmed" =
-        !isPaid || isDemoShop ? "confirmed" : "pending";
+      // Booking starts "pending" only when a deposit will actually be charged
+      // via Mollie Connect. Demo shops, free services, and shops without a
+      // Mollie connection skip payment and confirm immediately. The
+      // /api/bookings/checkout call below will flip back to "confirmed" if no
+      // deposit is collected (skipped: true).
+      const willChargeDeposit = !isDemoShop && selectedService.deposit_cents > 0;
+      const bookingStatus: "pending" | "confirmed" = willChargeDeposit ? "pending" : "confirmed";
 
       const { data: booking, error: bErr } = await supabase
         .from("bookings")
