@@ -197,11 +197,36 @@ function AdminBillingPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const sweep = useMutation({
+    mutationFn: () => runExpireSweep(),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ["admin"] });
+      toast.success(
+        t("adminBilling.sweepDone")
+          .replace("{downgraded}", String(res.downgraded))
+          .replace("{checked}", String(res.checked)),
+      );
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const totalShops = (rows ?? []).length || 1;
 
   return (
     <AdminLayout>
-      <PageHeader title={t("adminBilling.title")} description={t("adminBilling.description")} />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <PageHeader title={t("adminBilling.title")} description={t("adminBilling.description")} />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => sweep.mutate()}
+          disabled={sweep.isPending}
+          className="mt-1"
+        >
+          <RefreshCw className={cn("h-3.5 w-3.5", sweep.isPending && "animate-spin")} />
+          {sweep.isPending ? t("adminBilling.runningSweep") : t("adminBilling.runSweep")}
+        </Button>
+      </div>
 
       {/* Top KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
