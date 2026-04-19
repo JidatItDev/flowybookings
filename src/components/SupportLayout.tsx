@@ -8,17 +8,26 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 export function SupportLayout({
   title,
   subtitle,
+  lastUpdated,
   children,
 }: {
   title: string;
   subtitle?: string;
+  lastUpdated?: string; // ISO date YYYY-MM-DD
   children: ReactNode;
 }) {
   const { session } = useAuth();
   const location = useLocation();
-  const { t } = useT();
+  const { t, locale } = useT();
   const backHref = session ? "/shop" : "/";
   const isLegal = location.pathname.startsWith("/legal");
+
+  const formattedDate = lastUpdated
+    ? new Date(`${lastUpdated}T00:00:00Z`).toLocaleDateString(
+        locale === "nl" ? "nl-NL" : "en-GB",
+        { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" },
+      )
+    : null;
 
   return (
     <div className="min-h-screen bg-gradient-hero">
@@ -45,6 +54,12 @@ export function SupportLayout({
         <div className="mb-6">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
           {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
+          {formattedDate && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {t("legal.lastUpdated")}:{" "}
+              <time dateTime={lastUpdated}>{formattedDate}</time>
+            </p>
+          )}
         </div>
         {children}
       </main>

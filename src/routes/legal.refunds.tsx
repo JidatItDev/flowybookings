@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SupportLayout, LegalSection, CompanyFootnote } from "@/components/SupportLayout";
 import { useT } from "@/lib/i18n";
+import { LEGAL_LAST_UPDATED } from "@/lib/legal-meta";
 
 export const Route = createFileRoute("/legal/refunds")({
   head: () => ({
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/legal/refunds")({
 function RefundsPage() {
   const { t } = useT();
   return (
-    <SupportLayout title={t("legal.refunds.title")}>
+    <SupportLayout title={t("legal.refunds.title")} lastUpdated={LEGAL_LAST_UPDATED.refunds}>
       <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
         <LegalSection>
           <p>{t("legal.refunds.line1")}</p>
