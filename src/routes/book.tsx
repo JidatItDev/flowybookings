@@ -275,16 +275,54 @@ function BookingFlow() {
         .select("id").single();
       if (bErr) throw bErr;
 
-      const amountDue = selectedService.deposit_cents > 0 ? selectedService.deposit_cents : selectedService.price_cents;
-      if (amountDue > 0) {
-        await supabase.from("payments").insert({
-          shop_id: shopId,
-          booking_id: booking.id,
-          amount_cents: amountDue,
-          currency: selectedService.currency,
-          status: isDemoShop ? "paid" : "unpaid",
-          provider: "mollie",
-        });
+      // Booking deposit flow:
+      // - Demo shops: skip Mollie entirely (already "confirmed", record fake payment).
+      // - Real shop with deposit_cents > 0: try Mollie Connect checkout. If the
+      //   shop hasn't connected Mollie yet, the API returns { skipped: true }
+      //   and we just confirm the booking without payment.
+      const depositDue = selectedService.deposit_cents > 0 ? selectedService.deposit_cents : 0;
+
+      if (isDemoShop) {
+        const amountDue = depositDue > 0 ? depositDue : selectedService.price_cents;
+        if (amountDue > 0) {
+          await supabase.from("payments").insert({
+            shop_id: shopId,
+            booking_id: booking.id,
+            amount_cents: amountDue,
+            currency: selectedService.currency,
+            status: "paid",
+            provider: "demo",
+          });
+        }
+      } else if (depositDue > 0) {
+        try {
+          const res = await fetch("/api/bookings/checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ booking_id: booking.id, redirect_origin: window.location.origin }),
+          });
+          const data = (await res.json().catch(() => ({}))) as {
+            ok?: boolean;
+            skipped?: boolean;
+            checkout_url?: string;
+            reason?: string;
+          };
+          if (res.ok && data.ok && data.checkout_url && !data.skipped) {
+            // Off to Mollie — webhook will flip booking to confirmed on success.
+            window.location.href = data.checkout_url;
+            return;
+          }
+          // Skipped (no Mollie connection or no deposit) — fall through to confirm + email.
+          if (data.skipped) {
+            await supabase
+              .from("bookings")
+              .update({ status: "confirmed" })
+              .eq("id", booking.id);
+          }
+        } catch (e) {
+          console.warn("[book] checkout call failed, confirming without payment:", e);
+          await supabase.from("bookings").update({ status: "confirmed" }).eq("id", booking.id);
+        }
       }
 
       fetch('/hooks/booking-confirmation', {
