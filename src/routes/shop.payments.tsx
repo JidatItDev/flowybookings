@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EmptyState, NoShopState } from "@/components/EmptyState";
 import { MollieNudge } from "@/components/MollieNudge";
 import { MollieConnectCard } from "@/components/MollieConnectCard";
+import { MollieConnectPayments } from "@/components/MollieConnectPayments";
 import { useActiveShopId } from "@/lib/shop-context";
 import { paymentsQuery, bookingsQuery, customersQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
