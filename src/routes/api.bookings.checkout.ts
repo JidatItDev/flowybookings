@@ -1,6 +1,6 @@
 // Create a Mollie payment for a booking deposit on the SHOP's connected
 // Mollie account (via Mollie Connect access token), with FlowyBookings'
-// application fee.
+// application fee derived from the shop's subscription plan.
 //
 // Caller: POST /api/bookings/checkout  body: { booking_id, redirect_origin? }
 // PUBLIC route — anyone with a booking ID can initiate the checkout because
@@ -16,9 +16,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   APPLICATION_FEE_DESCRIPTION,
-  APPLICATION_FEE_PERCENT_DEFAULT,
   MOLLIE_CONNECT_API_BASE,
   computeApplicationFeeCents,
+  feePercentForPlan,
+  getActiveMollieAccessToken,
 } from "@/lib/mollie-connect";
 
 const corsHeaders = {
@@ -48,28 +49,29 @@ export const Route = createFileRoute("/api/bookings/checkout")({
             .maybeSingle();
           if (bookErr || !booking) return json({ error: "booking_not_found" }, 404);
 
-          // Skip when there's nothing to charge.
+          // Skip when there's nothing to charge — booking is confirmed in the UI.
           if (!booking.deposit_cents || booking.deposit_cents <= 0) {
             return json({ ok: true, skipped: true, reason: "no_deposit" });
           }
 
-          // Look up shop's Mollie Connect link.
+          // Resolve a usable (decrypted, refreshed-if-needed) access token.
+          const tokenInfo = await getActiveMollieAccessToken(booking.shop_id);
+          if (!tokenInfo) {
+            return json({ ok: true, skipped: true, reason: "no_mollie_connection" });
+          }
+
+          // Look up provider config + shop plan to compute the application fee.
           const { data: provider } = await supabaseAdmin
             .from("shop_payment_providers")
-            .select("connection_status, application_fee_enabled, application_fee_percent, metadata")
+            .select("application_fee_enabled, application_fee_percent")
             .eq("shop_id", booking.shop_id)
             .eq("provider", "mollie")
             .maybeSingle();
-
-          if (!provider || provider.connection_status !== "connected") {
-            return json({ ok: true, skipped: true, reason: "no_mollie_connection" });
-          }
-          const meta = (provider.metadata ?? {}) as Record<string, unknown>;
-          const accessToken = meta.access_token as string | undefined;
-          const profileId = (meta.profile_id as string | undefined) ?? null;
-          if (!accessToken) {
-            return json({ ok: true, skipped: true, reason: "no_access_token" });
-          }
+          const { data: shop } = await supabaseAdmin
+            .from("shops")
+            .select("plan")
+            .eq("id", booking.shop_id)
+            .maybeSingle();
 
           // Resolve customer email (best-effort).
           let customerEmail: string | null = null;
@@ -84,12 +86,12 @@ export const Route = createFileRoute("/api/bookings/checkout")({
 
           const amountCents = booking.deposit_cents;
           const currency = booking.currency || "EUR";
-          const feePercent = provider.application_fee_enabled
-            ? Number(provider.application_fee_percent ?? APPLICATION_FEE_PERCENT_DEFAULT)
-            : 0;
+          // Plan-based fee: trial 0% / starter 1.5% / pro 1.0% / premium 0.5%,
+          // capped at min(10% of amount, €2). Owner-disabled fee → 0.
+          const planPercent = feePercentForPlan(shop?.plan);
+          const feePercent = provider?.application_fee_enabled === false ? 0 : planPercent;
           const feeCents = computeApplicationFeeCents(amountCents, feePercent);
 
-          // Pre-create local payment row (status=unpaid) for webhook correlation.
           const { data: payment, error: payErr } = await supabaseAdmin
             .from("payments")
             .insert({
@@ -103,6 +105,7 @@ export const Route = createFileRoute("/api/bookings/checkout")({
               metadata: {
                 kind: "booking_deposit",
                 fee_percent: feePercent,
+                plan: shop?.plan ?? null,
               },
             })
             .select("id")
@@ -111,9 +114,7 @@ export const Route = createFileRoute("/api/bookings/checkout")({
             return json({ error: "payment_insert_failed", details: payErr?.message }, 500);
           }
 
-          const origin =
-            body.redirect_origin ||
-            new URL(request.url).origin;
+          const origin = body.redirect_origin || new URL(request.url).origin;
           const redirectUrl = `${origin}/book/confirmation/${booking.id}?payment=${payment.id}`;
           const webhookUrl = `${origin}/api/mollie-connect/webhook`;
 
@@ -130,7 +131,7 @@ export const Route = createFileRoute("/api/bookings/checkout")({
             },
           };
           if (customerEmail) molliePayload.billingEmail = customerEmail;
-          if (profileId) molliePayload.profileId = profileId;
+          if (tokenInfo.profileId) molliePayload.profileId = tokenInfo.profileId;
           if (feeCents > 0) {
             molliePayload.applicationFee = {
               amount: { currency, value: (feeCents / 100).toFixed(2) },
@@ -141,7 +142,7 @@ export const Route = createFileRoute("/api/bookings/checkout")({
           const mollieRes = await fetch(`${MOLLIE_CONNECT_API_BASE}/payments`, {
             method: "POST",
             headers: {
-              Authorization: `Bearer ${accessToken}`,
+              Authorization: `Bearer ${tokenInfo.accessToken}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify(molliePayload),
@@ -156,6 +157,7 @@ export const Route = createFileRoute("/api/bookings/checkout")({
                 metadata: {
                   kind: "booking_deposit",
                   fee_percent: feePercent,
+                  plan: shop?.plan ?? null,
                   mollie_error: errText,
                   mollie_status: mollieRes.status,
                 },

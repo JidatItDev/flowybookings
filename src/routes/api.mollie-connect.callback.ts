@@ -11,6 +11,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   MOLLIE_CONNECT_API_BASE,
   MOLLIE_CONNECT_TOKEN_URL,
+  encryptToken,
 } from "@/lib/mollie-connect";
 
 export const Route = createFileRoute("/api/mollie-connect/callback")({
@@ -123,10 +124,17 @@ export const Route = createFileRoute("/api/mollie-connect/callback")({
           ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
           : null;
 
+        const accessEnc = await encryptToken(tokens.access_token);
+        const refreshEnc = tokens.refresh_token ? await encryptToken(tokens.refresh_token) : null;
+
         const newMeta = {
           ...meta,
-          access_token: tokens.access_token,
-          refresh_token: tokens.refresh_token ?? null,
+          // Encrypted at rest (AES-CBC + IV via pgcrypto, key in Vault).
+          access_token_enc: accessEnc,
+          refresh_token_enc: refreshEnc,
+          // Strip any legacy plaintext fields from older versions of this code.
+          access_token: null,
+          refresh_token: null,
           token_expires_at: expiresAt,
           organization_id: orgId,
           organization_name: orgName,
@@ -135,6 +143,8 @@ export const Route = createFileRoute("/api/mollie-connect/callback")({
           oauth_state: null,
           oauth_state_created_at: null,
           oauth_error: null,
+          last_refresh_at: null,
+          last_refresh_error: null,
         };
 
         await supabaseAdmin

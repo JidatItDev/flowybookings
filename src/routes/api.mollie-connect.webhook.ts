@@ -1,13 +1,16 @@
 // Webhook for booking deposit payments made via Mollie Connect (shop's account).
 // Mollie POSTs `id=<tr_xxx>` (form-encoded). We re-fetch the payment via the
-// SHOP's access_token, update the local payments row, and flip the booking to
-// confirmed/cancelled accordingly.
+// SHOP's access_token (decrypted + auto-refreshed if needed), update the local
+// payments row, and flip the booking to confirmed/cancelled accordingly.
 //
 // Always returns 200 unless malformed — Mollie will retry on non-2xx.
 
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { MOLLIE_CONNECT_API_BASE } from "@/lib/mollie-connect";
+import {
+  MOLLIE_CONNECT_API_BASE,
+  getActiveMollieAccessToken,
+} from "@/lib/mollie-connect";
 
 type MolliePayment = {
   id: string;
@@ -19,6 +22,7 @@ type MolliePayment = {
     | "expired"
     | "failed"
     | "authorized";
+  method?: string | null;
   metadata?: Record<string, unknown> | null;
 };
 
@@ -45,7 +49,6 @@ export const Route = createFileRoute("/api/mollie-connect/webhook")({
             .maybeSingle();
 
           if (!payment) {
-            // Unknown payment — log + ack.
             await supabaseAdmin.from("activity_log").insert({
               entity: "mollie_connect_webhook",
               action: "received_unknown",
@@ -54,20 +57,13 @@ export const Route = createFileRoute("/api/mollie-connect/webhook")({
             return ok();
           }
 
-          // Look up the shop's access token to query the payment status.
-          const { data: provider } = await supabaseAdmin
-            .from("shop_payment_providers")
-            .select("metadata")
-            .eq("shop_id", payment.shop_id)
-            .eq("provider", "mollie")
-            .maybeSingle();
-          const accessToken = ((provider?.metadata ?? {}) as Record<string, unknown>)
-            .access_token as string | undefined;
+          // Resolve a fresh, decrypted access token for the shop.
+          const tokenInfo = await getActiveMollieAccessToken(payment.shop_id);
 
           let mollie: MolliePayment | null = null;
-          if (accessToken && mollieId.startsWith("tr_")) {
+          if (tokenInfo && mollieId.startsWith("tr_")) {
             const res = await fetch(`${MOLLIE_CONNECT_API_BASE}/payments/${mollieId}`, {
-              headers: { Authorization: `Bearer ${accessToken}` },
+              headers: { Authorization: `Bearer ${tokenInfo.accessToken}` },
             });
             if (res.ok) mollie = (await res.json()) as MolliePayment;
           }
@@ -87,11 +83,17 @@ export const Route = createFileRoute("/api/mollie-connect/webhook")({
           if (newStatus && newStatus !== payment.status) {
             await supabaseAdmin
               .from("payments")
-              .update({ status: newStatus, updated_at: new Date().toISOString() })
+              .update({
+                status: newStatus,
+                updated_at: new Date().toISOString(),
+                metadata: {
+                  ...((payment.metadata ?? {}) as Record<string, unknown>),
+                  mollie_method: mollie?.method ?? null,
+                },
+              })
               .eq("id", payment.id);
           }
 
-          // Update booking based on payment outcome.
           if (payment.booking_id) {
             if (newStatus === "paid") {
               await supabaseAdmin
@@ -99,7 +101,6 @@ export const Route = createFileRoute("/api/mollie-connect/webhook")({
                 .update({ status: "confirmed", updated_at: new Date().toISOString() })
                 .eq("id", payment.booking_id);
             } else if (newStatus === "failed") {
-              // Don't auto-cancel an already-confirmed booking; only mark pending → cancelled.
               await supabaseAdmin
                 .from("bookings")
                 .update({ status: "cancelled", updated_at: new Date().toISOString() })

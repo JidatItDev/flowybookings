@@ -30,6 +30,7 @@ import { Route as LegalTermsRouteImport } from './routes/legal.terms'
 import { Route as LegalRefundsRouteImport } from './routes/legal.refunds'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as HooksTrialRemindersRouteImport } from './routes/hooks/trial-reminders'
+import { Route as HooksMollieRefreshTokensRouteImport } from './routes/hooks/mollie-refresh-tokens'
 import { Route as HooksBookingConfirmationRouteImport } from './routes/hooks/booking-confirmation'
 import { Route as HooksBookingAutomationsRouteImport } from './routes/hooks/booking-automations'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
@@ -172,6 +173,12 @@ const HooksTrialRemindersRoute = HooksTrialRemindersRouteImport.update({
   path: '/hooks/trial-reminders',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HooksMollieRefreshTokensRoute =
+  HooksMollieRefreshTokensRouteImport.update({
+    id: '/hooks/mollie-refresh-tokens',
+    path: '/hooks/mollie-refresh-tokens',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const HooksBookingConfirmationRoute =
   HooksBookingConfirmationRouteImport.update({
     id: '/hooks/booking-confirmation',
@@ -374,6 +381,7 @@ export interface FileRoutesByFullPath {
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
+  '/hooks/mollie-refresh-tokens': typeof HooksMollieRefreshTokensRoute
   '/hooks/trial-reminders': typeof HooksTrialRemindersRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/refunds': typeof LegalRefundsRoute
@@ -433,6 +441,7 @@ export interface FileRoutesByTo {
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
+  '/hooks/mollie-refresh-tokens': typeof HooksMollieRefreshTokensRoute
   '/hooks/trial-reminders': typeof HooksTrialRemindersRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/refunds': typeof LegalRefundsRoute
@@ -493,6 +502,7 @@ export interface FileRoutesById {
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
+  '/hooks/mollie-refresh-tokens': typeof HooksMollieRefreshTokensRoute
   '/hooks/trial-reminders': typeof HooksTrialRemindersRoute
   '/legal/privacy': typeof LegalPrivacyRoute
   '/legal/refunds': typeof LegalRefundsRoute
@@ -554,6 +564,7 @@ export interface FileRouteTypes {
     | '/email/unsubscribe'
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
+    | '/hooks/mollie-refresh-tokens'
     | '/hooks/trial-reminders'
     | '/legal/privacy'
     | '/legal/refunds'
@@ -613,6 +624,7 @@ export interface FileRouteTypes {
     | '/email/unsubscribe'
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
+    | '/hooks/mollie-refresh-tokens'
     | '/hooks/trial-reminders'
     | '/legal/privacy'
     | '/legal/refunds'
@@ -672,6 +684,7 @@ export interface FileRouteTypes {
     | '/email/unsubscribe'
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
+    | '/hooks/mollie-refresh-tokens'
     | '/hooks/trial-reminders'
     | '/legal/privacy'
     | '/legal/refunds'
@@ -732,6 +745,7 @@ export interface RootRouteChildren {
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   HooksBookingAutomationsRoute: typeof HooksBookingAutomationsRoute
   HooksBookingConfirmationRoute: typeof HooksBookingConfirmationRoute
+  HooksMollieRefreshTokensRoute: typeof HooksMollieRefreshTokensRoute
   HooksTrialRemindersRoute: typeof HooksTrialRemindersRoute
   LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalRefundsRoute: typeof LegalRefundsRoute
@@ -925,6 +939,13 @@ declare module '@tanstack/react-router' {
       path: '/hooks/trial-reminders'
       fullPath: '/hooks/trial-reminders'
       preLoaderRoute: typeof HooksTrialRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hooks/mollie-refresh-tokens': {
+      id: '/hooks/mollie-refresh-tokens'
+      path: '/hooks/mollie-refresh-tokens'
+      fullPath: '/hooks/mollie-refresh-tokens'
+      preLoaderRoute: typeof HooksMollieRefreshTokensRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hooks/booking-confirmation': {
@@ -1216,6 +1237,7 @@ const rootRouteChildren: RootRouteChildren = {
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   HooksBookingAutomationsRoute: HooksBookingAutomationsRoute,
   HooksBookingConfirmationRoute: HooksBookingConfirmationRoute,
+  HooksMollieRefreshTokensRoute: HooksMollieRefreshTokensRoute,
   HooksTrialRemindersRoute: HooksTrialRemindersRoute,
   LegalPrivacyRoute: LegalPrivacyRoute,
   LegalRefundsRoute: LegalRefundsRoute,
