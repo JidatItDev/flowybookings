@@ -184,6 +184,16 @@ export const en: Record<string, string> = {
   "auth.passwordTooShort": "Password must be at least 8 characters.",
   "auth.passwordUpdated": "Password updated — you're signed in.",
   "auth.invalidResetLink": "This reset link is invalid or expired. Request a new one.",
+  "auth.signedInAs": "Signed in as",
+  "auth.invalidCredentials": "Incorrect email or password.",
+  "auth.emailExistsTitle": "An account with this email already exists",
+  "auth.emailExistsBody": "Would you like to sign in with this account?",
+  "auth.goToLogin": "Go to sign in",
+  "auth.trialBadge": "14 days free",
+  "auth.startTrialTitle": "Start your free trial",
+  "auth.benefitNoCard": "No credit card required",
+  "auth.benefitFullAccess": "Full access to all features",
+  "auth.benefitCancelAnytime": "Cancel anytime",
 
   // ── Admin login ──
   "admin.platformAccess": "Platform access",

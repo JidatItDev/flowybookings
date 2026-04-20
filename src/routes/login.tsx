@@ -62,8 +62,16 @@ function LoginPage() {
     setSubmitting(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setSubmitting(false);
-    if (error) toast.error(error.message);
-    else toast.success(t("auth.welcomeBackToast"));
+    if (error) {
+      const msg = (error.message || "").toLowerCase();
+      if (msg.includes("invalid login") || msg.includes("invalid credentials")) {
+        toast.error(t("auth.invalidCredentials"));
+      } else {
+        toast.error(error.message);
+      }
+    } else {
+      toast.success(t("auth.welcomeBackToast"));
+    }
   };
 
   const fillDemo = (demoEmail: string) => { setEmail(demoEmail); setPassword(DEMO_PASSWORD); };
@@ -119,9 +127,11 @@ function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-5 text-center text-sm text-muted-foreground">
+          <div className="mt-5 rounded-xl border border-border bg-muted/30 px-4 py-3 text-center text-sm text-muted-foreground">
             {t("auth.newHere")}{" "}
-            <Link to="/signup" className="font-medium text-primary hover:underline">{t("auth.createAnAccount")}</Link>
+            <Link to="/signup" className="font-medium text-primary hover:underline">
+              {t("auth.createAnAccount")} →
+            </Link>
           </div>
 
           {demoEnabled && (
