@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Plus, Filter, CalendarDays, UserX } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Filter, CalendarDays, UserX, Check, ChevronsUpDown, UserPlus, Search } from "lucide-react";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -11,6 +11,10 @@ import { Label } from "@/components/ui/label";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
+} from "@/components/ui/command";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -378,10 +382,12 @@ function BookingFormDialog({ open, onClose, booking, shopId }: { open: boolean; 
         <div className="grid gap-4 py-2">
           <div>
             <Label>{t("calendar.customer")}</Label>
-            <Select value={form.customer_id} onValueChange={(v) => setForm({ ...form, customer_id: v })}>
-              <SelectTrigger><SelectValue placeholder={t("calendar.pickCustomer")} /></SelectTrigger>
-              <SelectContent>{customers.map((c) => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}</SelectContent>
-            </Select>
+            <CustomerCombobox
+              customers={customers}
+              value={form.customer_id}
+              onChange={(v) => setForm({ ...form, customer_id: v })}
+              onClose={onClose}
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -418,6 +424,128 @@ function BookingFormDialog({ open, onClose, booking, shopId }: { open: boolean; 
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+type CustomerLite = { id: string; full_name: string; email: string | null; phone: string | null };
+
+function CustomerCombobox({
+  customers, value, onChange, onClose,
+}: {
+  customers: CustomerLite[];
+  value: string;
+  onChange: (id: string) => void;
+  onClose: () => void;
+}) {
+  const { t } = useT();
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const selected = useMemo(() => customers.find((c) => c.id === value) ?? null, [customers, value]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return customers;
+    return customers.filter((c) => {
+      const name = c.full_name.toLowerCase();
+      const phone = (c.phone ?? "").toLowerCase();
+      const email = (c.email ?? "").toLowerCase();
+      return name.includes(q) || phone.includes(q) || email.includes(q);
+    });
+  }, [customers, query]);
+
+  const hasCustomers = customers.length > 0;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between font-normal"
+        >
+          <span className={cn("truncate", !selected && "text-muted-foreground")}>
+            {selected
+              ? selected.full_name + (selected.phone ? ` · ${selected.phone}` : "")
+              : t("calendar.pickCustomer")}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="z-[60] w-[--radix-popover-trigger-width] p-0"
+        align="start"
+        sideOffset={4}
+      >
+        {hasCustomers ? (
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder={t("customers.searchPlaceholder")}
+              value={query}
+              onValueChange={setQuery}
+              autoFocus
+            />
+            <CommandList className="max-h-64">
+              <CommandEmpty>
+                <div className="flex flex-col items-center gap-2 py-2 text-sm">
+                  <span className="text-muted-foreground">{t("customers.noMatches")}</span>
+                  <Button asChild size="sm" variant="outline" onClick={() => { setOpen(false); onClose(); }}>
+                    <Link to="/shop/customers">
+                      <UserPlus className="h-4 w-4" /> {t("customers.addCustomer")}
+                    </Link>
+                  </Button>
+                </div>
+              </CommandEmpty>
+              <CommandGroup>
+                {filtered.map((c) => (
+                  <CommandItem
+                    key={c.id}
+                    value={c.id}
+                    onSelect={() => {
+                      onChange(c.id);
+                      setOpen(false);
+                      setQuery("");
+                    }}
+                    className="flex items-center justify-between gap-2"
+                  >
+                    <div className="flex min-w-0 flex-col">
+                      <span className="truncate font-medium">{c.full_name}</span>
+                      {(c.phone || c.email) && (
+                        <span className="truncate text-xs text-muted-foreground">
+                          {c.phone || c.email}
+                        </span>
+                      )}
+                    </div>
+                    <Check
+                      className={cn(
+                        "h-4 w-4 shrink-0",
+                        value === c.id ? "opacity-100" : "opacity-0",
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        ) : (
+          <div className="flex flex-col items-center gap-3 p-6 text-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+              <Search className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">{t("customers.noCustomers")}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t("customers.noCustomersDesc")}</p>
+            </div>
+            <Button asChild size="sm" variant="hero" onClick={() => { setOpen(false); onClose(); }}>
+              <Link to="/shop/customers">
+                <UserPlus className="h-4 w-4" /> {t("customers.addCustomer")}
+              </Link>
+            </Button>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
 
