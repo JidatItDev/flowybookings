@@ -716,6 +716,17 @@ export const en: Record<string, string> = {
   "settings.saving": "Saving…",
   "settings.markOpen": "Open",
   "settings.markClosed": "Close",
+  "settings.logoUploaderHint": "PNG, JPG, WEBP or SVG · max 2MB",
+  "settings.logoUploadingShort": "Working…",
+  "settings.logoReplace": "Replace",
+  "settings.logoUpload": "Upload logo",
+  "settings.logoRemove": "Remove",
+  "settings.logoTooLarge": "Logo is too large (max 2MB)",
+  "settings.logoUploaded": "Logo uploaded",
+  "settings.logoRemoved": "Logo removed",
+  "settings.trialExpiredTitle": "Your trial has expired",
+  "settings.trialExpiredBody": "Pick a plan to continue. New bookings via your public page and the \"New appointment\" button are temporarily blocked.",
+  "settings.trialExpiredCta": "Pick a plan",
 
   // ── Analytics ──
   "analytics.title": "Analytics",
@@ -1415,5 +1426,41 @@ export const en: Record<string, string> = {
   "adminSms.zeroSince": "At zero since",
   "adminSms.lastResumed": "Last resumed",
   "adminSms.noShops": "No shops found",
+
+  // ── Feature gating (FeatureLock + plan labels) ──
+  "plan.trial": "Trial",
+  "plan.starter": "Starter",
+  "plan.pro": "Pro",
+  "plan.premium": "Premium",
+  "plan.fallback": "a higher plan",
+  "plan.priceMonthly": "€{price}/month",
+  "featureLock.usageWarning": "You've used {used}/{limit} {feature} this month.",
+  "featureLock.usageUpgrade": "Upgrade to {plan} for a higher limit.",
+  "featureLock.upgradeBtn": "Upgrade",
+  "featureLock.upgradeTo": "Upgrade to {plan}",
+  "featureLock.titleLimit": "Your {feature} limit has been reached",
+  "featureLock.titlePlan": "{feature} — available from {plan}",
+  "featureLock.titlePlanWithPrice": "{feature} — available from {plan} ({price})",
+  "featureLock.descLimit": "You've used {used}/{limit} {feature} this month. Upgrade for more or wait until next month.",
+  "featureLock.descPlan": "This feature isn't in your current plan ({plan}). Upgrade to activate it.",
+  "feature.bookings": "bookings",
+  "feature.staff": "staff",
+  "feature.smsReminders": "SMS reminders",
+  "feature.whatsappReminders": "WhatsApp reminders",
+  "feature.customBranding": "Custom branding",
+  "feature.marketingEmails": "Marketing emails",
+  "feature.advancedAnalytics": "Advanced analytics",
+
+  // ── Staff page (extra) ──
+  "staff.limitTooltip": "Your plan supports up to {limit} staff member. Upgrade to add more.",
+  "staff.limitTooltipPlural": "Your plan supports up to {limit} staff members. Upgrade to add more.",
+
+  // ── Calendar page (extra) ──
+  "calendar.amount": "Amount",
+  "calendar.today": "Today",
+  "calendar.appointment": "appointment",
+  "calendar.appointments": "appointments",
+  "calendar.trialExpiredBookingTitle": "Your trial has expired — pick a plan to create new appointments.",
+  "calendar.bookingLimitReached": "You've reached the maximum number of bookings ({used}/{limit}). Pick a plan to continue.",
 };
 

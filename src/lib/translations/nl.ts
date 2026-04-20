@@ -716,6 +716,17 @@ export const nl: Record<string, string> = {
   "settings.saving": "Bezig met opslaan…",
   "settings.markOpen": "Open zetten",
   "settings.markClosed": "Sluiten",
+  "settings.logoUploaderHint": "PNG, JPG, WEBP of SVG · max 2MB",
+  "settings.logoUploadingShort": "Bezig…",
+  "settings.logoReplace": "Vervangen",
+  "settings.logoUpload": "Upload logo",
+  "settings.logoRemove": "Verwijder",
+  "settings.logoTooLarge": "Logo is te groot (max 2MB)",
+  "settings.logoUploaded": "Logo geüpload",
+  "settings.logoRemoved": "Logo verwijderd",
+  "settings.trialExpiredTitle": "Je proefperiode is verlopen",
+  "settings.trialExpiredBody": "Kies een plan om door te gaan. Nieuwe boekingen via je publieke pagina en de \"Nieuwe afspraak\" knop zijn tijdelijk geblokkeerd.",
+  "settings.trialExpiredCta": "Kies een plan",
 
   // ── Analytics ──
   "analytics.title": "Statistieken",
@@ -1415,5 +1426,41 @@ export const nl: Record<string, string> = {
   "adminSms.zeroSince": "Op 0 sinds",
   "adminSms.lastResumed": "Laatst hervat",
   "adminSms.noShops": "Geen shops gevonden",
+
+  // ── Feature gating (FeatureLock + plan labels) ──
+  "plan.trial": "Trial",
+  "plan.starter": "Starter",
+  "plan.pro": "Pro",
+  "plan.premium": "Premium",
+  "plan.fallback": "een hoger plan",
+  "plan.priceMonthly": "€{price}/maand",
+  "featureLock.usageWarning": "Je hebt {used}/{limit} {feature} gebruikt deze maand.",
+  "featureLock.usageUpgrade": "Upgrade naar {plan} voor een hoger limiet.",
+  "featureLock.upgradeBtn": "Upgrade",
+  "featureLock.upgradeTo": "Upgrade naar {plan}",
+  "featureLock.titleLimit": "Je {feature}-limiet is bereikt",
+  "featureLock.titlePlan": "{feature} — beschikbaar vanaf {plan}",
+  "featureLock.titlePlanWithPrice": "{feature} — beschikbaar vanaf {plan} ({price})",
+  "featureLock.descLimit": "Je hebt {used}/{limit} {feature} gebruikt deze maand. Upgrade voor meer of wacht tot volgende maand.",
+  "featureLock.descPlan": "Deze functie zit niet in je huidige plan ({plan}). Upgrade om hem te activeren.",
+  "feature.bookings": "boekingen",
+  "feature.staff": "medewerkers",
+  "feature.smsReminders": "SMS herinneringen",
+  "feature.whatsappReminders": "WhatsApp herinneringen",
+  "feature.customBranding": "Eigen branding",
+  "feature.marketingEmails": "Marketing e-mails",
+  "feature.advancedAnalytics": "Geavanceerde statistieken",
+
+  // ── Staff page (extra) ──
+  "staff.limitTooltip": "Je plan ondersteunt maximaal {limit} medewerker. Upgrade om meer toe te voegen.",
+  "staff.limitTooltipPlural": "Je plan ondersteunt maximaal {limit} medewerkers. Upgrade om meer toe te voegen.",
+
+  // ── Calendar page (extra) ──
+  "calendar.amount": "Bedrag",
+  "calendar.today": "Vandaag",
+  "calendar.appointment": "afspraak",
+  "calendar.appointments": "afspraken",
+  "calendar.trialExpiredBookingTitle": "Je proefperiode is verlopen — kies een plan om nieuwe afspraken aan te maken.",
+  "calendar.bookingLimitReached": "Je hebt het maximum aantal boekingen bereikt ({used}/{limit}). Kies een plan om door te gaan.",
 };
 
