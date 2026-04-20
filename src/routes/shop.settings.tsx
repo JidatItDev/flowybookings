@@ -121,6 +121,24 @@ function SettingsPage() {
         <div className="h-72 animate-pulse rounded-2xl border border-border bg-card" />
       ) : (
         <div className="grid gap-6 lg:grid-cols-3">
+          {/* Trial-verlopen banner */}
+          {(() => {
+            const trial = getTrialState(shop as never);
+            if (!trial.isExpired) return null;
+            return (
+              <div className="lg:col-span-3 flex flex-wrap items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-destructive">
+                <AlertTriangle className="h-5 w-5 flex-none" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold">Je proefperiode is verlopen</p>
+                  <p className="mt-1 text-sm opacity-90">
+                    Kies een plan om door te gaan. Nieuwe boekingen via je publieke pagina en de "Nieuwe afspraak" knop zijn tijdelijk geblokkeerd.
+                  </p>
+                </div>
+                <Link to="/shop/upgrade"><Button variant="hero">Kies een plan</Button></Link>
+              </div>
+            );
+          })()}
+
           {/* SECTIE 1 — Jouw abonnement */}
           <Card title={t("settings.subscription")} className="lg:col-span-3">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -177,14 +195,7 @@ function SettingsPage() {
           </Card>
 
           <Card title={t("settings.branding")}>
-            <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl text-xl font-semibold text-primary-foreground" style={{ background: branding.color ?? "var(--color-primary)" }}>
-                {(profile.name || "S").slice(0, 2).toUpperCase()}
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{t("settings.logoHint")}</p>
-              </div>
-            </div>
+            <LogoUploader shopId={shopId!} currentLogoUrl={shop?.logo_url ?? null} fallbackInitials={(profile.name || "S").slice(0, 2).toUpperCase()} fallbackColor={branding.color ?? "var(--color-primary)"} />
             <div className="mt-5">
               <Label htmlFor="brand-color">{t("settings.brandColor")}</Label>
               <div className="mt-1 flex items-center gap-2">
