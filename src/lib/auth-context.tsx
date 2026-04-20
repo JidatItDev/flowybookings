@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Super admin sees all shops; everyone else sees shops via RLS (owner + role).
       const { data, error } = await supabase
         .from("shops")
-        .select("id, name, slug, status, plan, plan_expires_at, plan_billing_cycle, onboarding")
+        .select("id, name, slug, status, plan, plan_expires_at, plan_billing_cycle, onboarding, policy_accepted_at, policy_version")
         .order("created_at", { ascending: true });
       if (error) throw error;
       return (data ?? []) as ShopRow[];
