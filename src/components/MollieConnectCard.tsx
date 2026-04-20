@@ -82,9 +82,12 @@ export function MollieConnectCard({ shopId }: Props) {
       const data = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok || !data.ok) throw new Error(data.error || "disconnect_failed");
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success(t("mollie.disconnected"));
-      qc.invalidateQueries({ queryKey: paymentProviderKeys.byShop(shopId) });
+      // Remove cached row immediately so UI cannot render stale pending/in_review
+      // state for a single frame, then refetch the fresh disconnected row.
+      qc.removeQueries({ queryKey: paymentProviderKeys.byShop(shopId) });
+      await qc.refetchQueries({ queryKey: paymentProviderKeys.byShop(shopId) });
     },
     onError: (e: Error) => toast.error(e.message),
   });
