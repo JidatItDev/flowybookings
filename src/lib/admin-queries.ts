@@ -308,8 +308,14 @@ export type AdminShopDetail = {
     plan_billing_cycle: string | null;
     policy_accepted_at: string | null;
     policy_version: string | null;
+    subscription_status: string | null;
+    platform_fee_bps_override: number | null;
+    next_billing_at: string | null;
+    mollie_subscription_id: string | null;
+    subscription_notes: string | null;
+    category: string | null;
   };
-  owner: { id: string; email: string | null; full_name: string | null; phone: string | null } | null;
+  owner: { id: string; email: string | null; full_name: string | null; phone: string | null; last_login_at: string | null } | null;
   stats: {
     bookings: number;
     bookingsThisMonth: number;
@@ -342,7 +348,7 @@ export const adminShopDetailQuery = (shopId: string) =>
       const { data: shop, error } = await supabase
         .from("shops")
         .select(
-          "id, name, slug, status, plan, owner_id, email, phone, address, timezone, is_demo, admin_notes, created_at, plan_expires_at, plan_billing_cycle, policy_accepted_at, policy_version",
+          "id, name, slug, status, plan, owner_id, email, phone, address, timezone, is_demo, admin_notes, created_at, plan_expires_at, plan_billing_cycle, policy_accepted_at, policy_version, subscription_status, platform_fee_bps_override, next_billing_at, mollie_subscription_id, subscription_notes, category",
         )
         .eq("id", shopId)
         .maybeSingle();
@@ -355,7 +361,7 @@ export const adminShopDetailQuery = (shopId: string) =>
 
       const [ownerRes, bookingsRes, bookingsMonthRes, bookings30Res, customersRes, servicesRes, staffRes, paymentsRes, eventsRes] =
         await Promise.all([
-          supabase.from("profiles").select("id, email, full_name, phone").eq("id", shop.owner_id).maybeSingle(),
+          supabase.from("profiles").select("id, email, full_name, phone, last_login_at").eq("id", shop.owner_id).maybeSingle(),
           supabase.from("bookings").select("id", { count: "exact", head: true }).eq("shop_id", shopId),
           supabase
             .from("bookings")
