@@ -82,10 +82,36 @@ export function ShopBillingCard() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const cancelSubscription = useMutation({
+    mutationFn: async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Not signed in");
+      const res = await fetch("/api/billing/plan-cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ shop_id: shopId }),
+      });
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(j.error ?? "cancel_failed");
+      }
+    },
+    onSuccess: () => {
+      toast.success(t("billing.cancelSuccess"));
+      qc.invalidateQueries({ queryKey: ["auth", "shops"] });
+      qc.invalidateQueries({ queryKey: ["shop", "billing-payments", shopId] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const expiry = (activeShop as unknown as { plan_expires_at?: string | null })?.plan_expires_at ?? null;
   const cycle = (activeShop as unknown as { plan_billing_cycle?: string | null })?.plan_billing_cycle ?? null;
+  const onboarding = (activeShop as unknown as { onboarding?: Record<string, unknown> })?.onboarding ?? {};
+  const subscriptionStatus = (onboarding.subscription_status as string | undefined) ?? null;
   const expiresDate = expiry ? new Date(expiry) : null;
   const isExpired = !!expiresDate && expiresDate.getTime() < Date.now();
+  const canCancel = activeShop?.plan && activeShop.plan !== "trial" && subscriptionStatus !== "cancelled";
 
   const mockPaymentId = useMemo(() => {
     if (search?.billing !== "mock" || !search?.payment) return null;
@@ -134,6 +160,25 @@ export function ShopBillingCard() {
               {t("shopBilling.mockFail")}
             </Button>
           </div>
+        </div>
+      )}
+
+      {canCancel && (
+        <div className="mt-4 flex justify-end">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              if (window.confirm(t("billing.cancelConfirm"))) {
+                cancelSubscription.mutate();
+              }
+            }}
+            disabled={cancelSubscription.isPending}
+            className="text-muted-foreground hover:text-destructive"
+          >
+            {cancelSubscription.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {t("billing.cancel")}
+          </Button>
         </div>
       )}
 

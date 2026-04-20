@@ -228,6 +228,10 @@ async function handleSubscriptionLifecycle(opts: {
           ...(mollieCustomerId ? { mollie_customer_id: mollieCustomerId } : {}),
           ...(mollieSubscriptionId ? { mollie_subscription_id: mollieSubscriptionId } : {}),
           subscription_status: "active",
+          // Clear payment-failed flags on a successful renewal so RLS unblocks.
+          payment_failed_at: null,
+          payment_failed_count: 0,
+          subscription_cancelled_at: null,
         },
       })
       .eq("id", opts.shopId);
@@ -262,16 +266,28 @@ async function handleSubscriptionLifecycle(opts: {
       .eq("id", opts.shopId)
       .maybeSingle();
     const onboarding = ((prevShop?.onboarding ?? {}) as Record<string, unknown>);
+    // Set payment_failed_at on first failure only; subsequent failures bump count but keep
+    // the original timestamp so the 7-day grace period starts at the FIRST failure.
+    const existingFailedAt = (onboarding.payment_failed_at as string | undefined) ?? null;
+    const failedAt = existingFailedAt ?? new Date().toISOString();
+    const failedCount = ((onboarding.payment_failed_count as number | undefined) ?? 0) + 1;
     await supabaseAdmin
       .from("shops")
-      .update({ onboarding: { ...onboarding, subscription_status: "payment_failed" } })
+      .update({
+        onboarding: {
+          ...onboarding,
+          subscription_status: "payment_failed",
+          payment_failed_at: failedAt,
+          payment_failed_count: failedCount,
+        },
+      })
       .eq("id", opts.shopId);
 
     await supabaseAdmin.from("activity_log").insert({
       entity: BILLING_ENTITY,
       action: "subscription_payment_failed",
       shop_id: opts.shopId,
-      metadata: { payment_id: opts.paymentId, plan, cycle },
+      metadata: { payment_id: opts.paymentId, plan, cycle, failed_at: failedAt, failure_count: failedCount },
     });
     await supabaseAdmin.from("notifications").insert({
       shop_id: opts.shopId,

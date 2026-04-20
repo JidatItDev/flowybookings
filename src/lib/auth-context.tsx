@@ -21,6 +21,9 @@ export type ShopRow = {
   slug: string;
   status: string;
   plan: string;
+  plan_expires_at: string | null;
+  plan_billing_cycle: string | null;
+  onboarding: Record<string, unknown> | null;
 };
 
 interface AuthContextValue {
@@ -89,10 +92,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Super admin sees all shops; everyone else sees shops via RLS (owner + role).
       const { data, error } = await supabase
         .from("shops")
-        .select("id, name, slug, status, plan")
+        .select("id, name, slug, status, plan, plan_expires_at, plan_billing_cycle, onboarding")
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as ShopRow[];
     },
   });
 

@@ -49,17 +49,21 @@ function CalendarPage() {
   const bookingsPct = usagePercentage(bookingsAccess.data);
   const bookingsWarn =
     !!bookingsAccess.data && bookingsAccess.data.limit != null && bookingsPct >= 80 && bookingsPct < 100;
-  const newBookingDisabled = !shopId || trial.isExpired || bookingsBlocked;
+  // Block when trial expired OR payment failed grace expired OR feature limit hit.
+  const subscriptionBlocked = trial.isExpired || trial.paymentFailedGraceExpired;
+  const newBookingDisabled = !shopId || subscriptionBlocked || bookingsBlocked;
   const qc = useQueryClient();
   const { t } = useT();
-  const newBookingTitle = trial.isExpired
-    ? t("calendar.trialExpiredBookingTitle")
-    : bookingsBlocked
-      ? t("calendar.bookingLimitReached", {
-          used: bookingsAccess.data?.used ?? 0,
-          limit: bookingsAccess.data?.limit ?? 0,
-        })
-      : undefined;
+  const newBookingTitle = trial.paymentFailedGraceExpired
+    ? t("billing.paymentFailedBlockedTitle")
+    : trial.isExpired
+      ? t("calendar.trialExpiredBookingTitle")
+      : bookingsBlocked
+        ? t("calendar.bookingLimitReached", {
+            used: bookingsAccess.data?.used ?? 0,
+            limit: bookingsAccess.data?.limit ?? 0,
+          })
+        : undefined;
   const [filter, setFilter] = useState<(typeof statuses)[number]>("all");
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<BookingWithRelations | null>(null);
