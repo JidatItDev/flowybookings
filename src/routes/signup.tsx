@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Sparkle, Loader2 } from "lucide-react";
+import { Sparkle, Loader2, CheckCircle2, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -74,7 +74,27 @@ function SignupPage() {
         email, password,
         options: { emailRedirectTo: `${window.location.origin}/shop`, data: { full_name: fullName } },
       });
-      if (error) throw error;
+      if (error) {
+        // Detect duplicate-email error coming back from Supabase auth.
+        const msg = (error.message || "").toLowerCase();
+        const isDuplicate =
+          msg.includes("already registered") ||
+          msg.includes("already exists") ||
+          msg.includes("user already") ||
+          msg.includes("duplicate");
+        if (isDuplicate) {
+          toast.error(t("auth.emailExistsTitle"), {
+            description: t("auth.emailExistsBody"),
+            action: {
+              label: t("auth.goToLogin"),
+              onClick: () => navigate({ to: "/login", search: { redirect: undefined } }),
+            },
+            duration: 10000,
+          });
+          return;
+        }
+        throw error;
+      }
       const userId = data.user?.id;
       if (!userId) throw new Error("Account aanmaken mislukt");
 
@@ -133,7 +153,7 @@ function SignupPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-hero px-4 py-12">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-lg">
         <div className="mb-6 flex items-center justify-center gap-3">
           <Link to="/" className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-brand">
@@ -145,8 +165,18 @@ function SignupPage() {
         </div>
 
         <div className="rounded-3xl border border-border bg-card p-8 shadow-elevated">
-          <h1 className="text-2xl font-semibold tracking-tight">{t("auth.createAccount")}</h1>
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary">
+            <Sparkle className="h-3.5 w-3.5" />
+            {t("auth.trialBadge")}
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("auth.startTrialTitle")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t("auth.trialLine")}</p>
+
+          <ul className="mt-4 space-y-1.5 text-sm text-muted-foreground">
+            <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-success-foreground" /> {t("auth.benefitNoCard")}</li>
+            <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-success-foreground" /> {t("auth.benefitFullAccess")}</li>
+            <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-success-foreground" /> {t("auth.benefitCancelAnytime")}</li>
+          </ul>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div className="space-y-1.5">
@@ -197,9 +227,11 @@ function SignupPage() {
             </Button>
           </form>
 
-          <div className="mt-5 text-center text-sm text-muted-foreground">
+          <div className="mt-6 flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
             {t("auth.haveAccount")}{" "}
-            <Link to="/login" className="font-medium text-primary hover:underline">{t("auth.signIn")}</Link>
+            <Link to="/login" className="inline-flex items-center gap-1 font-medium text-primary hover:underline">
+              {t("auth.signIn")} <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
         </div>
       </div>
