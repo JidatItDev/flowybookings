@@ -200,7 +200,7 @@ function SettingsPage() {
               </div>
               <div className="sm:col-span-2">
                 <Label className="mb-1.5 block">{t("bookingLink.title")}</Label>
-                <BookingLinkCard slug={shop?.slug ?? null} shopName={shop?.name} compact />
+                <BookingLinkCard slug={shop?.slug ?? null} shopName={shop?.name} logoUrl={shop?.logo_url ?? null} compact />
               </div>
             </div>
           </Card>
