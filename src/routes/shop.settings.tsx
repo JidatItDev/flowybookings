@@ -19,7 +19,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { getTrialState } from "@/lib/trial";
-import { useFeatureAccess } from "@/lib/use-feature-access";
+import { planLabel as planLabelFn } from "@/lib/plans";
+import { planPriceLabel, useFeatureAccess } from "@/lib/use-feature-access";
+import { useSearch, useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/shop/settings")({
