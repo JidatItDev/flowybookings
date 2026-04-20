@@ -375,6 +375,21 @@ function BookingFlow() {
       </header>
 
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+        {shopTrialExpired && (
+          <div className="mb-6 flex flex-wrap items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive">
+            <span className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-destructive/20">
+              <Lock className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold">Deze salon is tijdelijk niet beschikbaar</p>
+              <p className="mt-0.5 text-sm opacity-90">{selectedShop?.name} accepteert momenteel geen nieuwe boekingen. Probeer het later opnieuw.</p>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/">Terug naar start</Link>
+            </Button>
+          </div>
+        )}
+
         {isDemoShop && (
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary-soft/40 px-4 py-3">
             <div className="flex items-center gap-2 text-sm">
