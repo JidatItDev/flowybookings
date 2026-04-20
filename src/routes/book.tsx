@@ -101,7 +101,7 @@ function BookingFlow() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shops")
-        .select("id, name, slug, address, is_demo, business_hours, timezone, plan, plan_expires_at")
+        .select("id, name, slug, address, is_demo, business_hours, timezone, plan, plan_expires_at, logo_url")
         .eq("status", "active");
       if (error) throw error;
       let rows = data ?? [];
@@ -130,7 +130,7 @@ function BookingFlow() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shops")
-        .select("id, name, slug, address, is_demo, business_hours, timezone, plan, plan_expires_at")
+        .select("id, name, slug, address, is_demo, business_hours, timezone, plan, plan_expires_at, logo_url")
         .eq("id", presetShopId!)
         .maybeSingle();
       if (error) throw error;
@@ -361,15 +361,32 @@ function BookingFlow() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-background/80 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
-          <Link to="/" className="flex items-center gap-2">
+        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-3 px-4 sm:px-6">
+          <Link to="/" className="flex min-w-0 items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-brand">
               <Sparkle className="h-4 w-4 text-primary-foreground" />
             </div>
             <span className="text-base font-semibold">FlowyBookings</span>
           </Link>
+          {selectedShop && (
+            <div className="hidden min-w-0 items-center gap-2 sm:flex">
+              <span className="text-muted-foreground">·</span>
+              {(selectedShop as { logo_url?: string | null }).logo_url ? (
+                <img
+                  src={(selectedShop as { logo_url: string }).logo_url}
+                  alt={selectedShop.name}
+                  className="h-7 w-7 rounded-md object-cover ring-1 ring-border"
+                />
+              ) : (
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-xs font-semibold text-muted-foreground">
+                  {selectedShop.name?.charAt(0)?.toUpperCase() ?? "?"}
+                </div>
+              )}
+              <span className="truncate text-sm font-medium">{selectedShop.name}</span>
+            </div>
+          )}
           <div className="flex items-center gap-3">
-            <p className="hidden text-xs text-muted-foreground sm:block">{t("book.secureBooking")}</p>
+            <p className="hidden text-xs text-muted-foreground lg:block">{t("book.secureBooking")}</p>
             <LanguageSwitcher />
           </div>
         </div>
