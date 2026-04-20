@@ -6,12 +6,19 @@
 // Niet-admins kunnen dit niet activeren: de UI-knop staat alleen op
 // /beheer/dashboard/shops (RequireSuperAdmin) en RLS blokkeert de rest.
 
+import { supabase } from "@/integrations/supabase/client"
+
 const KEY = "flowybookings:impersonating-shop"
 
 export type ImpersonationState = {
   shopId: string
   shopName: string
   startedAt: string
+}
+
+export type ImpersonationActor = {
+  userId: string | null
+  email: string | null
 }
 
 export function startImpersonation(state: Omit<ImpersonationState, "startedAt">) {
@@ -58,14 +65,56 @@ function dispatchChange() {
   window.dispatchEvent(new Event("flowy:impersonation-changed"))
 }
 
-// Wrap so callers krijgen automatisch de event-dispatch
-const _start = startImpersonation
-const _stop = stopImpersonation
-export const startImpersonate: typeof startImpersonation = (s) => {
-  _start(s)
-  dispatchChange()
+async function logImpersonationEvent(
+  action: "admin_impersonate_start" | "admin_impersonate_stop",
+  shopId: string,
+  shopName: string,
+  actor: ImpersonationActor,
+) {
+  try {
+    await supabase.from("activity_log").insert({
+      action,
+      entity: "shop",
+      shop_id: shopId,
+      actor_user_id: actor.userId,
+      actor_email: actor.email,
+      metadata: { shop_name: shopName },
+    })
+  } catch (err) {
+    // Audit-log mag de impersonate-flow nooit breken.
+    console.warn("Failed to log impersonation event", err)
+  }
 }
-export const stopImpersonate: typeof stopImpersonation = () => {
-  _stop()
+
+/**
+ * Start impersonate + log audit event. Geeft actor mee zodat we weten welke
+ * super_admin de actie uitvoerde.
+ */
+export const startImpersonate = (
+  state: Omit<ImpersonationState, "startedAt">,
+  actor: ImpersonationActor = { userId: null, email: null },
+) => {
+  startImpersonation(state)
   dispatchChange()
+  void logImpersonationEvent("admin_impersonate_start", state.shopId, state.shopName, actor)
+}
+
+/**
+ * Stop impersonate + log audit event. Leest huidige state vóór clear zodat we
+ * shop_id mee kunnen sturen.
+ */
+export const stopImpersonate = (
+  actor: ImpersonationActor = { userId: null, email: null },
+) => {
+  const current = getImpersonation()
+  stopImpersonation()
+  dispatchChange()
+  if (current) {
+    void logImpersonationEvent(
+      "admin_impersonate_stop",
+      current.shopId,
+      current.shopName,
+      actor,
+    )
+  }
 }
