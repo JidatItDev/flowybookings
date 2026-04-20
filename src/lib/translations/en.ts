@@ -245,6 +245,7 @@ export const en: Record<string, string> = {
   "adminNav.allSystems": "All systems operational · 99.98% uptime",
   "adminNav.switchToShop": "Switch to Shop →",
   "adminNav.platformOwner": "Platform owner",
+  "adminNav.alertSound": "Alert sound",
 
   // ── Shop Dashboard ──
   "dashboard.welcomeBack": "Welcome back, {name} 👋",
