@@ -135,17 +135,36 @@ function SettingsPage() {
 
   const dayLabelKey: Record<DayKey, string> = { mon: "settings.monday", tue: "settings.tuesday", wed: "settings.wednesday", thu: "settings.thursday", fri: "settings.friday", sat: "settings.saturday", sun: "settings.sunday" };
 
-  const planPrices: Record<string, { price: number; fee: number }> = {
-    trial: { price: 0, fee: 0 },
-    starter: { price: 19, fee: 1.5 },
-    pro: { price: 49, fee: 1.0 },
-    premium: { price: 99, fee: 0.5 },
+  // SINGLE SOURCE OF TRUTH for plan + status: useAuth().activeShop, the same
+  // row that drives the header badge + TrialBanner. Falls back to the freshly
+  // fetched shopFullQuery row if activeShop hasn't hydrated yet.
+  // Status semantics come from getTrialState(), which reads:
+  //   - shop.plan / shop.plan_expires_at  (trial vs paid + expiry)
+  //   - shop.onboarding.subscription_status / payment_failed_at  (Mollie webhook)
+  // No more hardcoded planPrices map and no more ad-hoc "active vs trial" check.
+  const planSource = (activeShop ?? (shop as unknown as typeof activeShop)) ?? null;
+  const trialState = getTrialState(planSource as never);
+  const currentPlan = (planSource?.plan ?? "trial") as string;
+  const planNameLabel = planLabelFn(currentPlan);          // "Trial" | "Starter" | "Pro" | "Premium"
+  const planPrice = planPriceLabel(currentPlan);           // "" for trial, else "€19/maand" etc.
+  const planExpiresAt = planSource?.plan_expires_at ? new Date(planSource.plan_expires_at) : null;
+
+  // Per-status badge label + tone. Always derived from the same trialState — no
+  // separate booleans that can drift apart from the header.
+  const statusBadge: { label: string; tone: "mint" | "peach" | "destructive" | "muted" } = (() => {
+    if (trialState.isTrial && trialState.isExpired)         return { label: t("settings.planExpired"),        tone: "destructive" };
+    if (trialState.isTrial)                                  return { label: t("settings.planTrial"),          tone: "peach" };
+    if (trialState.subscriptionStatus === "payment_failed") return { label: t("billing.statusPaymentFailed"), tone: "destructive" };
+    if (trialState.subscriptionStatus === "cancelled")      return { label: t("billing.statusCancelled"),     tone: "muted" };
+    if (trialState.subscriptionStatus === "expired")        return { label: t("settings.planExpired"),        tone: "destructive" };
+    return { label: t("settings.planActive"), tone: "mint" };
+  })();
+  const toneClasses: Record<typeof statusBadge.tone, string> = {
+    mint: "bg-mint/40 text-mint-foreground",
+    peach: "bg-peach text-peach-foreground",
+    destructive: "bg-destructive/15 text-destructive",
+    muted: "bg-muted text-muted-foreground",
   };
-  const currentPlan = (shop?.plan ?? "trial") as keyof typeof planPrices;
-  const planInfo = planPrices[currentPlan];
-  const planExpiresAt = shop?.plan_expires_at ? new Date(shop.plan_expires_at) : null;
-  const daysLeft = planExpiresAt ? Math.max(0, Math.ceil((planExpiresAt.getTime() - Date.now()) / 86400000)) : null;
-  const planLabel = currentPlan === "trial" ? t("settings.planTrial") : (planExpiresAt && planExpiresAt < new Date()) ? t("settings.planExpired") : t("settings.planActive");
 
   return (
     <ShopLayout>
@@ -158,23 +177,19 @@ function SettingsPage() {
         <div className="h-72 animate-pulse rounded-2xl border border-border bg-card" />
       ) : (
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Trial-verlopen banner */}
-          {(() => {
-            const trial = getTrialState(shop as never);
-            if (!trial.isExpired) return null;
-            return (
-              <div className="lg:col-span-3 flex flex-wrap items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-destructive">
-                <AlertTriangle className="h-5 w-5 flex-none" />
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold">{t("settings.trialExpiredTitle")}</p>
-                  <p className="mt-1 text-sm opacity-90">{t("settings.trialExpiredBody")}</p>
-                </div>
-                <Link to="/shop/upgrade"><Button variant="hero">{t("settings.trialExpiredCta")}</Button></Link>
+          {/* Trial-verlopen banner — same trialState as the badge below */}
+          {trialState.isExpired && (
+            <div className="lg:col-span-3 flex flex-wrap items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-destructive">
+              <AlertTriangle className="h-5 w-5 flex-none" />
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">{t("settings.trialExpiredTitle")}</p>
+                <p className="mt-1 text-sm opacity-90">{t("settings.trialExpiredBody")}</p>
               </div>
-            );
-          })()}
+              <Link to="/shop/upgrade"><Button variant="hero">{t("settings.trialExpiredCta")}</Button></Link>
+            </div>
+          )}
 
-          {/* SECTIE 1 — Jouw abonnement */}
+          {/* SECTIE 1 — Jouw abonnement (single source of truth: activeShop) */}
           <Card title={t("settings.subscription")} className="lg:col-span-3">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex items-start gap-3">
@@ -183,21 +198,19 @@ function SettingsPage() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-lg font-semibold capitalize">{currentPlan}</p>
+                    <p className="text-lg font-semibold">{planNameLabel}</p>
                     <span className={cn(
                       "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-                      planLabel === t("settings.planActive") ? "bg-mint/40 text-mint-foreground" :
-                      planLabel === t("settings.planTrial") ? "bg-peach text-peach-foreground" :
-                      "bg-destructive/15 text-destructive",
-                    )}>{planLabel}</span>
+                      toneClasses[statusBadge.tone],
+                    )}>{statusBadge.label}</span>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    €{planInfo.price}/maand · {planInfo.fee}% platform fee
-                  </p>
+                  {planPrice && !trialState.isTrial && (
+                    <p className="mt-1 text-sm text-muted-foreground">{planPrice}</p>
+                  )}
                   {planExpiresAt && (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {currentPlan === "trial" && daysLeft !== null
-                        ? t("settings.daysLeft", { n: String(daysLeft) })
+                      {trialState.isTrial && trialState.daysLeft !== null
+                        ? t("settings.daysLeft", { n: String(trialState.daysLeft) })
                         : `${t("settings.nextPayment")}: ${planExpiresAt.toLocaleDateString("nl-NL", { day: "2-digit", month: "long", year: "numeric" })}`}
                     </p>
                   )}
@@ -205,7 +218,6 @@ function SettingsPage() {
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link to="/shop/upgrade"><Button variant="hero">{t("settings.changePlan")}</Button></Link>
-                <Button variant="outline" disabled>{t("settings.cancelPlan")}</Button>
               </div>
             </div>
           </Card>
