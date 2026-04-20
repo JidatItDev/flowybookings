@@ -16,6 +16,7 @@ import {
   CalendarIcon,
   Clock,
   CreditCard,
+  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
