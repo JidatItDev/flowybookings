@@ -60,6 +60,9 @@ export function ShopBillingCard() {
       });
       const data = (await res.json()) as { ok?: boolean; checkout_url?: string; error?: string };
       if (!res.ok || !data.checkout_url) throw new Error(data.error ?? "checkout_failed");
+      if (shopId) {
+        markBillingPending({ shopId, plan, cycle: cycle === "yearly" ? "yearly" : "monthly" });
+      }
       return data.checkout_url;
     },
     onSuccess: (url) => { window.location.href = url; },
