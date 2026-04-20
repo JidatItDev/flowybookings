@@ -19,7 +19,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { startImpersonate } from "@/lib/impersonation";
-import { changeShopPlan, type DbPlan } from "@/lib/plans";
+import { ALL_DB_PLANS, planLabel, type DbPlan } from "@/lib/plans";
 
 type ShopStatus = Database["public"]["Enums"]["shop_status"];
 
