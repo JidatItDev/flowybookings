@@ -17,6 +17,7 @@ const ACTION_LABELS: Record<string, string> = {
   shop_status_change: "Status gewijzigd",
   shop_subscription_change: "Abonnement gewijzigd",
   shop_cancelled: "Shop geannuleerd",
+  shop_created: "Nieuwe shop",
   payment_failed: "Betaling mislukt",
   mollie_connected: "Mollie gekoppeld",
   mollie_disconnected: "Mollie ontkoppeld",
@@ -24,6 +25,8 @@ const ACTION_LABELS: Record<string, string> = {
   feature_override_removed: "Override verwijderd",
   customers_imported: "Klanten geïmporteerd",
   subscription_payment_failed: "Abonnement-betaling mislukt",
+  staff_invited: "Personeel toegevoegd",
+  service_created: "Eerste service aangemaakt",
 }
 
 // Acties die als kritiek gelden — admin krijgt direct een subtiele toast.
