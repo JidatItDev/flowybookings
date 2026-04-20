@@ -170,6 +170,45 @@ function ActivityPage() {
               </SelectContent>
             </Select>
           </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">
+              {t("activityPage.filterDateFrom")}
+            </span>
+            <DatePickerButton
+              value={dateFrom}
+              onChange={setDateFrom}
+              placeholder={t("activityPage.pickDate")}
+              maxDate={dateTo}
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">
+              {t("activityPage.filterDateTo")}
+            </span>
+            <DatePickerButton
+              value={dateTo}
+              onChange={setDateTo}
+              placeholder={t("activityPage.pickDate")}
+              minDate={dateFrom}
+            />
+          </div>
+
+          {(dateFrom || dateTo) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 gap-1 text-muted-foreground"
+              onClick={() => {
+                setDateFrom(undefined);
+                setDateTo(undefined);
+              }}
+            >
+              <X className="h-3.5 w-3.5" />
+              {t("activityPage.clearDates")}
+            </Button>
+          )}
         </div>
 
         <div className="text-xs text-muted-foreground">
