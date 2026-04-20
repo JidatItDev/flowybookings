@@ -49,6 +49,9 @@ export type AdminShopRow = {
   owner_email?: string;
   booking_count?: number;
   revenue_cents?: number;
+  customer_count?: number;
+  imported_customer_count?: number;
+  customer_sources?: Record<string, number>;
 };
 
 export const adminShopsQuery = () =>
@@ -61,14 +64,14 @@ export const adminShopsQuery = () =>
         .order("created_at", { ascending: false });
       if (error) throw error;
 
-      // Enrich with owner email, booking count, revenue
       const shopIds = (shops ?? []).map((s) => s.id);
       const ownerIds = [...new Set((shops ?? []).map((s) => s.owner_id))];
 
-      const [profilesRes, bookingsRes, paymentsRes] = await Promise.all([
+      const [profilesRes, bookingsRes, paymentsRes, customersRes] = await Promise.all([
         supabase.from("profiles").select("id, email").in("id", ownerIds),
         supabase.from("bookings").select("id, shop_id").in("shop_id", shopIds),
         supabase.from("payments").select("shop_id, amount_cents").in("shop_id", shopIds),
+        supabase.from("customers").select("shop_id, import_source").in("shop_id", shopIds),
       ]);
 
       const ownerMap = new Map((profilesRes.data ?? []).map((p) => [p.id, p.email]));
@@ -77,11 +80,26 @@ export const adminShopsQuery = () =>
       const revenueMap = new Map<string, number>();
       (paymentsRes.data ?? []).forEach((p) => revenueMap.set(p.shop_id, (revenueMap.get(p.shop_id) ?? 0) + p.amount_cents));
 
+      const customerCounts = new Map<string, number>();
+      const importedCounts = new Map<string, number>();
+      const sourceMap = new Map<string, Record<string, number>>();
+      (customersRes.data ?? []).forEach((c) => {
+        customerCounts.set(c.shop_id, (customerCounts.get(c.shop_id) ?? 0) + 1);
+        const src = c.import_source ?? "manual";
+        if (c.import_source) importedCounts.set(c.shop_id, (importedCounts.get(c.shop_id) ?? 0) + 1);
+        const cur = sourceMap.get(c.shop_id) ?? {};
+        cur[src] = (cur[src] ?? 0) + 1;
+        sourceMap.set(c.shop_id, cur);
+      });
+
       return (shops ?? []).map((s) => ({
         ...s,
         owner_email: ownerMap.get(s.owner_id) ?? undefined,
         booking_count: bookingCounts.get(s.id) ?? 0,
         revenue_cents: revenueMap.get(s.id) ?? 0,
+        customer_count: customerCounts.get(s.id) ?? 0,
+        imported_customer_count: importedCounts.get(s.id) ?? 0,
+        customer_sources: sourceMap.get(s.id) ?? {},
       }));
     },
     staleTime: 15_000,

@@ -225,6 +225,10 @@ function CustomerProfilePage() {
                     <Sparkle className="h-3.5 w-3.5" /> {t("customers.customerSince", { date: relativeFromNow(customer.created_at) })}
                   </span>
                 </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {sourceText}
+                  {customer.imported_at && ` · ${formatDateTime(customer.imported_at)}`}
+                </p>
               </div>
             </div>
 
@@ -347,6 +351,18 @@ function CustomerProfilePage() {
               value={`${completedBookings}/${totalBookings}`}
               hint={t("customers.completedOfTotal")}
             />
+            <StatTile
+              icon={Wallet}
+              label={t("customers.avgPerVisit")}
+              value={formatCents(avgSpend)}
+            />
+            {firstBooking && (
+              <StatTile
+                icon={Sparkle}
+                label={t("customers.firstVisit")}
+                value={relativeFromNow(firstBooking.starts_at)}
+              />
+            )}
             <StatTile
               icon={AlertTriangle}
               label={t("customers.noShows")}

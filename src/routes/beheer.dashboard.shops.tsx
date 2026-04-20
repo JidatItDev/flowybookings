@@ -146,16 +146,34 @@ function ShopsPage() {
                     {isExpanded && (
                       <tr className="bg-muted/10">
                         <td colSpan={9} className="px-4 py-4 sm:px-6">
-                          <div className="mb-3 rounded-xl border border-border bg-card px-4 py-3 text-sm">
-                            {s.policy_accepted_at ? (
-                              <p className="text-foreground">
-                                ✅ <span className="font-medium">{t("adminShops.policyAcceptedOn")}:</span>{" "}
-                                <span className="text-muted-foreground">{policyDateFmt.format(new Date(s.policy_accepted_at))}</span>
-                                {s.policy_version && <span className="ml-2 text-xs text-muted-foreground">(v{s.policy_version})</span>}
+                          <div className="mb-3 grid gap-3 sm:grid-cols-2">
+                            <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm">
+                              {s.policy_accepted_at ? (
+                                <p className="text-foreground">
+                                  ✅ <span className="font-medium">{t("adminShops.policyAcceptedOn")}:</span>{" "}
+                                  <span className="text-muted-foreground">{policyDateFmt.format(new Date(s.policy_accepted_at))}</span>
+                                  {s.policy_version && <span className="ml-2 text-xs text-muted-foreground">(v{s.policy_version})</span>}
+                                </p>
+                              ) : (
+                                <p className="font-medium text-destructive">⚠️ {t("adminShops.policyNotAcceptedWarning")}</p>
+                              )}
+                            </div>
+                            <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm">
+                              <p className="font-medium">
+                                {t("adminShops.customersStat", {
+                                  total: String(s.customer_count ?? 0),
+                                  imported: String(s.imported_customer_count ?? 0),
+                                })}
                               </p>
-                            ) : (
-                              <p className="font-medium text-destructive">⚠️ {t("adminShops.policyNotAcceptedWarning")}</p>
-                            )}
+                              {s.customer_sources && Object.keys(s.customer_sources).length > 0 && (
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  {Object.entries(s.customer_sources)
+                                    .sort((a, b) => b[1] - a[1])
+                                    .map(([src, n]) => `${sourceLabel(src)}: ${n}`)
+                                    .join(" · ")}
+                                </p>
+                              )}
+                            </div>
                           </div>
                           <ShopOverridesPanel shopId={s.id} shopName={s.name} plan={s.plan} />
                         </td>
