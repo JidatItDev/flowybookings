@@ -908,6 +908,13 @@ export const nl: Record<string, string> = {
   "adminShops.bookings": "Boekingen",
   "adminShops.revenue": "Omzet",
   "adminShops.created": "Aangemaakt",
+  "adminShops.policyAccepted": "Beleid geaccepteerd",
+  "adminShops.policyMissing": "Niet geaccepteerd",
+  "adminShops.policyAcceptedOn": "Beleid geaccepteerd op",
+  "adminShops.policyNotAcceptedWarning": "Beleid nog niet geaccepteerd",
+  "adminShops.policyFilter.all": "Alle",
+  "adminShops.policyFilter.accepted": "Beleid ✅",
+  "adminShops.policyFilter.missing": "Beleid ❌",
   "adminShops.noShops": "Geen winkels gevonden.",
   "adminShops.updated": "Winkelstatus bijgewerkt",
 
