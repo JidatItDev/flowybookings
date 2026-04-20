@@ -15,9 +15,11 @@ import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { useGoogleAuthAvailable } from "@/lib/use-google-auth-available";
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (s: Record<string, unknown>) => ({
-    redirect: typeof s.redirect === "string" ? s.redirect : undefined,
-  }),
+  validateSearch: (s: Record<string, unknown>): { redirect?: string } => {
+    const out: { redirect?: string } = {};
+    if (typeof s.redirect === "string") out.redirect = s.redirect;
+    return out;
+  },
   head: () => ({ meta: [{ title: "Sign in — FlowyBookings" }] }),
   component: LoginPage,
 });

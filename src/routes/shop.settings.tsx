@@ -28,10 +28,12 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/shop/settings")({
   head: () => ({ meta: [{ title: "Settings — FlowyBookings" }] }),
-  validateSearch: (search: Record<string, unknown>) => ({
-    billing: typeof search.billing === "string" ? (search.billing as string) : undefined,
-    payment: typeof search.payment === "string" ? (search.payment as string) : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { billing?: string; payment?: string } => {
+    const out: { billing?: string; payment?: string } = {};
+    if (typeof search.billing === "string") out.billing = search.billing;
+    if (typeof search.payment === "string") out.payment = search.payment;
+    return out;
+  },
   component: SettingsPage,
 });
 
