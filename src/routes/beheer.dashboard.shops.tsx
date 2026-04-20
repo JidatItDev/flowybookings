@@ -28,6 +28,7 @@ function ShopsPage() {
   const { user, setActiveShopId } = useAuth();
   const navigate = useNavigate();
   const [q, setQ] = useState(""); const [statusFilter, setStatusFilter] = useState<"all" | ShopStatus>("all");
+  const [policyFilter, setPolicyFilter] = useState<"all" | "accepted" | "missing">("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { data: shops, isLoading } = useQuery(adminShopsQuery()); const qc = useQueryClient();
   const updateStatus = useMutation({
@@ -42,7 +43,13 @@ function ShopsPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin"] }); toast.success(t("adminShops.planUpdated")); },
     onError: (e: Error) => toast.error(e.message),
   });
-  const list = (shops ?? []).filter((s) => (statusFilter === "all" || s.status === statusFilter) && s.name.toLowerCase().includes(q.toLowerCase()));
+  const list = (shops ?? []).filter((s) => {
+    if (statusFilter !== "all" && s.status !== statusFilter) return false;
+    if (policyFilter === "accepted" && !s.policy_accepted_at) return false;
+    if (policyFilter === "missing" && s.policy_accepted_at) return false;
+    return s.name.toLowerCase().includes(q.toLowerCase());
+  });
+  const policyDateFmt = new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", year: "numeric" });
 
   return (
     <AdminLayout>
@@ -50,6 +57,20 @@ function ShopsPage() {
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex max-w-sm flex-1 items-center gap-2 rounded-xl border border-border bg-card px-3"><Search className="h-4 w-4 text-muted-foreground" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("adminShops.searchPlaceholder")} className="h-10 flex-1 bg-transparent text-sm outline-none" /></div>
         {(["all", "active", "pending", "suspended"] as const).map((s) => <button key={s} onClick={() => setStatusFilter(s)} className={cn("rounded-full px-3 py-1.5 text-xs font-medium capitalize", statusFilter === s ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted")}>{s === "all" ? t("adminShops.all") : s}</button>)}
+        <div className="ml-2 h-6 w-px bg-border" />
+        {(["all", "accepted", "missing"] as const).map((p) => (
+          <button
+            key={p}
+            onClick={() => setPolicyFilter(p)}
+            className={cn(
+              "rounded-full px-3 py-1.5 text-xs font-medium",
+              policyFilter === p ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted",
+            )}
+            title={t(`adminShops.policyFilter.${p}`)}
+          >
+            {t(`adminShops.policyFilter.${p}`)}
+          </button>
+        ))}
       </div>
       {isLoading ? <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div> : (
         <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
