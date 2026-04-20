@@ -28,6 +28,8 @@ type StaffRow = { id: string; full_name: string; email: string | null; phone: st
 
 function StaffPage() {
   const shopId = useActiveShopId(); const qc = useQueryClient(); const { t } = useT();
+  const readOnly = useImpersonationReadOnly();
+  const roTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const { activeShop } = useShopContext();
   const staffAccess = useFeatureAccess(shopId, "max_staff");
   // Source of truth for the limit comes from plan_features via the RPC.
@@ -47,12 +49,12 @@ function StaffPage() {
   const atOrOverLimit = staffAccess.data ? !staffAccess.data.allowed : (Number.isFinite(planLimit) && staff.length >= planLimit);
 
   const toggleActive = useMutation({
-    mutationFn: async (s: StaffRow) => { const { error } = await supabase.from("staff").update({ is_active: !s.is_active }).eq("id", s.id); if (error) throw error; },
+    mutationFn: async (s: StaffRow) => { assertNotImpersonating(); const { error } = await supabase.from("staff").update({ is_active: !s.is_active }).eq("id", s.id); if (error) throw error; },
     onSuccess: () => { if (shopId) qc.invalidateQueries({ queryKey: shopKeys.staff(shopId) }); },
     onError: (e: Error) => toast.error(e.message),
   });
   const remove = useMutation({
-    mutationFn: async (id: string) => { const { error } = await supabase.from("staff").delete().eq("id", id); if (error) throw error; },
+    mutationFn: async (id: string) => { assertNotImpersonating(); const { error } = await supabase.from("staff").delete().eq("id", id); if (error) throw error; },
     onSuccess: () => { toast.success(t("staff.removed")); setDeleting(null); if (shopId) qc.invalidateQueries({ queryKey: shopKeys.staff(shopId) }); },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -67,10 +69,12 @@ function StaffPage() {
           <Button
             variant="hero"
             onClick={() => setCreating(true)}
-            disabled={!shopId || atOrOverLimit}
-            title={atOrOverLimit && Number.isFinite(planLimit)
-              ? t(planLimit === 1 ? "staff.limitTooltip" : "staff.limitTooltipPlural", { limit: planLimit })
-              : undefined}
+            disabled={!shopId || atOrOverLimit || readOnly}
+            title={readOnly
+              ? t("impersonate.readOnlyTooltip")
+              : atOrOverLimit && Number.isFinite(planLimit)
+                ? t(planLimit === 1 ? "staff.limitTooltip" : "staff.limitTooltipPlural", { limit: planLimit })
+                : undefined}
           >
             <Plus className="h-4 w-4" /> {t("staff.addStaff")}
           </Button>
@@ -87,7 +91,7 @@ function StaffPage() {
         </div>
       )}
       {!shopId ? <NoShopState /> : isLoading ? <LoadingGrid count={4} /> : staff.length === 0 ? (
-        <EmptyState icon={UserCog} title={t("staff.noStaff")} description={t("staff.noStaffDesc")} action={<Button variant="hero" onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> {t("staff.addStaff")}</Button>} />
+        <EmptyState icon={UserCog} title={t("staff.noStaff")} description={t("staff.noStaffDesc")} action={<Button variant="hero" onClick={() => setCreating(true)} disabled={readOnly} title={roTitle}><Plus className="h-4 w-4" /> {t("staff.addStaff")}</Button>} />
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {staff.map((m) => {
@@ -100,7 +104,7 @@ function StaffPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <h3 className="truncate text-base font-semibold">{m.full_name}</h3>
-                      <button onClick={() => toggleActive.mutate(m)} className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase transition", m.is_active ? "bg-mint text-mint-foreground" : "bg-muted text-muted-foreground")}>{m.is_active ? t("staff.active") : t("staff.off")}</button>
+                      <button onClick={() => toggleActive.mutate(m)} disabled={readOnly} title={roTitle} className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase transition disabled:cursor-not-allowed disabled:opacity-60", m.is_active ? "bg-mint text-mint-foreground" : "bg-muted text-muted-foreground")}>{m.is_active ? t("staff.active") : t("staff.off")}</button>
                     </div>
                     {m.email && <p className="truncate text-sm text-muted-foreground">{m.email}</p>}
                     <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarRange className="h-3.5 w-3.5" /> {hrs}</p>
@@ -113,8 +117,8 @@ function StaffPage() {
                   </div>
                 </div>
                 <div className="mt-5 flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setEditing(m)}><Pencil className="mr-1 h-3.5 w-3.5" /> {t("staff.edit")}</Button>
-                  <Button variant="ghost" size="sm" onClick={() => setDeleting(m)}><Trash2 className="mr-1 h-3.5 w-3.5" /> {t("staff.remove")}</Button>
+                  <Button variant="outline" size="sm" disabled={readOnly} title={roTitle} onClick={() => setEditing(m)}><Pencil className="mr-1 h-3.5 w-3.5" /> {t("staff.edit")}</Button>
+                  <Button variant="ghost" size="sm" disabled={readOnly} title={roTitle} onClick={() => setDeleting(m)}><Trash2 className="mr-1 h-3.5 w-3.5" /> {t("staff.remove")}</Button>
                 </div>
               </div>
             );
@@ -149,6 +153,7 @@ function StaffFormDialog({ open, onClose, member, shopId, services, links }: { o
 
   const save = useMutation({
     mutationFn: async () => {
+      assertNotImpersonating();
       if (!shopId) throw new Error(t("errors.noActiveShop"));
       const payload = { shop_id: shopId, full_name: form.full_name.trim(), email: form.email.trim() || null, phone: form.phone.trim() || null, is_active: form.is_active, working_hours: form.hours.trim() ? { hours: form.hours.trim() } : {} };
       let staffId = member?.id;
