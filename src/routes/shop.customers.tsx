@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState, NoShopState } from "@/components/EmptyState";
+import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { useActiveShopId } from "@/lib/shop-context";
 import { customersQuery, bookingsQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +32,8 @@ function CustomersPage() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { t } = useT();
+  const readOnly = useImpersonationReadOnly();
+  const roTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<CustomerRow | null>(null);
   const [creating, setCreating] = useState(false);
@@ -44,7 +47,7 @@ function CustomersPage() {
   }, {});
 
   const remove = useMutation({
-    mutationFn: async (id: string) => { const { error } = await supabase.from("customers").delete().eq("id", id); if (error) throw error; },
+    mutationFn: async (id: string) => { assertNotImpersonating(); const { error } = await supabase.from("customers").delete().eq("id", id); if (error) throw error; },
     onSuccess: () => { toast.success(t("customers.deleted")); setDeleting(null); if (shopId) qc.invalidateQueries({ queryKey: shopKeys.customers(shopId) }); },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -53,7 +56,7 @@ function CustomersPage() {
 
   return (
     <ShopLayout>
-      <PageHeader title={t("customers.title")} description={t("customers.description")} actions={<Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId}><Plus className="h-4 w-4" /> {t("customers.newCustomer")}</Button>} />
+      <PageHeader title={t("customers.title")} description={t("customers.description")} actions={<Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId || readOnly} title={roTitle}><Plus className="h-4 w-4" /> {t("customers.newCustomer")}</Button>} />
       {!shopId ? <NoShopState /> : (
         <>
           <div className="mb-4 flex max-w-md items-center gap-2 rounded-xl border border-border bg-card px-3 shadow-xs">
@@ -61,7 +64,7 @@ function CustomersPage() {
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("customers.searchPlaceholder")} className="h-10 flex-1 bg-transparent text-sm outline-none" />
           </div>
           {isLoading ? <div className="h-72 animate-pulse rounded-2xl border border-border bg-card" /> : list.length === 0 ? (
-            <EmptyState icon={Users} title={q ? t("customers.noMatches") : t("customers.noCustomers")} description={q ? t("customers.noMatchDesc") : t("customers.noCustomersDesc")} action={!q && <Button variant="hero" onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> {t("customers.addCustomer")}</Button>} />
+            <EmptyState icon={Users} title={q ? t("customers.noMatches") : t("customers.noCustomers")} description={q ? t("customers.noMatchDesc") : t("customers.noCustomersDesc")} action={!q && <Button variant="hero" onClick={() => setCreating(true)} disabled={readOnly} title={roTitle}><Plus className="h-4 w-4" /> {t("customers.addCustomer")}</Button>} />
           ) : (
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
               <table className="w-full text-sm">
@@ -121,7 +124,7 @@ function CustomersPage() {
                           {ns > 0 && <AlertTriangle className="h-3 w-3" />} {ns}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" onClick={() => setEditing(c)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" onClick={() => setDeleting(c)}><Trash2 className="h-4 w-4" /></Button></td>
+                      <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" disabled={readOnly} title={roTitle} onClick={() => setEditing(c)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" disabled={readOnly} title={roTitle} onClick={() => setDeleting(c)}><Trash2 className="h-4 w-4" /></Button></td>
                     </tr>
                     );
                   })}
@@ -159,6 +162,7 @@ function CustomerFormDialog({ open, onClose, customer, shopId }: { open: boolean
 
   const save = useMutation({
     mutationFn: async () => {
+      assertNotImpersonating();
       if (!shopId) throw new Error(t("errors.noActiveShop"));
       const payload = { shop_id: shopId, full_name: form.full_name.trim(), email: form.email.trim() || null, phone: form.phone.trim() || null, notes: form.notes.trim() || null, requires_deposit: form.requires_deposit };
       if (customer) { const { error } = await supabase.from("customers").update(payload).eq("id", customer.id); if (error) throw error; }
