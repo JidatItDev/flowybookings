@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Activity, Download, Store } from "lucide-react";
+import { Activity, CalendarIcon, Download, Store, X } from "lucide-react";
+import { format } from "date-fns";
 import { AdminLayout } from "@/components/AdminLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -21,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
 import {
@@ -47,6 +51,8 @@ function ActivityPage() {
 
   const [actionFilter, setActionFilter] = useState<string>(ALL);
   const [shopFilter, setShopFilter] = useState<string>(ALL);
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [page, setPage] = useState(1);
 
   // Realtime: nieuwe events → invalidate
