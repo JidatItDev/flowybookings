@@ -111,6 +111,7 @@ function ServiceFormDialog({ open, onClose, service, shopId }: { open: boolean; 
 
   const save = useMutation({
     mutationFn: async () => {
+      assertNotImpersonating();
       if (!shopId) throw new Error(t("errors.noActiveShop"));
       if (hasErrors) throw new Error(depositError ?? priceError ?? "Invalid input");
       const payload = { shop_id: shopId, name: form.name.trim(), category: form.category.trim() || null, description: form.description.trim() || null, duration_minutes: Number(form.duration_minutes) || 30, price_cents: Math.round(priceNum * 100), deposit_cents: Math.round(depositNum * 100), is_active: form.is_active };
