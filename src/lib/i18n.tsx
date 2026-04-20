@@ -86,10 +86,19 @@ export function I18nProvider({
       let str = dicts[locale]?.[key] ?? dicts.nl[key] ?? key;
       if (vars) {
         Object.entries(vars).forEach(([k, v]) => {
-          str = str.replace(`{${k}}`, String(v));
+          // Support both {{key}} (i18next-style, used in our translation files)
+          // and {key} (legacy single-brace) interpolation.
+          const value = String(v);
+          str = str.split(`{{${k}}}`).join(value);
+          str = str.split(`{${k}}`).join(value);
         });
       }
-      return str;
+      // Guard: if any unresolved {{var}} or {var} placeholders remain (e.g. the
+      // caller forgot to pass that variable), strip them rather than rendering
+      // raw braces like "{7} days" to the user.
+      str = str.replace(/\{\{[^}]+\}\}/g, "").replace(/\{[^}]+\}/g, "");
+      // Collapse any double spaces left behind by stripped placeholders.
+      return str.replace(/\s{2,}/g, " ").trim();
     },
     [locale],
   );
