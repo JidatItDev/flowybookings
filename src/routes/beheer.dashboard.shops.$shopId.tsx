@@ -70,23 +70,7 @@ function ShopDetailPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const updatePlan = useMutation({
-    mutationFn: async ({ plan, prev }: { plan: DbPlan; prev: string }) => {
-      await changeShopPlan({
-        shopId,
-        newPlan: plan,
-        previousPlan: prev,
-        actorUserId: user?.id ?? null,
-        actorEmail: user?.email ?? null,
-        source: "admin",
-      });
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin"] });
-      toast.success(t("adminShops.planUpdated"));
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+
 
   if (isLoading) {
     return (
