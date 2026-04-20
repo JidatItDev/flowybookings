@@ -214,11 +214,34 @@ export function CustomerImportDialog({ open, onClose, shopId, onImported }: Prop
 
       return { inserted, updated, skipped, withoutEmail, errors };
     },
-    onSuccess: (s) => {
+    onSuccess: async (s) => {
       setSummary(s);
       setStep("result");
       if (shopId) qc.invalidateQueries({ queryKey: shopKeys.customers(shopId) });
       onImported?.();
+
+      // Activity-log entry zodat admins (LiveEventFeed) en de shop-eigenaar
+      // de import terugzien. Failures stil negeren — de import zelf is al klaar.
+      if (shopId && (s.inserted > 0 || s.updated > 0)) {
+        try {
+          await supabase.from("activity_log").insert({
+            entity: "customers",
+            action: "customers_imported",
+            shop_id: shopId,
+            metadata: {
+              source,
+              file_name: fileName,
+              inserted: s.inserted,
+              updated: s.updated,
+              skipped: s.skipped,
+              without_email: s.withoutEmail,
+              errors: s.errors.length,
+            },
+          });
+        } catch (err) {
+          console.error("[customer-import] activity_log insert failed", err);
+        }
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
