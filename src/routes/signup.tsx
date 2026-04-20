@@ -61,6 +61,7 @@ function SignupPage() {
   const [password, setPassword] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const googleAvailable = useGoogleAuthAvailable();
 
   // Don't auto-redirect after signup; we navigate explicitly to the new shop.
   useEffect(() => { if (!loading && session && !submitting) {/* idle */} }, [session, loading, submitting]);

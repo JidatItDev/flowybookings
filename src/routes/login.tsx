@@ -39,6 +39,7 @@ function LoginPage() {
   const [seeding, setSeeding] = useState(false);
   const { data: appSettings } = useQuery(publicAppSettingsQuery());
   const demoEnabled = appSettings?.demo_mode_enabled !== false && appSettings?.demo_logins_enabled !== false;
+  const googleAvailable = useGoogleAuthAvailable();
 
   useEffect(() => {
     if (loading || rolesLoading || !session) return;
