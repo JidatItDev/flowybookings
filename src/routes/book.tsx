@@ -16,6 +16,7 @@ import {
   CalendarIcon,
   Clock,
   CreditCard,
+  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -100,7 +101,7 @@ function BookingFlow() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shops")
-        .select("id, name, slug, address, is_demo, business_hours, timezone")
+        .select("id, name, slug, address, is_demo, business_hours, timezone, plan, plan_expires_at")
         .eq("status", "active");
       if (error) throw error;
       let rows = data ?? [];
@@ -108,6 +109,13 @@ function BookingFlow() {
         (appSettings && appSettings.public_booking_on_demo_shops_enabled === false) ||
         (appSettings && appSettings.seeded_demo_data_visible === false);
       if (hideDemo) rows = rows.filter((s) => !s.is_demo);
+      // Hide shops with expired trial — they cannot accept new bookings
+      const now = Date.now();
+      rows = rows.filter((s) => {
+        if (s.plan && s.plan !== "trial") return true;
+        if (!s.plan_expires_at) return true;
+        return new Date(s.plan_expires_at).getTime() > now;
+      });
       return rows;
     },
   });
@@ -122,7 +130,7 @@ function BookingFlow() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shops")
-        .select("id, name, slug, address, is_demo, business_hours, timezone")
+        .select("id, name, slug, address, is_demo, business_hours, timezone, plan, plan_expires_at")
         .eq("id", presetShopId!)
         .maybeSingle();
       if (error) throw error;
@@ -132,6 +140,7 @@ function BookingFlow() {
 
   const selectedShop = shopsQ.data?.find((s) => s.id === shopId) ?? presetShopQ.data ?? null;
   const isDemoShop = !!selectedShop?.is_demo;
+  const shopTrialExpired = !!selectedShop && (selectedShop as { plan?: string; plan_expires_at?: string | null }).plan === "trial" && !!(selectedShop as { plan_expires_at?: string | null }).plan_expires_at && new Date((selectedShop as { plan_expires_at?: string }).plan_expires_at!).getTime() < Date.now();
   const selectedService = servicesQ.data?.find((s) => s.id === serviceId);
   const selectedStaff = staffQ.data?.find((s) => s.id === staffId);
 
@@ -367,6 +376,21 @@ function BookingFlow() {
       </header>
 
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+        {shopTrialExpired && (
+          <div className="mb-6 flex flex-wrap items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive">
+            <span className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-destructive/20">
+              <Lock className="h-4 w-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold">Deze salon is tijdelijk niet beschikbaar</p>
+              <p className="mt-0.5 text-sm opacity-90">{selectedShop?.name} accepteert momenteel geen nieuwe boekingen. Probeer het later opnieuw.</p>
+            </div>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/">Terug naar start</Link>
+            </Button>
+          </div>
+        )}
+
         {isDemoShop && (
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary-soft/40 px-4 py-3">
             <div className="flex items-center gap-2 text-sm">

@@ -48,6 +48,7 @@ function CalendarPage() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<BookingWithRelations | null>(null);
   const [deleting, setDeleting] = useState<BookingWithRelations | null>(null);
+  const [viewing, setViewing] = useState<BookingWithRelations | null>(null);
   const [dayOffset, setDayOffset] = useState<number | null>(0); // 0 = vandaag, null = alle
 
   const statusLabel: Record<string, string> = {
@@ -205,6 +206,7 @@ function CalendarPage() {
                     <th className="hidden px-4 py-3 text-left sm:table-cell">{t("calendar.customer")}</th>
                     <th className="hidden px-4 py-3 text-left md:table-cell">{t("calendar.service")}</th>
                     <th className="hidden px-4 py-3 text-left lg:table-cell">{t("calendar.staffCol")}</th>
+                    <th className="px-4 py-3 text-right">Bedrag</th>
                     <th className="px-4 py-3 text-left">{t("calendar.status")}</th>
                     <th className="px-4 py-3" />
                   </tr>
@@ -215,7 +217,7 @@ function CalendarPage() {
                     const svc = services.find((s) => s.id === b.service_id);
                     const stf = staff.find((s) => s.id === b.staff_id);
                     return (
-                      <tr key={b.id} className="hover:bg-muted/30">
+                      <tr key={b.id} onClick={() => setViewing(b)} className="cursor-pointer hover:bg-muted/30">
                         <td className="px-4 py-3">
                           <p className="font-medium">{formatTime(b.starts_at)}</p>
                           <p className="text-xs text-muted-foreground">
@@ -225,7 +227,8 @@ function CalendarPage() {
                         <td className="hidden px-4 py-3 sm:table-cell">{cust?.full_name ?? "—"}</td>
                         <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">{svc?.name ?? "—"}</td>
                         <td className="hidden px-4 py-3 text-muted-foreground lg:table-cell">{stf?.full_name ?? "—"}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-right font-medium tabular-nums">{formatCents(b.price_cents)}</td>
+                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                           <Select value={b.status} onValueChange={(v) => updateStatus.mutate({ id: b.id, status: v as BookingWithRelations["status"] })}>
                             <SelectTrigger className="h-8 w-[120px] text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>
@@ -235,18 +238,7 @@ function CalendarPage() {
                             </SelectContent>
                           </Select>
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          {b.status !== "no_show" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => updateStatus.mutate({ id: b.id, status: "no_show" })}
-                              title={t("calendar.markNoShow")}
-                            >
-                              <UserX className="h-4 w-4" />
-                            </Button>
-                          )}
+                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                           <Button variant="ghost" size="sm" onClick={() => setEditing(b)}>{t("calendar.edit")}</Button>
                           <Button variant="ghost" size="sm" onClick={() => setDeleting(b)}>{t("calendar.delete")}</Button>
                         </td>
@@ -261,6 +253,16 @@ function CalendarPage() {
       )}
 
       <BookingFormDialog open={creating || !!editing} onClose={() => { setCreating(false); setEditing(null); }} booking={editing} shopId={shopId} />
+
+      <BookingActionDialog
+        booking={viewing}
+        onClose={() => setViewing(null)}
+        onEdit={(b) => { setViewing(null); setEditing(b); }}
+        onAction={(id, status) => { updateStatus.mutate({ id, status }); setViewing(null); }}
+        customers={customers}
+        services={services}
+        staff={staff}
+      />
 
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
@@ -380,5 +382,88 @@ function BookingFormDialog({ open, onClose, booking, shopId }: { open: boolean; 
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function BookingActionDialog({
+  booking, onClose, onEdit, onAction, customers, services, staff,
+}: {
+  booking: BookingWithRelations | null;
+  onClose: () => void;
+  onEdit: (b: BookingWithRelations) => void;
+  onAction: (id: string, status: BookingWithRelations["status"]) => void;
+  customers: Array<{ id: string; full_name: string; email: string | null; phone: string | null }>;
+  services: Array<{ id: string; name: string }>;
+  staff: Array<{ id: string; full_name: string }>;
+}) {
+  if (!booking) return null;
+  const cust = customers.find((c) => c.id === booking.customer_id);
+  const svc = services.find((s) => s.id === booking.service_id);
+  const stf = staff.find((s) => s.id === booking.staff_id);
+  return (
+    <Dialog open={!!booking} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Afspraak details</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-2 text-sm">
+          <div className="rounded-xl bg-muted/40 p-3">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Wanneer</p>
+            <p className="mt-1 font-medium">
+              {new Date(booking.starts_at).toLocaleDateString("nl-NL", { weekday: "long", day: "2-digit", month: "long", timeZone: "UTC" })}
+              {" · "}
+              {formatTime(booking.starts_at)}
+            </p>
+          </div>
+          <div className="grid gap-2">
+            <ActionRow label="Klant" value={cust?.full_name ?? "—"} sub={cust?.email ?? cust?.phone ?? undefined} />
+            <ActionRow label="Service" value={svc?.name ?? "—"} />
+            <ActionRow label="Medewerker" value={stf?.full_name ?? "—"} />
+            <ActionRow label="Bedrag" value={formatCents(booking.price_cents)} />
+          </div>
+          {booking.notes && (
+            <div className="rounded-xl border border-border bg-card p-3">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">Notities</p>
+              <p className="mt-1 whitespace-pre-wrap">{booking.notes}</p>
+            </div>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-2 pt-2">
+          <Button variant="default" disabled={booking.status === "confirmed"} onClick={() => onAction(booking.id, "confirmed")}>
+            Bevestigen
+          </Button>
+          <Button variant="hero" disabled={booking.status === "completed"} onClick={() => onAction(booking.id, "completed")}>
+            Voltooien
+          </Button>
+          <Button variant="outline" disabled={booking.status === "cancelled"} onClick={() => onAction(booking.id, "cancelled")}>
+            Annuleren
+          </Button>
+          <Button
+            variant="outline"
+            disabled={booking.status === "no_show"}
+            onClick={() => onAction(booking.id, "no_show")}
+            className="text-destructive border-destructive/30 hover:bg-destructive/10"
+          >
+            <UserX className="h-4 w-4" /> No-show
+          </Button>
+        </div>
+        <DialogFooter className="mt-2 flex-row justify-between sm:justify-between">
+          <Button variant="ghost" size="sm" onClick={() => onEdit(booking)}>Bewerken</Button>
+          <Button variant="ghost" size="sm" onClick={onClose}>Sluiten</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ActionRow({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
+      <span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="text-right">
+        <span className="block font-medium">{value}</span>
+        {sub && <span className="block text-xs text-muted-foreground">{sub}</span>}
+      </span>
+    </div>
   );
 }

@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CreditCard, Lock, Crown } from "lucide-react";
+import { CreditCard, Lock, Crown, Upload, X, AlertTriangle } from "lucide-react";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { shopFullQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
+import { getTrialState } from "@/lib/trial";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/shop/settings")({
@@ -120,6 +121,24 @@ function SettingsPage() {
         <div className="h-72 animate-pulse rounded-2xl border border-border bg-card" />
       ) : (
         <div className="grid gap-6 lg:grid-cols-3">
+          {/* Trial-verlopen banner */}
+          {(() => {
+            const trial = getTrialState(shop as never);
+            if (!trial.isExpired) return null;
+            return (
+              <div className="lg:col-span-3 flex flex-wrap items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-destructive">
+                <AlertTriangle className="h-5 w-5 flex-none" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold">Je proefperiode is verlopen</p>
+                  <p className="mt-1 text-sm opacity-90">
+                    Kies een plan om door te gaan. Nieuwe boekingen via je publieke pagina en de "Nieuwe afspraak" knop zijn tijdelijk geblokkeerd.
+                  </p>
+                </div>
+                <Link to="/shop/upgrade"><Button variant="hero">Kies een plan</Button></Link>
+              </div>
+            );
+          })()}
+
           {/* SECTIE 1 — Jouw abonnement */}
           <Card title={t("settings.subscription")} className="lg:col-span-3">
             <div className="flex flex-wrap items-start justify-between gap-4">
@@ -176,14 +195,7 @@ function SettingsPage() {
           </Card>
 
           <Card title={t("settings.branding")}>
-            <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl text-xl font-semibold text-primary-foreground" style={{ background: branding.color ?? "var(--color-primary)" }}>
-                {(profile.name || "S").slice(0, 2).toUpperCase()}
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{t("settings.logoHint")}</p>
-              </div>
-            </div>
+            <LogoUploader shopId={shopId!} currentLogoUrl={shop?.logo_url ?? null} fallbackInitials={(profile.name || "S").slice(0, 2).toUpperCase()} fallbackColor={branding.color ?? "var(--color-primary)"} />
             <div className="mt-5">
               <Label htmlFor="brand-color">{t("settings.brandColor")}</Label>
               <div className="mt-1 flex items-center gap-2">
@@ -275,6 +287,88 @@ function NumField({ label, value, onChange }: { label: string; value: number; on
     <div>
       <Label className="mb-1.5 block">{label}</Label>
       <Input type="number" value={value} onChange={(e) => onChange(Number(e.target.value) || 0)} className="h-10" />
+    </div>
+  );
+}
+
+function LogoUploader({ shopId, currentLogoUrl, fallbackInitials, fallbackColor }: { shopId: string; currentLogoUrl: string | null; fallbackInitials: string; fallbackColor: string }) {
+  const qc = useQueryClient();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const upload = async (file: File) => {
+    if (!shopId) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Logo is te groot (max 2MB)");
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "png";
+      const path = `${shopId}/logo-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("shop-logos").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type,
+      });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("shop-logos").getPublicUrl(path);
+      const { error: updErr } = await supabase.from("shops").update({ logo_url: pub.publicUrl }).eq("id", shopId);
+      if (updErr) throw updErr;
+      toast.success("Logo geüpload");
+      qc.invalidateQueries({ queryKey: shopKeys.shopFull(shopId) });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  const remove = async () => {
+    if (!shopId) return;
+    setUploading(true);
+    try {
+      const { error } = await supabase.from("shops").update({ logo_url: null }).eq("id", shopId);
+      if (error) throw error;
+      toast.success("Logo verwijderd");
+      qc.invalidateQueries({ queryKey: shopKeys.shopFull(shopId) });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-4">
+      {currentLogoUrl ? (
+        <img src={currentLogoUrl} alt="Shop logo" className="h-16 w-16 rounded-2xl object-cover border border-border" />
+      ) : (
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl text-xl font-semibold text-primary-foreground" style={{ background: fallbackColor }}>
+          {fallbackInitials}
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-muted-foreground">PNG, JPG, WEBP of SVG · max 2MB</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); }}
+          />
+          <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={uploading}>
+            <Upload className="h-4 w-4" /> {uploading ? "Bezig..." : currentLogoUrl ? "Vervangen" : "Upload logo"}
+          </Button>
+          {currentLogoUrl && (
+            <Button variant="ghost" size="sm" onClick={remove} disabled={uploading} className="text-destructive">
+              <X className="h-4 w-4" /> Verwijder
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
