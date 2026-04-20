@@ -79,7 +79,7 @@ function ShopsPage() {
               <th className="px-6 py-3 text-left">{t("adminShops.shop")}</th><th className="hidden px-6 py-3 text-left md:table-cell">{t("adminShops.owner")}</th><th className="px-6 py-3 text-left">{t("adminShops.plan")}</th><th className="px-6 py-3 text-left">{t("adminShops.status")}</th><th className="hidden px-6 py-3 text-left lg:table-cell">{t("adminShops.bookings")}</th><th className="hidden px-6 py-3 text-left lg:table-cell">{t("adminShops.revenue")}</th><th className="hidden px-6 py-3 text-left xl:table-cell">{t("adminShops.policyAccepted")}</th><th className="hidden px-6 py-3 text-left xl:table-cell">{t("adminShops.created")}</th><th className="px-6 py-3" />
             </tr></thead>
             <tbody className="divide-y divide-border">
-              {list.length === 0 && <tr><td colSpan={8} className="px-6 py-8 text-center text-muted-foreground">{t("adminShops.noShops")}</td></tr>}
+              {list.length === 0 && <tr><td colSpan={9} className="px-6 py-8 text-center text-muted-foreground">{t("adminShops.noShops")}</td></tr>}
               {list.map((s) => {
                 const isExpanded = expandedId === s.id;
                 return (
