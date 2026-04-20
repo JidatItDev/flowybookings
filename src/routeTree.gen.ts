@@ -75,6 +75,7 @@ import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/l
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
+import { Route as ApiBookingBookingIdIcsRouteImport } from './routes/api.booking.$bookingId.ics'
 
 const SupportRoute = SupportRouteImport.update({
   id: '/support',
@@ -417,6 +418,11 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   path: '/lovable/email/auth/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBookingBookingIdIcsRoute = ApiBookingBookingIdIcsRouteImport.update({
+  id: '/api/booking/$bookingId/ics',
+  path: '/api/booking/$bookingId/ics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -480,6 +486,7 @@ export interface FileRoutesByFullPath {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/shop/customers/$customerId': typeof ShopCustomersCustomerIdRoute
   '/beheer/dashboard/': typeof BeheerDashboardIndexRoute
+  '/api/booking/$bookingId/ics': typeof ApiBookingBookingIdIcsRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -548,6 +555,7 @@ export interface FileRoutesByTo {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/shop/customers/$customerId': typeof ShopCustomersCustomerIdRoute
   '/beheer/dashboard': typeof BeheerDashboardIndexRoute
+  '/api/booking/$bookingId/ics': typeof ApiBookingBookingIdIcsRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -617,6 +625,7 @@ export interface FileRoutesById {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/shop/customers/$customerId': typeof ShopCustomersCustomerIdRoute
   '/beheer/dashboard/': typeof BeheerDashboardIndexRoute
+  '/api/booking/$bookingId/ics': typeof ApiBookingBookingIdIcsRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -687,6 +696,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/shop/customers/$customerId'
     | '/beheer/dashboard/'
+    | '/api/booking/$bookingId/ics'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -755,6 +765,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/shop/customers/$customerId'
     | '/beheer/dashboard'
+    | '/api/booking/$bookingId/ics'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -823,6 +834,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/shop/customers/$customerId'
     | '/beheer/dashboard/'
+    | '/api/booking/$bookingId/ics'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -890,6 +902,7 @@ export interface RootRouteChildren {
   BeheerDashboardUsersRoute: typeof BeheerDashboardUsersRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   BeheerDashboardIndexRoute: typeof BeheerDashboardIndexRoute
+  ApiBookingBookingIdIcsRoute: typeof ApiBookingBookingIdIcsRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
@@ -1361,6 +1374,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/booking/$bookingId/ics': {
+      id: '/api/booking/$bookingId/ics'
+      path: '/api/booking/$bookingId/ics'
+      fullPath: '/api/booking/$bookingId/ics'
+      preLoaderRoute: typeof ApiBookingBookingIdIcsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1446,6 +1466,7 @@ const rootRouteChildren: RootRouteChildren = {
   BeheerDashboardUsersRoute: BeheerDashboardUsersRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   BeheerDashboardIndexRoute: BeheerDashboardIndexRoute,
+  ApiBookingBookingIdIcsRoute: ApiBookingBookingIdIcsRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
