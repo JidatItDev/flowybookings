@@ -39,6 +39,7 @@ function CustomersPage() {
   const [editing, setEditing] = useState<CustomerRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<CustomerRow | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const { data: customers = [], isLoading } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
   const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
@@ -57,7 +58,20 @@ function CustomersPage() {
 
   return (
     <ShopLayout>
-      <PageHeader title={t("customers.title")} description={t("customers.description")} actions={<Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId || readOnly} title={roTitle}><Plus className="h-4 w-4" /> {t("customers.newCustomer")}</Button>} />
+      <PageHeader
+        title={t("customers.title")}
+        description={t("customers.description")}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" onClick={() => setImporting(true)} disabled={!shopId || readOnly} title={roTitle}>
+              <Upload className="h-4 w-4" /> {t("customerImport.cta")}
+            </Button>
+            <Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId || readOnly} title={roTitle}>
+              <Plus className="h-4 w-4" /> {t("customers.newCustomer")}
+            </Button>
+          </div>
+        }
+      />
       {!shopId ? <NoShopState /> : (
         <>
           <div className="mb-4 flex max-w-md items-center gap-2 rounded-xl border border-border bg-card px-3 shadow-xs">

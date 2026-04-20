@@ -206,7 +206,8 @@ export function CustomerImportDialog({ open, onClose, shopId, onImported }: Prop
       }
 
       for (const u of toUpdate) {
-        const { error } = await supabase.from("customers").update(u.patch).eq("id", u.id);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await supabase.from("customers").update(u.patch as any).eq("id", u.id);
         if (error) errors.push({ row: 0, reason: `Update ${u.id}: ${error.message}` });
         else updated += 1;
       }
