@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { useFeatureAccess } from "@/lib/use-feature-access";
+import { assertNotImpersonating, useImpersonationReadOnly } from "@/components/ImpersonationBanner";
 
 type SearchParams = { topup?: "return" | "mock" | "cancel"; payment?: string };
 
@@ -128,6 +129,8 @@ function SettingsPanel({ shopId }: { shopId: string }) {
   const { activeShop } = useShopContext();
   const qc = useQueryClient();
   const { t } = useT();
+  const readOnly = useImpersonationReadOnly();
+  const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const isPremium = activeShop?.plan === "pro" || activeShop?.plan === "premium";
 
   const { data: shop, isLoading } = useQuery({ ...shopFullQuery(shopId), enabled: !!shopId });
@@ -143,6 +146,7 @@ function SettingsPanel({ shopId }: { shopId: string }) {
 
   const save = useMutation({
     mutationFn: async () => {
+      assertNotImpersonating();
       if (!shop) throw new Error(t("errors.noActiveShop"));
       const branding = { ...((shop.branding ?? {}) as Record<string, unknown>), notifications: settings };
       const { error } = await supabase.from("shops").update({ branding }).eq("id", shopId);
@@ -169,10 +173,12 @@ function SettingsPanel({ shopId }: { shopId: string }) {
   ];
 
   const toggleChannel = (k: ChannelKey) => {
+    if (readOnly) return;
     setSettings((s) => ({ ...s, channels: { ...s.channels, [k]: !s.channels[k] } }));
     setDirty(true);
   };
   const toggleEvent = (k: EventKey) => {
+    if (readOnly) return;
     setSettings((s) => ({ ...s, events: { ...s.events, [k]: !s.events[k] } }));
     setDirty(true);
   };
@@ -195,7 +201,7 @@ function SettingsPanel({ shopId }: { shopId: string }) {
             <div key={c.id} className={cn("relative rounded-2xl border border-border bg-card p-5 shadow-soft", locked && "opacity-80")}>
               <div className="flex items-center justify-between">
                 <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", c.color)}><Icon className="h-5 w-5" /></div>
-                <Toggle on={on && !locked} onChange={() => !locked && toggleChannel(c.id)} />
+                <Toggle on={on && !locked} onChange={() => !locked && toggleChannel(c.id)} disabled={readOnly || locked} title={readOnly ? readOnlyTitle : undefined} />
               </div>
               <h3 className="mt-3 flex items-center gap-2 font-semibold">
                 {t(c.nameKey)}
@@ -220,14 +226,14 @@ function SettingsPanel({ shopId }: { shopId: string }) {
                   <p className="font-medium">{t(e.titleKey)}</p>
                   <p className="text-xs text-muted-foreground">{t(e.descKey)}</p>
                 </div>
-                <Toggle on={on} onChange={() => toggleEvent(e.id)} />
+                <Toggle on={on} onChange={() => toggleEvent(e.id)} disabled={readOnly} title={readOnlyTitle} />
               </div>
             );
           })}
         </div>
         <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
           {dirty && <span className="text-xs text-muted-foreground">{t("notifications.unsaved")}</span>}
-          <Button variant="hero" onClick={() => save.mutate()} disabled={!dirty || save.isPending}>
+          <Button variant="hero" onClick={() => save.mutate()} disabled={!dirty || save.isPending || readOnly} title={readOnlyTitle}>
             {save.isPending ? t("notifications.saving") : t("notifications.saveChanges")}
           </Button>
         </div>
@@ -238,9 +244,9 @@ function SettingsPanel({ shopId }: { shopId: string }) {
   );
 }
 
-function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
+function Toggle({ on, onChange, disabled, title }: { on: boolean; onChange: () => void; disabled?: boolean; title?: string }) {
   return (
-    <button onClick={onChange} className={cn("relative inline-flex h-6 w-11 items-center rounded-full transition-colors", on ? "bg-primary" : "bg-muted")}>
+    <button onClick={onChange} disabled={disabled} title={title} className={cn("relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50", on ? "bg-primary" : "bg-muted")}>
       <span className={cn("inline-block h-5 w-5 transform rounded-full bg-card shadow transition-transform", on ? "translate-x-5" : "translate-x-0.5")} />
     </button>
   );
@@ -249,6 +255,8 @@ function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
 function DepositSettings({ shopId, shop }: { shopId: string; shop: { default_deposit_percent?: number | null } | null }) {
   const qc = useQueryClient();
   const { t } = useT();
+  const readOnly = useImpersonationReadOnly();
+  const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const [percent, setPercent] = useState<number>(0);
   const [dirty, setDirty] = useState(false);
 
@@ -261,6 +269,7 @@ function DepositSettings({ shopId, shop }: { shopId: string; shop: { default_dep
 
   const save = useMutation({
     mutationFn: async () => {
+      assertNotImpersonating();
       const safe = Math.max(0, Math.min(100, Math.round(percent)));
       const { error } = await supabase.from("shops").update({ default_deposit_percent: safe }).eq("id", shopId);
       if (error) throw error;
@@ -287,11 +296,13 @@ function DepositSettings({ shopId, shop }: { shopId: string; shop: { default_dep
             min={0}
             max={100}
             value={percent}
+            disabled={readOnly}
+            title={readOnlyTitle}
             onChange={(e) => { setPercent(Number(e.target.value)); setDirty(true); }}
-            className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
-        <Button variant="outline" disabled={!dirty || save.isPending} onClick={() => save.mutate()}>
+        <Button variant="outline" disabled={!dirty || save.isPending || readOnly} title={readOnlyTitle} onClick={() => save.mutate()}>
           {save.isPending ? t("notifications.saving") : t("notifications.saveChanges")}
         </Button>
       </div>
@@ -324,6 +335,8 @@ type SmsCreditsRow = {
 function AutomationSettings({ shopId }: { shopId: string }) {
   const qc = useQueryClient();
   const { t } = useT();
+  const readOnly = useImpersonationReadOnly();
+  const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const [row, setRow] = useState<AutomationRow>(AUTO_DEFAULTS);
   const [dirty, setDirty] = useState(false);
   const [topUpOpen, setTopUpOpen] = useState(false);
@@ -365,6 +378,7 @@ function AutomationSettings({ shopId }: { shopId: string }) {
 
   const save = useMutation({
     mutationFn: async () => {
+      assertNotImpersonating();
       const { error } = await supabase
         .from("shop_automations")
         .upsert({ shop_id: shopId, ...row }, { onConflict: "shop_id" });
@@ -421,7 +435,7 @@ function AutomationSettings({ shopId }: { shopId: string }) {
             <span className={cn("inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold", balanceTone)}>
               {balance}
             </span>
-            <Button size="sm" variant="hero" onClick={() => setTopUpOpen(true)}>
+            <Button size="sm" variant="hero" onClick={() => setTopUpOpen(true)} disabled={readOnly} title={readOnlyTitle}>
               <Plus className="mr-1 h-3.5 w-3.5" />
               {t("automations.smsCreditsTopUp")}
             </Button>
@@ -477,7 +491,9 @@ function AutomationSettings({ shopId }: { shopId: string }) {
                 </div>
                 <Toggle
                   on={row[it.key]}
-                  onChange={() => { setRow((r) => ({ ...r, [it.key]: !r[it.key] })); setDirty(true); }}
+                  onChange={() => { if (readOnly) return; setRow((r) => ({ ...r, [it.key]: !r[it.key] })); setDirty(true); }}
+                  disabled={readOnly}
+                  title={readOnlyTitle}
                 />
               </div>
             );
@@ -501,7 +517,7 @@ function AutomationSettings({ shopId }: { shopId: string }) {
         </div>
         <div className="flex items-center justify-between border-t border-border px-6 py-4">
           <span className="text-[11px] text-muted-foreground">{t("automations.poweredBy")}</span>
-          <Button variant="hero" onClick={() => save.mutate()} disabled={!dirty || save.isPending}>
+          <Button variant="hero" onClick={() => save.mutate()} disabled={!dirty || save.isPending || readOnly} title={readOnlyTitle}>
             {save.isPending ? t("notifications.saving") : t("notifications.saveChanges")}
           </Button>
         </div>

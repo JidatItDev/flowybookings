@@ -15,11 +15,14 @@ import { formatCents, relativeFromNow } from "@/lib/format";
 import { PLATFORM_PROVIDER, type BillingCycle } from "@/lib/platform-billing";
 import { planLabel } from "@/lib/plans";
 import { cn } from "@/lib/utils";
+import { assertNotImpersonating, useImpersonationReadOnly } from "@/components/ImpersonationBanner";
 
 export function ShopBillingCard() {
   const { t } = useT();
   const { activeShop } = useAuth();
   const qc = useQueryClient();
+  const readOnly = useImpersonationReadOnly();
+  const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const search = useSearch({ strict: false }) as { billing?: string; payment?: string };
 
   const shopId = activeShop?.id ?? null;
@@ -43,6 +46,7 @@ export function ShopBillingCard() {
 
   const checkout = useMutation({
     mutationFn: async ({ plan, cycle }: { plan: "starter" | "pro" | "premium"; cycle: BillingCycle }) => {
+      assertNotImpersonating();
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       if (!token) throw new Error("Not signed in");
@@ -61,6 +65,7 @@ export function ShopBillingCard() {
 
   const confirmMock = useMutation({
     mutationFn: async ({ paymentId, outcome }: { paymentId: string; outcome: "paid" | "failed" }) => {
+      assertNotImpersonating();
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       if (!token) throw new Error("Not signed in");
@@ -84,6 +89,7 @@ export function ShopBillingCard() {
 
   const cancelSubscription = useMutation({
     mutationFn: async () => {
+      assertNotImpersonating();
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       if (!token) throw new Error("Not signed in");
@@ -152,11 +158,11 @@ export function ShopBillingCard() {
         <div className="mt-4 rounded-2xl border border-peach/60 bg-peach/30 p-3 text-xs text-foreground">
           <p className="flex items-center gap-2 font-medium"><AlertTriangle className="h-4 w-4" />{t("shopBilling.mockBanner")}</p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => confirmMock.mutate({ paymentId: mockPaymentId, outcome: "paid" })} disabled={confirmMock.isPending}>
+            <Button size="sm" onClick={() => confirmMock.mutate({ paymentId: mockPaymentId, outcome: "paid" })} disabled={confirmMock.isPending || readOnly} title={readOnlyTitle}>
               {confirmMock.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
               {t("shopBilling.mockPay")}
             </Button>
-            <Button size="sm" variant="outline" onClick={() => confirmMock.mutate({ paymentId: mockPaymentId, outcome: "failed" })} disabled={confirmMock.isPending}>
+            <Button size="sm" variant="outline" onClick={() => confirmMock.mutate({ paymentId: mockPaymentId, outcome: "failed" })} disabled={confirmMock.isPending || readOnly} title={readOnlyTitle}>
               {t("shopBilling.mockFail")}
             </Button>
           </div>
@@ -173,7 +179,8 @@ export function ShopBillingCard() {
                 cancelSubscription.mutate();
               }
             }}
-            disabled={cancelSubscription.isPending}
+            disabled={cancelSubscription.isPending || readOnly}
+            title={readOnlyTitle}
             className="text-muted-foreground hover:text-destructive"
           >
             {cancelSubscription.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
@@ -224,6 +231,7 @@ export function usePlanCheckout() {
   const { activeShop } = useAuth();
   return useMutation({
     mutationFn: async ({ plan, cycle = "monthly" as BillingCycle }: { plan: "starter" | "pro" | "premium"; cycle?: BillingCycle }) => {
+      assertNotImpersonating();
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
       if (!token) throw new Error("Not signed in");

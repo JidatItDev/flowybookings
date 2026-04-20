@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatCents, formatDate } from "@/lib/format";
 import { useT } from "@/lib/i18n";
 import { PLATFORM_PROVIDER } from "@/lib/platform-billing";
+import { assertNotImpersonating, useImpersonationReadOnly } from "@/components/ImpersonationBanner";
 
 export const Route = createFileRoute("/shop/payments")({
   head: () => ({ meta: [{ title: "Booking payments — FlowyBookings" }] }),
@@ -30,6 +31,8 @@ function PaymentsPage() {
   const shopId = useActiveShopId();
   const qc = useQueryClient();
   const { t } = useT();
+  const readOnly = useImpersonationReadOnly();
+  const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "pending" | "failed">("all");
   const { data: allPayments = [], isLoading } = useQuery({ ...paymentsQuery(shopId ?? ""), enabled: !!shopId });
   const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
@@ -53,6 +56,7 @@ function PaymentsPage() {
   type PaymentStatus = (typeof paymentStatuses)[number];
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: PaymentStatus }) => {
+      assertNotImpersonating();
       const { error } = await supabase.from("payments").update({ status }).eq("id", id);
       if (error) throw error;
     },
@@ -182,8 +186,9 @@ function PaymentsPage() {
                           <Select
                             value={p.status}
                             onValueChange={(v) => updateStatus.mutate({ id: p.id, status: v as PaymentStatus })}
+                            disabled={readOnly}
                           >
-                            <SelectTrigger className="h-8 w-[140px] text-xs">
+                            <SelectTrigger className="h-8 w-[140px] text-xs" title={readOnlyTitle}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>

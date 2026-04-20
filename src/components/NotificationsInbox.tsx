@@ -27,6 +27,7 @@ import {
   type NotificationRow,
   type NotificationType,
 } from "@/lib/notifications";
+import { assertNotImpersonating, useImpersonationReadOnly } from "@/components/ImpersonationBanner";
 
 const TYPES: NotificationType[] = ["system", "billing", "bookings", "alerts", "admin"];
 
@@ -49,6 +50,8 @@ const TYPE_TONES: Record<NotificationType, string> = {
 export function NotificationsInbox({ shopId }: { shopId: string }) {
   const { t } = useT();
   const qc = useQueryClient();
+  const readOnly = useImpersonationReadOnly();
+  const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const { data = [], isLoading } = useShopNotifications(shopId);
   const [filter, setFilter] = useState<"all" | "unread" | NotificationType>("all");
 
@@ -60,18 +63,27 @@ export function NotificationsInbox({ shopId }: { shopId: string }) {
   const unreadCount = data.filter((n) => !n.is_read).length;
 
   const readMut = useMutation({
-    mutationFn: (id: string) => markRead(id),
+    mutationFn: (id: string) => {
+      assertNotImpersonating();
+      return markRead(id);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: notificationKeys.list(shopId) }),
   });
   const allReadMut = useMutation({
-    mutationFn: () => markAllRead(shopId),
+    mutationFn: () => {
+      assertNotImpersonating();
+      return markAllRead(shopId);
+    },
     onSuccess: () => {
       toast.success(t("inbox.markedAllRead"));
       qc.invalidateQueries({ queryKey: notificationKeys.list(shopId) });
     },
   });
   const deleteMut = useMutation({
-    mutationFn: (id: string) => deleteNotification(id),
+    mutationFn: (id: string) => {
+      assertNotImpersonating();
+      return deleteNotification(id);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: notificationKeys.list(shopId) }),
   });
 
@@ -85,7 +97,7 @@ export function NotificationsInbox({ shopId }: { shopId: string }) {
           </p>
         </div>
         {unreadCount > 0 && (
-          <Button size="sm" variant="outline" onClick={() => allReadMut.mutate()} disabled={allReadMut.isPending}>
+          <Button size="sm" variant="outline" onClick={() => allReadMut.mutate()} disabled={allReadMut.isPending || readOnly} title={readOnlyTitle}>
             <CheckCheck className="h-4 w-4" /> {t("inbox.markAllRead")}
           </Button>
         )}
@@ -115,8 +127,10 @@ export function NotificationsInbox({ shopId }: { shopId: string }) {
             <Row
               key={n.id}
               n={n}
-              onRead={() => !n.is_read && readMut.mutate(n.id)}
-              onDelete={() => deleteMut.mutate(n.id)}
+              onRead={() => !n.is_read && !readOnly && readMut.mutate(n.id)}
+              onDelete={() => !readOnly && deleteMut.mutate(n.id)}
+              readOnly={readOnly}
+              readOnlyTitle={readOnlyTitle}
             />
           ))
         )}
@@ -154,10 +168,14 @@ function Row({
   n,
   onRead,
   onDelete,
+  readOnly,
+  readOnlyTitle,
 }: {
   n: NotificationRow;
   onRead: () => void;
   onDelete: () => void;
+  readOnly?: boolean;
+  readOnlyTitle?: string;
 }) {
   const Icon = TYPE_ICONS[n.type];
   const body = (
@@ -177,9 +195,12 @@ function Row({
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          if (readOnly) return;
           onDelete();
         }}
-        className="self-start rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-destructive"
+        disabled={readOnly}
+        title={readOnlyTitle}
+        className="self-start rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-destructive disabled:cursor-not-allowed disabled:opacity-50"
         aria-label="Delete"
       >
         <Trash2 className="h-4 w-4" />
