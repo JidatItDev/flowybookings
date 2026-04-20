@@ -211,7 +211,7 @@ function CalendarPage() {
               title={filter === "all" ? t("calendar.noBookings") : t("calendar.noMatch")}
               description={filter === "all" ? t("calendar.noBookingsDesc") : t("calendar.noMatchDesc")}
               action={filter === "all" && (
-                <Button variant="hero" onClick={() => setCreating(true)} disabled={trial.isExpired}>
+                <Button variant="hero" onClick={() => setCreating(true)} disabled={newBookingDisabled} title={newBookingTitle}>
                   <Plus className="h-4 w-4" /> {t("calendar.newBooking")}
                 </Button>
               )}
