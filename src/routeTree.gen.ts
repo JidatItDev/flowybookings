@@ -70,6 +70,7 @@ import { Route as ApiBookingsRefundRouteImport } from './routes/api.bookings.ref
 import { Route as ApiBookingsCheckoutRouteImport } from './routes/api.bookings.checkout'
 import { Route as ApiBillingPlanConfirmRouteImport } from './routes/api.billing.plan-confirm'
 import { Route as ApiBillingPlanCheckoutRouteImport } from './routes/api.billing.plan-checkout'
+import { Route as ApiBillingPlanCancelRouteImport } from './routes/api.billing.plan-cancel'
 import { Route as ApiBillingExpireSweepRouteImport } from './routes/api.billing.expire-sweep'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -391,6 +392,11 @@ const ApiBillingPlanCheckoutRoute = ApiBillingPlanCheckoutRouteImport.update({
   path: '/api/billing/plan-checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBillingPlanCancelRoute = ApiBillingPlanCancelRouteImport.update({
+  id: '/api/billing/plan-cancel',
+  path: '/api/billing/plan-cancel',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiBillingExpireSweepRoute = ApiBillingExpireSweepRouteImport.update({
   id: '/api/billing/expire-sweep',
   path: '/api/billing/expire-sweep',
@@ -461,6 +467,7 @@ export interface FileRoutesByFullPath {
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop/': typeof ShopIndexRoute
   '/api/billing/expire-sweep': typeof ApiBillingExpireSweepRoute
+  '/api/billing/plan-cancel': typeof ApiBillingPlanCancelRoute
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
   '/api/bookings/checkout': typeof ApiBookingsCheckoutRoute
@@ -531,6 +538,7 @@ export interface FileRoutesByTo {
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop': typeof ShopIndexRoute
   '/api/billing/expire-sweep': typeof ApiBillingExpireSweepRoute
+  '/api/billing/plan-cancel': typeof ApiBillingPlanCancelRoute
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
   '/api/bookings/checkout': typeof ApiBookingsCheckoutRoute
@@ -602,6 +610,7 @@ export interface FileRoutesById {
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/shop/': typeof ShopIndexRoute
   '/api/billing/expire-sweep': typeof ApiBillingExpireSweepRoute
+  '/api/billing/plan-cancel': typeof ApiBillingPlanCancelRoute
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
   '/api/bookings/checkout': typeof ApiBookingsCheckoutRoute
@@ -674,6 +683,7 @@ export interface FileRouteTypes {
     | '/shop/upgrade'
     | '/shop/'
     | '/api/billing/expire-sweep'
+    | '/api/billing/plan-cancel'
     | '/api/billing/plan-checkout'
     | '/api/billing/plan-confirm'
     | '/api/bookings/checkout'
@@ -744,6 +754,7 @@ export interface FileRouteTypes {
     | '/shop/upgrade'
     | '/shop'
     | '/api/billing/expire-sweep'
+    | '/api/billing/plan-cancel'
     | '/api/billing/plan-checkout'
     | '/api/billing/plan-confirm'
     | '/api/bookings/checkout'
@@ -814,6 +825,7 @@ export interface FileRouteTypes {
     | '/shop/upgrade'
     | '/shop/'
     | '/api/billing/expire-sweep'
+    | '/api/billing/plan-cancel'
     | '/api/billing/plan-checkout'
     | '/api/billing/plan-confirm'
     | '/api/bookings/checkout'
@@ -885,6 +897,7 @@ export interface RootRouteChildren {
   ShopUpgradeRoute: typeof ShopUpgradeRoute
   ShopIndexRoute: typeof ShopIndexRoute
   ApiBillingExpireSweepRoute: typeof ApiBillingExpireSweepRoute
+  ApiBillingPlanCancelRoute: typeof ApiBillingPlanCancelRoute
   ApiBillingPlanCheckoutRoute: typeof ApiBillingPlanCheckoutRoute
   ApiBillingPlanConfirmRoute: typeof ApiBillingPlanConfirmRoute
   ApiBookingsCheckoutRoute: typeof ApiBookingsCheckoutRoute
@@ -1352,6 +1365,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBillingPlanCheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/billing/plan-cancel': {
+      id: '/api/billing/plan-cancel'
+      path: '/api/billing/plan-cancel'
+      fullPath: '/api/billing/plan-cancel'
+      preLoaderRoute: typeof ApiBillingPlanCancelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/billing/expire-sweep': {
       id: '/api/billing/expire-sweep'
       path: '/api/billing/expire-sweep'
@@ -1457,6 +1477,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShopUpgradeRoute: ShopUpgradeRoute,
   ShopIndexRoute: ShopIndexRoute,
   ApiBillingExpireSweepRoute: ApiBillingExpireSweepRoute,
+  ApiBillingPlanCancelRoute: ApiBillingPlanCancelRoute,
   ApiBillingPlanCheckoutRoute: ApiBillingPlanCheckoutRoute,
   ApiBillingPlanConfirmRoute: ApiBillingPlanConfirmRoute,
   ApiBookingsCheckoutRoute: ApiBookingsCheckoutRoute,
