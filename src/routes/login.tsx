@@ -17,6 +17,7 @@ import { useGoogleAuthAvailable } from "@/lib/use-google-auth-available";
 export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>) => ({
     redirect: typeof s.redirect === "string" ? s.redirect : undefined,
+    resetGoogle: s.resetGoogle === "1" || s.resetGoogle === 1 || s.resetGoogle === true ? true : undefined,
   }),
   head: () => ({ meta: [{ title: "Sign in — FlowyBookings" }] }),
   component: LoginPage,
