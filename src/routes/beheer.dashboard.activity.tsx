@@ -87,17 +87,25 @@ function ActivityPage() {
   }, [events]);
 
   const filtered = useMemo(() => {
+    // Inclusief hele dag voor 'tot' (eind van dag) en vanaf 00:00 voor 'van'.
+    const fromMs = dateFrom ? new Date(dateFrom).setHours(0, 0, 0, 0) : null;
+    const toMs = dateTo ? new Date(dateTo).setHours(23, 59, 59, 999) : null;
     return events.filter((e) => {
       if (actionFilter !== ALL && e.action !== actionFilter) return false;
       if (shopFilter !== ALL && e.shop_id !== shopFilter) return false;
+      if (fromMs !== null || toMs !== null) {
+        const ts = new Date(e.created_at).getTime();
+        if (fromMs !== null && ts < fromMs) return false;
+        if (toMs !== null && ts > toMs) return false;
+      }
       return true;
     });
-  }, [events, actionFilter, shopFilter]);
+  }, [events, actionFilter, shopFilter, dateFrom, dateTo]);
 
   // Reset paginatie als filters wijzigen
   useEffect(() => {
     setPage(1);
-  }, [actionFilter, shopFilter]);
+  }, [actionFilter, shopFilter, dateFrom, dateTo]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
