@@ -36,7 +36,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LogOut, Settings as SettingsIcon, LifeBuoy as LifeBuoyIcon } from "lucide-react";
-import { planLabel } from "@/lib/plans";
 
 type NavItem = { to: string; labelKey: string; icon: typeof LayoutDashboard; exact?: boolean; ownerOnly?: boolean };
 
@@ -65,11 +64,24 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { shops, loading, user, signOut, isSuperAdmin, isShopOwner, isStaff } = useAuth();
+  const { shops, loading, user, signOut, isSuperAdmin, isShopOwner, isStaff, activeShop } = useAuth();
   const { t } = useT();
   const isStaffOnly = isStaff && !isShopOwner && !isSuperAdmin;
   const visibleNav = nav.filter((n) => !n.ownerOnly || !isStaffOnly);
   const needsOnboarding = !loading && shops.length === 0 && !isSuperAdmin;
+  const displayName =
+    (user?.user_metadata?.full_name as string | undefined)?.trim() ||
+    user?.email ||
+    "";
+  const initials = (displayName || "?").trim().charAt(0).toUpperCase();
+  const planText = (() => {
+    const p = activeShop?.plan ?? "trial";
+    if (p === "trial") return "TRIAL";
+    if (p === "starter") return "STARTER";
+    if (p === "pro") return "PRO";
+    if (p === "premium") return "PREMIUM";
+    return p.toUpperCase();
+  })();
 
   // Legacy accounts (or users who lost their only shop) land on /shop with
   // an empty context. Send them to the dedicated onboarding route so the
@@ -187,15 +199,43 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
               <ShopPicker />
             </div>
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-warm text-xs font-semibold text-pink-foreground">
-                {(user?.email ?? "?")[0].toUpperCase()}
+              <DropdownMenuTrigger className="flex items-center gap-2 rounded-full border border-border bg-card pl-1 pr-3 py-1 text-xs font-medium hover:bg-accent">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-warm text-xs font-semibold text-pink-foreground">
+                  {initials}
+                </span>
+                <span className="hidden max-w-[140px] truncate sm:inline">
+                  {activeShop?.name ?? displayName}
+                </span>
+                <span className="hidden rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary sm:inline">
+                  {planText}
+                </span>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                  {user?.email}
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel className="flex flex-col gap-0.5">
+                  <span className="text-[10px] font-normal uppercase tracking-wider text-muted-foreground">
+                    {t("auth.signedInAs")}
+                  </span>
+                  <span className="truncate text-sm font-medium text-foreground">{displayName}</span>
+                  {activeShop && (
+                    <span className="text-xs text-muted-foreground">
+                      {activeShop.name} · <span className="font-semibold text-primary">{planText}</span>
+                    </span>
+                  )}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()}>
+                {!isStaffOnly && (
+                  <DropdownMenuItem onClick={() => navigate({ to: "/shop/settings" })}>
+                    <SettingsIcon className="h-4 w-4" /> {t("shopNav.settings")}
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => navigate({ to: "/support" })}>
+                  <LifeBuoyIcon className="h-4 w-4" /> {t("shopNav.support")}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => signOut()}
+                  className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                >
                   <LogOut className="h-4 w-4" /> {t("auth.signOut")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
