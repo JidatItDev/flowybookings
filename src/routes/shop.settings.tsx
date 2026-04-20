@@ -304,12 +304,18 @@ function SettingsPage() {
             <div className="mt-3"><NumField label={t("settings.defaultDeposit")} value={rules.defaultDepositPct} onChange={(v) => updateRule("defaultDepositPct", v)} /></div>
           </Card>
 
-          {/* SECTIE — Betalingen van klanten */}
-          <div className="lg:col-span-3">
-            <h2 className="mb-3 text-base font-semibold">{t("settings.customerPayments")}</h2>
-            <p className="mb-4 text-xs text-muted-foreground">{t("settings.platformFee", { pct: String(planInfo.fee) })} {currentPlan !== "premium" && `· ${t("settings.upgradeFee")}`}</p>
-            <MollieConnectCard shopId={shopId} />
-          </div>
+          {/* SECTIE — Betalingen van klanten. Platform fee mirrors DB plan_pricing defaults. */}
+          {(() => {
+            const PLATFORM_FEE_PCT: Record<string, number> = { trial: 0, starter: 1.5, pro: 1.0, premium: 0.5 };
+            const fee = PLATFORM_FEE_PCT[currentPlan] ?? 0;
+            return (
+              <div className="lg:col-span-3">
+                <h2 className="mb-3 text-base font-semibold">{t("settings.customerPayments")}</h2>
+                <p className="mb-4 text-xs text-muted-foreground">{t("settings.platformFee", { pct: String(fee) })} {currentPlan !== "premium" && `· ${t("settings.upgradeFee")}`}</p>
+                <MollieConnectCard shopId={shopId} />
+              </div>
+            );
+          })()}
 
           {/* Stripe placeholder */}
           <div className="lg:col-span-3">
