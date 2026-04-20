@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { ChevronDown, Check, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -147,8 +147,8 @@ export function PricingComparisonTable() {
               </thead>
               <tbody>
                 {GROUPS.map((group) => (
-                  <>
-                    <tr key={`cat-${group.category}`} className="bg-muted/40">
+                  <Fragment key={`cat-${group.category}`}>
+                    <tr className="bg-muted/40">
                       <td
                         colSpan={5}
                         className="sticky left-0 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-muted-foreground"
@@ -180,7 +180,7 @@ export function PricingComparisonTable() {
                         ))}
                       </tr>
                     ))}
-                  </>
+                  </Fragment>
                 ))}
               </tbody>
             </table>
