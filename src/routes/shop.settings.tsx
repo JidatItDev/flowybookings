@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NoShopState } from "@/components/EmptyState";
+import { BookingLinkCard } from "@/components/BookingLinkCard";
 import { MollieConnectCard } from "@/components/MollieConnectCard";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { FeatureLock } from "@/components/FeatureLock";
@@ -195,7 +196,11 @@ function SettingsPage() {
                   <Lock className="h-3 w-3 text-muted-foreground" />
                 </Label>
                 <Input value={shop?.slug ?? ""} disabled className="h-10 font-mono text-xs" />
-                <p className="mt-1 text-xs text-muted-foreground">{t("settings.shopSlugHint")} · /book/{shop?.slug}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t("settings.shopSlugHint")}</p>
+              </div>
+              <div className="sm:col-span-2">
+                <Label className="mb-1.5 block">{t("bookingLink.title")}</Label>
+                <BookingLinkCard slug={shop?.slug ?? null} shopName={shop?.name} compact />
               </div>
             </div>
           </Card>
