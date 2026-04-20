@@ -170,6 +170,20 @@ function ShopDetailPage() {
         </div>
       </div>
 
+      {/* Omzet sparkline laatste 30 dagen */}
+      <div className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-soft">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Omzet (laatste 30 dagen)</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">Boekingsomzet per dag, exclusief geannuleerd & no-show</p>
+          </div>
+          <p className="text-right text-lg font-semibold tabular-nums">
+            {formatCents(revenueLast30Days.reduce((s, d) => s + d.revenue, 0))}
+          </p>
+        </div>
+        <RevenueSparkline data={revenueLast30Days} height={120} />
+      </div>
+
       {/* Statistieken grid */}
       <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label={t("adminShopDetail.statBookings")} value={stats.bookings.toString()} sub={`${stats.bookingsThisMonth} deze maand`} />
