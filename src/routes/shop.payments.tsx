@@ -97,10 +97,8 @@ function PaymentsPage() {
             </Link>
           </div>
 
-          {/* Inline Mollie nudge (auto-hides when connected) */}
-          <div className="mb-4">
-            <MollieNudge shopId={shopId} />
-          </div>
+          {/* Mollie connect/state lives in a single source of truth: MollieConnectCard below. */}
+
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard label={t("payments.collected")} value={formatCents(collected)} icon={CircleDollarSign} accent="mint" />
