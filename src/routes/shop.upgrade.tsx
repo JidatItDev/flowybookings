@@ -41,21 +41,15 @@ function UpgradePage() {
 
   const checkout = usePlanCheckout();
 
-  // After Mollie redirect (?billing=success|mock), poll a few times so the
-  // header badge + Jouw abonnement card pick up the new plan immediately.
+  // After Mollie redirect (?billing=success|mock), do ONE refetch and rely on
+  // the webhook to finalize. The "Activatie loopt…" optimistic badge (set by
+  // checkout into sessionStorage) bridges the gap until the webhook arrives —
+  // no more fragile polling loop.
   useEffect(() => {
     if (!search.billing || !activeShop?.id) return;
-    const sid = activeShop.id;
-    let attempts = 0;
-    const tick = () => {
-      attempts += 1;
-      qc.invalidateQueries({ queryKey: ["auth", "shops"] });
-      qc.invalidateQueries({ queryKey: shopKeys.shopFull(sid) });
-      refreshShops?.();
-      if (attempts >= 5) return;
-      setTimeout(tick, 1500);
-    };
-    tick();
+    qc.invalidateQueries({ queryKey: ["auth", "shops"] });
+    qc.invalidateQueries({ queryKey: shopKeys.shopFull(activeShop.id) });
+    refreshShops?.();
     navigate({ to: "/shop/upgrade", search: {}, replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.billing, activeShop?.id]);

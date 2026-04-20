@@ -65,22 +65,16 @@ function SettingsPage() {
 
   const { data: shop, isLoading } = useQuery({ ...shopFullQuery(shopId ?? ""), enabled: !!shopId });
 
-  // After returning from Mollie checkout (?billing=success|mock), force a refresh
-  // of BOTH caches that drive plan UI (header badge + Jouw abonnement card) so
-  // we never show a stale "TRIAL" while the DB already has Starter/Pro/Premium.
-  // Poll a few times — the Mollie webhook may take a moment to flip shop.plan.
+  // After returning from Mollie checkout (?billing=success|mock), do ONE
+  // refetch of the auth-shops + shopFull caches and rely on the webhook to
+  // finalize the DB. The optimistic "Activatie loopt…" badge (driven by the
+  // sessionStorage flag set during checkout) bridges the gap until the webhook
+  // arrives — no fragile timed polling loop.
   useEffect(() => {
     if (!search.billing || !shopId) return;
-    let attempts = 0;
-    const tick = () => {
-      attempts += 1;
-      qc.invalidateQueries({ queryKey: ["auth", "shops"] });
-      qc.invalidateQueries({ queryKey: shopKeys.shopFull(shopId) });
-      refreshShops?.();
-      if (attempts >= 5) return;
-      setTimeout(tick, 1500);
-    };
-    tick();
+    qc.invalidateQueries({ queryKey: ["auth", "shops"] });
+    qc.invalidateQueries({ queryKey: shopKeys.shopFull(shopId) });
+    refreshShops?.();
     navigate({ to: "/shop/settings", search: {}, replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.billing, shopId]);
