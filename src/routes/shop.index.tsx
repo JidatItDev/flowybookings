@@ -87,7 +87,7 @@ function ShopDashboard() {
             </div>
           )}
           <div className="mb-4">
-            <BookingLinkCard slug={activeShop?.slug ?? null} shopName={activeShop?.name} />
+            <BookingLinkCard slug={activeShop?.slug ?? null} shopName={activeShop?.name} logoUrl={activeShop?.logo_url ?? null} />
           </div>
           <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
             <StatCard label={t("dashboard.todayBookings")} value={String(todayBookings.length)} icon={CalendarCheck} accent="primary" />
