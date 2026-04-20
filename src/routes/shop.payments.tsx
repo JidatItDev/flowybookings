@@ -10,7 +10,6 @@ import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyState, NoShopState } from "@/components/EmptyState";
-import { MollieNudge } from "@/components/MollieNudge";
 import { MollieConnectCard } from "@/components/MollieConnectCard";
 import { MollieConnectPayments } from "@/components/MollieConnectPayments";
 import { useActiveShopId } from "@/lib/shop-context";
@@ -98,10 +97,8 @@ function PaymentsPage() {
             </Link>
           </div>
 
-          {/* Inline Mollie nudge (auto-hides when connected) */}
-          <div className="mb-4">
-            <MollieNudge shopId={shopId} />
-          </div>
+          {/* Mollie connect/state lives in a single source of truth: MollieConnectCard below. */}
+
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard label={t("payments.collected")} value={formatCents(collected)} icon={CircleDollarSign} accent="mint" />
