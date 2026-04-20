@@ -105,14 +105,26 @@ export const Route = createFileRoute("/api/mollie/webhook")({
               .eq("id", payment.id);
           }
 
-          // Platform subscription lifecycle: only run when this is a platform billing payment.
+          // Platform billing payments (provider = platform_mollie, booking_id IS NULL):
+          // distinguish between subscription payments and one-off SMS credit top-ups.
           if (payment.provider === PLATFORM_PROVIDER && payment.booking_id === null) {
-            await handleSubscriptionLifecycle({
-              paymentId: payment.id,
-              shopId: payment.shop_id,
-              metadata: (payment.metadata ?? {}) as Record<string, unknown>,
-              effectiveStatus: newStatus ?? payment.status,
-            });
+            const meta = (payment.metadata ?? {}) as Record<string, unknown>;
+            const effectiveStatus = newStatus ?? payment.status;
+            if (meta.kind === "sms_credits") {
+              await handleSmsCreditsLifecycle({
+                paymentId: payment.id,
+                shopId: payment.shop_id,
+                metadata: meta,
+                effectiveStatus,
+              });
+            } else {
+              await handleSubscriptionLifecycle({
+                paymentId: payment.id,
+                shopId: payment.shop_id,
+                metadata: meta,
+                effectiveStatus,
+              });
+            }
           }
 
           return ok();
