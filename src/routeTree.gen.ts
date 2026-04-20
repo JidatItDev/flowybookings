@@ -58,6 +58,7 @@ import { Route as BeheerDashboardBookingsRouteImport } from './routes/beheer.das
 import { Route as BeheerDashboardBillingRouteImport } from './routes/beheer.dashboard.billing'
 import { Route as BeheerAdLoginRouteImport } from './routes/beheer.ad.login'
 import { Route as ApiSmsCreditsCheckoutRouteImport } from './routes/api.sms-credits.checkout'
+import { Route as ApiOgBookingRouteImport } from './routes/api.og.booking'
 import { Route as ApiOgBookRouteImport } from './routes/api.og.book'
 import { Route as ApiMollieWebhookRouteImport } from './routes/api.mollie.webhook'
 import { Route as ApiMollieConnectWebhookRouteImport } from './routes/api.mollie-connect.webhook'
@@ -325,6 +326,11 @@ const ApiSmsCreditsCheckoutRoute = ApiSmsCreditsCheckoutRouteImport.update({
   path: '/api/sms-credits/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOgBookingRoute = ApiOgBookingRouteImport.update({
+  id: '/api/og/booking',
+  path: '/api/og/booking',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiOgBookRoute = ApiOgBookRouteImport.update({
   id: '/api/og/book',
   path: '/api/og/book',
@@ -453,6 +459,7 @@ export interface FileRoutesByFullPath {
   '/api/mollie-connect/webhook': typeof ApiMollieConnectWebhookRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
   '/api/og/book': typeof ApiOgBookRoute
+  '/api/og/booking': typeof ApiOgBookingRoute
   '/api/sms-credits/checkout': typeof ApiSmsCreditsCheckoutRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/billing': typeof BeheerDashboardBillingRoute
@@ -520,6 +527,7 @@ export interface FileRoutesByTo {
   '/api/mollie-connect/webhook': typeof ApiMollieConnectWebhookRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
   '/api/og/book': typeof ApiOgBookRoute
+  '/api/og/booking': typeof ApiOgBookingRoute
   '/api/sms-credits/checkout': typeof ApiSmsCreditsCheckoutRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/billing': typeof BeheerDashboardBillingRoute
@@ -588,6 +596,7 @@ export interface FileRoutesById {
   '/api/mollie-connect/webhook': typeof ApiMollieConnectWebhookRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
   '/api/og/book': typeof ApiOgBookRoute
+  '/api/og/booking': typeof ApiOgBookingRoute
   '/api/sms-credits/checkout': typeof ApiSmsCreditsCheckoutRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/billing': typeof BeheerDashboardBillingRoute
@@ -657,6 +666,7 @@ export interface FileRouteTypes {
     | '/api/mollie-connect/webhook'
     | '/api/mollie/webhook'
     | '/api/og/book'
+    | '/api/og/booking'
     | '/api/sms-credits/checkout'
     | '/beheer/ad/login'
     | '/beheer/dashboard/billing'
@@ -724,6 +734,7 @@ export interface FileRouteTypes {
     | '/api/mollie-connect/webhook'
     | '/api/mollie/webhook'
     | '/api/og/book'
+    | '/api/og/booking'
     | '/api/sms-credits/checkout'
     | '/beheer/ad/login'
     | '/beheer/dashboard/billing'
@@ -791,6 +802,7 @@ export interface FileRouteTypes {
     | '/api/mollie-connect/webhook'
     | '/api/mollie/webhook'
     | '/api/og/book'
+    | '/api/og/booking'
     | '/api/sms-credits/checkout'
     | '/beheer/ad/login'
     | '/beheer/dashboard/billing'
@@ -859,6 +871,7 @@ export interface RootRouteChildren {
   ApiMollieConnectWebhookRoute: typeof ApiMollieConnectWebhookRoute
   ApiMollieWebhookRoute: typeof ApiMollieWebhookRoute
   ApiOgBookRoute: typeof ApiOgBookRoute
+  ApiOgBookingRoute: typeof ApiOgBookingRoute
   ApiSmsCreditsCheckoutRoute: typeof ApiSmsCreditsCheckoutRoute
   BeheerAdLoginRoute: typeof BeheerAdLoginRoute
   BeheerDashboardBillingRoute: typeof BeheerDashboardBillingRoute
@@ -1229,6 +1242,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSmsCreditsCheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/og/booking': {
+      id: '/api/og/booking'
+      path: '/api/og/booking'
+      fullPath: '/api/og/booking'
+      preLoaderRoute: typeof ApiOgBookingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/og/book': {
       id: '/api/og/book'
       path: '/api/og/book'
@@ -1407,6 +1427,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMollieConnectWebhookRoute: ApiMollieConnectWebhookRoute,
   ApiMollieWebhookRoute: ApiMollieWebhookRoute,
   ApiOgBookRoute: ApiOgBookRoute,
+  ApiOgBookingRoute: ApiOgBookingRoute,
   ApiSmsCreditsCheckoutRoute: ApiSmsCreditsCheckoutRoute,
   BeheerAdLoginRoute: BeheerAdLoginRoute,
   BeheerDashboardBillingRoute: BeheerDashboardBillingRoute,
