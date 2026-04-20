@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Check, Sparkles, ShieldCheck, TrendingUp, AlertTriangle, ArrowRight, Loader2, Lock } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -17,6 +17,10 @@ import { assertNotImpersonating, useImpersonationReadOnly } from "@/components/I
 
 export const Route = createFileRoute("/shop/upgrade")({
   head: () => ({ meta: [{ title: "Upgrade — FlowyBookings" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    billing: typeof search.billing === "string" ? (search.billing as string) : undefined,
+    payment: typeof search.payment === "string" ? (search.payment as string) : undefined,
+  }),
   component: UpgradePage,
 });
 
