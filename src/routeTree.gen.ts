@@ -78,6 +78,7 @@ import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/l
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
+import { Route as BeheerDashboardShopsShopIdRouteImport } from './routes/beheer.dashboard.shops.$shopId'
 import { Route as ApiBookingBookingIdIcsRouteImport } from './routes/api.booking.$bookingId.ics'
 
 const SupportRoute = SupportRouteImport.update({
@@ -437,6 +438,12 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   path: '/lovable/email/auth/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BeheerDashboardShopsShopIdRoute =
+  BeheerDashboardShopsShopIdRouteImport.update({
+    id: '/$shopId',
+    path: '/$shopId',
+    getParentRoute: () => BeheerDashboardShopsRoute,
+  } as any)
 const ApiBookingBookingIdIcsRoute = ApiBookingBookingIdIcsRouteImport.update({
   id: '/api/booking/$bookingId/ics',
   path: '/api/booking/$bookingId/ics',
@@ -500,7 +507,7 @@ export interface FileRoutesByFullPath {
   '/beheer/dashboard/providers': typeof BeheerDashboardProvidersRoute
   '/beheer/dashboard/revenue': typeof BeheerDashboardRevenueRoute
   '/beheer/dashboard/settings': typeof BeheerDashboardSettingsRoute
-  '/beheer/dashboard/shops': typeof BeheerDashboardShopsRoute
+  '/beheer/dashboard/shops': typeof BeheerDashboardShopsRouteWithChildren
   '/beheer/dashboard/sms': typeof BeheerDashboardSmsRoute
   '/beheer/dashboard/support': typeof BeheerDashboardSupportRoute
   '/beheer/dashboard/users': typeof BeheerDashboardUsersRoute
@@ -509,6 +516,7 @@ export interface FileRoutesByFullPath {
   '/shop/customers/$customerId': typeof ShopCustomersCustomerIdRoute
   '/beheer/dashboard/': typeof BeheerDashboardIndexRoute
   '/api/booking/$bookingId/ics': typeof ApiBookingBookingIdIcsRoute
+  '/beheer/dashboard/shops/$shopId': typeof BeheerDashboardShopsShopIdRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -572,7 +580,7 @@ export interface FileRoutesByTo {
   '/beheer/dashboard/providers': typeof BeheerDashboardProvidersRoute
   '/beheer/dashboard/revenue': typeof BeheerDashboardRevenueRoute
   '/beheer/dashboard/settings': typeof BeheerDashboardSettingsRoute
-  '/beheer/dashboard/shops': typeof BeheerDashboardShopsRoute
+  '/beheer/dashboard/shops': typeof BeheerDashboardShopsRouteWithChildren
   '/beheer/dashboard/sms': typeof BeheerDashboardSmsRoute
   '/beheer/dashboard/support': typeof BeheerDashboardSupportRoute
   '/beheer/dashboard/users': typeof BeheerDashboardUsersRoute
@@ -581,6 +589,7 @@ export interface FileRoutesByTo {
   '/shop/customers/$customerId': typeof ShopCustomersCustomerIdRoute
   '/beheer/dashboard': typeof BeheerDashboardIndexRoute
   '/api/booking/$bookingId/ics': typeof ApiBookingBookingIdIcsRoute
+  '/beheer/dashboard/shops/$shopId': typeof BeheerDashboardShopsShopIdRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -645,7 +654,7 @@ export interface FileRoutesById {
   '/beheer/dashboard/providers': typeof BeheerDashboardProvidersRoute
   '/beheer/dashboard/revenue': typeof BeheerDashboardRevenueRoute
   '/beheer/dashboard/settings': typeof BeheerDashboardSettingsRoute
-  '/beheer/dashboard/shops': typeof BeheerDashboardShopsRoute
+  '/beheer/dashboard/shops': typeof BeheerDashboardShopsRouteWithChildren
   '/beheer/dashboard/sms': typeof BeheerDashboardSmsRoute
   '/beheer/dashboard/support': typeof BeheerDashboardSupportRoute
   '/beheer/dashboard/users': typeof BeheerDashboardUsersRoute
@@ -654,6 +663,7 @@ export interface FileRoutesById {
   '/shop/customers/$customerId': typeof ShopCustomersCustomerIdRoute
   '/beheer/dashboard/': typeof BeheerDashboardIndexRoute
   '/api/booking/$bookingId/ics': typeof ApiBookingBookingIdIcsRoute
+  '/beheer/dashboard/shops/$shopId': typeof BeheerDashboardShopsShopIdRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -728,6 +738,7 @@ export interface FileRouteTypes {
     | '/shop/customers/$customerId'
     | '/beheer/dashboard/'
     | '/api/booking/$bookingId/ics'
+    | '/beheer/dashboard/shops/$shopId'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -800,6 +811,7 @@ export interface FileRouteTypes {
     | '/shop/customers/$customerId'
     | '/beheer/dashboard'
     | '/api/booking/$bookingId/ics'
+    | '/beheer/dashboard/shops/$shopId'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -872,6 +884,7 @@ export interface FileRouteTypes {
     | '/shop/customers/$customerId'
     | '/beheer/dashboard/'
     | '/api/booking/$bookingId/ics'
+    | '/beheer/dashboard/shops/$shopId'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -936,7 +949,7 @@ export interface RootRouteChildren {
   BeheerDashboardProvidersRoute: typeof BeheerDashboardProvidersRoute
   BeheerDashboardRevenueRoute: typeof BeheerDashboardRevenueRoute
   BeheerDashboardSettingsRoute: typeof BeheerDashboardSettingsRoute
-  BeheerDashboardShopsRoute: typeof BeheerDashboardShopsRoute
+  BeheerDashboardShopsRoute: typeof BeheerDashboardShopsRouteWithChildren
   BeheerDashboardSmsRoute: typeof BeheerDashboardSmsRoute
   BeheerDashboardSupportRoute: typeof BeheerDashboardSupportRoute
   BeheerDashboardUsersRoute: typeof BeheerDashboardUsersRoute
@@ -1435,6 +1448,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/beheer/dashboard/shops/$shopId': {
+      id: '/beheer/dashboard/shops/$shopId'
+      path: '/$shopId'
+      fullPath: '/beheer/dashboard/shops/$shopId'
+      preLoaderRoute: typeof BeheerDashboardShopsShopIdRouteImport
+      parentRoute: typeof BeheerDashboardShopsRoute
+    }
     '/api/booking/$bookingId/ics': {
       id: '/api/booking/$bookingId/ics'
       path: '/api/booking/$bookingId/ics'
@@ -1466,6 +1486,17 @@ const ShopCustomersRouteChildren: ShopCustomersRouteChildren = {
 const ShopCustomersRouteWithChildren = ShopCustomersRoute._addFileChildren(
   ShopCustomersRouteChildren,
 )
+
+interface BeheerDashboardShopsRouteChildren {
+  BeheerDashboardShopsShopIdRoute: typeof BeheerDashboardShopsShopIdRoute
+}
+
+const BeheerDashboardShopsRouteChildren: BeheerDashboardShopsRouteChildren = {
+  BeheerDashboardShopsShopIdRoute: BeheerDashboardShopsShopIdRoute,
+}
+
+const BeheerDashboardShopsRouteWithChildren =
+  BeheerDashboardShopsRoute._addFileChildren(BeheerDashboardShopsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -1525,7 +1556,7 @@ const rootRouteChildren: RootRouteChildren = {
   BeheerDashboardProvidersRoute: BeheerDashboardProvidersRoute,
   BeheerDashboardRevenueRoute: BeheerDashboardRevenueRoute,
   BeheerDashboardSettingsRoute: BeheerDashboardSettingsRoute,
-  BeheerDashboardShopsRoute: BeheerDashboardShopsRoute,
+  BeheerDashboardShopsRoute: BeheerDashboardShopsRouteWithChildren,
   BeheerDashboardSmsRoute: BeheerDashboardSmsRoute,
   BeheerDashboardSupportRoute: BeheerDashboardSupportRoute,
   BeheerDashboardUsersRoute: BeheerDashboardUsersRoute,
