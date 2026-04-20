@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, Check, QrCode, Share2, MessageCircle, Instagram, Download } from "lucide-react";
+import { Copy, Check, QrCode, Share2, MessageCircle, Instagram, Download, FileText } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -7,12 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useT } from "@/lib/i18n";
 import { getBookingUrl, getBookingUrlDisplay } from "@/lib/booking-url";
+import { downloadBookingPoster } from "@/lib/booking-poster";
 
 type Props = {
   /** Shop slug — wordt gebruikt om de boekings-URL op te bouwen. */
   slug: string | null | undefined;
   /** Optionele shop-naam voor het deelbericht. */
   shopName?: string | null;
+  /** Optionele logo-URL van de shop (voor de printbare poster). */
+  logoUrl?: string | null;
   /** Compacte variant zonder kop/intro — voor in /shop/settings. */
   compact?: boolean;
 };
@@ -21,10 +24,11 @@ type Props = {
  * Toont de publieke boekingslink van een shop met kopieer-, deel- en QR-acties.
  * Wordt gebruikt op het shop-dashboard én in /shop/settings.
  */
-export function BookingLinkCard({ slug, shopName, compact = false }: Props) {
+export function BookingLinkCard({ slug, shopName, logoUrl, compact = false }: Props) {
   const { t } = useT();
   const [copied, setCopied] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [posterLoading, setPosterLoading] = useState(false);
 
   const canonicalUrl = getBookingUrl(slug, true); // altijd de productie-URL voor delen
   const displayUrl = getBookingUrlDisplay(slug);
@@ -88,6 +92,37 @@ export function BookingLinkCard({ slug, shopName, compact = false }: Props) {
     link.download = `boekingslink-${slug ?? "shop"}.png`;
     link.href = url;
     link.click();
+  };
+
+  const downloadPoster = async () => {
+    if (!slug) return;
+    const canvas = document.getElementById("booking-qr") as HTMLCanvasElement | null;
+    if (!canvas) {
+      toast.error(t("bookingLink.posterError"));
+      return;
+    }
+    setPosterLoading(true);
+    try {
+      const qrDataUrl = canvas.toDataURL("image/png");
+      await downloadBookingPoster({
+        shopName: shopName ?? "",
+        bookingUrl: canonicalUrl,
+        displayUrl,
+        qrDataUrl,
+        logoUrl: logoUrl ?? null,
+        labels: {
+          headline: t("bookingLink.posterHeadline"),
+          scanHint: t("bookingLink.posterScanHint"),
+          orVisit: t("bookingLink.posterOrVisit"),
+          poweredBy: t("bookingLink.posterPoweredBy"),
+        },
+      });
+      toast.success(t("bookingLink.posterReady"));
+    } catch {
+      toast.error(t("bookingLink.posterError"));
+    } finally {
+      setPosterLoading(false);
+    }
   };
 
   if (!slug) {
