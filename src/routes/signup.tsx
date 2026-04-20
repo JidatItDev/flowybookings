@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { recordConsent } from "@/lib/legal-consent";
 import { logActivity } from "@/lib/activity-log";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
+import { useGoogleAuthAvailable } from "@/lib/use-google-auth-available";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Create account — FlowyBookings" }] }),
@@ -60,6 +61,7 @@ function SignupPage() {
   const [password, setPassword] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const googleAvailable = useGoogleAuthAvailable();
 
   // Don't auto-redirect after signup; we navigate explicitly to the new shop.
   useEffect(() => { if (!loading && session && !submitting) {/* idle */} }, [session, loading, submitting]);
@@ -179,14 +181,18 @@ function SignupPage() {
             <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-success-foreground" /> {t("auth.benefitCancelAnytime")}</li>
           </ul>
 
-          <div className="mt-6 space-y-3">
-            <GoogleSignInButton />
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <div className="h-px flex-1 bg-border" />
-              {t("auth.orContinueWith")}
-              <div className="h-px flex-1 bg-border" />
+          {googleAvailable !== false && (
+            <div className="mt-6 space-y-3">
+              <GoogleSignInButton />
+              {googleAvailable && (
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <div className="h-px flex-1 bg-border" />
+                  {t("auth.orContinueWith")}
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+              )}
             </div>
-          </div>
+          )}
 
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             <div className="space-y-1.5">

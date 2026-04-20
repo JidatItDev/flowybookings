@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { publicAppSettingsQuery } from "@/lib/app-settings";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
+import { useGoogleAuthAvailable } from "@/lib/use-google-auth-available";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -38,6 +39,7 @@ function LoginPage() {
   const [seeding, setSeeding] = useState(false);
   const { data: appSettings } = useQuery(publicAppSettingsQuery());
   const demoEnabled = appSettings?.demo_mode_enabled !== false && appSettings?.demo_logins_enabled !== false;
+  const googleAvailable = useGoogleAuthAvailable();
 
   useEffect(() => {
     if (loading || rolesLoading || !session) return;
@@ -108,14 +110,18 @@ function LoginPage() {
           <h1 className="text-2xl font-semibold tracking-tight">{t("auth.welcomeBack")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t("auth.signInSub")}</p>
 
-          <div className="mt-6 space-y-3">
-            <GoogleSignInButton redirect={redirect} />
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <div className="h-px flex-1 bg-border" />
-              {t("auth.orContinueWith")}
-              <div className="h-px flex-1 bg-border" />
+          {googleAvailable !== false && (
+            <div className="mt-6 space-y-3">
+              <GoogleSignInButton redirect={redirect} />
+              {googleAvailable && (
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <div className="h-px flex-1 bg-border" />
+                  {t("auth.orContinueWith")}
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+              )}
             </div>
-          </div>
+          )}
 
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             <div className="space-y-1.5">
