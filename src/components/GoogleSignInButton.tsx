@@ -40,8 +40,14 @@ export function GoogleSignInButton({ redirect }: { redirect?: string }) {
       // Browser will redirect to Google — nothing else to do.
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      // Common case: provider not yet enabled in the dashboard.
-      if (msg.toLowerCase().includes("provider is not enabled")) {
+      const lower = msg.toLowerCase();
+      // Friendly messages for the most common config problems.
+      if (
+        lower.includes("provider is not enabled") ||
+        lower.includes("missing oauth secret") ||
+        lower.includes("unsupported provider") ||
+        lower.includes("validation_failed")
+      ) {
         toast.error(t("auth.googleNotEnabled"));
       } else {
         toast.error(msg);
