@@ -8,6 +8,7 @@ import {
   Sparkle, ArrowRight, Check, ShieldCheck, Smartphone, Zap, Euro, MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PricingComparisonTable } from "@/components/PricingComparisonTable";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -284,6 +285,7 @@ function Landing() {
               </div>
             ))}
           </div>
+          <PricingComparisonTable />
           <p className="mx-auto mt-10 max-w-3xl text-center text-xs text-muted-foreground">
             {t("pricing.footnote")}
           </p>
