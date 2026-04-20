@@ -284,6 +284,7 @@ export type AdminShopDetail = {
     failedPayments: number;
   };
   customerSources: { source: string; count: number }[];
+  revenueLast30Days: { key: string; label: string; revenue: number; count: number }[];
   events: {
     id: string;
     action: string;
