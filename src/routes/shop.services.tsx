@@ -61,7 +61,7 @@ function ServicesPage() {
                   <h3 className="mt-2 truncate text-base font-semibold">{s.name}</h3>
                   <p className="mt-0.5 text-xs text-muted-foreground">{t("services.min", { n: s.duration_minutes })}</p>
                 </div>
-                <button onClick={() => toggleActive.mutate(s)} className={cn("inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium transition", s.is_active ? "bg-mint text-mint-foreground" : "bg-muted text-muted-foreground")}>{s.is_active ? t("services.active") : t("services.inactive")}</button>
+                <button onClick={() => toggleActive.mutate(s)} disabled={readOnly} title={roTitle} className={cn("inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60", s.is_active ? "bg-mint text-mint-foreground" : "bg-muted text-muted-foreground")}>{s.is_active ? t("services.active") : t("services.inactive")}</button>
               </div>
               <div className="mt-4 flex items-end justify-between">
                 <div>
@@ -69,8 +69,8 @@ function ServicesPage() {
                   {s.deposit_cents > 0 && <p className="text-xs text-muted-foreground">{t("services.deposit", { amount: formatCents(s.deposit_cents, s.currency) })}</p>}
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => setEditing(s)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => setDeleting(s)}><Trash2 className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" disabled={readOnly} title={roTitle} onClick={() => setEditing(s)}><Pencil className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" disabled={readOnly} title={roTitle} onClick={() => setDeleting(s)}><Trash2 className="h-4 w-4" /></Button>
                 </div>
               </div>
             </div>
