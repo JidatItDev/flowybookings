@@ -556,6 +556,28 @@ export const en: Record<string, string> = {
   "adminProviders.revenueByShop": "Revenue by shop",
   "adminProviders.revenueByShopDesc": "Top shops ranked by collected platform fees.",
 
+  // ── Admin: Mollie health ──
+  "adminMollieHealth.title": "Mollie Connect health",
+  "adminMollieHealth.description": "Per shop: connection status, organization, token expiry, last refresh and platform fees (last 30 days).",
+  "adminMollieHealth.empty": "No shops with a Mollie connection found.",
+  "adminMollieHealth.searchPlaceholder": "Search by shop or organization…",
+  "adminMollieHealth.counts": "{connected} of {total} connected",
+  "adminMollieHealth.feesTotal30d": "Platform fees 30d: {amount}",
+  "adminMollieHealth.payments": "{n} payments",
+  "adminMollieHealth.connectedAt": "Connected {when}",
+  "adminMollieHealth.tokenExpired": "Expired {when}",
+  "adminMollieHealth.filter.all": "All",
+  "adminMollieHealth.filter.issues": "Issues",
+  "adminMollieHealth.filter.connected": "Connected",
+  "adminMollieHealth.col.shop": "Shop",
+  "adminMollieHealth.col.status": "Status",
+  "adminMollieHealth.col.organization": "Organization",
+  "adminMollieHealth.col.token": "Token expires",
+  "adminMollieHealth.col.lastRefresh": "Last refresh",
+  "adminMollieHealth.col.fees30d": "Fees (30d)",
+  "adminMollieHealth.pill.error": "Error",
+  "adminMollieHealth.pill.expired": "Token expired",
+
   "common.yes": "Yes",
   "common.no": "No",
 
