@@ -45,26 +45,29 @@ function CalendarPage() {
   const shopId = useActiveShopId();
   const { activeShop } = useAuth();
   const trial = getTrialState(activeShop as never);
+  const readOnly = useImpersonationReadOnly();
   const bookingsAccess = useFeatureAccess(shopId, "max_bookings_per_month");
   const bookingsBlocked = !!bookingsAccess.data && !bookingsAccess.data.allowed;
   const bookingsPct = usagePercentage(bookingsAccess.data);
   const bookingsWarn =
     !!bookingsAccess.data && bookingsAccess.data.limit != null && bookingsPct >= 80 && bookingsPct < 100;
-  // Block when trial expired OR payment failed grace expired OR feature limit hit.
+  // Block when trial expired OR payment failed grace expired OR feature limit hit OR impersonate.
   const subscriptionBlocked = trial.isExpired || trial.paymentFailedGraceExpired;
-  const newBookingDisabled = !shopId || subscriptionBlocked || bookingsBlocked;
+  const newBookingDisabled = !shopId || subscriptionBlocked || bookingsBlocked || readOnly;
   const qc = useQueryClient();
   const { t } = useT();
-  const newBookingTitle = trial.paymentFailedGraceExpired
-    ? t("billing.paymentFailedBlockedTitle")
-    : trial.isExpired
-      ? t("calendar.trialExpiredBookingTitle")
-      : bookingsBlocked
-        ? t("calendar.bookingLimitReached", {
-            used: bookingsAccess.data?.used ?? 0,
-            limit: bookingsAccess.data?.limit ?? 0,
-          })
-        : undefined;
+  const newBookingTitle = readOnly
+    ? t("impersonate.readOnlyTooltip")
+    : trial.paymentFailedGraceExpired
+      ? t("billing.paymentFailedBlockedTitle")
+      : trial.isExpired
+        ? t("calendar.trialExpiredBookingTitle")
+        : bookingsBlocked
+          ? t("calendar.bookingLimitReached", {
+              used: bookingsAccess.data?.used ?? 0,
+              limit: bookingsAccess.data?.limit ?? 0,
+            })
+          : undefined;
   const [filter, setFilter] = useState<(typeof statuses)[number]>("all");
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<BookingWithRelations | null>(null);
