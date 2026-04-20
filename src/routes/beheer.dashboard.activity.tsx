@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Activity, Download, Store } from "lucide-react";
+import { Activity, CalendarIcon, Download, Store, X } from "lucide-react";
+import { format } from "date-fns";
 import { AdminLayout } from "@/components/AdminLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -21,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
 import {
@@ -47,6 +51,8 @@ function ActivityPage() {
 
   const [actionFilter, setActionFilter] = useState<string>(ALL);
   const [shopFilter, setShopFilter] = useState<string>(ALL);
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [page, setPage] = useState(1);
 
   // Realtime: nieuwe events → invalidate
@@ -81,17 +87,25 @@ function ActivityPage() {
   }, [events]);
 
   const filtered = useMemo(() => {
+    // Inclusief hele dag voor 'tot' (eind van dag) en vanaf 00:00 voor 'van'.
+    const fromMs = dateFrom ? new Date(dateFrom).setHours(0, 0, 0, 0) : null;
+    const toMs = dateTo ? new Date(dateTo).setHours(23, 59, 59, 999) : null;
     return events.filter((e) => {
       if (actionFilter !== ALL && e.action !== actionFilter) return false;
       if (shopFilter !== ALL && e.shop_id !== shopFilter) return false;
+      if (fromMs !== null || toMs !== null) {
+        const ts = new Date(e.created_at).getTime();
+        if (fromMs !== null && ts < fromMs) return false;
+        if (toMs !== null && ts > toMs) return false;
+      }
       return true;
     });
-  }, [events, actionFilter, shopFilter]);
+  }, [events, actionFilter, shopFilter, dateFrom, dateTo]);
 
   // Reset paginatie als filters wijzigen
   useEffect(() => {
     setPage(1);
-  }, [actionFilter, shopFilter]);
+  }, [actionFilter, shopFilter, dateFrom, dateTo]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -156,6 +170,45 @@ function ActivityPage() {
               </SelectContent>
             </Select>
           </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">
+              {t("activityPage.filterDateFrom")}
+            </span>
+            <DatePickerButton
+              value={dateFrom}
+              onChange={setDateFrom}
+              placeholder={t("activityPage.pickDate")}
+              maxDate={dateTo}
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">
+              {t("activityPage.filterDateTo")}
+            </span>
+            <DatePickerButton
+              value={dateTo}
+              onChange={setDateTo}
+              placeholder={t("activityPage.pickDate")}
+              minDate={dateFrom}
+            />
+          </div>
+
+          {(dateFrom || dateTo) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 gap-1 text-muted-foreground"
+              onClick={() => {
+                setDateFrom(undefined);
+                setDateTo(undefined);
+              }}
+            >
+              <X className="h-3.5 w-3.5" />
+              {t("activityPage.clearDates")}
+            </Button>
+          )}
         </div>
 
         <div className="text-xs text-muted-foreground">
@@ -290,4 +343,46 @@ function formatMetaValue(v: unknown): string {
   if (typeof v === "string") return v.length > 30 ? `${v.slice(0, 30)}…` : v;
   if (typeof v === "number" || typeof v === "boolean") return String(v);
   return JSON.stringify(v).slice(0, 30);
+}
+
+type DatePickerButtonProps = {
+  value: Date | undefined;
+  onChange: (date: Date | undefined) => void;
+  placeholder: string;
+  minDate?: Date;
+  maxDate?: Date;
+};
+
+function DatePickerButton({ value, onChange, placeholder, minDate, maxDate }: DatePickerButtonProps) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            "h-9 w-[170px] justify-start gap-2 font-normal",
+            !value && "text-muted-foreground",
+          )}
+        >
+          <CalendarIcon className="h-3.5 w-3.5" />
+          {value ? format(value, "dd MMM yyyy") : <span>{placeholder}</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={value}
+          onSelect={onChange}
+          disabled={(date) => {
+            if (minDate && date < new Date(new Date(minDate).setHours(0, 0, 0, 0))) return true;
+            if (maxDate && date > new Date(new Date(maxDate).setHours(23, 59, 59, 999))) return true;
+            return false;
+          }}
+          initialFocus
+          className={cn("p-3 pointer-events-auto")}
+        />
+      </PopoverContent>
+    </Popover>
+  );
 }
