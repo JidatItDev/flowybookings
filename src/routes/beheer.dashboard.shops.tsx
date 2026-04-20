@@ -89,7 +89,7 @@ function ShopsPage() {
                 return (
                   <Fragment key={s.id}>
                     <tr className="hover:bg-muted/30">
-                      <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-warm text-xs font-semibold text-pink-foreground">{s.name[0]}</div><div><p className="font-medium">{s.name}</p><p className="text-xs text-muted-foreground">{s.slug}</p></div></div></td>
+                      <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-warm text-xs font-semibold text-pink-foreground">{s.name[0]}</div><div><Link to="/beheer/dashboard/shops/$shopId" params={{ shopId: s.id }} className="font-medium hover:text-primary hover:underline">{s.name}</Link><p className="text-xs text-muted-foreground">{s.slug}</p></div></div></td>
                       <td className="hidden px-6 py-4 text-muted-foreground md:table-cell">{s.owner_email ?? "—"}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
