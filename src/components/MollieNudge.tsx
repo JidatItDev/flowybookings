@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react";
-import { Link } from "@tanstack/react-router";
-import { Wallet, ArrowRight, ShieldCheck, Zap, BadgePercent } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Wallet, ArrowRight, ShieldCheck, Zap, BadgePercent, Loader2 } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { shopPaymentProviderQuery } from "@/lib/payment-providers";
+import { paymentProviderKeys, shopPaymentProviderQuery } from "@/lib/payment-providers";
 import { useT } from "@/lib/i18n";
+import { assertNotImpersonating, useImpersonationReadOnly } from "@/components/ImpersonationBanner";
 
 interface Props {
   shopId: string;
@@ -13,15 +14,55 @@ interface Props {
 
 /**
  * App-style nudge shown on /shop/payments when Mollie is not connected.
+ * The CTA triggers the SAME authorize flow as MollieConnectCard — never duplicate.
  * Also inserts a one-time billing notification so it surfaces in the inbox.
  */
 export function MollieNudge({ shopId }: Props) {
   const { t } = useT();
+  const qc = useQueryClient();
+  const readOnly = useImpersonationReadOnly();
+  const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const { data: provider, isLoading } = useQuery(shopPaymentProviderQuery(shopId));
   const inserted = useRef(false);
 
   const status = provider?.connection_status ?? "not_connected";
   const needsConnect = !isLoading && (status === "not_connected" || status === "disconnected" || status === "error");
+
+  // Same authorize action as MollieConnectCard — single source of truth.
+  const startConnect = useMutation({
+    mutationFn: async () => {
+      console.debug("[MollieNudge] CTA clicked", { shopId });
+      assertNotImpersonating();
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      if (!token) throw new Error("unauthenticated");
+      console.debug("[MollieNudge] calling /api/mollie-connect/authorize", { shopId });
+      const res = await fetch(`/api/mollie-connect/authorize?shop_id=${encodeURIComponent(shopId)}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = (await res.json()) as { authorize_url?: string; error?: string; details?: string };
+      console.debug("[MollieNudge] authorize response", { ok: res.ok, status: res.status, data });
+      if (!res.ok || !data.authorize_url) {
+        throw new Error(data.error || "authorize_failed");
+      }
+      window.location.href = data.authorize_url;
+    },
+    onSuccess: () => {
+      console.debug("[MollieNudge] redirecting to Mollie authorize URL");
+      qc.invalidateQueries({ queryKey: paymentProviderKeys.byShop(shopId) });
+    },
+    onError: (e: Error) => {
+      console.error("[MollieNudge] connect failed", e);
+      if (e.message === "mollie_connect_not_configured") {
+        toast.error(t("mollie.notConfigured"));
+      } else if (e.message === "unauthenticated") {
+        toast.error(t("mollie.connectFailed"));
+      } else {
+        toast.error(`${t("mollie.connectFailed")} (${e.message})`);
+      }
+    },
+  });
 
   useEffect(() => {
     if (!needsConnect || inserted.current) return;
@@ -51,6 +92,8 @@ export function MollieNudge({ shopId }: Props) {
 
   if (isLoading || !needsConnect) return null;
 
+  const pending = startConnect.isPending;
+
   return (
     <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-primary-soft/40 p-5 shadow-soft">
       <div className="flex items-start gap-4">
@@ -68,11 +111,24 @@ export function MollieNudge({ shopId }: Props) {
           </ul>
 
           <div className="mt-4">
-            <Link to="/shop/payments">
-              <Button variant="hero" size="sm">
-                {t("mollie.nudge.cta")} <ArrowRight className="h-3.5 w-3.5" />
-              </Button>
-            </Link>
+            <Button
+              type="button"
+              variant="hero"
+              size="sm"
+              onClick={() => startConnect.mutate()}
+              disabled={pending || readOnly}
+              title={readOnlyTitle}
+            >
+              {pending ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("mollie.nudge.cta")}
+                </>
+              ) : (
+                <>
+                  {t("mollie.nudge.cta")} <ArrowRight className="h-3.5 w-3.5" />
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </div>
