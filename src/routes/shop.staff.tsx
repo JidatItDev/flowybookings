@@ -28,14 +28,22 @@ type StaffRow = { id: string; full_name: string; email: string | null; phone: st
 function StaffPage() {
   const shopId = useActiveShopId(); const qc = useQueryClient(); const { t } = useT();
   const { activeShop } = useShopContext();
-  const planLimit: number = !activeShop || activeShop.plan === "trial" || activeShop.plan === "starter" ? 3 : activeShop.plan === "pro" ? 10 : Number.POSITIVE_INFINITY;
+  const staffAccess = useFeatureAccess(shopId, "max_staff");
+  // Source of truth for the limit comes from plan_features via the RPC.
+  // Fall back to legacy hard-coded values until the access query loads.
+  const planLimit: number = staffAccess.data?.limit ?? (
+    !activeShop || activeShop.plan === "trial" ? 1
+    : activeShop.plan === "starter" ? 3
+    : activeShop.plan === "pro" ? 10
+    : Number.POSITIVE_INFINITY
+  );
   const [editing, setEditing] = useState<StaffRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<StaffRow | null>(null);
   const { data: staff = [], isLoading } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
   const { data: links = [] } = useQuery({ queryKey: ["staff_services", shopId], queryFn: async () => { const { data, error } = await supabase.from("staff_services").select("*"); if (error) throw error; return data ?? []; }, enabled: !!shopId });
-  const atOrOverLimit = Number.isFinite(planLimit) && staff.length >= planLimit;
+  const atOrOverLimit = staffAccess.data ? !staffAccess.data.allowed : (Number.isFinite(planLimit) && staff.length >= planLimit);
 
   const toggleActive = useMutation({
     mutationFn: async (s: StaffRow) => { const { error } = await supabase.from("staff").update({ is_active: !s.is_active }).eq("id", s.id); if (error) throw error; },
@@ -51,8 +59,28 @@ function StaffPage() {
 
   return (
     <ShopLayout>
-      <PageHeader title={t("staff.title")} description={t("staff.description")} actions={<Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId}><Plus className="h-4 w-4" /> {t("staff.addStaff")}</Button>} />
-      {atOrOverLimit && (
+      <PageHeader
+        title={t("staff.title")}
+        description={t("staff.description")}
+        actions={
+          <Button
+            variant="hero"
+            onClick={() => setCreating(true)}
+            disabled={!shopId || atOrOverLimit}
+            title={atOrOverLimit && Number.isFinite(planLimit)
+              ? `Je plan ondersteunt maximaal ${planLimit} medewerker${planLimit === 1 ? "" : "s"}. Upgrade om meer toe te voegen.`
+              : undefined}
+          >
+            <Plus className="h-4 w-4" /> {t("staff.addStaff")}
+          </Button>
+        }
+      />
+      {atOrOverLimit && staffAccess.data && (
+        <div className="mb-4">
+          <FeatureLock access={staffAccess.data} featureLabel="medewerkers" mode="inline" />
+        </div>
+      )}
+      {atOrOverLimit && !staffAccess.data && (
         <div className="mb-4">
           <UpgradeNudge variant="staff-limit" count={planLimit as number} plan={activeShop?.plan === "pro" ? "Premium" : "Pro"} />
         </div>
