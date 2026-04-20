@@ -1665,6 +1665,9 @@ export const nl: Record<string, string> = {
   "billing.cancelSuccess": "Abonnement opgezegd. Actief tot einde periode.",
   "billing.statusCancelled": "Opgezegd",
   "billing.statusPaymentFailed": "Betaling mislukt",
+  "billing.statusPending": "Activatie loopt",
+  "billing.activating": "activatie loopt…",
+  "billing.activatingShort": "ACTIVATIE…",
   "impersonate.readOnlyTooltip": "Alleen-lezen tijdens impersonate",
 };
 

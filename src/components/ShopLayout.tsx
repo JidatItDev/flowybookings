@@ -27,6 +27,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NotificationBell } from "@/components/NotificationBell";
+import { usePendingBilling } from "@/lib/use-pending-billing";
 import {
   DropdownMenu,
   DropdownMenuContent,
