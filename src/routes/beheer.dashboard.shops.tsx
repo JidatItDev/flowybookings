@@ -1,6 +1,6 @@
 import { Fragment, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
-import { Search, Ban, CheckCircle2, ChevronDown } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Search, Ban, CheckCircle2, ChevronDown, LogIn } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AdminLayout } from "@/components/AdminLayout";
@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
+import { startImpersonate } from "@/lib/impersonation";
 import { changeShopPlan, ALL_DB_PLANS, planLabel, type DbPlan } from "@/lib/plans";
 
 type ShopStatus = Database["public"]["Enums"]["shop_status"];
@@ -24,7 +25,8 @@ const planColor: Record<string, string> = { trial: "bg-muted text-muted-foregrou
 
 function ShopsPage() {
   const { t } = useT();
-  const { user } = useAuth();
+  const { user, setActiveShopId } = useAuth();
+  const navigate = useNavigate();
   const [q, setQ] = useState(""); const [statusFilter, setStatusFilter] = useState<"all" | ShopStatus>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { data: shops, isLoading } = useQuery(adminShopsQuery()); const qc = useQueryClient();
@@ -84,6 +86,19 @@ function ShopsPage() {
                       <td className="hidden px-6 py-4 text-muted-foreground xl:table-cell">{formatDate(s.created_at)}</td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              startImpersonate({ shopId: s.id, shopName: s.name });
+                              setActiveShopId(s.id);
+                              navigate({ to: "/shop" });
+                            }}
+                            aria-label={`Login als ${s.name}`}
+                            title={`Login als ${s.name}`}
+                          >
+                            <LogIn className="h-4 w-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
