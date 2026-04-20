@@ -382,10 +382,12 @@ function BookingFormDialog({ open, onClose, booking, shopId }: { open: boolean; 
         <div className="grid gap-4 py-2">
           <div>
             <Label>{t("calendar.customer")}</Label>
-            <Select value={form.customer_id} onValueChange={(v) => setForm({ ...form, customer_id: v })}>
-              <SelectTrigger><SelectValue placeholder={t("calendar.pickCustomer")} /></SelectTrigger>
-              <SelectContent>{customers.map((c) => <SelectItem key={c.id} value={c.id}>{c.full_name}</SelectItem>)}</SelectContent>
-            </Select>
+            <CustomerCombobox
+              customers={customers}
+              value={form.customer_id}
+              onChange={(v) => setForm({ ...form, customer_id: v })}
+              onClose={onClose}
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
