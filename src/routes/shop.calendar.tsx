@@ -130,13 +130,19 @@ function CalendarPage() {
           <Button
             variant="hero"
             onClick={() => setCreating(true)}
-            disabled={!shopId || trial.isExpired}
-            title={trial.isExpired ? "Je proefperiode is verlopen — kies een plan om nieuwe afspraken aan te maken." : undefined}
+            disabled={newBookingDisabled}
+            title={newBookingTitle}
           >
             <Plus className="h-4 w-4" /> {t("calendar.newBooking")}
           </Button>
         }
       />
+
+      {bookingsAccess.data && (bookingsWarn || bookingsBlocked) && (
+        <div className="mb-4">
+          <FeatureLock access={bookingsAccess.data} featureLabel="boekingen" mode="inline" />
+        </div>
+      )}
 
       {!shopId ? (
         <NoShopState />
