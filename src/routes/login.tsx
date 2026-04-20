@@ -17,6 +17,7 @@ import { useGoogleAuthAvailable } from "@/lib/use-google-auth-available";
 export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>) => ({
     redirect: typeof s.redirect === "string" ? s.redirect : undefined,
+    resetGoogle: s.resetGoogle === "1" || s.resetGoogle === 1 || s.resetGoogle === true ? true : undefined,
   }),
   head: () => ({ meta: [{ title: "Sign in — FlowyBookings" }] }),
   component: LoginPage,
@@ -30,7 +31,7 @@ const DEMO_PASSWORD = "Demo1234!";
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { redirect } = Route.useSearch();
+  const { redirect, resetGoogle } = Route.useSearch();
   const { session, loading, rolesLoading, isSuperAdmin, isShopOwner, isStaff } = useAuth();
   const { t } = useT();
   const [email, setEmail] = useState("");
@@ -40,6 +41,20 @@ function LoginPage() {
   const { data: appSettings } = useQuery(publicAppSettingsQuery());
   const demoEnabled = appSettings?.demo_mode_enabled !== false && appSettings?.demo_logins_enabled !== false;
   const googleAvailable = useGoogleAuthAvailable();
+
+  // Verborgen reset: ?resetGoogle=1 wist de auto-hide flag zodat de Google-knop
+  // na (her)configuratie weer verschijnt zonder DevTools te openen.
+  useEffect(() => {
+    if (!resetGoogle || typeof window === "undefined") return;
+    try {
+      window.localStorage.removeItem("fb.googleAuthUnavailable");
+      toast.success(t("auth.googleResetDone"));
+    } catch {
+      /* negeer storage errors */
+    }
+    // Verwijder de query-param uit de URL zodat een refresh niet nogmaals reset.
+    navigate({ to: "/login", search: redirect ? { redirect } : {}, replace: true });
+  }, [resetGoogle, redirect, navigate, t]);
 
   useEffect(() => {
     if (loading || rolesLoading || !session) return;

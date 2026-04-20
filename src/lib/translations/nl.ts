@@ -183,6 +183,7 @@ export const nl: Record<string, string> = {
   "bookingLink.noSlug": "Stel eerst een shop-URL in om je boekingslink te delen.",
   "auth.orContinueWith": "of ga verder met e-mail",
   "auth.googleNotEnabled": "Google-login is nog niet geactiveerd. Schakel Google in via Authenticatie-instellingen.",
+  "auth.googleResetDone": "Google-knop is gereset. Hij verschijnt weer op de inlogpagina.",
   "legal.reconsent.title": "Ons beleid is bijgewerkt",
   "legal.reconsent.body": "Bekijk en accepteer de nieuwste versies van het onderstaande beleid om FlowyBookings te blijven gebruiken.",
   "legal.reconsent.doc.privacy": "Privacybeleid",
