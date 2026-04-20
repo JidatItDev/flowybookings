@@ -44,6 +44,8 @@ export type AdminShopRow = {
   phone: string | null;
   address: string | null;
   created_at: string;
+  policy_accepted_at: string | null;
+  policy_version: string | null;
   owner_email?: string;
   booking_count?: number;
   revenue_cents?: number;
@@ -55,7 +57,7 @@ export const adminShopsQuery = () =>
     queryFn: async (): Promise<AdminShopRow[]> => {
       const { data: shops, error } = await supabase
         .from("shops")
-        .select("id, name, slug, status, plan, owner_id, email, phone, address, created_at")
+        .select("id, name, slug, status, plan, owner_id, email, phone, address, created_at, policy_accepted_at, policy_version")
         .order("created_at", { ascending: false });
       if (error) throw error;
 
