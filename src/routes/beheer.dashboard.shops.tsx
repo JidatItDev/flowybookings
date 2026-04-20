@@ -50,6 +50,10 @@ function ShopsPage() {
     return s.name.toLowerCase().includes(q.toLowerCase());
   });
   const policyDateFmt = new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", year: "numeric" });
+  const sourceLabel = (src: string): string => {
+    const map: Record<string, string> = { fresha: "Fresha", salonized: "Salonized", treatwell: "Treatwell", simplybook: "SimplyBook", planity: "Planity", csv: "CSV", manual: t("customers.sourceManual"), booking_page: t("customers.sourceBookingPage") };
+    return map[src] ?? src;
+  };
 
   return (
     <AdminLayout>
