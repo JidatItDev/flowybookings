@@ -86,11 +86,15 @@ function PaymentsPage() {
         <NoShopState />
       ) : (
         <>
-          {/* Cross-link to subscription billing so the two systems are obviously separate */}
-          <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-border bg-muted/30 px-4 py-3 text-xs">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Receipt className="h-4 w-4" />
-              <span>{t("shopPayments.notSubscription")}</span>
+          {/* Cross-link to platform billing — distinguishes the FlowyBookings
+              software subscription from the customer-payment (Mollie) flow on this page. */}
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-muted/30 px-4 py-3 text-xs">
+            <div className="flex items-start gap-2 text-muted-foreground">
+              <Receipt className="mt-0.5 h-4 w-4 flex-none" />
+              <span>
+                <span className="font-medium text-foreground">{t("shopPayments.notSubscriptionTitle")}</span>{" "}
+                {t("shopPayments.notSubscriptionBody")}
+              </span>
             </div>
             <Link to="/shop/billing" className="font-medium text-primary hover:underline">
               {t("shopPayments.openBilling")} →
