@@ -59,6 +59,7 @@ import { Route as BeheerDashboardDemoRouteImport } from './routes/beheer.dashboa
 import { Route as BeheerDashboardCustomersRouteImport } from './routes/beheer.dashboard.customers'
 import { Route as BeheerDashboardBookingsRouteImport } from './routes/beheer.dashboard.bookings'
 import { Route as BeheerDashboardBillingRouteImport } from './routes/beheer.dashboard.billing'
+import { Route as BeheerDashboardActivityRouteImport } from './routes/beheer.dashboard.activity'
 import { Route as BeheerAdLoginRouteImport } from './routes/beheer.ad.login'
 import { Route as ApiSmsCreditsCheckoutRouteImport } from './routes/api.sms-credits.checkout'
 import { Route as ApiOgBookingRouteImport } from './routes/api.og.booking'
@@ -338,6 +339,11 @@ const BeheerDashboardBillingRoute = BeheerDashboardBillingRouteImport.update({
   path: '/beheer/dashboard/billing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BeheerDashboardActivityRoute = BeheerDashboardActivityRouteImport.update({
+  id: '/beheer/dashboard/activity',
+  path: '/beheer/dashboard/activity',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BeheerAdLoginRoute = BeheerAdLoginRouteImport.update({
   id: '/beheer/ad/login',
   path: '/beheer/ad/login',
@@ -503,6 +509,7 @@ export interface FileRoutesByFullPath {
   '/api/og/booking': typeof ApiOgBookingRoute
   '/api/sms-credits/checkout': typeof ApiSmsCreditsCheckoutRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
+  '/beheer/dashboard/activity': typeof BeheerDashboardActivityRoute
   '/beheer/dashboard/billing': typeof BeheerDashboardBillingRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
   '/beheer/dashboard/customers': typeof BeheerDashboardCustomersRoute
@@ -577,6 +584,7 @@ export interface FileRoutesByTo {
   '/api/og/booking': typeof ApiOgBookingRoute
   '/api/sms-credits/checkout': typeof ApiSmsCreditsCheckoutRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
+  '/beheer/dashboard/activity': typeof BeheerDashboardActivityRoute
   '/beheer/dashboard/billing': typeof BeheerDashboardBillingRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
   '/beheer/dashboard/customers': typeof BeheerDashboardCustomersRoute
@@ -652,6 +660,7 @@ export interface FileRoutesById {
   '/api/og/booking': typeof ApiOgBookingRoute
   '/api/sms-credits/checkout': typeof ApiSmsCreditsCheckoutRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
+  '/beheer/dashboard/activity': typeof BeheerDashboardActivityRoute
   '/beheer/dashboard/billing': typeof BeheerDashboardBillingRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
   '/beheer/dashboard/customers': typeof BeheerDashboardCustomersRoute
@@ -728,6 +737,7 @@ export interface FileRouteTypes {
     | '/api/og/booking'
     | '/api/sms-credits/checkout'
     | '/beheer/ad/login'
+    | '/beheer/dashboard/activity'
     | '/beheer/dashboard/billing'
     | '/beheer/dashboard/bookings'
     | '/beheer/dashboard/customers'
@@ -802,6 +812,7 @@ export interface FileRouteTypes {
     | '/api/og/booking'
     | '/api/sms-credits/checkout'
     | '/beheer/ad/login'
+    | '/beheer/dashboard/activity'
     | '/beheer/dashboard/billing'
     | '/beheer/dashboard/bookings'
     | '/beheer/dashboard/customers'
@@ -876,6 +887,7 @@ export interface FileRouteTypes {
     | '/api/og/booking'
     | '/api/sms-credits/checkout'
     | '/beheer/ad/login'
+    | '/beheer/dashboard/activity'
     | '/beheer/dashboard/billing'
     | '/beheer/dashboard/bookings'
     | '/beheer/dashboard/customers'
@@ -951,6 +963,7 @@ export interface RootRouteChildren {
   ApiOgBookingRoute: typeof ApiOgBookingRoute
   ApiSmsCreditsCheckoutRoute: typeof ApiSmsCreditsCheckoutRoute
   BeheerAdLoginRoute: typeof BeheerAdLoginRoute
+  BeheerDashboardActivityRoute: typeof BeheerDashboardActivityRoute
   BeheerDashboardBillingRoute: typeof BeheerDashboardBillingRoute
   BeheerDashboardBookingsRoute: typeof BeheerDashboardBookingsRoute
   BeheerDashboardCustomersRoute: typeof BeheerDashboardCustomersRoute
@@ -1328,6 +1341,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerDashboardBillingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/beheer/dashboard/activity': {
+      id: '/beheer/dashboard/activity'
+      path: '/beheer/dashboard/activity'
+      fullPath: '/beheer/dashboard/activity'
+      preLoaderRoute: typeof BeheerDashboardActivityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/beheer/ad/login': {
       id: '/beheer/ad/login'
       path: '/beheer/ad/login'
@@ -1566,6 +1586,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiOgBookingRoute: ApiOgBookingRoute,
   ApiSmsCreditsCheckoutRoute: ApiSmsCreditsCheckoutRoute,
   BeheerAdLoginRoute: BeheerAdLoginRoute,
+  BeheerDashboardActivityRoute: BeheerDashboardActivityRoute,
   BeheerDashboardBillingRoute: BeheerDashboardBillingRoute,
   BeheerDashboardBookingsRoute: BeheerDashboardBookingsRoute,
   BeheerDashboardCustomersRoute: BeheerDashboardCustomersRoute,
