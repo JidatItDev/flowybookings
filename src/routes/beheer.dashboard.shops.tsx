@@ -104,6 +104,11 @@ function ShopsPage() {
                       <td className="px-6 py-4"><StatusBadge status={s.status} /></td>
                       <td className="hidden px-6 py-4 lg:table-cell">{s.booking_count ?? 0}</td>
                       <td className="hidden px-6 py-4 font-medium lg:table-cell">{formatCents(s.revenue_cents ?? 0)}</td>
+                      <td className="hidden px-6 py-4 xl:table-cell">
+                        {s.policy_accepted_at
+                          ? <span className="inline-flex items-center gap-1 text-success-foreground" title={s.policy_version ?? ""}>✅ {policyDateFmt.format(new Date(s.policy_accepted_at))}</span>
+                          : <span className="inline-flex items-center gap-1 text-destructive">❌ {t("adminShops.policyMissing")}</span>}
+                      </td>
                       <td className="hidden px-6 py-4 text-muted-foreground xl:table-cell">{formatDate(s.created_at)}</td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
