@@ -104,10 +104,10 @@ export function PlanConfigurationCard() {
   };
   const setFeature = (plan: DbPlan, slug: string, patch: Partial<FeatureRow>) => {
     const k = planKey(plan, slug);
-    setFeatureDraft((prev) => ({
-      ...prev,
-      [k]: { plan_name: plan, feature_slug: slug, is_included: false, limit_value: null, ...prev[k], ...patch },
-    }));
+    setFeatureDraft((prev) => {
+      const existing = prev[k] ?? { plan_name: plan, feature_slug: slug, is_included: false, limit_value: null };
+      return { ...prev, [k]: { ...existing, ...patch } };
+    });
     setDirty(true);
   };
 
