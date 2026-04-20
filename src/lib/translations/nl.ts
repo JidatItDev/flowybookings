@@ -245,6 +245,7 @@ export const nl: Record<string, string> = {
   "adminNav.allSystems": "Alle systemen operationeel · 99,98% uptime",
   "adminNav.switchToShop": "Naar Shop →",
   "adminNav.platformOwner": "Platform eigenaar",
+  "adminNav.alertSound": "Geluid bij alerts",
 
   // ── Shop Dashboard ──
   "dashboard.welcomeBack": "Welkom terug, {name} 👋",

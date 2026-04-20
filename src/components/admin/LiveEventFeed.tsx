@@ -10,6 +10,7 @@ import {
   playChime,
   showBrowserNotification,
 } from "@/lib/admin-alerts"
+import { getSoundEnabled } from "@/lib/admin-sound-pref"
 
 const ACTION_LABELS: Record<string, string> = {
   shop_plan_change: "Plan gewijzigd",
@@ -72,7 +73,7 @@ export function LiveEventFeed() {
             const label = eventLabel({ action: row.action })
             const description = "Bekijk de activiteit-feed voor details."
             toast.warning(label, { description })
-            playChime()
+            if (getSoundEnabled()) playChime()
             showBrowserNotification(`FlowyBookings · ${label}`, description)
           }
         },

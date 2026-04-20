@@ -22,7 +22,11 @@ import {
   TrendingUp,
   UserCheck,
   MessageSquare,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { useSoundEnabled } from "@/lib/admin-sound-pref";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { RequireSuperAdmin } from "@/components/RouteGuard";
@@ -102,12 +106,15 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             );
           })}
         </nav>
-        <div className="m-3 rounded-2xl border border-sidebar-border bg-card p-4">
-          <div className="flex items-center gap-2 text-xs font-medium text-success-foreground">
-            <ShieldCheck className="h-4 w-4" />
-            {t("adminNav.platformHealthy")}
+        <div className="m-3 space-y-3 rounded-2xl border border-sidebar-border bg-card p-4">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-medium text-success-foreground">
+              <ShieldCheck className="h-4 w-4" />
+              {t("adminNav.platformHealthy")}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">{t("adminNav.allSystems")}</p>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">{t("adminNav.allSystems")}</p>
+          <SoundToggle />
         </div>
       </aside>
 
@@ -215,5 +222,24 @@ function Header({ onClose }: { onClose?: () => void }) {
         </Button>
       )}
     </div>
+  );
+}
+
+function SoundToggle() {
+  const { t } = useT();
+  const [enabled, setEnabled] = useSoundEnabled();
+  const Icon = enabled ? Volume2 : VolumeX;
+  return (
+    <label className="flex cursor-pointer items-center justify-between gap-3 border-t border-sidebar-border pt-3">
+      <span className="flex items-center gap-2 text-xs font-medium text-foreground">
+        <Icon className="h-4 w-4 text-muted-foreground" />
+        {t("adminNav.alertSound")}
+      </span>
+      <Switch
+        checked={enabled}
+        onCheckedChange={setEnabled}
+        aria-label={t("adminNav.alertSound")}
+      />
+    </label>
   );
 }
