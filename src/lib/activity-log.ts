@@ -19,14 +19,16 @@ export async function logActivity(args: LogActivityArgs): Promise<void> {
     const {
       data: { user },
     } = await supabase.auth.getUser()
-    await supabase.from("activity_log").insert({
-      entity: args.entity,
-      action: args.action,
-      shop_id: args.shopId ?? null,
-      actor_user_id: user?.id ?? null,
-      actor_email: user?.email ?? null,
-      metadata: args.metadata ?? {},
-    })
+    await supabase.from("activity_log").insert([
+      {
+        entity: args.entity,
+        action: args.action,
+        shop_id: args.shopId ?? null,
+        actor_user_id: user?.id ?? null,
+        actor_email: user?.email ?? null,
+        metadata: (args.metadata ?? {}) as never,
+      },
+    ])
   } catch {
     // ignore — logging mag nooit de hoofdactie blokkeren
   }
