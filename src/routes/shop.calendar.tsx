@@ -357,6 +357,7 @@ function BookingFormDialog({ open, onClose, booking, shopId }: { open: boolean; 
 
   const save = useMutation({
     mutationFn: async () => {
+      assertNotImpersonating();
       if (!shopId) throw new Error(t("errors.noActiveShop"));
       if (!form.starts_at) throw new Error(t("errors.pickStartTime"));
       const svc = services.find((s) => s.id === form.service_id);
