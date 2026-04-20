@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { useFeatureAccess } from "@/lib/use-feature-access";
+import { assertNotImpersonating, useImpersonationReadOnly } from "@/components/ImpersonationBanner";
 
 type SearchParams = { topup?: "return" | "mock" | "cancel"; payment?: string };
 
@@ -128,6 +129,8 @@ function SettingsPanel({ shopId }: { shopId: string }) {
   const { activeShop } = useShopContext();
   const qc = useQueryClient();
   const { t } = useT();
+  const readOnly = useImpersonationReadOnly();
+  const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const isPremium = activeShop?.plan === "pro" || activeShop?.plan === "premium";
 
   const { data: shop, isLoading } = useQuery({ ...shopFullQuery(shopId), enabled: !!shopId });
@@ -143,6 +146,7 @@ function SettingsPanel({ shopId }: { shopId: string }) {
 
   const save = useMutation({
     mutationFn: async () => {
+      assertNotImpersonating();
       if (!shop) throw new Error(t("errors.noActiveShop"));
       const branding = { ...((shop.branding ?? {}) as Record<string, unknown>), notifications: settings };
       const { error } = await supabase.from("shops").update({ branding }).eq("id", shopId);
@@ -169,10 +173,12 @@ function SettingsPanel({ shopId }: { shopId: string }) {
   ];
 
   const toggleChannel = (k: ChannelKey) => {
+    if (readOnly) return;
     setSettings((s) => ({ ...s, channels: { ...s.channels, [k]: !s.channels[k] } }));
     setDirty(true);
   };
   const toggleEvent = (k: EventKey) => {
+    if (readOnly) return;
     setSettings((s) => ({ ...s, events: { ...s.events, [k]: !s.events[k] } }));
     setDirty(true);
   };
@@ -227,7 +233,7 @@ function SettingsPanel({ shopId }: { shopId: string }) {
         </div>
         <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
           {dirty && <span className="text-xs text-muted-foreground">{t("notifications.unsaved")}</span>}
-          <Button variant="hero" onClick={() => save.mutate()} disabled={!dirty || save.isPending}>
+          <Button variant="hero" onClick={() => save.mutate()} disabled={!dirty || save.isPending || readOnly} title={readOnlyTitle}>
             {save.isPending ? t("notifications.saving") : t("notifications.saveChanges")}
           </Button>
         </div>
@@ -238,9 +244,9 @@ function SettingsPanel({ shopId }: { shopId: string }) {
   );
 }
 
-function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
+function Toggle({ on, onChange, disabled, title }: { on: boolean; onChange: () => void; disabled?: boolean; title?: string }) {
   return (
-    <button onClick={onChange} className={cn("relative inline-flex h-6 w-11 items-center rounded-full transition-colors", on ? "bg-primary" : "bg-muted")}>
+    <button onClick={onChange} disabled={disabled} title={title} className={cn("relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50", on ? "bg-primary" : "bg-muted")}>
       <span className={cn("inline-block h-5 w-5 transform rounded-full bg-card shadow transition-transform", on ? "translate-x-5" : "translate-x-0.5")} />
     </button>
   );
