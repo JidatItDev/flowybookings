@@ -251,6 +251,14 @@ export function usePlanCheckout() {
       });
       const data = (await res.json()) as { ok?: boolean; checkout_url?: string; error?: string };
       if (!res.ok || !data.checkout_url) throw new Error(data.error ?? "checkout_failed");
+      // Optimistic UI: mark this shop as pending the requested plan so the
+      // header + cards can show "Activatie loopt…" instead of stale TRIAL
+      // while the user comes back from Mollie and the webhook fires.
+      markBillingPending({
+        shopId: activeShop.id,
+        plan,
+        cycle: cycle === "yearly" ? "yearly" : "monthly",
+      });
       window.location.href = data.checkout_url;
     },
     onError: (e: Error) => toast.error(e.message),
