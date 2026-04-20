@@ -13,12 +13,14 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState, LoadingGrid, NoShopState } from "@/components/EmptyState";
 import { UpgradeNudge } from "@/components/UpgradeNudge";
+import { FeatureLock } from "@/components/FeatureLock";
 import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { staffQuery, servicesQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+import { useFeatureAccess } from "@/lib/use-feature-access";
 
 export const Route = createFileRoute("/shop/staff")({ head: () => ({ meta: [{ title: "Staff — FlowyBookings" }] }), component: StaffPage });
 type StaffRow = { id: string; full_name: string; email: string | null; phone: string | null; is_active: boolean; working_hours: unknown };
