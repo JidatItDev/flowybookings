@@ -201,7 +201,7 @@ function SettingsPanel({ shopId }: { shopId: string }) {
             <div key={c.id} className={cn("relative rounded-2xl border border-border bg-card p-5 shadow-soft", locked && "opacity-80")}>
               <div className="flex items-center justify-between">
                 <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", c.color)}><Icon className="h-5 w-5" /></div>
-                <Toggle on={on && !locked} onChange={() => !locked && toggleChannel(c.id)} />
+                <Toggle on={on && !locked} onChange={() => !locked && toggleChannel(c.id)} disabled={readOnly || locked} title={readOnly ? readOnlyTitle : undefined} />
               </div>
               <h3 className="mt-3 flex items-center gap-2 font-semibold">
                 {t(c.nameKey)}
@@ -226,7 +226,7 @@ function SettingsPanel({ shopId }: { shopId: string }) {
                   <p className="font-medium">{t(e.titleKey)}</p>
                   <p className="text-xs text-muted-foreground">{t(e.descKey)}</p>
                 </div>
-                <Toggle on={on} onChange={() => toggleEvent(e.id)} />
+                <Toggle on={on} onChange={() => toggleEvent(e.id)} disabled={readOnly} title={readOnlyTitle} />
               </div>
             );
           })}
@@ -255,6 +255,8 @@ function Toggle({ on, onChange, disabled, title }: { on: boolean; onChange: () =
 function DepositSettings({ shopId, shop }: { shopId: string; shop: { default_deposit_percent?: number | null } | null }) {
   const qc = useQueryClient();
   const { t } = useT();
+  const readOnly = useImpersonationReadOnly();
+  const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const [percent, setPercent] = useState<number>(0);
   const [dirty, setDirty] = useState(false);
 
@@ -267,6 +269,7 @@ function DepositSettings({ shopId, shop }: { shopId: string; shop: { default_dep
 
   const save = useMutation({
     mutationFn: async () => {
+      assertNotImpersonating();
       const safe = Math.max(0, Math.min(100, Math.round(percent)));
       const { error } = await supabase.from("shops").update({ default_deposit_percent: safe }).eq("id", shopId);
       if (error) throw error;
@@ -293,11 +296,13 @@ function DepositSettings({ shopId, shop }: { shopId: string; shop: { default_dep
             min={0}
             max={100}
             value={percent}
+            disabled={readOnly}
+            title={readOnlyTitle}
             onChange={(e) => { setPercent(Number(e.target.value)); setDirty(true); }}
-            className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+            className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
-        <Button variant="outline" disabled={!dirty || save.isPending} onClick={() => save.mutate()}>
+        <Button variant="outline" disabled={!dirty || save.isPending || readOnly} title={readOnlyTitle} onClick={() => save.mutate()}>
           {save.isPending ? t("notifications.saving") : t("notifications.saveChanges")}
         </Button>
       </div>
