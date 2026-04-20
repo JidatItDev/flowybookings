@@ -26,6 +26,10 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/shop/settings")({
   head: () => ({ meta: [{ title: "Settings — FlowyBookings" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    billing: typeof search.billing === "string" ? (search.billing as string) : undefined,
+    payment: typeof search.payment === "string" ? (search.payment as string) : undefined,
+  }),
   component: SettingsPage,
 });
 
