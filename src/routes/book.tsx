@@ -139,6 +139,7 @@ function BookingFlow() {
 
   const selectedShop = shopsQ.data?.find((s) => s.id === shopId) ?? presetShopQ.data ?? null;
   const isDemoShop = !!selectedShop?.is_demo;
+  const shopTrialExpired = !!selectedShop && (selectedShop as { plan?: string; plan_expires_at?: string | null }).plan === "trial" && !!(selectedShop as { plan_expires_at?: string | null }).plan_expires_at && new Date((selectedShop as { plan_expires_at?: string }).plan_expires_at!).getTime() < Date.now();
   const selectedService = servicesQ.data?.find((s) => s.id === serviceId);
   const selectedStaff = staffQ.data?.find((s) => s.id === staffId);
 
