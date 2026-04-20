@@ -20,7 +20,9 @@ import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { getTrialState } from "@/lib/trial";
 import { planLabel as planLabelFn } from "@/lib/plans";
-import { planPriceLabel, useFeatureAccess } from "@/lib/use-feature-access";
+import { useFeatureAccess } from "@/lib/use-feature-access";
+import { usePlanPricing, formatPlanPrice } from "@/lib/use-plan-pricing";
+import { usePendingBilling } from "@/lib/use-pending-billing";
 import { useSearch, useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 
