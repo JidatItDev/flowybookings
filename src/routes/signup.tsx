@@ -143,6 +143,9 @@ function SignupPage() {
         metadata: { shop_name: businessName.trim(), category, plan: "trial" },
       });
 
+      // Clear any stale active-shop pointer (e.g. demo shop from prior session
+      // in this browser) before locking in the brand-new shop.
+      try { window.localStorage.removeItem("flowybookings:active-shop-id"); } catch { /* ignore */ }
       refreshShops();
       setActiveShopId(shop.id);
       toast.success(t("auth.accountCreated"));
