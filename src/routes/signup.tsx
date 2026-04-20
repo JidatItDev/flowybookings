@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { recordConsent } from "@/lib/legal-consent";
 import { logActivity } from "@/lib/activity-log";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Create account — FlowyBookings" }] }),
@@ -178,7 +179,16 @@ function SignupPage() {
             <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-success-foreground" /> {t("auth.benefitCancelAnytime")}</li>
           </ul>
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <div className="mt-6 space-y-3">
+            <GoogleSignInButton />
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="h-px flex-1 bg-border" />
+              {t("auth.orContinueWith")}
+              <div className="h-px flex-1 bg-border" />
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="name">{t("auth.fullName")}</Label>
               <Input id="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} />

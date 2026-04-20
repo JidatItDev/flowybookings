@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { publicAppSettingsQuery } from "@/lib/app-settings";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -107,7 +108,16 @@ function LoginPage() {
           <h1 className="text-2xl font-semibold tracking-tight">{t("auth.welcomeBack")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t("auth.signInSub")}</p>
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <div className="mt-6 space-y-3">
+            <GoogleSignInButton redirect={redirect} />
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="h-px flex-1 bg-border" />
+              {t("auth.orContinueWith")}
+              <div className="h-px flex-1 bg-border" />
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="email">{t("auth.email")}</Label>
               <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
