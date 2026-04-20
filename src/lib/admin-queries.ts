@@ -248,6 +248,140 @@ export const adminPaymentsQuery = () =>
     staleTime: 15_000,
   });
 
+/* ─── Single shop detail (admin) ─── */
+
+export type AdminShopDetail = {
+  shop: {
+    id: string;
+    name: string;
+    slug: string;
+    status: string;
+    plan: string;
+    owner_id: string;
+    email: string | null;
+    phone: string | null;
+    address: string | null;
+    timezone: string;
+    is_demo: boolean;
+    admin_notes: string | null;
+    created_at: string;
+    plan_expires_at: string | null;
+    plan_billing_cycle: string | null;
+    policy_accepted_at: string | null;
+    policy_version: string | null;
+  };
+  owner: { id: string; email: string | null; full_name: string | null; phone: string | null } | null;
+  stats: {
+    bookings: number;
+    bookingsThisMonth: number;
+    customers: number;
+    importedCustomers: number;
+    services: number;
+    staff: number;
+    revenueCents: number;
+    feesCents: number;
+    payments: number;
+    failedPayments: number;
+  };
+  customerSources: { source: string; count: number }[];
+  events: {
+    id: string;
+    action: string;
+    entity: string;
+    actor_email: string | null;
+    metadata: Record<string, unknown>;
+    created_at: string;
+  }[];
+};
+
+export const adminShopDetailQuery = (shopId: string) =>
+  queryOptions({
+    queryKey: ["admin", "shop-detail", shopId],
+    staleTime: 15_000,
+    queryFn: async (): Promise<AdminShopDetail> => {
+      const { data: shop, error } = await supabase
+        .from("shops")
+        .select(
+          "id, name, slug, status, plan, owner_id, email, phone, address, timezone, is_demo, admin_notes, created_at, plan_expires_at, plan_billing_cycle, policy_accepted_at, policy_version",
+        )
+        .eq("id", shopId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!shop) throw new Error("Shop niet gevonden");
+
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+
+      const [ownerRes, bookingsRes, bookingsMonthRes, customersRes, servicesRes, staffRes, paymentsRes, eventsRes] =
+        await Promise.all([
+          supabase.from("profiles").select("id, email, full_name, phone").eq("id", shop.owner_id).maybeSingle(),
+          supabase.from("bookings").select("id", { count: "exact", head: true }).eq("shop_id", shopId),
+          supabase
+            .from("bookings")
+            .select("id", { count: "exact", head: true })
+            .eq("shop_id", shopId)
+            .gte("created_at", monthStart.toISOString()),
+          supabase.from("customers").select("import_source").eq("shop_id", shopId),
+          supabase.from("services").select("id", { count: "exact", head: true }).eq("shop_id", shopId),
+          supabase.from("staff").select("id", { count: "exact", head: true }).eq("shop_id", shopId).eq("is_active", true),
+          supabase.from("payments").select("amount_cents, application_fee_cents, status").eq("shop_id", shopId),
+          supabase
+            .from("activity_log")
+            .select("id, action, entity, actor_email, metadata, created_at")
+            .eq("shop_id", shopId)
+            .order("created_at", { ascending: false })
+            .limit(15),
+        ]);
+
+      const sourceMap = new Map<string, number>();
+      let imported = 0;
+      (customersRes.data ?? []).forEach((c) => {
+        const src = c.import_source ?? "manual";
+        sourceMap.set(src, (sourceMap.get(src) ?? 0) + 1);
+        if (c.import_source) imported += 1;
+      });
+      const customerSources = [...sourceMap.entries()]
+        .map(([source, count]) => ({ source, count }))
+        .sort((a, b) => b.count - a.count);
+
+      const payments = paymentsRes.data ?? [];
+      const revenueCents = payments
+        .filter((p) => p.status === "paid" || p.status === "deposit_paid")
+        .reduce((s, p) => s + (p.amount_cents ?? 0), 0);
+      const feesCents = payments
+        .filter((p) => p.status === "paid" || p.status === "deposit_paid")
+        .reduce((s, p) => s + (p.application_fee_cents ?? 0), 0);
+      const failedPayments = payments.filter((p) => p.status === "failed").length;
+
+      return {
+        shop,
+        owner: ownerRes.data ?? null,
+        stats: {
+          bookings: bookingsRes.count ?? 0,
+          bookingsThisMonth: bookingsMonthRes.count ?? 0,
+          customers: customersRes.data?.length ?? 0,
+          importedCustomers: imported,
+          services: servicesRes.count ?? 0,
+          staff: staffRes.count ?? 0,
+          revenueCents,
+          feesCents,
+          payments: payments.length,
+          failedPayments,
+        },
+        customerSources,
+        events: (eventsRes.data ?? []).map((e) => ({
+          id: e.id,
+          action: e.action,
+          entity: e.entity,
+          actor_email: e.actor_email,
+          metadata: (e.metadata ?? {}) as Record<string, unknown>,
+          created_at: e.created_at,
+        })),
+      };
+    },
+  });
+
 /* ─── Attention items (overview panel) ─── */
 
 export const adminAttentionQuery = () =>
