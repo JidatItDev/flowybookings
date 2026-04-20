@@ -391,7 +391,7 @@ function AutomationSettings({ shopId }: { shopId: string }) {
       titleKey: "automations.reminderSms",
       descKey: "automations.reminderSmsDesc",
       locked: smsAccess.data ? !smsAccess.data.allowed : false,
-      lockLabel: "SMS herinneringen",
+      lockLabel: t("feature.smsReminders"),
       access: smsAccess.data,
     },
     { key: "followup_enabled", titleKey: "automations.followup", descKey: "automations.followupDesc" },

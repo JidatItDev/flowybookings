@@ -6,16 +6,16 @@ import { Link } from "@tanstack/react-router";
 import { Lock, ArrowRight, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n";
 import {
   type FeatureAccess,
-  planLabelFor,
   planPriceLabel,
   usagePercentage,
 } from "@/lib/use-feature-access";
 
 type Props = {
   access: FeatureAccess | undefined;
-  /** Human label for the locked feature, e.g. "SMS herinneringen". */
+  /** Human-readable label for the locked feature, e.g. "SMS herinneringen". Prefer passing a translated string. */
   featureLabel: string;
   /** Visual: overlay over greyed children, or compact inline notice with no children. */
   mode?: "overlay" | "inline";
@@ -33,6 +33,15 @@ export function FeatureLock({
   children,
   className,
 }: Props) {
+  const { t } = useT();
+
+  const planLabel = (plan: string | null | undefined): string => {
+    if (!plan) return t("plan.fallback");
+    const key = `plan.${plan}`;
+    const translated = t(key);
+    return translated === key ? plan : translated;
+  };
+
   // Loading or undefined: render children normally so we never block UI on a slow query
   if (!access) return <>{children}</>;
 
@@ -50,17 +59,21 @@ export function FeatureLock({
             <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
             <div className="flex-1">
               <p className="font-medium">
-                Je hebt {access.used}/{access.limit} {featureLabel.toLowerCase()} gebruikt deze maand.
+                {t("featureLock.usageWarning", {
+                  used: access.used,
+                  limit: access.limit,
+                  feature: featureLabel.toLowerCase(),
+                })}
               </p>
               {access.upgradePlan && (
                 <p className="mt-0.5 opacity-80">
-                  Upgrade naar {planLabelFor(access.upgradePlan)} voor een hoger limiet.
+                  {t("featureLock.usageUpgrade", { plan: planLabel(access.upgradePlan) })}
                 </p>
               )}
             </div>
             {access.upgradePlan && (
               <Link to={upgradeHref} className="shrink-0">
-                <Button variant="outline" size="sm">Upgrade</Button>
+                <Button variant="outline" size="sm">{t("featureLock.upgradeBtn")}</Button>
               </Link>
             )}
           </div>
@@ -71,15 +84,30 @@ export function FeatureLock({
     return <>{children}</>;
   }
 
-  const upgradeLabel = access.upgradePlan ? planLabelFor(access.upgradePlan) : "een hoger plan";
-  const upgradePrice = planPriceLabel(access.upgradePlan);
+  const upgradeLabel = planLabel(access.upgradePlan);
+  const upgradePriceRaw = planPriceLabel(access.upgradePlan);
+  // planPriceLabel returns "€19/maand" — translate via shared key for locale parity.
+  const upgradePrice = (() => {
+    if (!access.upgradePlan) return "";
+    const PRICE: Record<string, number> = { trial: 0, starter: 19, pro: 49, premium: 99 };
+    const price = PRICE[access.upgradePlan];
+    return price === undefined ? upgradePriceRaw : t("plan.priceMonthly", { price });
+  })();
+
   const title = blockedByLimit
-    ? `Je ${featureLabel}-limiet is bereikt`
-    : `${featureLabel} — beschikbaar vanaf ${upgradeLabel}${upgradePrice ? ` (${upgradePrice})` : ""}`;
+    ? t("featureLock.titleLimit", { feature: featureLabel })
+    : upgradePrice
+      ? t("featureLock.titlePlanWithPrice", { feature: featureLabel, plan: upgradeLabel, price: upgradePrice })
+      : t("featureLock.titlePlan", { feature: featureLabel, plan: upgradeLabel });
+
   const description = blockedByLimit
-    ? `Je hebt ${access.used}/${access.limit} ${featureLabel.toLowerCase()} gebruikt deze maand. Upgrade voor meer of wacht tot volgende maand.`
+    ? t("featureLock.descLimit", {
+        used: access.used,
+        limit: access.limit ?? 0,
+        feature: featureLabel.toLowerCase(),
+      })
     : blockedByPlan
-      ? `Deze functie zit niet in je huidige plan (${planLabelFor(access.currentPlan)}). Upgrade om hem te activeren.`
+      ? t("featureLock.descPlan", { plan: planLabel(access.currentPlan) })
       : "";
 
   if (mode === "inline" || !children) {
@@ -100,7 +128,7 @@ export function FeatureLock({
         {access.upgradePlan && (
           <Link to={upgradeHref} className="shrink-0">
             <Button variant="hero" size="sm">
-              Upgrade <ArrowRight className="h-3.5 w-3.5" />
+              {t("featureLock.upgradeBtn")} <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </Link>
         )}
@@ -124,7 +152,7 @@ export function FeatureLock({
           {access.upgradePlan && (
             <Link to={upgradeHref}>
               <Button variant="hero" size="sm" className="mt-4">
-                Upgrade naar {upgradeLabel} <ArrowRight className="h-3.5 w-3.5" />
+                {t("featureLock.upgradeTo", { plan: upgradeLabel })} <ArrowRight className="h-3.5 w-3.5" />
               </Button>
             </Link>
           )}
