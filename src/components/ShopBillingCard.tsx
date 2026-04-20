@@ -163,6 +163,25 @@ export function ShopBillingCard() {
         </div>
       )}
 
+      {canCancel && (
+        <div className="mt-4 flex justify-end">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              if (window.confirm(t("billing.cancelConfirm"))) {
+                cancelSubscription.mutate();
+              }
+            }}
+            disabled={cancelSubscription.isPending}
+            className="text-muted-foreground hover:text-destructive"
+          >
+            {cancelSubscription.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            {t("billing.cancel")}
+          </Button>
+        </div>
+      )}
+
       <div className="mt-5">
         <h3 className="text-sm font-semibold">{t("shopBilling.history")}</h3>
         {isLoading ? (
