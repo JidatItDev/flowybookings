@@ -237,6 +237,17 @@ async function sendReminderSmsWindow(
   lo: Date, hi: Date,
   counters: { sent: number; skipped_no_credits: number; skipped_no_phone: number; errors: number },
 ): Promise<void> {
+  // Pre-check: als saldo 0 is, pauzeer SMS-verzending voor deze shop.
+  // We loggen per booking één 'skipped_no_credits' regel zodat we later
+  // kunnen meten hoeveel SMS-herinneringen gemist zijn door leeg saldo.
+  const { data: creditsRow } = await supabase
+    .from('shop_sms_credits')
+    .select('balance')
+    .eq('shop_id', shopId)
+    .maybeSingle()
+  const balance = (creditsRow?.balance as number | undefined) ?? 0
+  const paused = balance <= 0
+
   const { data: bookings, error } = await supabase
     .from('bookings')
     .select('id, shop_id, starts_at, customer_id, service_id, staff_id, status')
@@ -246,6 +257,35 @@ async function sendReminderSmsWindow(
     .lte('starts_at', hi.toISOString())
     .limit(50)
   if (error) { counters.errors++; return }
+
+  if (paused) {
+    for (const b of bookings ?? []) {
+      // Sla over als we al een sent/skipped-no-credits regel hebben voor deze booking
+      const { data: existing } = await supabase
+        .from('sms_send_log')
+        .select('id, status')
+        .eq('booking_id', b.id)
+        .eq('template', 'reminder')
+        .in('status', ['sent', 'skipped_no_credits'])
+        .maybeSingle()
+      if (existing) continue
+
+      const ctx = await loadSmsContext(supabase, b)
+      await supabase.from('sms_send_log').insert({
+        shop_id: shopId,
+        booking_id: b.id,
+        customer_id: b.customer_id,
+        phone: ctx?.phone ?? '',
+        message: '',
+        template: 'reminder',
+        status: 'skipped_no_credits',
+        error_message: 'SMS-herinneringen gepauzeerd: saldo is 0',
+        credits_used: 0,
+      })
+      counters.skipped_no_credits++
+    }
+    return
+  }
 
   for (const b of bookings ?? []) {
     try {
