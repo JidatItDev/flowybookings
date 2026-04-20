@@ -87,6 +87,7 @@ function CalendarPage() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: BookingWithRelations["status"] }) => {
+      assertNotImpersonating();
       const { error } = await supabase.from("bookings").update({ status }).eq("id", id);
       if (error) throw error;
     },
@@ -99,6 +100,7 @@ function CalendarPage() {
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
+      assertNotImpersonating();
       const { error } = await supabase.from("bookings").delete().eq("id", id);
       if (error) throw error;
     },
