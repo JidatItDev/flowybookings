@@ -384,3 +384,86 @@ function BookingFormDialog({ open, onClose, booking, shopId }: { open: boolean; 
     </Dialog>
   );
 }
+
+function BookingActionDialog({
+  booking, onClose, onEdit, onAction, customers, services, staff,
+}: {
+  booking: BookingWithRelations | null;
+  onClose: () => void;
+  onEdit: (b: BookingWithRelations) => void;
+  onAction: (id: string, status: BookingWithRelations["status"]) => void;
+  customers: Array<{ id: string; full_name: string; email: string | null; phone: string | null }>;
+  services: Array<{ id: string; name: string }>;
+  staff: Array<{ id: string; full_name: string }>;
+}) {
+  if (!booking) return null;
+  const cust = customers.find((c) => c.id === booking.customer_id);
+  const svc = services.find((s) => s.id === booking.service_id);
+  const stf = staff.find((s) => s.id === booking.staff_id);
+  return (
+    <Dialog open={!!booking} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Afspraak details</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-2 text-sm">
+          <div className="rounded-xl bg-muted/40 p-3">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Wanneer</p>
+            <p className="mt-1 font-medium">
+              {new Date(booking.starts_at).toLocaleDateString("nl-NL", { weekday: "long", day: "2-digit", month: "long", timeZone: "UTC" })}
+              {" · "}
+              {formatTime(booking.starts_at)}
+            </p>
+          </div>
+          <div className="grid gap-2">
+            <ActionRow label="Klant" value={cust?.full_name ?? "—"} sub={cust?.email ?? cust?.phone ?? undefined} />
+            <ActionRow label="Service" value={svc?.name ?? "—"} />
+            <ActionRow label="Medewerker" value={stf?.full_name ?? "—"} />
+            <ActionRow label="Bedrag" value={formatCents(booking.price_cents)} />
+          </div>
+          {booking.notes && (
+            <div className="rounded-xl border border-border bg-card p-3">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">Notities</p>
+              <p className="mt-1 whitespace-pre-wrap">{booking.notes}</p>
+            </div>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-2 pt-2">
+          <Button variant="default" disabled={booking.status === "confirmed"} onClick={() => onAction(booking.id, "confirmed")}>
+            Bevestigen
+          </Button>
+          <Button variant="hero" disabled={booking.status === "completed"} onClick={() => onAction(booking.id, "completed")}>
+            Voltooien
+          </Button>
+          <Button variant="outline" disabled={booking.status === "cancelled"} onClick={() => onAction(booking.id, "cancelled")}>
+            Annuleren
+          </Button>
+          <Button
+            variant="outline"
+            disabled={booking.status === "no_show"}
+            onClick={() => onAction(booking.id, "no_show")}
+            className="text-destructive border-destructive/30 hover:bg-destructive/10"
+          >
+            <UserX className="h-4 w-4" /> No-show
+          </Button>
+        </div>
+        <DialogFooter className="mt-2 flex-row justify-between sm:justify-between">
+          <Button variant="ghost" size="sm" onClick={() => onEdit(booking)}>Bewerken</Button>
+          <Button variant="ghost" size="sm" onClick={onClose}>Sluiten</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ActionRow({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
+      <span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className="text-right">
+        <span className="block font-medium">{value}</span>
+        {sub && <span className="block text-xs text-muted-foreground">{sub}</span>}
+      </span>
+    </div>
+  );
+}
