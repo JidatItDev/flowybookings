@@ -16,6 +16,7 @@ import { template as trialEnding } from './trial-ending'
 import { template as welcomeShopOwner } from './welcome-shop-owner'
 import { template as bookingPaymentFailed } from './booking-payment-failed'
 import { template as platformPaymentFailed } from './platform-payment-failed'
+import { template as smsLowBalance } from './sms-low-balance'
 
 /**
  * Template registry — maps template names to their React Email components.
@@ -28,4 +29,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'welcome-shop-owner': welcomeShopOwner,
   'booking-payment-failed': bookingPaymentFailed,
   'platform-payment-failed': platformPaymentFailed,
+  'sms-low-balance': smsLowBalance,
 }
