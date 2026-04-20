@@ -2,7 +2,7 @@
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Calendar, MapPin, ArrowRight, Loader2, LayoutDashboard, Sparkles } from "lucide-react";
+import { CheckCircle2, Calendar, MapPin, ArrowRight, Loader2, LayoutDashboard, Sparkles, CalendarPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
@@ -151,6 +151,11 @@ function ConfirmationPage() {
 
         <div className="mt-7 flex flex-col gap-2 sm:flex-row sm:justify-center">
           <Button asChild variant="hero">
+            <a href={`/api/booking/${booking.id}/ics`} download>
+              <CalendarPlus className="h-4 w-4" /> {t("book.addToCalendar")}
+            </a>
+          </Button>
+          <Button asChild variant="outline">
             <Link to="/book">{t("book.bookAnother")} <ArrowRight className="h-4 w-4" /></Link>
           </Button>
           <Button asChild variant="outline">

@@ -795,6 +795,7 @@ export const en: Record<string, string> = {
   "book.youreBooked": "You're booked in!",
   "book.confirmationSentSub": "A confirmation has been sent to your email. Reminders will follow 24h and 2h before the appointment.",
   "book.bookAnother": "Book another",
+  "book.addToCalendar": "Add to calendar",
   "book.backHome": "Back to home",
   "book.bookingRef": "Reference",
   "book.notFound": "Booking not found",

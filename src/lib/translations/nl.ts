@@ -795,6 +795,7 @@ export const nl: Record<string, string> = {
   "book.youreBooked": "Je bent ingeboekt!",
   "book.confirmationSentSub": "Een bevestiging is verstuurd naar je e-mail. Herinnering volgt 24u en 2u voor de afspraak.",
   "book.bookAnother": "Nog een boeking",
+  "book.addToCalendar": "Toevoegen aan agenda",
   "book.backHome": "Terug naar home",
   "book.bookingRef": "Referentie",
   "book.notFound": "Boeking niet gevonden",
