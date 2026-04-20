@@ -270,7 +270,7 @@ function ShopDetailPage() {
                     </Pie>
                     <ReTooltip
                       contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
-                      formatter={(value: number, name: string) => [value, sourceLabel(name)]}
+                      formatter={(value, name) => [value as number, sourceLabel(String(name))]}
                     />
                   </PieChart>
                 </ResponsiveContainer>
