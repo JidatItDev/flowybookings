@@ -56,15 +56,22 @@ export const Route = createFileRoute("/api/mollie-connect/disconnect")({
             token_expires_at: null,
           };
 
-          await supabaseAdmin
+          const { error: updateErr } = await supabaseAdmin
             .from("shop_payment_providers")
             .update({
               connection_status: "disconnected",
               onboarding_status: "not_started",
+              provider_account_id: null,
+              connected_at: null,
+              last_synced_at: null,
               disconnected_at: new Date().toISOString(),
               metadata: cleanedMeta,
             })
             .eq("id", row.id);
+          if (updateErr) {
+            console.error("[mollie-connect/disconnect] update failed", updateErr);
+            return json({ error: "update_failed", details: updateErr.message }, 500);
+          }
 
           await supabaseAdmin.from("activity_log").insert({
             entity: "mollie_connect",

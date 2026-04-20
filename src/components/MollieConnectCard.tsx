@@ -89,12 +89,17 @@ export function MollieConnectCard({ shopId }: Props) {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Single source of truth: connection_status drives the visible state.
+  // When disconnected/not_connected we deliberately ignore stale onboarding_status
+  // so the card never shows "In behandeling" after an Ontkoppelen action.
   const status = (provider?.connection_status ?? "not_connected") as ConnectionStatus;
-  const onboarding = provider?.onboarding_status ?? "not_started";
   const isConnected = status === "connected";
   const isPending = status === "pending";
+  const isDisconnected = status === "not_connected" || status === "disconnected";
+  const onboardingRaw = provider?.onboarding_status ?? "not_started";
+  const onboarding = isDisconnected ? "not_started" : onboardingRaw;
   const meta = (provider?.metadata ?? {}) as Record<string, unknown>;
-  const orgName = (meta.organization_name as string | undefined) ?? null;
+  const orgName = isDisconnected ? null : ((meta.organization_name as string | undefined) ?? null);
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6">
