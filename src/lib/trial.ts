@@ -60,7 +60,9 @@ export function getTrialState(shop: {
   const failedAtRaw = ob.payment_failed_at as string | undefined;
   const cancelledAtRaw = ob.subscription_cancelled_at as string | undefined;
 
-  const paymentFailedAt = failedAtRaw ? new Date(failedAtRaw) : null;
+  // Payment-failed fields ONLY apply to paid plans. A trial shop must never
+  // surface a "payment failed" banner — trial expiry is the only relevant gate.
+  const paymentFailedAt = !isTrial && failedAtRaw ? new Date(failedAtRaw) : null;
   const cancelledAt = cancelledAtRaw ? new Date(cancelledAtRaw) : null;
 
   let inPaymentFailedGrace = false;
@@ -75,9 +77,11 @@ export function getTrialState(shop: {
     paymentFailedGraceExpired = !inPaymentFailedGrace;
   }
 
-  const subscriptionStatus: SubscriptionStatus =
-    (fromOb as SubscriptionStatus) ??
-    (isTrial ? (isExpired ? "expired" : "trial") : "active");
+  // Subscription status: trial shops are forced to trial/expired regardless of
+  // any stale onboarding flag — single source of truth is shops.plan + plan_expires_at.
+  const subscriptionStatus: SubscriptionStatus = isTrial
+    ? (isExpired ? "expired" : "trial")
+    : ((fromOb as SubscriptionStatus) ?? "active");
 
   // Composite booking gate (matches DB shop_can_accept_bookings exactly)
   let canAcceptBookings: boolean;
