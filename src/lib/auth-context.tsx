@@ -24,6 +24,8 @@ export type ShopRow = {
   plan_expires_at: string | null;
   plan_billing_cycle: string | null;
   onboarding: Record<string, unknown> | null;
+  policy_accepted_at: string | null;
+  policy_version: string | null;
 };
 
 interface AuthContextValue {
