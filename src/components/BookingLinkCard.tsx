@@ -197,9 +197,17 @@ export function BookingLinkCard({ slug, shopName, logoUrl, compact = false }: Pr
               />
             </div>
             <p className="text-center text-xs font-mono text-muted-foreground break-all">{displayUrl}</p>
-            <Button type="button" variant="outline" size="sm" onClick={downloadQR}>
-              <Download className="h-4 w-4" /> {t("bookingLink.qrDownload")}
-            </Button>
+            <p className="text-center text-xs font-mono text-muted-foreground break-all">{displayUrl}</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={downloadQR}>
+                <Download className="h-4 w-4" /> {t("bookingLink.qrDownload")}
+              </Button>
+              <Button type="button" variant="default" size="sm" onClick={downloadPoster} disabled={posterLoading}>
+                <FileText className="h-4 w-4" />
+                {posterLoading ? t("bookingLink.posterLoading") : t("bookingLink.posterDownload")}
+              </Button>
+            </div>
+            <p className="text-center text-[11px] text-muted-foreground">{t("bookingLink.posterHint")}</p>
           </div>
         </DialogContent>
       </Dialog>
