@@ -126,6 +126,12 @@ export type AdminUserRow = {
   email: string | null;
   full_name: string | null;
   created_at: string;
+  last_login_at: string | null;
+  primary_role: "super_admin" | "shop_owner" | "staff" | "customer" | "none";
+  is_active_recently: boolean; // logged in within 14 days
+  primary_shop_name?: string;
+  primary_shop_id?: string;
+  primary_plan?: string;
   roles: { role: string; shop_id: string | null; shop_name?: string }[];
 };
 
@@ -134,24 +140,43 @@ export const adminUsersQuery = () =>
     queryKey: ["admin", "users"],
     queryFn: async (): Promise<AdminUserRow[]> => {
       const [profilesRes, rolesRes, shopsRes] = await Promise.all([
-        supabase.from("profiles").select("id, email, full_name, created_at").order("created_at", { ascending: false }),
+        supabase.from("profiles").select("id, email, full_name, created_at, last_login_at").order("created_at", { ascending: false }),
         supabase.from("user_roles").select("user_id, role, shop_id"),
-        supabase.from("shops").select("id, name"),
+        supabase.from("shops").select("id, name, owner_id, plan"),
       ]);
       if (profilesRes.error) throw profilesRes.error;
 
-      const shopMap = new Map((shopsRes.data ?? []).map((s) => [s.id, s.name]));
+      const shopMap = new Map((shopsRes.data ?? []).map((s) => [s.id, s]));
+      const ownerShopMap = new Map<string, { id: string; name: string; plan: string }>();
+      (shopsRes.data ?? []).forEach((s) => {
+        if (!ownerShopMap.has(s.owner_id)) ownerShopMap.set(s.owner_id, { id: s.id, name: s.name, plan: s.plan });
+      });
       const rolesMap = new Map<string, { role: string; shop_id: string | null; shop_name?: string }[]>();
       (rolesRes.data ?? []).forEach((r) => {
         const arr = rolesMap.get(r.user_id) ?? [];
-        arr.push({ role: r.role, shop_id: r.shop_id, shop_name: r.shop_id ? shopMap.get(r.shop_id) : undefined });
+        const shop = r.shop_id ? shopMap.get(r.shop_id) : null;
+        arr.push({ role: r.role, shop_id: r.shop_id, shop_name: shop?.name });
         rolesMap.set(r.user_id, arr);
       });
 
-      return (profilesRes.data ?? []).map((p) => ({
-        ...p,
-        roles: rolesMap.get(p.id) ?? [],
-      }));
+      const cutoff = Date.now() - 14 * 86400000;
+      const ranks: Record<string, number> = { super_admin: 0, shop_owner: 1, staff: 2, customer: 3 };
+
+      return (profilesRes.data ?? []).map((p) => {
+        const roles = rolesMap.get(p.id) ?? [];
+        const sortedRoles = [...roles].sort((a, b) => (ranks[a.role] ?? 9) - (ranks[b.role] ?? 9));
+        const ownerShop = ownerShopMap.get(p.id);
+        const primary_role = (sortedRoles[0]?.role as AdminUserRow["primary_role"]) ?? (ownerShop ? "shop_owner" : "none");
+        return {
+          ...p,
+          roles,
+          primary_role,
+          is_active_recently: p.last_login_at ? new Date(p.last_login_at).getTime() >= cutoff : false,
+          primary_shop_name: ownerShop?.name,
+          primary_shop_id: ownerShop?.id,
+          primary_plan: ownerShop?.plan,
+        };
+      });
     },
     staleTime: 15_000,
   });
