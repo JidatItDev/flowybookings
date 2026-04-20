@@ -2,9 +2,9 @@
 // (channel + automation toggles). Mobile-app feel.
 
 import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Inbox, Mail, MessageSquare, Settings as SettingsIcon, Smartphone } from "lucide-react";
+import { Inbox, Mail, MessageSquare, Plus, Settings as SettingsIcon, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -12,14 +12,21 @@ import { Button } from "@/components/ui/button";
 import { NoShopState } from "@/components/EmptyState";
 import { UpgradeNudge, PremiumBadge } from "@/components/UpgradeNudge";
 import { NotificationsInbox } from "@/components/NotificationsInbox";
+import { SmsTopUpDialog } from "@/components/SmsTopUpDialog";
 import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { shopFullQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
+type SearchParams = { topup?: "return" | "mock" | "cancel"; payment?: string };
+
 export const Route = createFileRoute("/shop/notifications")({
   head: () => ({ meta: [{ title: "Notifications — FlowyBookings" }] }),
+  validateSearch: (s: Record<string, unknown>): SearchParams => ({
+    topup: s.topup === "return" || s.topup === "mock" || s.topup === "cancel" ? s.topup : undefined,
+    payment: typeof s.payment === "string" ? s.payment : undefined,
+  }),
   component: NotificationsPage,
 });
 
@@ -48,6 +55,27 @@ function NotificationsPage() {
   const shopId = useActiveShopId();
   const { t } = useT();
   const [tab, setTab] = useState<"inbox" | "settings">("inbox");
+  const search = useSearch({ from: "/shop/notifications" });
+  const qc = useQueryClient();
+
+  // After Mollie redirect, refresh credits + show toast.
+  useEffect(() => {
+    if (!shopId) return;
+    if (search.topup === "return" || search.topup === "mock") {
+      toast.success(t("smsTopup.successReturn"));
+      qc.invalidateQueries({ queryKey: ["shop_sms_credits", shopId] });
+      // Also poll briefly: webhook may take a few seconds.
+      const timer = setTimeout(() => {
+        qc.invalidateQueries({ queryKey: ["shop_sms_credits", shopId] });
+      }, 3500);
+      setTab("settings");
+      return () => clearTimeout(timer);
+    }
+    if (search.topup === "cancel") {
+      toast.error(t("smsTopup.failedReturn"));
+      setTab("settings");
+    }
+  }, [search.topup, shopId, qc, t]);
 
   return (
     <ShopLayout>
@@ -296,6 +324,7 @@ function AutomationSettings({ shopId }: { shopId: string }) {
   const { t } = useT();
   const [row, setRow] = useState<AutomationRow>(AUTO_DEFAULTS);
   const [dirty, setDirty] = useState(false);
+  const [topUpOpen, setTopUpOpen] = useState(false);
 
   const q = useQuery({
     queryKey: ["shop_automations", shopId],
@@ -375,9 +404,15 @@ function AutomationSettings({ shopId }: { shopId: string }) {
               <p className="text-xs text-muted-foreground">{t("automations.smsCreditsHint")}</p>
             </div>
           </div>
-          <span className={cn("inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold", balanceTone)}>
-            {balance}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={cn("inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold", balanceTone)}>
+              {balance}
+            </span>
+            <Button size="sm" variant="hero" onClick={() => setTopUpOpen(true)}>
+              <Plus className="mr-1 h-3.5 w-3.5" />
+              {t("automations.smsCreditsTopUp")}
+            </Button>
+          </div>
         </div>
         <div className="mt-4 grid grid-cols-3 gap-3 text-center">
           <div className="rounded-xl bg-muted/40 px-3 py-2">
@@ -433,6 +468,8 @@ function AutomationSettings({ shopId }: { shopId: string }) {
           </Button>
         </div>
       </div>
+
+      <SmsTopUpDialog shopId={shopId} open={topUpOpen} onOpenChange={setTopUpOpen} />
     </>
   );
 }

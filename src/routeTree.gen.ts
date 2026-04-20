@@ -56,6 +56,7 @@ import { Route as BeheerDashboardCustomersRouteImport } from './routes/beheer.da
 import { Route as BeheerDashboardBookingsRouteImport } from './routes/beheer.dashboard.bookings'
 import { Route as BeheerDashboardBillingRouteImport } from './routes/beheer.dashboard.billing'
 import { Route as BeheerAdLoginRouteImport } from './routes/beheer.ad.login'
+import { Route as ApiSmsCreditsCheckoutRouteImport } from './routes/api.sms-credits.checkout'
 import { Route as ApiMollieWebhookRouteImport } from './routes/api.mollie.webhook'
 import { Route as ApiMollieConnectWebhookRouteImport } from './routes/api.mollie-connect.webhook'
 import { Route as ApiMollieConnectDisconnectRouteImport } from './routes/api.mollie-connect.disconnect'
@@ -312,6 +313,11 @@ const BeheerAdLoginRoute = BeheerAdLoginRouteImport.update({
   path: '/beheer/ad/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSmsCreditsCheckoutRoute = ApiSmsCreditsCheckoutRouteImport.update({
+  id: '/api/sms-credits/checkout',
+  path: '/api/sms-credits/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMollieWebhookRoute = ApiMollieWebhookRouteImport.update({
   id: '/api/mollie/webhook',
   path: '/api/mollie/webhook',
@@ -433,6 +439,7 @@ export interface FileRoutesByFullPath {
   '/api/mollie-connect/disconnect': typeof ApiMollieConnectDisconnectRoute
   '/api/mollie-connect/webhook': typeof ApiMollieConnectWebhookRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
+  '/api/sms-credits/checkout': typeof ApiSmsCreditsCheckoutRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/billing': typeof BeheerDashboardBillingRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
@@ -497,6 +504,7 @@ export interface FileRoutesByTo {
   '/api/mollie-connect/disconnect': typeof ApiMollieConnectDisconnectRoute
   '/api/mollie-connect/webhook': typeof ApiMollieConnectWebhookRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
+  '/api/sms-credits/checkout': typeof ApiSmsCreditsCheckoutRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/billing': typeof BeheerDashboardBillingRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
@@ -562,6 +570,7 @@ export interface FileRoutesById {
   '/api/mollie-connect/disconnect': typeof ApiMollieConnectDisconnectRoute
   '/api/mollie-connect/webhook': typeof ApiMollieConnectWebhookRoute
   '/api/mollie/webhook': typeof ApiMollieWebhookRoute
+  '/api/sms-credits/checkout': typeof ApiSmsCreditsCheckoutRoute
   '/beheer/ad/login': typeof BeheerAdLoginRoute
   '/beheer/dashboard/billing': typeof BeheerDashboardBillingRoute
   '/beheer/dashboard/bookings': typeof BeheerDashboardBookingsRoute
@@ -628,6 +637,7 @@ export interface FileRouteTypes {
     | '/api/mollie-connect/disconnect'
     | '/api/mollie-connect/webhook'
     | '/api/mollie/webhook'
+    | '/api/sms-credits/checkout'
     | '/beheer/ad/login'
     | '/beheer/dashboard/billing'
     | '/beheer/dashboard/bookings'
@@ -692,6 +702,7 @@ export interface FileRouteTypes {
     | '/api/mollie-connect/disconnect'
     | '/api/mollie-connect/webhook'
     | '/api/mollie/webhook'
+    | '/api/sms-credits/checkout'
     | '/beheer/ad/login'
     | '/beheer/dashboard/billing'
     | '/beheer/dashboard/bookings'
@@ -756,6 +767,7 @@ export interface FileRouteTypes {
     | '/api/mollie-connect/disconnect'
     | '/api/mollie-connect/webhook'
     | '/api/mollie/webhook'
+    | '/api/sms-credits/checkout'
     | '/beheer/ad/login'
     | '/beheer/dashboard/billing'
     | '/beheer/dashboard/bookings'
@@ -821,6 +833,7 @@ export interface RootRouteChildren {
   ApiMollieConnectDisconnectRoute: typeof ApiMollieConnectDisconnectRoute
   ApiMollieConnectWebhookRoute: typeof ApiMollieConnectWebhookRoute
   ApiMollieWebhookRoute: typeof ApiMollieWebhookRoute
+  ApiSmsCreditsCheckoutRoute: typeof ApiSmsCreditsCheckoutRoute
   BeheerAdLoginRoute: typeof BeheerAdLoginRoute
   BeheerDashboardBillingRoute: typeof BeheerDashboardBillingRoute
   BeheerDashboardBookingsRoute: typeof BeheerDashboardBookingsRoute
@@ -1176,6 +1189,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeheerAdLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/sms-credits/checkout': {
+      id: '/api/sms-credits/checkout'
+      path: '/api/sms-credits/checkout'
+      fullPath: '/api/sms-credits/checkout'
+      preLoaderRoute: typeof ApiSmsCreditsCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/mollie/webhook': {
       id: '/api/mollie/webhook'
       path: '/api/mollie/webhook'
@@ -1345,6 +1365,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMollieConnectDisconnectRoute: ApiMollieConnectDisconnectRoute,
   ApiMollieConnectWebhookRoute: ApiMollieConnectWebhookRoute,
   ApiMollieWebhookRoute: ApiMollieWebhookRoute,
+  ApiSmsCreditsCheckoutRoute: ApiSmsCreditsCheckoutRoute,
   BeheerAdLoginRoute: BeheerAdLoginRoute,
   BeheerDashboardBillingRoute: BeheerDashboardBillingRoute,
   BeheerDashboardBookingsRoute: BeheerDashboardBookingsRoute,
