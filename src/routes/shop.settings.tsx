@@ -57,11 +57,33 @@ function SettingsPage() {
   const { t } = useT();
   const readOnly = useImpersonationReadOnly();
   const roTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
-  const { refreshShops } = useAuth() as ReturnType<typeof useAuth> & { refreshShops?: () => void };
+  const { activeShop, refreshShops } = useAuth() as ReturnType<typeof useAuth> & { refreshShops?: () => void };
   const brandingAccess = useFeatureAccess(shopId, "custom_branding");
   const brandingAllowed = brandingAccess.data?.allowed ?? true;
+  const search = Route.useSearch();
+  const navigate = useNavigate();
 
   const { data: shop, isLoading } = useQuery({ ...shopFullQuery(shopId ?? ""), enabled: !!shopId });
+
+  // After returning from Mollie checkout (?billing=success|mock), force a refresh
+  // of BOTH caches that drive plan UI (header badge + Jouw abonnement card) so
+  // we never show a stale "TRIAL" while the DB already has Starter/Pro/Premium.
+  // Poll a few times — the Mollie webhook may take a moment to flip shop.plan.
+  useEffect(() => {
+    if (!search.billing || !shopId) return;
+    let attempts = 0;
+    const tick = () => {
+      attempts += 1;
+      qc.invalidateQueries({ queryKey: ["auth", "shops"] });
+      qc.invalidateQueries({ queryKey: shopKeys.shopFull(shopId) });
+      refreshShops?.();
+      if (attempts >= 5) return;
+      setTimeout(tick, 1500);
+    };
+    tick();
+    navigate({ to: "/shop/settings", search: {}, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.billing, shopId]);
 
   const [profile, setProfile] = useState({ name: "", phone: "", email: "", timezone: "Europe/Berlin", address: "" });
   const [branding, setBranding] = useState<Branding>({ color: "#7C5CFA" });
