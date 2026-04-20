@@ -50,13 +50,16 @@ function CalendarPage() {
   const bookingsWarn =
     !!bookingsAccess.data && bookingsAccess.data.limit != null && bookingsPct >= 80 && bookingsPct < 100;
   const newBookingDisabled = !shopId || trial.isExpired || bookingsBlocked;
-  const newBookingTitle = trial.isExpired
-    ? "Je proefperiode is verlopen — kies een plan om nieuwe afspraken aan te maken."
-    : bookingsBlocked
-      ? `Je hebt het maximum aantal boekingen bereikt (${bookingsAccess.data?.used}/${bookingsAccess.data?.limit}). Kies een plan om door te gaan.`
-      : undefined;
   const qc = useQueryClient();
   const { t } = useT();
+  const newBookingTitle = trial.isExpired
+    ? t("calendar.trialExpiredBookingTitle")
+    : bookingsBlocked
+      ? t("calendar.bookingLimitReached", {
+          used: bookingsAccess.data?.used ?? 0,
+          limit: bookingsAccess.data?.limit ?? 0,
+        })
+      : undefined;
   const [filter, setFilter] = useState<(typeof statuses)[number]>("all");
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<BookingWithRelations | null>(null);
@@ -140,7 +143,7 @@ function CalendarPage() {
 
       {bookingsAccess.data && (bookingsWarn || bookingsBlocked) && (
         <div className="mb-4">
-          <FeatureLock access={bookingsAccess.data} featureLabel="boekingen" mode="inline" />
+          <FeatureLock access={bookingsAccess.data} featureLabel={t("feature.bookings")} mode="inline" />
         </div>
       )}
 
@@ -173,14 +176,14 @@ function CalendarPage() {
                     )}
                   >
                     <div className="text-[10px] uppercase tracking-wider opacity-80">
-                      {isToday ? "Vandaag" : c.date.toLocaleDateString("nl-NL", { weekday: "short", timeZone: "UTC" })}
+                      {isToday ? t("calendar.today") : c.date.toLocaleDateString("nl-NL", { weekday: "short", timeZone: "UTC" })}
                     </div>
                     <div className="text-sm font-semibold">
                       {c.date.toLocaleDateString("nl-NL", { day: "2-digit", month: "short", timeZone: "UTC" })}
                     </div>
                     {c.count > 0 && (
                       <div className={cn("mt-0.5 text-[10px] font-medium", active ? "text-primary-foreground/90" : "text-primary")}>
-                        {c.count} {c.count === 1 ? "afspraak" : "afspraken"}
+                        {c.count} {c.count === 1 ? t("calendar.appointment") : t("calendar.appointments")}
                       </div>
                     )}
                   </button>
@@ -225,7 +228,7 @@ function CalendarPage() {
                     <th className="hidden px-4 py-3 text-left sm:table-cell">{t("calendar.customer")}</th>
                     <th className="hidden px-4 py-3 text-left md:table-cell">{t("calendar.service")}</th>
                     <th className="hidden px-4 py-3 text-left lg:table-cell">{t("calendar.staffCol")}</th>
-                    <th className="px-4 py-3 text-right">Bedrag</th>
+                    <th className="px-4 py-3 text-right">{t("calendar.amount")}</th>
                     <th className="px-4 py-3 text-left">{t("calendar.status")}</th>
                     <th className="px-4 py-3" />
                   </tr>

@@ -68,7 +68,7 @@ function StaffPage() {
             onClick={() => setCreating(true)}
             disabled={!shopId || atOrOverLimit}
             title={atOrOverLimit && Number.isFinite(planLimit)
-              ? `Je plan ondersteunt maximaal ${planLimit} medewerker${planLimit === 1 ? "" : "s"}. Upgrade om meer toe te voegen.`
+              ? t(planLimit === 1 ? "staff.limitTooltip" : "staff.limitTooltipPlural", { limit: planLimit })
               : undefined}
           >
             <Plus className="h-4 w-4" /> {t("staff.addStaff")}
@@ -77,7 +77,7 @@ function StaffPage() {
       />
       {atOrOverLimit && staffAccess.data && (
         <div className="mb-4">
-          <FeatureLock access={staffAccess.data} featureLabel="medewerkers" mode="inline" />
+          <FeatureLock access={staffAccess.data} featureLabel={t("feature.staff")} mode="inline" />
         </div>
       )}
       {atOrOverLimit && !staffAccess.data && (

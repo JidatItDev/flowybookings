@@ -10,12 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NoShopState } from "@/components/EmptyState";
 import { MollieConnectCard } from "@/components/MollieConnectCard";
+import { FeatureLock } from "@/components/FeatureLock";
 import { useActiveShopId } from "@/lib/shop-context";
 import { shopFullQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { getTrialState } from "@/lib/trial";
+import { useFeatureAccess } from "@/lib/use-feature-access";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/shop/settings")({
@@ -46,6 +48,8 @@ function SettingsPage() {
   const qc = useQueryClient();
   const { t } = useT();
   const { refreshShops } = useAuth() as ReturnType<typeof useAuth> & { refreshShops?: () => void };
+  const brandingAccess = useFeatureAccess(shopId, "custom_branding");
+  const brandingAllowed = brandingAccess.data?.allowed ?? true;
 
   const { data: shop, isLoading } = useQuery({ ...shopFullQuery(shopId ?? ""), enabled: !!shopId });
 
@@ -129,12 +133,10 @@ function SettingsPage() {
               <div className="lg:col-span-3 flex flex-wrap items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-destructive">
                 <AlertTriangle className="h-5 w-5 flex-none" />
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold">Je proefperiode is verlopen</p>
-                  <p className="mt-1 text-sm opacity-90">
-                    Kies een plan om door te gaan. Nieuwe boekingen via je publieke pagina en de "Nieuwe afspraak" knop zijn tijdelijk geblokkeerd.
-                  </p>
+                  <p className="font-semibold">{t("settings.trialExpiredTitle")}</p>
+                  <p className="mt-1 text-sm opacity-90">{t("settings.trialExpiredBody")}</p>
                 </div>
-                <Link to="/shop/upgrade"><Button variant="hero">Kies een plan</Button></Link>
+                <Link to="/shop/upgrade"><Button variant="hero">{t("settings.trialExpiredCta")}</Button></Link>
               </div>
             );
           })()}
@@ -195,14 +197,33 @@ function SettingsPage() {
           </Card>
 
           <Card title={t("settings.branding")}>
-            <LogoUploader shopId={shopId!} currentLogoUrl={shop?.logo_url ?? null} fallbackInitials={(profile.name || "S").slice(0, 2).toUpperCase()} fallbackColor={branding.color ?? "var(--color-primary)"} />
-            <div className="mt-5">
-              <Label htmlFor="brand-color">{t("settings.brandColor")}</Label>
-              <div className="mt-1 flex items-center gap-2">
-                <input id="brand-color" type="color" value={branding.color ?? "#7C5CFA"} onChange={(e) => { setBranding({ color: e.target.value }); setDirty(true); }} className="h-10 w-12 cursor-pointer rounded-lg border border-border bg-background" />
-                <Input value={branding.color ?? ""} onChange={(e) => { setBranding({ color: e.target.value }); setDirty(true); }} className="h-10 flex-1" />
-              </div>
-            </div>
+            {brandingAccess.data && !brandingAllowed ? (
+              <FeatureLock
+                access={brandingAccess.data}
+                featureLabel={t("feature.customBranding")}
+                mode="overlay"
+              >
+                <LogoUploader shopId={shopId!} currentLogoUrl={shop?.logo_url ?? null} fallbackInitials={(profile.name || "S").slice(0, 2).toUpperCase()} fallbackColor={branding.color ?? "var(--color-primary)"} disabled />
+                <div className="mt-5">
+                  <Label htmlFor="brand-color">{t("settings.brandColor")}</Label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <input id="brand-color" type="color" value={branding.color ?? "#7C5CFA"} disabled className="h-10 w-12 cursor-not-allowed rounded-lg border border-border bg-background opacity-60" />
+                    <Input value={branding.color ?? ""} disabled className="h-10 flex-1" />
+                  </div>
+                </div>
+              </FeatureLock>
+            ) : (
+              <>
+                <LogoUploader shopId={shopId!} currentLogoUrl={shop?.logo_url ?? null} fallbackInitials={(profile.name || "S").slice(0, 2).toUpperCase()} fallbackColor={branding.color ?? "var(--color-primary)"} />
+                <div className="mt-5">
+                  <Label htmlFor="brand-color">{t("settings.brandColor")}</Label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <input id="brand-color" type="color" value={branding.color ?? "#7C5CFA"} onChange={(e) => { setBranding({ color: e.target.value }); setDirty(true); }} className="h-10 w-12 cursor-pointer rounded-lg border border-border bg-background" />
+                    <Input value={branding.color ?? ""} onChange={(e) => { setBranding({ color: e.target.value }); setDirty(true); }} className="h-10 flex-1" />
+                  </div>
+                </div>
+              </>
+            )}
           </Card>
 
           <Card title={t("settings.businessHours")} className="lg:col-span-2">
@@ -291,15 +312,16 @@ function NumField({ label, value, onChange }: { label: string; value: number; on
   );
 }
 
-function LogoUploader({ shopId, currentLogoUrl, fallbackInitials, fallbackColor }: { shopId: string; currentLogoUrl: string | null; fallbackInitials: string; fallbackColor: string }) {
+function LogoUploader({ shopId, currentLogoUrl, fallbackInitials, fallbackColor, disabled = false }: { shopId: string; currentLogoUrl: string | null; fallbackInitials: string; fallbackColor: string; disabled?: boolean }) {
   const qc = useQueryClient();
+  const { t } = useT();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
   const upload = async (file: File) => {
     if (!shopId) return;
     if (file.size > 2 * 1024 * 1024) {
-      toast.error("Logo is te groot (max 2MB)");
+      toast.error(t("settings.logoTooLarge"));
       return;
     }
     setUploading(true);
@@ -315,7 +337,7 @@ function LogoUploader({ shopId, currentLogoUrl, fallbackInitials, fallbackColor 
       const { data: pub } = supabase.storage.from("shop-logos").getPublicUrl(path);
       const { error: updErr } = await supabase.from("shops").update({ logo_url: pub.publicUrl }).eq("id", shopId);
       if (updErr) throw updErr;
-      toast.success("Logo geüpload");
+      toast.success(t("settings.logoUploaded"));
       qc.invalidateQueries({ queryKey: shopKeys.shopFull(shopId) });
     } catch (e) {
       toast.error((e as Error).message);
@@ -331,7 +353,7 @@ function LogoUploader({ shopId, currentLogoUrl, fallbackInitials, fallbackColor 
     try {
       const { error } = await supabase.from("shops").update({ logo_url: null }).eq("id", shopId);
       if (error) throw error;
-      toast.success("Logo verwijderd");
+      toast.success(t("settings.logoRemoved"));
       qc.invalidateQueries({ queryKey: shopKeys.shopFull(shopId) });
     } catch (e) {
       toast.error((e as Error).message);
@@ -350,7 +372,7 @@ function LogoUploader({ shopId, currentLogoUrl, fallbackInitials, fallbackColor 
         </div>
       )}
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-muted-foreground">PNG, JPG, WEBP of SVG · max 2MB</p>
+        <p className="text-xs text-muted-foreground">{t("settings.logoUploaderHint")}</p>
         <div className="mt-2 flex flex-wrap gap-2">
           <input
             ref={inputRef}
@@ -358,13 +380,14 @@ function LogoUploader({ shopId, currentLogoUrl, fallbackInitials, fallbackColor 
             accept="image/png,image/jpeg,image/webp,image/svg+xml"
             className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); }}
+            disabled={disabled}
           />
-          <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={uploading}>
-            <Upload className="h-4 w-4" /> {uploading ? "Bezig..." : currentLogoUrl ? "Vervangen" : "Upload logo"}
+          <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={uploading || disabled}>
+            <Upload className="h-4 w-4" /> {uploading ? t("settings.logoUploadingShort") : currentLogoUrl ? t("settings.logoReplace") : t("settings.logoUpload")}
           </Button>
           {currentLogoUrl && (
-            <Button variant="ghost" size="sm" onClick={remove} disabled={uploading} className="text-destructive">
-              <X className="h-4 w-4" /> Verwijder
+            <Button variant="ghost" size="sm" onClick={remove} disabled={uploading || disabled} className="text-destructive">
+              <X className="h-4 w-4" /> {t("settings.logoRemove")}
             </Button>
           )}
         </div>
