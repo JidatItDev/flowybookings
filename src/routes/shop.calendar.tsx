@@ -206,6 +206,7 @@ function CalendarPage() {
                     <th className="hidden px-4 py-3 text-left sm:table-cell">{t("calendar.customer")}</th>
                     <th className="hidden px-4 py-3 text-left md:table-cell">{t("calendar.service")}</th>
                     <th className="hidden px-4 py-3 text-left lg:table-cell">{t("calendar.staffCol")}</th>
+                    <th className="px-4 py-3 text-right">Bedrag</th>
                     <th className="px-4 py-3 text-left">{t("calendar.status")}</th>
                     <th className="px-4 py-3" />
                   </tr>
@@ -216,7 +217,7 @@ function CalendarPage() {
                     const svc = services.find((s) => s.id === b.service_id);
                     const stf = staff.find((s) => s.id === b.staff_id);
                     return (
-                      <tr key={b.id} className="hover:bg-muted/30">
+                      <tr key={b.id} onClick={() => setViewing(b)} className="cursor-pointer hover:bg-muted/30">
                         <td className="px-4 py-3">
                           <p className="font-medium">{formatTime(b.starts_at)}</p>
                           <p className="text-xs text-muted-foreground">
@@ -226,7 +227,8 @@ function CalendarPage() {
                         <td className="hidden px-4 py-3 sm:table-cell">{cust?.full_name ?? "—"}</td>
                         <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">{svc?.name ?? "—"}</td>
                         <td className="hidden px-4 py-3 text-muted-foreground lg:table-cell">{stf?.full_name ?? "—"}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-right font-medium tabular-nums">{formatCents(b.price_cents)}</td>
+                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                           <Select value={b.status} onValueChange={(v) => updateStatus.mutate({ id: b.id, status: v as BookingWithRelations["status"] })}>
                             <SelectTrigger className="h-8 w-[120px] text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>
@@ -236,18 +238,7 @@ function CalendarPage() {
                             </SelectContent>
                           </Select>
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          {b.status !== "no_show" && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => updateStatus.mutate({ id: b.id, status: "no_show" })}
-                              title={t("calendar.markNoShow")}
-                            >
-                              <UserX className="h-4 w-4" />
-                            </Button>
-                          )}
+                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                           <Button variant="ghost" size="sm" onClick={() => setEditing(b)}>{t("calendar.edit")}</Button>
                           <Button variant="ghost" size="sm" onClick={() => setDeleting(b)}>{t("calendar.delete")}</Button>
                         </td>
@@ -262,6 +253,16 @@ function CalendarPage() {
       )}
 
       <BookingFormDialog open={creating || !!editing} onClose={() => { setCreating(false); setEditing(null); }} booking={editing} shopId={shopId} />
+
+      <BookingActionDialog
+        booking={viewing}
+        onClose={() => setViewing(null)}
+        onEdit={(b) => { setViewing(null); setEditing(b); }}
+        onAction={(id, status) => { updateStatus.mutate({ id, status }); setViewing(null); }}
+        customers={customers}
+        services={services}
+        staff={staff}
+      />
 
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
