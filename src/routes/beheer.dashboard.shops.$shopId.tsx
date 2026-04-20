@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShopOverridesPanel } from "@/components/admin/ShopOverridesPanel";
+import { SubscriptionPanel } from "@/components/admin/SubscriptionPanel";
 import { RevenueSparkline } from "@/components/RevenueSparkline";
 import { adminShopDetailQuery } from "@/lib/admin-queries";
 import { formatCents, formatDate, relativeFromNow } from "@/lib/format";
@@ -18,7 +19,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { startImpersonate } from "@/lib/impersonation";
-import { changeShopPlan, ALL_DB_PLANS, planLabel, type DbPlan } from "@/lib/plans";
+import { changeShopPlan, type DbPlan } from "@/lib/plans";
 
 type ShopStatus = Database["public"]["Enums"]["shop_status"];
 
