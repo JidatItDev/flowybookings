@@ -1507,5 +1507,6 @@ export const en: Record<string, string> = {
   "billing.cancel": "Cancel subscription",
   "billing.cancelConfirm": "Are you sure you want to cancel? Your plan stays active until the end of the current period.",
   "billing.cancelSuccess": "Subscription cancelled. Active until end of period.",
+  "impersonate.readOnlyTooltip": "Read-only while impersonating",
 };
 
