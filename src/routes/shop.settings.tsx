@@ -135,17 +135,23 @@ function SettingsPage() {
   // Status semantics come from getTrialState(), which reads:
   //   - shop.plan / shop.plan_expires_at  (trial vs paid + expiry)
   //   - shop.onboarding.subscription_status / payment_failed_at  (Mollie webhook)
-  // No more hardcoded planPrices map and no more ad-hoc "active vs trial" check.
+  // Pricing comes from the DB (plan_pricing) via usePlanPricing — never inline.
   const planSource = (activeShop ?? (shop as unknown as typeof activeShop)) ?? null;
   const trialState = getTrialState(planSource as never);
   const currentPlan = (planSource?.plan ?? "trial") as string;
-  const planNameLabel = planLabelFn(currentPlan);          // "Trial" | "Starter" | "Pro" | "Premium"
-  const planPrice = planPriceLabel(currentPlan);           // "" for trial, else "€19/maand" etc.
+  const planNameLabel = planLabelFn(currentPlan);
+  const { data: pricing } = usePlanPricing();
+  const planPrice = formatPlanPrice(pricing, currentPlan);
   const planExpiresAt = planSource?.plan_expires_at ? new Date(planSource.plan_expires_at) : null;
+
+  // Optimistic "pending" while a Mollie upgrade is in flight.
+  const pendingBilling = usePendingBilling();
+  const isPending = !!(pendingBilling && planSource?.id === pendingBilling.shopId && currentPlan !== pendingBilling.plan);
 
   // Per-status badge label + tone. Always derived from the same trialState — no
   // separate booleans that can drift apart from the header.
-  const statusBadge: { label: string; tone: "mint" | "peach" | "destructive" | "muted" } = (() => {
+  const statusBadge: { label: string; tone: "mint" | "peach" | "destructive" | "muted" | "primary" } = (() => {
+    if (isPending)                                           return { label: t("billing.statusPending"),       tone: "primary" };
     if (trialState.isTrial && trialState.isExpired)         return { label: t("settings.planExpired"),        tone: "destructive" };
     if (trialState.isTrial)                                  return { label: t("settings.planTrial"),          tone: "peach" };
     if (trialState.subscriptionStatus === "payment_failed") return { label: t("billing.statusPaymentFailed"), tone: "destructive" };
@@ -158,6 +164,7 @@ function SettingsPage() {
     peach: "bg-peach text-peach-foreground",
     destructive: "bg-destructive/15 text-destructive",
     muted: "bg-muted text-muted-foreground",
+    primary: "bg-primary-soft text-primary",
   };
 
   return (
