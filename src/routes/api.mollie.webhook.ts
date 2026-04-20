@@ -351,11 +351,15 @@ async function handleSmsCreditsLifecycle(opts: {
       .eq("shop_id", opts.shopId)
       .maybeSingle();
 
+    const oldBalance = existing?.balance ?? 0;
+    const newBalance = oldBalance + credits;
+    const resumed = oldBalance <= 0 && newBalance > 0;
+
     if (existing) {
       await supabaseAdmin
         .from("shop_sms_credits")
         .update({
-          balance: existing.balance + credits,
+          balance: newBalance,
           total_purchased: existing.total_purchased + credits,
           updated_at: new Date().toISOString(),
         })
@@ -376,17 +380,65 @@ async function handleSmsCreditsLifecycle(opts: {
       entity: "sms_credits",
       action: "topup_applied",
       shop_id: opts.shopId,
-      metadata: { payment_id: opts.paymentId, package: pkg, credits },
+      metadata: { payment_id: opts.paymentId, package: pkg, credits, old_balance: oldBalance, new_balance: newBalance },
     });
+
+    // Wanneer saldo van 0 → > 0 gaat: SMS-herinneringen zijn weer actief.
+    if (resumed) {
+      await supabaseAdmin.from("activity_log").insert({
+        entity: "sms_credits",
+        action: "sms_resumed",
+        shop_id: opts.shopId,
+        metadata: { payment_id: opts.paymentId, credits, new_balance: newBalance },
+      });
+    }
 
     await supabaseAdmin.from("notifications").insert({
       shop_id: opts.shopId,
       type: "billing",
-      title: "SMS-tegoed bijgevuld",
-      message: `${credits} SMS-credits zijn toegevoegd aan je saldo.`,
+      title: resumed ? "SMS-herinneringen weer actief" : "SMS-tegoed bijgevuld",
+      message: resumed
+        ? `${credits} credits toegevoegd. SMS-herinneringen worden weer verstuurd.`
+        : `${credits} SMS-credits zijn toegevoegd aan je saldo.`,
       action_url: "/shop/notifications",
-      metadata: { kind: "sms_credits", subkind: "applied", package: pkg, credits },
+      metadata: { kind: "sms_credits", subkind: resumed ? "resumed" : "applied", package: pkg, credits },
     });
+
+    // Stuur bevestigingsmail naar shop owner.
+    try {
+      const { data: shop } = await supabaseAdmin
+        .from("shops")
+        .select("name, owner_id, email")
+        .eq("id", opts.shopId)
+        .maybeSingle();
+
+      let recipientEmail: string | null = shop?.email ?? null;
+      if (shop?.owner_id) {
+        const { data: profile } = await supabaseAdmin
+          .from("profiles")
+          .select("email")
+          .eq("id", shop.owner_id)
+          .maybeSingle();
+        if (profile?.email) recipientEmail = profile.email;
+      }
+
+      if (recipientEmail) {
+        await enqueueBookingEmail({
+          templateName: "sms-topup-applied",
+          recipientEmail,
+          idempotencyKey: `sms-topup-applied-${opts.paymentId}`,
+          templateData: {
+            shopName: shop?.name ?? "je zaak",
+            credits,
+            newBalance,
+            resumed,
+            dashboardUrl: "https://www.flowybookings.com/shop/notifications",
+          },
+        });
+      }
+    } catch (err) {
+      console.error("[mollie-webhook] failed to enqueue sms-topup-applied email", err);
+    }
   } else if (opts.effectiveStatus === "failed") {
     await supabaseAdmin.from("activity_log").insert({
       entity: "sms_credits",

@@ -18,6 +18,7 @@ import { template as bookingPaymentFailed } from './booking-payment-failed'
 import { template as platformPaymentFailed } from './platform-payment-failed'
 import { template as smsLowBalance } from './sms-low-balance'
 import { template as smsZeroBalance } from './sms-zero-balance'
+import { template as smsTopupApplied } from './sms-topup-applied'
 
 /**
  * Template registry — maps template names to their React Email components.
@@ -32,4 +33,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'platform-payment-failed': platformPaymentFailed,
   'sms-low-balance': smsLowBalance,
   'sms-zero-balance': smsZeroBalance,
+  'sms-topup-applied': smsTopupApplied,
 }
