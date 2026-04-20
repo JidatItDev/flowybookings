@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { EmptyState, NoShopState } from "@/components/EmptyState";
 import { FeatureLock } from "@/components/FeatureLock";
+import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { useActiveShopId } from "@/lib/shop-context";
 import {
   bookingsQuery, customersQuery, servicesQuery, shopKeys, staffQuery,
