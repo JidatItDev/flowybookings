@@ -99,7 +99,7 @@ export function SmsTopUpDialog({ shopId, open, onOpenChange }: Props) {
                 </div>
                 <p className="mt-2 text-3xl font-bold">{formatCents(p.amountCents)}</p>
                 <p className="text-[11px] text-muted-foreground">
-                  {formatCents(Math.round(perCredit * 100) / 100)} {t("smsTopup.perCredit")}
+                  {formatCents(Math.round(perCredit))} {t("smsTopup.perCredit")}
                 </p>
                 <Button
                   variant={featured ? "hero" : "outline"}
