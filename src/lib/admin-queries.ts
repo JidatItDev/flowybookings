@@ -46,7 +46,12 @@ export type AdminShopRow = {
   created_at: string;
   policy_accepted_at: string | null;
   policy_version: string | null;
+  subscription_status?: string | null;
+  category?: string | null;
   owner_email?: string;
+  owner_name?: string;
+  owner_last_login_at?: string | null;
+  is_active_recently?: boolean; // logged in within 14 days
   booking_count?: number;
   revenue_cents?: number;
   customer_count?: number;
@@ -60,7 +65,7 @@ export const adminShopsQuery = () =>
     queryFn: async (): Promise<AdminShopRow[]> => {
       const { data: shops, error } = await supabase
         .from("shops")
-        .select("id, name, slug, status, plan, owner_id, email, phone, address, created_at, policy_accepted_at, policy_version")
+        .select("id, name, slug, status, plan, owner_id, email, phone, address, created_at, policy_accepted_at, policy_version, subscription_status, category")
         .order("created_at", { ascending: false });
       if (error) throw error;
 
@@ -68,13 +73,13 @@ export const adminShopsQuery = () =>
       const ownerIds = [...new Set((shops ?? []).map((s) => s.owner_id))];
 
       const [profilesRes, bookingsRes, paymentsRes, customersRes] = await Promise.all([
-        supabase.from("profiles").select("id, email").in("id", ownerIds),
+        supabase.from("profiles").select("id, email, full_name, last_login_at").in("id", ownerIds),
         supabase.from("bookings").select("id, shop_id").in("shop_id", shopIds),
         supabase.from("payments").select("shop_id, amount_cents").in("shop_id", shopIds),
         supabase.from("customers").select("shop_id, import_source").in("shop_id", shopIds),
       ]);
 
-      const ownerMap = new Map((profilesRes.data ?? []).map((p) => [p.id, p.email]));
+      const ownerMap = new Map((profilesRes.data ?? []).map((p) => [p.id, p]));
       const bookingCounts = new Map<string, number>();
       (bookingsRes.data ?? []).forEach((b) => bookingCounts.set(b.shop_id, (bookingCounts.get(b.shop_id) ?? 0) + 1));
       const revenueMap = new Map<string, number>();
@@ -92,15 +97,24 @@ export const adminShopsQuery = () =>
         sourceMap.set(c.shop_id, cur);
       });
 
-      return (shops ?? []).map((s) => ({
-        ...s,
-        owner_email: ownerMap.get(s.owner_id) ?? undefined,
-        booking_count: bookingCounts.get(s.id) ?? 0,
-        revenue_cents: revenueMap.get(s.id) ?? 0,
-        customer_count: customerCounts.get(s.id) ?? 0,
-        imported_customer_count: importedCounts.get(s.id) ?? 0,
-        customer_sources: sourceMap.get(s.id) ?? {},
-      }));
+      const cutoff = Date.now() - 14 * 86400000;
+
+      return (shops ?? []).map((s) => {
+        const owner = ownerMap.get(s.owner_id);
+        const lastLogin = owner?.last_login_at ?? null;
+        return {
+          ...s,
+          owner_email: owner?.email ?? undefined,
+          owner_name: owner?.full_name ?? undefined,
+          owner_last_login_at: lastLogin,
+          is_active_recently: lastLogin ? new Date(lastLogin).getTime() >= cutoff : false,
+          booking_count: bookingCounts.get(s.id) ?? 0,
+          revenue_cents: revenueMap.get(s.id) ?? 0,
+          customer_count: customerCounts.get(s.id) ?? 0,
+          imported_customer_count: importedCounts.get(s.id) ?? 0,
+          customer_sources: sourceMap.get(s.id) ?? {},
+        };
+      });
     },
     staleTime: 15_000,
   });
