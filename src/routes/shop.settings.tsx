@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CreditCard, Lock, Crown } from "lucide-react";
+import { CreditCard, Lock, Crown, Upload, X, AlertTriangle } from "lucide-react";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { shopFullQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
+import { getTrialState } from "@/lib/trial";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/shop/settings")({
