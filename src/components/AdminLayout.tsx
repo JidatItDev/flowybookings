@@ -28,6 +28,7 @@ import { RequireSuperAdmin } from "@/components/RouteGuard";
 import { useAuth } from "@/lib/auth-context";
 import { useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { AdminNotificationBell } from "@/components/admin/AdminNotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -158,9 +159,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           </div>
           <div className="ml-auto flex items-center gap-2">
             <LanguageSwitcher />
-            <Button variant="ghost" size="icon" aria-label={t("shopNav.notifications")}>
-              <Bell className="h-5 w-5" />
-            </Button>
+            <AdminNotificationBell />
             <Link
               to="/shop"
               className="hidden rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground sm:inline-flex"
