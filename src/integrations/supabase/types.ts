@@ -1148,6 +1148,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      shop_can_accept_bookings: { Args: { _shop_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "super_admin" | "shop_owner" | "staff" | "customer"
