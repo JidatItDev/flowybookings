@@ -8,12 +8,56 @@ import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/book/confirmation/$bookingId")({
-  head: () => ({
-    meta: [
-      { title: "Boeking bevestigd — FlowyBookings" },
-      { name: "description", content: "Je afspraak is bevestigd." },
-    ],
-  }),
+  loader: async ({ params }) => {
+    const { data: booking } = await supabase
+      .from("bookings")
+      .select("starts_at, ends_at, shop_id, service_id")
+      .eq("id", params.bookingId)
+      .maybeSingle();
+    if (!booking) return { shopName: null as string | null, serviceName: null as string | null, dateLabel: null as string | null };
+    const [{ data: shop }, { data: service }] = await Promise.all([
+      supabase.from("shops").select("name").eq("id", booking.shop_id).maybeSingle(),
+      booking.service_id
+        ? supabase.from("services").select("name").eq("id", booking.service_id).maybeSingle()
+        : Promise.resolve({ data: null as { name: string } | null }),
+    ]);
+    const start = new Date(booking.starts_at);
+    const dateLabel = new Intl.DateTimeFormat("nl-NL", {
+      weekday: "long", day: "numeric", month: "long",
+    }).format(start);
+    return {
+      shopName: shop?.name ?? null,
+      serviceName: service?.name ?? null,
+      dateLabel,
+    };
+  },
+  head: ({ loaderData, params }) => {
+    const shopName = loaderData?.shopName;
+    const serviceName = loaderData?.serviceName;
+    const dateLabel = loaderData?.dateLabel;
+    const title = shopName
+      ? `Boeking bevestigd bij ${shopName} — FlowyBookings`
+      : "Boeking bevestigd — FlowyBookings";
+    const description =
+      shopName && serviceName && dateLabel
+        ? `${serviceName} op ${dateLabel} bij ${shopName}.`
+        : "Je afspraak is bevestigd.";
+    const ogImage = `/api/og/booking?id=${encodeURIComponent(params.bookingId)}`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:image", content: ogImage },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+        { name: "twitter:image", content: ogImage },
+      ],
+    };
+  },
   component: ConfirmationPage,
 });
 
