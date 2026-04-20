@@ -21,6 +21,8 @@ const ACTION_LABELS: Record<string, string> = {
   mollie_disconnected: "Mollie ontkoppeld",
   feature_override_set: "Feature override",
   feature_override_removed: "Override verwijderd",
+  customers_imported: "Klanten geïmporteerd",
+  subscription_payment_failed: "Abonnement-betaling mislukt",
 }
 
 // Acties die als kritiek gelden — admin krijgt direct een subtiele toast.
