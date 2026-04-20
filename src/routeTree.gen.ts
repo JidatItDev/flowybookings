@@ -31,6 +31,7 @@ import { Route as LegalRefundsRouteImport } from './routes/legal.refunds'
 import { Route as LegalPrivacyRouteImport } from './routes/legal.privacy'
 import { Route as HooksWelcomeShopOwnerRouteImport } from './routes/hooks/welcome-shop-owner'
 import { Route as HooksTrialRemindersRouteImport } from './routes/hooks/trial-reminders'
+import { Route as HooksSmsLowBalanceCheckRouteImport } from './routes/hooks/sms-low-balance-check'
 import { Route as HooksMollieRefreshTokensRouteImport } from './routes/hooks/mollie-refresh-tokens'
 import { Route as HooksBookingConfirmationRouteImport } from './routes/hooks/booking-confirmation'
 import { Route as HooksBookingAutomationsRouteImport } from './routes/hooks/booking-automations'
@@ -181,6 +182,11 @@ const HooksWelcomeShopOwnerRoute = HooksWelcomeShopOwnerRouteImport.update({
 const HooksTrialRemindersRoute = HooksTrialRemindersRouteImport.update({
   id: '/hooks/trial-reminders',
   path: '/hooks/trial-reminders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HooksSmsLowBalanceCheckRoute = HooksSmsLowBalanceCheckRouteImport.update({
+  id: '/hooks/sms-low-balance-check',
+  path: '/hooks/sms-low-balance-check',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HooksMollieRefreshTokensRoute =
@@ -413,6 +419,7 @@ export interface FileRoutesByFullPath {
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
   '/hooks/mollie-refresh-tokens': typeof HooksMollieRefreshTokensRoute
+  '/hooks/sms-low-balance-check': typeof HooksSmsLowBalanceCheckRoute
   '/hooks/trial-reminders': typeof HooksTrialRemindersRoute
   '/hooks/welcome-shop-owner': typeof HooksWelcomeShopOwnerRoute
   '/legal/privacy': typeof LegalPrivacyRoute
@@ -478,6 +485,7 @@ export interface FileRoutesByTo {
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
   '/hooks/mollie-refresh-tokens': typeof HooksMollieRefreshTokensRoute
+  '/hooks/sms-low-balance-check': typeof HooksSmsLowBalanceCheckRoute
   '/hooks/trial-reminders': typeof HooksTrialRemindersRoute
   '/hooks/welcome-shop-owner': typeof HooksWelcomeShopOwnerRoute
   '/legal/privacy': typeof LegalPrivacyRoute
@@ -544,6 +552,7 @@ export interface FileRoutesById {
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
   '/hooks/mollie-refresh-tokens': typeof HooksMollieRefreshTokensRoute
+  '/hooks/sms-low-balance-check': typeof HooksSmsLowBalanceCheckRoute
   '/hooks/trial-reminders': typeof HooksTrialRemindersRoute
   '/hooks/welcome-shop-owner': typeof HooksWelcomeShopOwnerRoute
   '/legal/privacy': typeof LegalPrivacyRoute
@@ -611,6 +620,7 @@ export interface FileRouteTypes {
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
     | '/hooks/mollie-refresh-tokens'
+    | '/hooks/sms-low-balance-check'
     | '/hooks/trial-reminders'
     | '/hooks/welcome-shop-owner'
     | '/legal/privacy'
@@ -676,6 +686,7 @@ export interface FileRouteTypes {
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
     | '/hooks/mollie-refresh-tokens'
+    | '/hooks/sms-low-balance-check'
     | '/hooks/trial-reminders'
     | '/hooks/welcome-shop-owner'
     | '/legal/privacy'
@@ -741,6 +752,7 @@ export interface FileRouteTypes {
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
     | '/hooks/mollie-refresh-tokens'
+    | '/hooks/sms-low-balance-check'
     | '/hooks/trial-reminders'
     | '/hooks/welcome-shop-owner'
     | '/legal/privacy'
@@ -807,6 +819,7 @@ export interface RootRouteChildren {
   HooksBookingAutomationsRoute: typeof HooksBookingAutomationsRoute
   HooksBookingConfirmationRoute: typeof HooksBookingConfirmationRoute
   HooksMollieRefreshTokensRoute: typeof HooksMollieRefreshTokensRoute
+  HooksSmsLowBalanceCheckRoute: typeof HooksSmsLowBalanceCheckRoute
   HooksTrialRemindersRoute: typeof HooksTrialRemindersRoute
   HooksWelcomeShopOwnerRoute: typeof HooksWelcomeShopOwnerRoute
   LegalPrivacyRoute: typeof LegalPrivacyRoute
@@ -1012,6 +1025,13 @@ declare module '@tanstack/react-router' {
       path: '/hooks/trial-reminders'
       fullPath: '/hooks/trial-reminders'
       preLoaderRoute: typeof HooksTrialRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hooks/sms-low-balance-check': {
+      id: '/hooks/sms-low-balance-check'
+      path: '/hooks/sms-low-balance-check'
+      fullPath: '/hooks/sms-low-balance-check'
+      preLoaderRoute: typeof HooksSmsLowBalanceCheckRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hooks/mollie-refresh-tokens': {
@@ -1339,6 +1359,7 @@ const rootRouteChildren: RootRouteChildren = {
   HooksBookingAutomationsRoute: HooksBookingAutomationsRoute,
   HooksBookingConfirmationRoute: HooksBookingConfirmationRoute,
   HooksMollieRefreshTokensRoute: HooksMollieRefreshTokensRoute,
+  HooksSmsLowBalanceCheckRoute: HooksSmsLowBalanceCheckRoute,
   HooksTrialRemindersRoute: HooksTrialRemindersRoute,
   HooksWelcomeShopOwnerRoute: HooksWelcomeShopOwnerRoute,
   LegalPrivacyRoute: LegalPrivacyRoute,
