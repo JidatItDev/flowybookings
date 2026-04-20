@@ -19,8 +19,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 
+type SearchParams = { topup?: "return" | "mock" | "cancel"; payment?: string };
+
 export const Route = createFileRoute("/shop/notifications")({
   head: () => ({ meta: [{ title: "Notifications — FlowyBookings" }] }),
+  validateSearch: (s: Record<string, unknown>): SearchParams => ({
+    topup: s.topup === "return" || s.topup === "mock" || s.topup === "cancel" ? s.topup : undefined,
+    payment: typeof s.payment === "string" ? s.payment : undefined,
+  }),
   component: NotificationsPage,
 });
 
