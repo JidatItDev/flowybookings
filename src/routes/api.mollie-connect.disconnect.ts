@@ -68,11 +68,14 @@ export const Route = createFileRoute("/api/mollie-connect/disconnect")({
 
           await supabaseAdmin.from("activity_log").insert({
             entity: "mollie_connect",
-            action: "disconnected",
+            action: "mollie_disconnected",
             shop_id: shopId,
             actor_user_id: userId,
             actor_email: userRes.user.email ?? null,
-            metadata: {},
+            metadata: {
+              provider: "mollie",
+              previous_status: row ? "connected" : "unknown",
+            },
           });
 
           return json({ ok: true });

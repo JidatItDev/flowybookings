@@ -105,6 +105,28 @@ export const Route = createFileRoute("/api/mollie/webhook")({
               .eq("id", payment.id);
           }
 
+          // Booking-payment failures: log a high-priority `payment_failed` event so
+          // admins (LiveEventFeed) and shop owners get notified. Subscription
+          // failures are logged separately by handleSubscriptionLifecycle below.
+          const isBookingPayment = payment.booking_id !== null;
+          const becameFailed =
+            newStatus === "failed" && payment.status !== "failed";
+          if (isBookingPayment && becameFailed) {
+            await supabaseAdmin.from("activity_log").insert({
+              entity: "payment",
+              action: "payment_failed",
+              shop_id: payment.shop_id,
+              metadata: {
+                payment_id: payment.id,
+                booking_id: payment.booking_id,
+                provider: payment.provider,
+                mollie_id: mollieId,
+                mollie_status: mollie?.status ?? null,
+                amount_cents: payment.amount_cents,
+              },
+            });
+          }
+
           // Platform billing payments (provider = platform_mollie, booking_id IS NULL):
           // distinguish between subscription payments and one-off SMS credit top-ups.
           if (payment.provider === PLATFORM_PROVIDER && payment.booking_id === null) {
