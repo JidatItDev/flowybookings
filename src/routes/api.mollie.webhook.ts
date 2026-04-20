@@ -327,3 +327,80 @@ function subscriptionAmountCents(plan: DbPlan, cycle: BillingCycle): number {
   const base = monthly[plan] ?? 0;
   return cycle === "yearly" ? base * 10 : base;
 }
+
+// SMS credit top-up lifecycle: increases shop_sms_credits.balance on success.
+// Idempotent via payments.metadata.credits_applied (set on first successful run).
+async function handleSmsCreditsLifecycle(opts: {
+  paymentId: string;
+  shopId: string;
+  metadata: Record<string, unknown>;
+  effectiveStatus: string;
+}) {
+  const credits = Number(opts.metadata.credits ?? 0);
+  const pkg = (opts.metadata.package as string | undefined) ?? null;
+  if (!credits || credits <= 0) return;
+
+  if (opts.effectiveStatus === "paid") {
+    if (opts.metadata.credits_applied === true) return; // already applied — idempotency
+
+    // Atomic-ish increment: read, write back. RPC would be safer, but the row is per-shop
+    // and webhook traffic is low, so contention is negligible.
+    const { data: existing } = await supabaseAdmin
+      .from("shop_sms_credits")
+      .select("balance, total_purchased")
+      .eq("shop_id", opts.shopId)
+      .maybeSingle();
+
+    if (existing) {
+      await supabaseAdmin
+        .from("shop_sms_credits")
+        .update({
+          balance: existing.balance + credits,
+          total_purchased: existing.total_purchased + credits,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("shop_id", opts.shopId);
+    } else {
+      await supabaseAdmin
+        .from("shop_sms_credits")
+        .insert({ shop_id: opts.shopId, balance: credits, total_purchased: credits });
+    }
+
+    // Mark payment as applied so retried webhooks don't double-credit.
+    await supabaseAdmin
+      .from("payments")
+      .update({ metadata: { ...opts.metadata, credits_applied: true, applied_at: new Date().toISOString() } })
+      .eq("id", opts.paymentId);
+
+    await supabaseAdmin.from("activity_log").insert({
+      entity: "sms_credits",
+      action: "topup_applied",
+      shop_id: opts.shopId,
+      metadata: { payment_id: opts.paymentId, package: pkg, credits },
+    });
+
+    await supabaseAdmin.from("notifications").insert({
+      shop_id: opts.shopId,
+      type: "billing",
+      title: "SMS-tegoed bijgevuld",
+      message: `${credits} SMS-credits zijn toegevoegd aan je saldo.`,
+      action_url: "/shop/notifications",
+      metadata: { kind: "sms_credits", subkind: "applied", package: pkg, credits },
+    });
+  } else if (opts.effectiveStatus === "failed") {
+    await supabaseAdmin.from("activity_log").insert({
+      entity: "sms_credits",
+      action: "topup_failed",
+      shop_id: opts.shopId,
+      metadata: { payment_id: opts.paymentId, package: pkg, credits },
+    });
+    await supabaseAdmin.from("notifications").insert({
+      shop_id: opts.shopId,
+      type: "billing",
+      title: "SMS-betaling mislukt",
+      message: `We konden je SMS-tegoed betaling (${credits} credits) niet verwerken. Probeer het opnieuw.`,
+      action_url: "/shop/notifications",
+      metadata: { kind: "sms_credits", subkind: "failed", package: pkg, credits },
+    });
+  }
+}
