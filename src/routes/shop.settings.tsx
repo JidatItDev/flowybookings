@@ -19,11 +19,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { getTrialState } from "@/lib/trial";
-import { useFeatureAccess } from "@/lib/use-feature-access";
+import { planLabel as planLabelFn } from "@/lib/plans";
+import { planPriceLabel, useFeatureAccess } from "@/lib/use-feature-access";
+import { useSearch, useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/shop/settings")({
   head: () => ({ meta: [{ title: "Settings — FlowyBookings" }] }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    billing: typeof search.billing === "string" ? (search.billing as string) : undefined,
+    payment: typeof search.payment === "string" ? (search.payment as string) : undefined,
+  }),
   component: SettingsPage,
 });
 
@@ -51,11 +57,33 @@ function SettingsPage() {
   const { t } = useT();
   const readOnly = useImpersonationReadOnly();
   const roTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
-  const { refreshShops } = useAuth() as ReturnType<typeof useAuth> & { refreshShops?: () => void };
+  const { activeShop, refreshShops } = useAuth() as ReturnType<typeof useAuth> & { refreshShops?: () => void };
   const brandingAccess = useFeatureAccess(shopId, "custom_branding");
   const brandingAllowed = brandingAccess.data?.allowed ?? true;
+  const search = Route.useSearch();
+  const navigate = useNavigate();
 
   const { data: shop, isLoading } = useQuery({ ...shopFullQuery(shopId ?? ""), enabled: !!shopId });
+
+  // After returning from Mollie checkout (?billing=success|mock), force a refresh
+  // of BOTH caches that drive plan UI (header badge + Jouw abonnement card) so
+  // we never show a stale "TRIAL" while the DB already has Starter/Pro/Premium.
+  // Poll a few times — the Mollie webhook may take a moment to flip shop.plan.
+  useEffect(() => {
+    if (!search.billing || !shopId) return;
+    let attempts = 0;
+    const tick = () => {
+      attempts += 1;
+      qc.invalidateQueries({ queryKey: ["auth", "shops"] });
+      qc.invalidateQueries({ queryKey: shopKeys.shopFull(shopId) });
+      refreshShops?.();
+      if (attempts >= 5) return;
+      setTimeout(tick, 1500);
+    };
+    tick();
+    navigate({ to: "/shop/settings", search: {}, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.billing, shopId]);
 
   const [profile, setProfile] = useState({ name: "", phone: "", email: "", timezone: "Europe/Berlin", address: "" });
   const [branding, setBranding] = useState<Branding>({ color: "#7C5CFA" });
@@ -107,17 +135,36 @@ function SettingsPage() {
 
   const dayLabelKey: Record<DayKey, string> = { mon: "settings.monday", tue: "settings.tuesday", wed: "settings.wednesday", thu: "settings.thursday", fri: "settings.friday", sat: "settings.saturday", sun: "settings.sunday" };
 
-  const planPrices: Record<string, { price: number; fee: number }> = {
-    trial: { price: 0, fee: 0 },
-    starter: { price: 19, fee: 1.5 },
-    pro: { price: 49, fee: 1.0 },
-    premium: { price: 99, fee: 0.5 },
+  // SINGLE SOURCE OF TRUTH for plan + status: useAuth().activeShop, the same
+  // row that drives the header badge + TrialBanner. Falls back to the freshly
+  // fetched shopFullQuery row if activeShop hasn't hydrated yet.
+  // Status semantics come from getTrialState(), which reads:
+  //   - shop.plan / shop.plan_expires_at  (trial vs paid + expiry)
+  //   - shop.onboarding.subscription_status / payment_failed_at  (Mollie webhook)
+  // No more hardcoded planPrices map and no more ad-hoc "active vs trial" check.
+  const planSource = (activeShop ?? (shop as unknown as typeof activeShop)) ?? null;
+  const trialState = getTrialState(planSource as never);
+  const currentPlan = (planSource?.plan ?? "trial") as string;
+  const planNameLabel = planLabelFn(currentPlan);          // "Trial" | "Starter" | "Pro" | "Premium"
+  const planPrice = planPriceLabel(currentPlan);           // "" for trial, else "€19/maand" etc.
+  const planExpiresAt = planSource?.plan_expires_at ? new Date(planSource.plan_expires_at) : null;
+
+  // Per-status badge label + tone. Always derived from the same trialState — no
+  // separate booleans that can drift apart from the header.
+  const statusBadge: { label: string; tone: "mint" | "peach" | "destructive" | "muted" } = (() => {
+    if (trialState.isTrial && trialState.isExpired)         return { label: t("settings.planExpired"),        tone: "destructive" };
+    if (trialState.isTrial)                                  return { label: t("settings.planTrial"),          tone: "peach" };
+    if (trialState.subscriptionStatus === "payment_failed") return { label: t("billing.statusPaymentFailed"), tone: "destructive" };
+    if (trialState.subscriptionStatus === "cancelled")      return { label: t("billing.statusCancelled"),     tone: "muted" };
+    if (trialState.subscriptionStatus === "expired")        return { label: t("settings.planExpired"),        tone: "destructive" };
+    return { label: t("settings.planActive"), tone: "mint" };
+  })();
+  const toneClasses: Record<typeof statusBadge.tone, string> = {
+    mint: "bg-mint/40 text-mint-foreground",
+    peach: "bg-peach text-peach-foreground",
+    destructive: "bg-destructive/15 text-destructive",
+    muted: "bg-muted text-muted-foreground",
   };
-  const currentPlan = (shop?.plan ?? "trial") as keyof typeof planPrices;
-  const planInfo = planPrices[currentPlan];
-  const planExpiresAt = shop?.plan_expires_at ? new Date(shop.plan_expires_at) : null;
-  const daysLeft = planExpiresAt ? Math.max(0, Math.ceil((planExpiresAt.getTime() - Date.now()) / 86400000)) : null;
-  const planLabel = currentPlan === "trial" ? t("settings.planTrial") : (planExpiresAt && planExpiresAt < new Date()) ? t("settings.planExpired") : t("settings.planActive");
 
   return (
     <ShopLayout>
@@ -130,23 +177,19 @@ function SettingsPage() {
         <div className="h-72 animate-pulse rounded-2xl border border-border bg-card" />
       ) : (
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Trial-verlopen banner */}
-          {(() => {
-            const trial = getTrialState(shop as never);
-            if (!trial.isExpired) return null;
-            return (
-              <div className="lg:col-span-3 flex flex-wrap items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-destructive">
-                <AlertTriangle className="h-5 w-5 flex-none" />
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold">{t("settings.trialExpiredTitle")}</p>
-                  <p className="mt-1 text-sm opacity-90">{t("settings.trialExpiredBody")}</p>
-                </div>
-                <Link to="/shop/upgrade"><Button variant="hero">{t("settings.trialExpiredCta")}</Button></Link>
+          {/* Trial-verlopen banner — same trialState as the badge below */}
+          {trialState.isExpired && (
+            <div className="lg:col-span-3 flex flex-wrap items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-destructive">
+              <AlertTriangle className="h-5 w-5 flex-none" />
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">{t("settings.trialExpiredTitle")}</p>
+                <p className="mt-1 text-sm opacity-90">{t("settings.trialExpiredBody")}</p>
               </div>
-            );
-          })()}
+              <Link to="/shop/upgrade"><Button variant="hero">{t("settings.trialExpiredCta")}</Button></Link>
+            </div>
+          )}
 
-          {/* SECTIE 1 — Jouw abonnement */}
+          {/* SECTIE 1 — Jouw abonnement (single source of truth: activeShop) */}
           <Card title={t("settings.subscription")} className="lg:col-span-3">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex items-start gap-3">
@@ -155,21 +198,19 @@ function SettingsPage() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="text-lg font-semibold capitalize">{currentPlan}</p>
+                    <p className="text-lg font-semibold">{planNameLabel}</p>
                     <span className={cn(
                       "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-                      planLabel === t("settings.planActive") ? "bg-mint/40 text-mint-foreground" :
-                      planLabel === t("settings.planTrial") ? "bg-peach text-peach-foreground" :
-                      "bg-destructive/15 text-destructive",
-                    )}>{planLabel}</span>
+                      toneClasses[statusBadge.tone],
+                    )}>{statusBadge.label}</span>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    €{planInfo.price}/maand · {planInfo.fee}% platform fee
-                  </p>
+                  {planPrice && !trialState.isTrial && (
+                    <p className="mt-1 text-sm text-muted-foreground">{planPrice}</p>
+                  )}
                   {planExpiresAt && (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {currentPlan === "trial" && daysLeft !== null
-                        ? t("settings.daysLeft", { n: String(daysLeft) })
+                      {trialState.isTrial && trialState.daysLeft !== null
+                        ? t("settings.daysLeft", { n: String(trialState.daysLeft) })
                         : `${t("settings.nextPayment")}: ${planExpiresAt.toLocaleDateString("nl-NL", { day: "2-digit", month: "long", year: "numeric" })}`}
                     </p>
                   )}
@@ -177,7 +218,6 @@ function SettingsPage() {
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link to="/shop/upgrade"><Button variant="hero">{t("settings.changePlan")}</Button></Link>
-                <Button variant="outline" disabled>{t("settings.cancelPlan")}</Button>
               </div>
             </div>
           </Card>
@@ -264,12 +304,18 @@ function SettingsPage() {
             <div className="mt-3"><NumField label={t("settings.defaultDeposit")} value={rules.defaultDepositPct} onChange={(v) => updateRule("defaultDepositPct", v)} /></div>
           </Card>
 
-          {/* SECTIE — Betalingen van klanten */}
-          <div className="lg:col-span-3">
-            <h2 className="mb-3 text-base font-semibold">{t("settings.customerPayments")}</h2>
-            <p className="mb-4 text-xs text-muted-foreground">{t("settings.platformFee", { pct: String(planInfo.fee) })} {currentPlan !== "premium" && `· ${t("settings.upgradeFee")}`}</p>
-            <MollieConnectCard shopId={shopId} />
-          </div>
+          {/* SECTIE — Betalingen van klanten. Platform fee mirrors DB plan_pricing defaults. */}
+          {(() => {
+            const PLATFORM_FEE_PCT: Record<string, number> = { trial: 0, starter: 1.5, pro: 1.0, premium: 0.5 };
+            const fee = PLATFORM_FEE_PCT[currentPlan] ?? 0;
+            return (
+              <div className="lg:col-span-3">
+                <h2 className="mb-3 text-base font-semibold">{t("settings.customerPayments")}</h2>
+                <p className="mb-4 text-xs text-muted-foreground">{t("settings.platformFee", { pct: String(fee) })} {currentPlan !== "premium" && `· ${t("settings.upgradeFee")}`}</p>
+                <MollieConnectCard shopId={shopId} />
+              </div>
+            );
+          })()}
 
           {/* Stripe placeholder */}
           <div className="lg:col-span-3">
