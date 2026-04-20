@@ -53,7 +53,7 @@ export const Route = createFileRoute("/api/booking/$bookingId/ics")({
 
         const { data: booking, error } = await supabaseAdmin
           .from("bookings")
-          .select("id, starts_at, ends_at, shop_id, service_id, created_at")
+          .select("id, starts_at, ends_at, shop_id, service_id, status, created_at, updated_at")
           .eq("id", bookingId)
           .maybeSingle();
 
