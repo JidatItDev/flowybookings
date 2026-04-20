@@ -13,11 +13,13 @@ import { NoShopState } from "@/components/EmptyState";
 import { UpgradeNudge, PremiumBadge } from "@/components/UpgradeNudge";
 import { NotificationsInbox } from "@/components/NotificationsInbox";
 import { SmsTopUpDialog } from "@/components/SmsTopUpDialog";
+import { FeatureLock } from "@/components/FeatureLock";
 import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { shopFullQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+import { useFeatureAccess } from "@/lib/use-feature-access";
 
 type SearchParams = { topup?: "return" | "mock" | "cancel"; payment?: string };
 
@@ -376,11 +378,22 @@ function AutomationSettings({ shopId }: { shopId: string }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const items: { key: keyof AutomationRow; titleKey: string; descKey: string }[] = [
+  // Feature gating: SMS reminders requires Starter+, WhatsApp requires Pro+
+  const smsAccess = useFeatureAccess(shopId, "sms_reminders");
+  const whatsappAccess = useFeatureAccess(shopId, "whatsapp_reminders");
+
+  const items: { key: keyof AutomationRow; titleKey: string; descKey: string; locked?: boolean; lockLabel?: string; access?: typeof smsAccess.data }[] = [
     { key: "confirmation_enabled", titleKey: "automations.confirmation", descKey: "automations.confirmationDesc" },
     { key: "reminder_24h_enabled", titleKey: "automations.reminder24", descKey: "automations.reminder24Desc" },
     { key: "reminder_2h_enabled", titleKey: "automations.reminder2", descKey: "automations.reminder2Desc" },
-    { key: "reminder_sms_enabled", titleKey: "automations.reminderSms", descKey: "automations.reminderSmsDesc" },
+    {
+      key: "reminder_sms_enabled",
+      titleKey: "automations.reminderSms",
+      descKey: "automations.reminderSmsDesc",
+      locked: smsAccess.data ? !smsAccess.data.allowed : false,
+      lockLabel: "SMS herinneringen",
+      access: smsAccess.data,
+    },
     { key: "followup_enabled", titleKey: "automations.followup", descKey: "automations.followupDesc" },
   ];
 
@@ -448,18 +461,43 @@ function AutomationSettings({ shopId }: { shopId: string }) {
           </span>
         </div>
         <div className="divide-y divide-border">
-          {items.map((it) => (
-            <div key={it.key} className="flex items-center justify-between px-6 py-4">
-              <div>
-                <p className="font-medium">{t(it.titleKey)}</p>
-                <p className="text-xs text-muted-foreground">{t(it.descKey)}</p>
+          {items.map((it) => {
+            if (it.locked && it.access) {
+              return (
+                <div key={it.key} className="px-6 py-4">
+                  <FeatureLock access={it.access} featureLabel={it.lockLabel ?? t(it.titleKey)} mode="inline" />
+                </div>
+              );
+            }
+            return (
+              <div key={it.key} className="flex items-center justify-between px-6 py-4">
+                <div>
+                  <p className="font-medium">{t(it.titleKey)}</p>
+                  <p className="text-xs text-muted-foreground">{t(it.descKey)}</p>
+                </div>
+                <Toggle
+                  on={row[it.key]}
+                  onChange={() => { setRow((r) => ({ ...r, [it.key]: !r[it.key] })); setDirty(true); }}
+                />
               </div>
-              <Toggle
-                on={row[it.key]}
-                onChange={() => { setRow((r) => ({ ...r, [it.key]: !r[it.key] })); setDirty(true); }}
-              />
+            );
+          })}
+          {/* WhatsApp herinneringen — niet in DB-schema, alleen UI gating */}
+          {whatsappAccess.data && (
+            <div className="px-6 py-4">
+              {whatsappAccess.data.allowed ? (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">WhatsApp herinneringen</p>
+                    <p className="text-xs text-muted-foreground">Stuur herinneringen via WhatsApp Business.</p>
+                  </div>
+                  <span className="rounded-full bg-mint/40 px-2.5 py-1 text-[11px] font-medium text-mint-foreground">Binnenkort</span>
+                </div>
+              ) : (
+                <FeatureLock access={whatsappAccess.data} featureLabel="WhatsApp herinneringen" mode="inline" />
+              )}
             </div>
-          ))}
+          )}
         </div>
         <div className="flex items-center justify-between border-t border-border px-6 py-4">
           <span className="text-[11px] text-muted-foreground">{t("automations.poweredBy")}</span>
