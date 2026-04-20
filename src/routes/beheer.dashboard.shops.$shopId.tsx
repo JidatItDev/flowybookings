@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShopOverridesPanel } from "@/components/admin/ShopOverridesPanel";
+import { SubscriptionPanel } from "@/components/admin/SubscriptionPanel";
 import { RevenueSparkline } from "@/components/RevenueSparkline";
 import { adminShopDetailQuery } from "@/lib/admin-queries";
 import { formatCents, formatDate, relativeFromNow } from "@/lib/format";
@@ -18,7 +19,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { startImpersonate } from "@/lib/impersonation";
-import { changeShopPlan, ALL_DB_PLANS, planLabel, type DbPlan } from "@/lib/plans";
+import { planLabel } from "@/lib/plans";
 
 type ShopStatus = Database["public"]["Enums"]["shop_status"];
 
@@ -69,23 +70,7 @@ function ShopDetailPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const updatePlan = useMutation({
-    mutationFn: async ({ plan, prev }: { plan: DbPlan; prev: string }) => {
-      await changeShopPlan({
-        shopId,
-        newPlan: plan,
-        previousPlan: prev,
-        actorUserId: user?.id ?? null,
-        actorEmail: user?.email ?? null,
-        source: "admin",
-      });
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["admin"] });
-      toast.success(t("adminShops.planUpdated"));
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
+
 
   if (isLoading) {
     return (
@@ -215,26 +200,22 @@ function ShopDetailPage() {
           </div>
         </div>
 
-        {/* Abonnement */}
+        {/* Abonnement (compact summary; volledig beheer in panel hieronder) */}
         <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t("adminShopDetail.subscription")}</h2>
-          <div className="space-y-3 text-sm">
-            <div>
-              <p className="text-xs text-muted-foreground">{t("adminShopDetail.changePlan")}</p>
-              <select
-                value={shop.plan}
-                disabled={updatePlan.isPending}
-                onChange={(e) => updatePlan.mutate({ plan: e.target.value as DbPlan, prev: shop.plan })}
-                className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-sm"
-              >
-                {ALL_DB_PLANS.map((p) => <option key={p} value={p}>{planLabel(p)}</option>)}
-              </select>
-            </div>
+          <div className="space-y-2 text-sm">
+            <p><span className="text-muted-foreground">{t("adminShopDetail.changePlan")}:</span> <span className="font-medium">{planLabel(shop.plan)}</span></p>
+            {shop.subscription_status && (
+              <p><span className="text-muted-foreground">Status:</span> <span className="font-medium capitalize">{shop.subscription_status}</span></p>
+            )}
             {shop.plan_billing_cycle && (
               <p className="text-muted-foreground"><span className="font-medium text-foreground">{t("adminShopDetail.billingCycle")}:</span> {shop.plan_billing_cycle}</p>
             )}
             {shop.plan_expires_at && (
               <p className="text-muted-foreground"><span className="font-medium text-foreground">{t("adminShopDetail.expiresAt")}:</span> {formatDate(shop.plan_expires_at)}</p>
+            )}
+            {shop.next_billing_at && (
+              <p className="text-muted-foreground"><span className="font-medium text-foreground">{t("adminShopDetail.nextBilling")}:</span> {formatDate(shop.next_billing_at)}</p>
             )}
           </div>
         </div>
@@ -327,6 +308,23 @@ function ShopDetailPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Subscription beheer (volledig) */}
+      <div className="mb-6">
+        <SubscriptionPanel
+          shop={{
+            id: shop.id,
+            name: shop.name,
+            plan: shop.plan,
+            subscription_status: shop.subscription_status,
+            plan_expires_at: shop.plan_expires_at,
+            platform_fee_bps_override: shop.platform_fee_bps_override,
+            next_billing_at: shop.next_billing_at,
+            mollie_subscription_id: shop.mollie_subscription_id,
+            subscription_notes: shop.subscription_notes,
+          }}
+        />
       </div>
 
       {/* Feature overrides hergebruikt */}

@@ -8,6 +8,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,11 +41,15 @@ function toDateInputValue(iso: string | null): string {
 
 async function logAction(shopId: string, action: string, actor: { id: string | null; email: string | null }, metadata: Record<string, unknown>) {
   try {
-    await supabase.from("activity_log").insert({
-      shop_id: shopId, entity: "shop", action,
-      actor_user_id: actor.id, actor_email: actor.email,
-      metadata,
-    });
+    const row: TablesInsert<"activity_log"> = {
+      shop_id: shopId,
+      entity: "shop",
+      action,
+      actor_user_id: actor.id,
+      actor_email: actor.email,
+      metadata: metadata as TablesInsert<"activity_log">["metadata"],
+    };
+    await supabase.from("activity_log").insert(row);
   } catch { /* ignore */ }
 }
 
@@ -67,7 +72,7 @@ export function SubscriptionPanel({ shop }: { shop: Shop }) {
 
   const saveCore = useMutation({
     mutationFn: async () => {
-      const updates: Record<string, unknown> = {
+      const updates: TablesUpdate<"shops"> = {
         subscription_status: status,
         plan_expires_at: expiresAt ? new Date(expiresAt + "T23:59:59Z").toISOString() : null,
         next_billing_at: nextBilling ? new Date(nextBilling + "T00:00:00Z").toISOString() : null,
@@ -76,7 +81,7 @@ export function SubscriptionPanel({ shop }: { shop: Shop }) {
       };
       const { error } = await supabase.from("shops").update(updates).eq("id", shop.id);
       if (error) throw error;
-      await logAction(shop.id, "subscription_updated", actor, updates);
+      await logAction(shop.id, "subscription_updated", actor, updates as Record<string, unknown>);
       if (plan !== shop.plan) {
         await changeShopPlan({ shopId: shop.id, newPlan: plan, previousPlan: shop.plan, actorUserId: actor.id, actorEmail: actor.email, source: "admin" });
       }
