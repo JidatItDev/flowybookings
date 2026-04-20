@@ -430,6 +430,36 @@ export type Database = {
           },
         ]
       }
+      plan_features: {
+        Row: {
+          created_at: string
+          feature_slug: string
+          id: string
+          is_included: boolean
+          limit_value: number | null
+          plan_name: Database["public"]["Enums"]["subscription_plan"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          feature_slug: string
+          id?: string
+          is_included?: boolean
+          limit_value?: number | null
+          plan_name: Database["public"]["Enums"]["subscription_plan"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          feature_slug?: string
+          id?: string
+          is_included?: boolean
+          limit_value?: number | null
+          plan_name?: Database["public"]["Enums"]["subscription_plan"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_billing_config: {
         Row: {
           expects_client_id: boolean
