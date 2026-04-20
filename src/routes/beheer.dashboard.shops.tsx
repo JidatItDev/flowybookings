@@ -80,17 +80,17 @@ function ShopsPage() {
         <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground"><tr>
-              <th className="px-6 py-3 text-left">{t("adminShops.shop")}</th><th className="hidden px-6 py-3 text-left md:table-cell">{t("adminShops.owner")}</th><th className="px-6 py-3 text-left">{t("adminShops.plan")}</th><th className="px-6 py-3 text-left">{t("adminShops.status")}</th><th className="hidden px-6 py-3 text-left lg:table-cell">{t("adminShops.bookings")}</th><th className="hidden px-6 py-3 text-left lg:table-cell">{t("adminShops.revenue")}</th><th className="hidden px-6 py-3 text-left xl:table-cell">{t("adminShops.policyAccepted")}</th><th className="hidden px-6 py-3 text-left xl:table-cell">{t("adminShops.created")}</th><th className="px-6 py-3" />
+              <th className="px-6 py-3 text-left">{t("adminShops.shop")}</th><th className="hidden px-6 py-3 text-left md:table-cell">{t("adminShops.owner")}</th><th className="px-6 py-3 text-left">{t("adminShops.plan")}</th><th className="px-6 py-3 text-left">{t("adminShops.status")}</th><th className="hidden px-6 py-3 text-left lg:table-cell">{t("adminShops.bookings")}</th><th className="hidden px-6 py-3 text-left lg:table-cell">{t("adminShops.revenue")}</th><th className="hidden px-6 py-3 text-left xl:table-cell">{t("adminShops.lastLogin")}</th><th className="hidden px-6 py-3 text-left xl:table-cell">{t("adminShops.activity")}</th><th className="hidden px-6 py-3 text-left xl:table-cell">{t("adminShops.policyAccepted")}</th><th className="hidden px-6 py-3 text-left xl:table-cell">{t("adminShops.created")}</th><th className="px-6 py-3" />
             </tr></thead>
             <tbody className="divide-y divide-border">
-              {list.length === 0 && <tr><td colSpan={9} className="px-6 py-8 text-center text-muted-foreground">{t("adminShops.noShops")}</td></tr>}
+              {list.length === 0 && <tr><td colSpan={11} className="px-6 py-8 text-center text-muted-foreground">{t("adminShops.noShops")}</td></tr>}
               {list.map((s) => {
                 const isExpanded = expandedId === s.id;
                 return (
                   <Fragment key={s.id}>
                     <tr className="hover:bg-muted/30">
                       <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-warm text-xs font-semibold text-pink-foreground">{s.name[0]}</div><div><Link to="/beheer/dashboard/shops/$shopId" params={{ shopId: s.id }} className="font-medium hover:text-primary hover:underline">{s.name}</Link><p className="text-xs text-muted-foreground">{s.slug}</p></div></div></td>
-                      <td className="hidden px-6 py-4 text-muted-foreground md:table-cell">{s.owner_email ?? "—"}</td>
+                      <td className="hidden px-6 py-4 text-muted-foreground md:table-cell"><div className="leading-tight"><p className="text-foreground">{s.owner_name ?? "—"}</p><p className="text-xs">{s.owner_email ?? "—"}</p></div></td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium capitalize", planColor[s.plan] ?? planColor.trial)}>{planLabel(s.plan)}</span>
