@@ -187,25 +187,35 @@ function SettingsPanel({ shopId }: { shopId: string }) {
 
   return (
     <>
-      {!isPremium && (
-        <div className="mb-4">
-          <UpgradeNudge variant="premium-locked" plan="Pro" feature={t("notifications.whatsapp")} />
+      {/* WhatsApp is niet beschikbaar — uitlegbanner i.p.v. een upgrade-CTA die nergens op uitkomt. */}
+      <div className="mb-4 flex flex-wrap items-start gap-3 rounded-2xl border border-border bg-muted/30 p-4 text-xs">
+        <MessageSquare className="mt-0.5 h-4 w-4 flex-none text-mint-foreground" />
+        <div className="min-w-0 flex-1">
+          <p className="font-medium text-foreground">{t("notifications.whatsappComingTitle")}</p>
+          <p className="mt-0.5 text-muted-foreground">{t("notifications.whatsappComingBody")}</p>
         </div>
-      )}
+      </div>
       <div className="grid gap-4 sm:grid-cols-3">
         {channels.map((c) => {
           const Icon = c.icon;
           const on = settings.channels[c.id];
-          const locked = c.id === "whatsapp" && !isPremium;
+          // WhatsApp send-path is niet geïmplementeerd — toggle staat hard uit voor élk plan,
+          // ongeacht of het abonnement de feature in theorie includeert. Voorkomt fake "aan"-state.
+          const comingSoon = c.id === "whatsapp";
+          const planLocked = c.id === "whatsapp" && !isPremium;
           return (
-            <div key={c.id} className={cn("relative rounded-2xl border border-border bg-card p-5 shadow-soft", locked && "opacity-80")}>
+            <div key={c.id} className={cn("relative rounded-2xl border border-border bg-card p-5 shadow-soft", (comingSoon || planLocked) && "opacity-80")}>
               <div className="flex items-center justify-between">
                 <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl", c.color)}><Icon className="h-5 w-5" /></div>
-                <Toggle on={on && !locked} onChange={() => !locked && toggleChannel(c.id)} disabled={readOnly || locked} title={readOnly ? readOnlyTitle : undefined} />
+                <Toggle on={on && !comingSoon && !planLocked} onChange={() => !comingSoon && !planLocked && toggleChannel(c.id)} disabled={readOnly || comingSoon || planLocked} title={comingSoon ? t("notifications.whatsappComingTitle") : readOnly ? readOnlyTitle : undefined} />
               </div>
               <h3 className="mt-3 flex items-center gap-2 font-semibold">
                 {t(c.nameKey)}
-                {locked && <PremiumBadge plan="Pro" />}
+                {comingSoon && (
+                  <span className="rounded-full bg-mint/40 px-2 py-0.5 text-[10px] font-medium text-mint-foreground">
+                    {t("notifications.whatsappBadge")}
+                  </span>
+                )}
               </h3>
               <p className="text-xs text-muted-foreground">{t(c.descKey)}</p>
             </div>
@@ -498,20 +508,20 @@ function AutomationSettings({ shopId }: { shopId: string }) {
               </div>
             );
           })}
-          {/* WhatsApp herinneringen — niet in DB-schema, alleen UI gating */}
+          {/* WhatsApp herinneringen — send-path is nog niet geïmplementeerd.
+              Toon één eerlijke "Binnenkort" rij voor alle plannen, zodat shops
+              geen toggle zien die niets doet. Plan-gating blijft via DB intact. */}
           {whatsappAccess.data && (
             <div className="px-6 py-4">
-              {whatsappAccess.data.allowed ? (
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">WhatsApp herinneringen</p>
-                    <p className="text-xs text-muted-foreground">Stuur herinneringen via WhatsApp Business.</p>
-                  </div>
-                  <span className="rounded-full bg-mint/40 px-2.5 py-1 text-[11px] font-medium text-mint-foreground">Binnenkort</span>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium">{t("notifications.whatsappRowTitle")}</p>
+                  <p className="text-xs text-muted-foreground">{t("notifications.whatsappRowDesc")}</p>
                 </div>
-              ) : (
-                <FeatureLock access={whatsappAccess.data} featureLabel="WhatsApp herinneringen" mode="inline" />
-              )}
+                <span className="flex-none rounded-full bg-mint/40 px-2.5 py-1 text-[11px] font-medium text-mint-foreground">
+                  {t("notifications.whatsappBadge")}
+                </span>
+              </div>
             </div>
           )}
         </div>

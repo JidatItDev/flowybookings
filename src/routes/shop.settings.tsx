@@ -250,31 +250,38 @@ function SettingsPage() {
 
           <Card title={t("settings.branding")}>
             {brandingAccess.data && !brandingAllowed ? (
-              <FeatureLock
-                access={brandingAccess.data}
-                featureLabel={t("feature.customBranding")}
-                mode="overlay"
-              >
-                <LogoUploader shopId={shopId!} currentLogoUrl={shop?.logo_url ?? null} fallbackInitials={(profile.name || "S").slice(0, 2).toUpperCase()} fallbackColor={branding.color ?? "var(--color-primary)"} disabled />
-                <div className="mt-5">
-                  <Label htmlFor="brand-color">{t("settings.brandColor")}</Label>
-                  <div className="mt-1 flex items-center gap-2">
-                    <input id="brand-color" type="color" value={branding.color ?? "#7C5CFA"} disabled className="h-10 w-12 cursor-not-allowed rounded-lg border border-border bg-background opacity-60" />
-                    <Input value={branding.color ?? ""} disabled className="h-10 flex-1" />
+              // Wrap in a relative container with explicit min-height so the
+              // FeatureLock overlay (absolute inset-0) is fully contained inside
+              // the card on every breakpoint and never floats over neighbours.
+              <div className="relative min-h-[260px]">
+                <FeatureLock
+                  access={brandingAccess.data}
+                  featureLabel={t("feature.customBranding")}
+                  mode="overlay"
+                >
+                  <div className="space-y-5">
+                    <LogoUploader shopId={shopId!} currentLogoUrl={shop?.logo_url ?? null} fallbackInitials={(profile.name || "S").slice(0, 2).toUpperCase()} fallbackColor={branding.color ?? "var(--color-primary)"} disabled />
+                    <div>
+                      <Label htmlFor="brand-color">{t("settings.brandColor")}</Label>
+                      <div className="mt-1 flex items-center gap-2">
+                        <input id="brand-color" type="color" value={branding.color ?? "#7C5CFA"} disabled className="h-10 w-12 cursor-not-allowed rounded-lg border border-border bg-background opacity-60" />
+                        <Input value={branding.color ?? ""} disabled className="h-10 flex-1" />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </FeatureLock>
+                </FeatureLock>
+              </div>
             ) : (
-              <>
+              <div className="space-y-5">
                 <LogoUploader shopId={shopId!} currentLogoUrl={shop?.logo_url ?? null} fallbackInitials={(profile.name || "S").slice(0, 2).toUpperCase()} fallbackColor={branding.color ?? "var(--color-primary)"} />
-                <div className="mt-5">
+                <div>
                   <Label htmlFor="brand-color">{t("settings.brandColor")}</Label>
                   <div className="mt-1 flex items-center gap-2">
                     <input id="brand-color" type="color" value={branding.color ?? "#7C5CFA"} onChange={(e) => { setBranding({ color: e.target.value }); setDirty(true); }} className="h-10 w-12 cursor-pointer rounded-lg border border-border bg-background" />
                     <Input value={branding.color ?? ""} onChange={(e) => { setBranding({ color: e.target.value }); setDirty(true); }} className="h-10 flex-1" />
                   </div>
                 </div>
-              </>
+              </div>
             )}
           </Card>
 
