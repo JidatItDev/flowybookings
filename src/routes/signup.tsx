@@ -17,42 +17,109 @@ export const Route = createFileRoute("/signup")({
   component: SignupPage,
 });
 
+const CATEGORIES = [
+  { value: "kapper", label: "Kapper" },
+  { value: "barber", label: "Barber" },
+  { value: "nails", label: "Nagelsalon" },
+  { value: "beauty", label: "Beauty / Schoonheid" },
+  { value: "tattoo", label: "Tattoo / Piercing" },
+  { value: "trimsalon", label: "Trimsalon" },
+  { value: "massage", label: "Massage / Wellness" },
+  { value: "other", label: "Anders" },
+];
+
+function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48) || "salon";
+}
+
+async function uniqueSlug(base: string): Promise<string> {
+  let candidate = base;
+  for (let i = 0; i < 6; i++) {
+    const { data } = await supabase.from("shops").select("id").eq("slug", candidate).maybeSingle();
+    if (!data) return candidate;
+    candidate = `${base}-${Math.random().toString(36).slice(2, 6)}`;
+  }
+  return `${base}-${Date.now().toString(36)}`;
+}
+
 function SignupPage() {
   const navigate = useNavigate();
-  const { session, loading } = useAuth();
+  const { session, loading, refreshShops, setActiveShopId } = useAuth();
   const { t } = useT();
   const [fullName, setFullName] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [category, setCategory] = useState("kapper");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => { if (!loading && session) navigate({ to: "/shop" }); }, [session, loading, navigate]);
+  // Don't auto-redirect after signup; we navigate explicitly to the new shop.
+  useEffect(() => { if (!loading && session && !submitting) {/* idle */} }, [session, loading, submitting]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!agreed) {
-      toast.error(t("auth.mustAgree"));
-      return;
-    }
+    if (!agreed) { toast.error(t("auth.mustAgree")); return; }
+    if (!businessName.trim()) { toast.error("Bedrijfsnaam is verplicht"); return; }
+
     setSubmitting(true);
-    const { data, error } = await supabase.auth.signUp({
-      email, password,
-      options: { emailRedirectTo: `${window.location.origin}/shop`, data: { full_name: fullName } },
-    });
-    if (!error && data.user) {
-      // Pin the policy versions the user agreed to. Profile row is created by a
-      // DB trigger, so retry briefly until it exists.
-      const userId = data.user.id;
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email, password,
+        options: { emailRedirectTo: `${window.location.origin}/shop`, data: { full_name: fullName } },
+      });
+      if (error) throw error;
+      const userId = data.user?.id;
+      if (!userId) throw new Error("Account aanmaken mislukt");
+
+      // Record consent (best-effort)
       void (async () => {
         for (let i = 0; i < 5; i++) {
           try { await recordConsent(userId); break; } catch { await new Promise((r) => setTimeout(r, 250)); }
         }
       })();
+
+      // Create the user's own shop. Demo shops are seeded separately and must
+      // never be used for new signups.
+      const baseSlug = slugify(businessName);
+      const slug = await uniqueSlug(baseSlug);
+      const trialEnd = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
+      const { data: shop, error: shopErr } = await supabase
+        .from("shops")
+        .insert({
+          owner_id: userId,
+          name: businessName.trim(),
+          slug,
+          plan: "trial",
+          status: "active",
+          plan_expires_at: trialEnd,
+          subscription_status: "trial",
+          category,
+          is_demo: false,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Amsterdam",
+        })
+        .select("id")
+        .single();
+      if (shopErr) throw shopErr;
+
+      // Make sure the user has the shop_owner role.
+      await supabase.from("user_roles").insert({ user_id: userId, role: "shop_owner", shop_id: shop.id });
+
+      refreshShops();
+      setActiveShopId(shop.id);
+      toast.success(t("auth.accountCreated"));
+      navigate({ to: "/shop" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Aanmelden mislukt");
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
-    if (error) toast.error(error.message);
-    else { toast.success(t("auth.accountCreated")); navigate({ to: "/shop" }); }
   };
 
   return (
@@ -78,6 +145,21 @@ function SignupPage() {
               <Input id="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
             </div>
             <div className="space-y-1.5">
+              <Label htmlFor="business">Bedrijfsnaam</Label>
+              <Input id="business" required value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Bijv. Salon Bloem" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="category">Type zaak</Label>
+              <select
+                id="category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
               <Label htmlFor="email">{t("auth.email")}</Label>
               <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
@@ -95,13 +177,9 @@ function SignupPage() {
               />
               <span>
                 {t("auth.agreePrefix")}{" "}
-                <Link to="/legal/terms" className="font-medium text-primary hover:underline">
-                  {t("auth.termsLink")}
-                </Link>{" "}
+                <Link to="/legal/terms" className="font-medium text-primary hover:underline">{t("auth.termsLink")}</Link>{" "}
                 {t("auth.and")}{" "}
-                <Link to="/legal/privacy" className="font-medium text-primary hover:underline">
-                  {t("auth.privacyLink")}
-                </Link>
+                <Link to="/legal/privacy" className="font-medium text-primary hover:underline">{t("auth.privacyLink")}</Link>
               </span>
             </label>
             <Button type="submit" variant="hero" className="w-full" disabled={submitting || !agreed}>

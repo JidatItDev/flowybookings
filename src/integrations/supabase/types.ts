@@ -546,31 +546,37 @@ export type Database = {
       }
       profiles: {
         Row: {
+          admin_last_seen_activity_at: string | null
           avatar_url: string | null
           created_at: string
           email: string | null
           full_name: string | null
           id: string
+          last_login_at: string | null
           legal_consent: Json
           phone: string | null
           updated_at: string
         }
         Insert: {
+          admin_last_seen_activity_at?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id: string
+          last_login_at?: string | null
           legal_consent?: Json
           phone?: string | null
           updated_at?: string
         }
         Update: {
+          admin_last_seen_activity_at?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
+          last_login_at?: string | null
           legal_consent?: Json
           phone?: string | null
           updated_at?: string
@@ -831,23 +837,29 @@ export type Database = {
           admin_notes: string | null
           branding: Json
           business_hours: Json
+          category: string | null
           created_at: string
           default_deposit_percent: number
           email: string | null
           id: string
           is_demo: boolean
           logo_url: string | null
+          mollie_subscription_id: string | null
           name: string
+          next_billing_at: string | null
           onboarding: Json
           owner_id: string
           phone: string | null
           plan: Database["public"]["Enums"]["subscription_plan"]
           plan_billing_cycle: string | null
           plan_expires_at: string | null
+          platform_fee_bps_override: number | null
           policy_accepted_at: string | null
           policy_version: string | null
           slug: string
           status: Database["public"]["Enums"]["shop_status"]
+          subscription_notes: string | null
+          subscription_status: string
           timezone: string
           updated_at: string
         }
@@ -856,23 +868,29 @@ export type Database = {
           admin_notes?: string | null
           branding?: Json
           business_hours?: Json
+          category?: string | null
           created_at?: string
           default_deposit_percent?: number
           email?: string | null
           id?: string
           is_demo?: boolean
           logo_url?: string | null
+          mollie_subscription_id?: string | null
           name: string
+          next_billing_at?: string | null
           onboarding?: Json
           owner_id: string
           phone?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
           plan_billing_cycle?: string | null
           plan_expires_at?: string | null
+          platform_fee_bps_override?: number | null
           policy_accepted_at?: string | null
           policy_version?: string | null
           slug: string
           status?: Database["public"]["Enums"]["shop_status"]
+          subscription_notes?: string | null
+          subscription_status?: string
           timezone?: string
           updated_at?: string
         }
@@ -881,23 +899,29 @@ export type Database = {
           admin_notes?: string | null
           branding?: Json
           business_hours?: Json
+          category?: string | null
           created_at?: string
           default_deposit_percent?: number
           email?: string | null
           id?: string
           is_demo?: boolean
           logo_url?: string | null
+          mollie_subscription_id?: string | null
           name?: string
+          next_billing_at?: string | null
           onboarding?: Json
           owner_id?: string
           phone?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
           plan_billing_cycle?: string | null
           plan_expires_at?: string | null
+          platform_fee_bps_override?: number | null
           policy_accepted_at?: string | null
           policy_version?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["shop_status"]
+          subscription_notes?: string | null
+          subscription_status?: string
           timezone?: string
           updated_at?: string
         }

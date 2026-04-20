@@ -92,7 +92,7 @@ export const adminDashboardExtrasQuery = () =>
     },
   })
 
-/* ─── Live event-feed (laatste 20 uit activity_log) ─── */
+/* ─── Live event-feed (laatste 50 uit activity_log) ─── */
 
 export type AdminEvent = {
   id: string
@@ -114,7 +114,7 @@ export const adminEventFeedQuery = () =>
         .from("activity_log")
         .select("id, action, entity, shop_id, actor_email, metadata, created_at")
         .order("created_at", { ascending: false })
-        .limit(20)
+        .limit(50)
       if (error) throw error
 
       const shopIds = [...new Set((data ?? []).map((r) => r.shop_id).filter(Boolean))] as string[]
@@ -136,3 +136,31 @@ export const adminEventFeedQuery = () =>
       }))
     },
   })
+
+/* ─── Admin unread activity (since profile.admin_last_seen_activity_at) ─── */
+
+export const adminUnreadActivityQuery = (userId: string | null) =>
+  queryOptions({
+    queryKey: ["admin", "unread-activity", userId],
+    enabled: !!userId,
+    staleTime: 10_000,
+    queryFn: async (): Promise<{ count: number; lastSeenAt: string | null }> => {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("admin_last_seen_activity_at")
+        .eq("id", userId!)
+        .maybeSingle()
+      const lastSeenAt = profile?.admin_last_seen_activity_at ?? null
+      let q = supabase.from("activity_log").select("id", { count: "exact", head: true })
+      if (lastSeenAt) q = q.gt("created_at", lastSeenAt)
+      const { count } = await q
+      return { count: count ?? 0, lastSeenAt }
+    },
+  })
+
+export async function markAdminActivitySeen(userId: string) {
+  await supabase
+    .from("profiles")
+    .update({ admin_last_seen_activity_at: new Date().toISOString() })
+    .eq("id", userId)
+}

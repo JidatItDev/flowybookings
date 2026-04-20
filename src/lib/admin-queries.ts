@@ -46,7 +46,12 @@ export type AdminShopRow = {
   created_at: string;
   policy_accepted_at: string | null;
   policy_version: string | null;
+  subscription_status?: string | null;
+  category?: string | null;
   owner_email?: string;
+  owner_name?: string;
+  owner_last_login_at?: string | null;
+  is_active_recently?: boolean; // logged in within 14 days
   booking_count?: number;
   revenue_cents?: number;
   customer_count?: number;
@@ -60,7 +65,7 @@ export const adminShopsQuery = () =>
     queryFn: async (): Promise<AdminShopRow[]> => {
       const { data: shops, error } = await supabase
         .from("shops")
-        .select("id, name, slug, status, plan, owner_id, email, phone, address, created_at, policy_accepted_at, policy_version")
+        .select("id, name, slug, status, plan, owner_id, email, phone, address, created_at, policy_accepted_at, policy_version, subscription_status, category")
         .order("created_at", { ascending: false });
       if (error) throw error;
 
@@ -68,13 +73,13 @@ export const adminShopsQuery = () =>
       const ownerIds = [...new Set((shops ?? []).map((s) => s.owner_id))];
 
       const [profilesRes, bookingsRes, paymentsRes, customersRes] = await Promise.all([
-        supabase.from("profiles").select("id, email").in("id", ownerIds),
+        supabase.from("profiles").select("id, email, full_name, last_login_at").in("id", ownerIds),
         supabase.from("bookings").select("id, shop_id").in("shop_id", shopIds),
         supabase.from("payments").select("shop_id, amount_cents").in("shop_id", shopIds),
         supabase.from("customers").select("shop_id, import_source").in("shop_id", shopIds),
       ]);
 
-      const ownerMap = new Map((profilesRes.data ?? []).map((p) => [p.id, p.email]));
+      const ownerMap = new Map((profilesRes.data ?? []).map((p) => [p.id, p]));
       const bookingCounts = new Map<string, number>();
       (bookingsRes.data ?? []).forEach((b) => bookingCounts.set(b.shop_id, (bookingCounts.get(b.shop_id) ?? 0) + 1));
       const revenueMap = new Map<string, number>();
@@ -92,15 +97,24 @@ export const adminShopsQuery = () =>
         sourceMap.set(c.shop_id, cur);
       });
 
-      return (shops ?? []).map((s) => ({
-        ...s,
-        owner_email: ownerMap.get(s.owner_id) ?? undefined,
-        booking_count: bookingCounts.get(s.id) ?? 0,
-        revenue_cents: revenueMap.get(s.id) ?? 0,
-        customer_count: customerCounts.get(s.id) ?? 0,
-        imported_customer_count: importedCounts.get(s.id) ?? 0,
-        customer_sources: sourceMap.get(s.id) ?? {},
-      }));
+      const cutoff = Date.now() - 14 * 86400000;
+
+      return (shops ?? []).map((s) => {
+        const owner = ownerMap.get(s.owner_id);
+        const lastLogin = owner?.last_login_at ?? null;
+        return {
+          ...s,
+          owner_email: owner?.email ?? undefined,
+          owner_name: owner?.full_name ?? undefined,
+          owner_last_login_at: lastLogin,
+          is_active_recently: lastLogin ? new Date(lastLogin).getTime() >= cutoff : false,
+          booking_count: bookingCounts.get(s.id) ?? 0,
+          revenue_cents: revenueMap.get(s.id) ?? 0,
+          customer_count: customerCounts.get(s.id) ?? 0,
+          imported_customer_count: importedCounts.get(s.id) ?? 0,
+          customer_sources: sourceMap.get(s.id) ?? {},
+        };
+      });
     },
     staleTime: 15_000,
   });
@@ -112,6 +126,12 @@ export type AdminUserRow = {
   email: string | null;
   full_name: string | null;
   created_at: string;
+  last_login_at: string | null;
+  primary_role: "super_admin" | "shop_owner" | "staff" | "customer" | "none";
+  is_active_recently: boolean; // logged in within 14 days
+  primary_shop_name?: string;
+  primary_shop_id?: string;
+  primary_plan?: string;
   roles: { role: string; shop_id: string | null; shop_name?: string }[];
 };
 
@@ -120,24 +140,43 @@ export const adminUsersQuery = () =>
     queryKey: ["admin", "users"],
     queryFn: async (): Promise<AdminUserRow[]> => {
       const [profilesRes, rolesRes, shopsRes] = await Promise.all([
-        supabase.from("profiles").select("id, email, full_name, created_at").order("created_at", { ascending: false }),
+        supabase.from("profiles").select("id, email, full_name, created_at, last_login_at").order("created_at", { ascending: false }),
         supabase.from("user_roles").select("user_id, role, shop_id"),
-        supabase.from("shops").select("id, name"),
+        supabase.from("shops").select("id, name, owner_id, plan"),
       ]);
       if (profilesRes.error) throw profilesRes.error;
 
-      const shopMap = new Map((shopsRes.data ?? []).map((s) => [s.id, s.name]));
+      const shopMap = new Map((shopsRes.data ?? []).map((s) => [s.id, s]));
+      const ownerShopMap = new Map<string, { id: string; name: string; plan: string }>();
+      (shopsRes.data ?? []).forEach((s) => {
+        if (!ownerShopMap.has(s.owner_id)) ownerShopMap.set(s.owner_id, { id: s.id, name: s.name, plan: s.plan });
+      });
       const rolesMap = new Map<string, { role: string; shop_id: string | null; shop_name?: string }[]>();
       (rolesRes.data ?? []).forEach((r) => {
         const arr = rolesMap.get(r.user_id) ?? [];
-        arr.push({ role: r.role, shop_id: r.shop_id, shop_name: r.shop_id ? shopMap.get(r.shop_id) : undefined });
+        const shop = r.shop_id ? shopMap.get(r.shop_id) : null;
+        arr.push({ role: r.role, shop_id: r.shop_id, shop_name: shop?.name });
         rolesMap.set(r.user_id, arr);
       });
 
-      return (profilesRes.data ?? []).map((p) => ({
-        ...p,
-        roles: rolesMap.get(p.id) ?? [],
-      }));
+      const cutoff = Date.now() - 14 * 86400000;
+      const ranks: Record<string, number> = { super_admin: 0, shop_owner: 1, staff: 2, customer: 3 };
+
+      return (profilesRes.data ?? []).map((p) => {
+        const roles = rolesMap.get(p.id) ?? [];
+        const sortedRoles = [...roles].sort((a, b) => (ranks[a.role] ?? 9) - (ranks[b.role] ?? 9));
+        const ownerShop = ownerShopMap.get(p.id);
+        const primary_role = (sortedRoles[0]?.role as AdminUserRow["primary_role"]) ?? (ownerShop ? "shop_owner" : "none");
+        return {
+          ...p,
+          roles,
+          primary_role,
+          is_active_recently: p.last_login_at ? new Date(p.last_login_at).getTime() >= cutoff : false,
+          primary_shop_name: ownerShop?.name,
+          primary_shop_id: ownerShop?.id,
+          primary_plan: ownerShop?.plan,
+        };
+      });
     },
     staleTime: 15_000,
   });
@@ -269,8 +308,14 @@ export type AdminShopDetail = {
     plan_billing_cycle: string | null;
     policy_accepted_at: string | null;
     policy_version: string | null;
+    subscription_status: string | null;
+    platform_fee_bps_override: number | null;
+    next_billing_at: string | null;
+    mollie_subscription_id: string | null;
+    subscription_notes: string | null;
+    category: string | null;
   };
-  owner: { id: string; email: string | null; full_name: string | null; phone: string | null } | null;
+  owner: { id: string; email: string | null; full_name: string | null; phone: string | null; last_login_at: string | null } | null;
   stats: {
     bookings: number;
     bookingsThisMonth: number;
@@ -303,7 +348,7 @@ export const adminShopDetailQuery = (shopId: string) =>
       const { data: shop, error } = await supabase
         .from("shops")
         .select(
-          "id, name, slug, status, plan, owner_id, email, phone, address, timezone, is_demo, admin_notes, created_at, plan_expires_at, plan_billing_cycle, policy_accepted_at, policy_version",
+          "id, name, slug, status, plan, owner_id, email, phone, address, timezone, is_demo, admin_notes, created_at, plan_expires_at, plan_billing_cycle, policy_accepted_at, policy_version, subscription_status, platform_fee_bps_override, next_billing_at, mollie_subscription_id, subscription_notes, category",
         )
         .eq("id", shopId)
         .maybeSingle();
@@ -316,7 +361,7 @@ export const adminShopDetailQuery = (shopId: string) =>
 
       const [ownerRes, bookingsRes, bookingsMonthRes, bookings30Res, customersRes, servicesRes, staffRes, paymentsRes, eventsRes] =
         await Promise.all([
-          supabase.from("profiles").select("id, email, full_name, phone").eq("id", shop.owner_id).maybeSingle(),
+          supabase.from("profiles").select("id, email, full_name, phone, last_login_at").eq("id", shop.owner_id).maybeSingle(),
           supabase.from("bookings").select("id", { count: "exact", head: true }).eq("shop_id", shopId),
           supabase
             .from("bookings")
