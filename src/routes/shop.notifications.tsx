@@ -2,9 +2,9 @@
 // (channel + automation toggles). Mobile-app feel.
 
 import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Inbox, Mail, MessageSquare, Settings as SettingsIcon, Smartphone } from "lucide-react";
+import { Inbox, Mail, MessageSquare, Plus, Settings as SettingsIcon, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { NoShopState } from "@/components/EmptyState";
 import { UpgradeNudge, PremiumBadge } from "@/components/UpgradeNudge";
 import { NotificationsInbox } from "@/components/NotificationsInbox";
+import { SmsTopUpDialog } from "@/components/SmsTopUpDialog";
 import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { shopFullQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
