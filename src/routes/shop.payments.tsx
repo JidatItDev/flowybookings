@@ -10,7 +10,6 @@ import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EmptyState, NoShopState } from "@/components/EmptyState";
-import { MollieNudge } from "@/components/MollieNudge";
 import { MollieConnectCard } from "@/components/MollieConnectCard";
 import { MollieConnectPayments } from "@/components/MollieConnectPayments";
 import { useActiveShopId } from "@/lib/shop-context";
