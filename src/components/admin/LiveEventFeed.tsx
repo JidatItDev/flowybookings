@@ -27,7 +27,12 @@ const ACTION_LABELS: Record<string, string> = {
 
 // Acties die als kritiek gelden — admin krijgt direct een subtiele toast.
 function isHighPriority(action: string, metadata: Record<string, unknown> | null): boolean {
-  if (action === "payment_failed" || action === "shop_cancelled") return true
+  if (
+    action === "payment_failed" ||
+    action === "shop_cancelled" ||
+    action === "subscription_payment_failed"
+  )
+    return true
   if (action === "shop_subscription_change") {
     const next = (metadata?.subscription_status ?? metadata?.status) as string | undefined
     return next === "cancelled" || next === "expired" || next === "payment_failed"
