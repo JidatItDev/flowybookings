@@ -23,6 +23,7 @@ import { RequireShopAccess } from "@/components/RouteGuard";
 import { ShopOnboarding } from "@/components/ShopOnboarding";
 import { LegalReconsentDialog } from "@/components/LegalReconsentDialog";
 import { TrialBanner } from "@/components/TrialBanner";
+import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { useAuth } from "@/lib/auth-context";
 import { useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -76,7 +77,9 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
     exact ? location.pathname === to : location.pathname === to || location.pathname.startsWith(to + "/");
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
+    <div className="flex min-h-screen w-full flex-col bg-background">
+      <ImpersonationBanner />
+      <div className="flex min-h-0 w-full flex-1">
       <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
         <SidebarHeader />
         <nav className="flex-1 space-y-1 px-3 pb-6">
@@ -193,6 +196,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
           <TrialBanner />
           {children}
         </main>
+      </div>
       </div>
       <LegalReconsentDialog />
     </div>
