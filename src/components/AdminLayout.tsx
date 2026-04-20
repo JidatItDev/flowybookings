@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   Store,
@@ -76,8 +76,14 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { t } = useT();
+  const displayName =
+    (user?.user_metadata?.full_name as string | undefined)?.trim() ||
+    user?.email ||
+    "";
+  const initials = (displayName || "?").trim().charAt(0).toUpperCase();
   const isActive = (to: string, exact?: boolean) =>
     exact ? location.pathname === to : location.pathname === to || location.pathname.startsWith(to + "/");
 
@@ -175,25 +181,38 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             >
               {t("adminNav.switchToShop")}
             </Link>
-            <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-1.5">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-warm text-xs font-semibold text-pink-foreground">
-                {(user?.email ?? "?")[0].toUpperCase()}
-              </div>
-              <div className="hidden text-xs leading-tight sm:block">
-                <p className="font-medium">{user?.email}</p>
-                <p className="text-muted-foreground">{t("adminNav.platformOwner")}</p>
-              </div>
-            </div>
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground hover:text-foreground">
-                <LogOut className="h-4 w-4" />
+              <DropdownMenuTrigger className="flex items-center gap-2 rounded-xl border border-border bg-card pl-1 pr-3 py-1 hover:bg-accent">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-warm text-xs font-semibold text-pink-foreground">
+                  {initials}
+                </span>
+                <span className="hidden text-xs leading-tight sm:block">
+                  <span className="block max-w-[140px] truncate font-medium">{displayName}</span>
+                  <span className="block text-[10px] uppercase tracking-wider text-primary">
+                    {t("adminNav.superAdmin")}
+                  </span>
+                </span>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                  {user?.email}
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel className="flex flex-col gap-0.5">
+                  <span className="text-[10px] font-normal uppercase tracking-wider text-muted-foreground">
+                    {t("auth.signedInAs")}
+                  </span>
+                  <span className="truncate text-sm font-medium text-foreground">{displayName}</span>
+                  <span className="text-xs text-primary">{t("adminNav.superAdmin")}</span>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()}>
+                <DropdownMenuItem onClick={() => navigate({ to: "/beheer/dashboard/settings" })}>
+                  <Settings className="h-4 w-4" /> {t("adminNav.settings")}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/beheer/dashboard/support" })}>
+                  <LifeBuoy className="h-4 w-4" /> {t("adminNav.support")}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => signOut()}
+                  className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                >
                   <LogOut className="h-4 w-4" /> {t("auth.signOut")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
