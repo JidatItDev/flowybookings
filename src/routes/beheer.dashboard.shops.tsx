@@ -142,7 +142,18 @@ function ShopsPage() {
                     </tr>
                     {isExpanded && (
                       <tr className="bg-muted/10">
-                        <td colSpan={8} className="px-4 py-4 sm:px-6">
+                        <td colSpan={9} className="px-4 py-4 sm:px-6">
+                          <div className="mb-3 rounded-xl border border-border bg-card px-4 py-3 text-sm">
+                            {s.policy_accepted_at ? (
+                              <p className="text-foreground">
+                                ✅ <span className="font-medium">{t("adminShops.policyAcceptedOn")}:</span>{" "}
+                                <span className="text-muted-foreground">{policyDateFmt.format(new Date(s.policy_accepted_at))}</span>
+                                {s.policy_version && <span className="ml-2 text-xs text-muted-foreground">(v{s.policy_version})</span>}
+                              </p>
+                            ) : (
+                              <p className="font-medium text-destructive">⚠️ {t("adminShops.policyNotAcceptedWarning")}</p>
+                            )}
+                          </div>
                           <ShopOverridesPanel shopId={s.id} shopName={s.name} plan={s.plan} />
                         </td>
                       </tr>
