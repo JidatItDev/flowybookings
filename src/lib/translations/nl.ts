@@ -556,6 +556,28 @@ export const nl: Record<string, string> = {
   "adminProviders.revenueByShop": "Omzet per shop",
   "adminProviders.revenueByShopDesc": "Topshops gerangschikt op verzamelde platformkosten.",
 
+  // ── Admin: Mollie health ──
+  "adminMollieHealth.title": "Mollie Connect-gezondheid",
+  "adminMollieHealth.description": "Per shop: koppelstatus, organisatie, token-vervaldatum, laatste verversing en platformkosten (laatste 30 dagen).",
+  "adminMollieHealth.empty": "Geen shops met een Mollie-koppeling gevonden.",
+  "adminMollieHealth.searchPlaceholder": "Zoek op shop of organisatie…",
+  "adminMollieHealth.counts": "{connected} van {total} gekoppeld",
+  "adminMollieHealth.feesTotal30d": "Platformkosten 30d: {amount}",
+  "adminMollieHealth.payments": "{n} betalingen",
+  "adminMollieHealth.connectedAt": "Gekoppeld {when}",
+  "adminMollieHealth.tokenExpired": "Verlopen {when}",
+  "adminMollieHealth.filter.all": "Alle",
+  "adminMollieHealth.filter.issues": "Problemen",
+  "adminMollieHealth.filter.connected": "Gekoppeld",
+  "adminMollieHealth.col.shop": "Shop",
+  "adminMollieHealth.col.status": "Status",
+  "adminMollieHealth.col.organization": "Organisatie",
+  "adminMollieHealth.col.token": "Token verloopt",
+  "adminMollieHealth.col.lastRefresh": "Laatste verversing",
+  "adminMollieHealth.col.fees30d": "Fees (30d)",
+  "adminMollieHealth.pill.error": "Fout",
+  "adminMollieHealth.pill.expired": "Token verlopen",
+
   "common.yes": "Ja",
   "common.no": "Nee",
 

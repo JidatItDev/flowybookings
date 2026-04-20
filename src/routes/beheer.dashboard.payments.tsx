@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { adminPaymentsQuery, adminStatsQuery, adminShopsQuery } from "@/lib/admin-queries";
 import { adminPaymentProvidersQuery, paymentProviderKeys, type ConnectionStatus } from "@/lib/payment-providers";
+import { MollieHealthPanel } from "@/components/admin/MollieHealthPanel";
 import { formatCents, relativeFromNow } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
@@ -158,7 +159,10 @@ function AdminPayments() {
         )}
       </div>
 
-      {/* Per-shop revenue rollup */}
+      {/* Mollie Connect — health overview (token / refresh / fees 30d) */}
+      <MollieHealthPanel />
+
+
       {!isLoading && perShopRows.length > 0 && (
         <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
           <div className="border-b border-border px-4 py-4 sm:px-6">
