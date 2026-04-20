@@ -310,6 +310,23 @@ function ShopDetailPage() {
         </div>
       </div>
 
+      {/* Subscription beheer (volledig) */}
+      <div className="mb-6">
+        <SubscriptionPanel
+          shop={{
+            id: shop.id,
+            name: shop.name,
+            plan: shop.plan,
+            subscription_status: shop.subscription_status,
+            plan_expires_at: shop.plan_expires_at,
+            platform_fee_bps_override: shop.platform_fee_bps_override,
+            next_billing_at: shop.next_billing_at,
+            mollie_subscription_id: shop.mollie_subscription_id,
+            subscription_notes: shop.subscription_notes,
+          }}
+        />
+      </div>
+
       {/* Feature overrides hergebruikt */}
       <ShopOverridesPanel shopId={shop.id} shopName={shop.name} plan={shop.plan} />
     </AdminLayout>
