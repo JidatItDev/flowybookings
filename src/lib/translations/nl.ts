@@ -184,6 +184,16 @@ export const nl: Record<string, string> = {
   "auth.passwordTooShort": "Wachtwoord moet minimaal 8 tekens zijn.",
   "auth.passwordUpdated": "Wachtwoord bijgewerkt — je bent ingelogd.",
   "auth.invalidResetLink": "Deze reset-link is ongeldig of verlopen. Vraag een nieuwe aan.",
+  "auth.signedInAs": "Ingelogd als",
+  "auth.invalidCredentials": "Onjuist e-mailadres of wachtwoord.",
+  "auth.emailExistsTitle": "Er bestaat al een account met dit e-mailadres",
+  "auth.emailExistsBody": "Wil je inloggen met dit account?",
+  "auth.goToLogin": "Ga naar inloggen",
+  "auth.trialBadge": "14 dagen gratis",
+  "auth.startTrialTitle": "Start je gratis proefperiode",
+  "auth.benefitNoCard": "Geen creditcard vereist",
+  "auth.benefitFullAccess": "Volledige toegang tot alle functies",
+  "auth.benefitCancelAnytime": "Op elk moment opzegbaar",
 
   // ── Admin login ──
   "admin.platformAccess": "Platform toegang",
