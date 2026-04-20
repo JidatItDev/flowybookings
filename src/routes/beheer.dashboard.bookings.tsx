@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Search } from "lucide-react";
+import { Search, Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { AdminLayout } from "@/components/AdminLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminBookingsQuery } from "@/lib/admin-queries";
+import { downloadCsv, toCsv } from "@/lib/admin-queries-revenue";
 import { formatCents, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
@@ -18,11 +20,52 @@ function AdminBookings() {
   const [q, setQ] = useState(""); const [statusFilter, setStatusFilter] = useState<string>("all");
   const { data: bookings, isLoading } = useQuery(adminBookingsQuery());
   const statuses = ["all", "pending", "confirmed", "completed", "cancelled", "no_show"];
-  const list = (bookings ?? []).filter((b) => { const matchQ = (b.customer_name ?? b.service_name ?? b.shop_name ?? "").toLowerCase().includes(q.toLowerCase()); const matchS = statusFilter === "all" || b.status === statusFilter; return matchQ && matchS; });
+  const list = useMemo(() => (bookings ?? []).filter((b) => {
+    const matchQ = (b.customer_name ?? b.service_name ?? b.shop_name ?? "").toLowerCase().includes(q.toLowerCase());
+    const matchS = statusFilter === "all" || b.status === statusFilter;
+    return matchQ && matchS;
+  }), [bookings, q, statusFilter]);
+
+  const exportCsv = () => {
+    const csv = toCsv(
+      list.map((b) => ({
+        when: formatDateTime(b.starts_at),
+        shop: b.shop_name ?? "",
+        customer: b.customer_name ?? "",
+        service: b.service_name ?? "",
+        staff: b.staff_name ?? "",
+        status: b.status,
+        payment_status: b.payment_status ?? "",
+        price_eur: (b.price_cents / 100).toFixed(2),
+        currency: b.currency,
+      })),
+      [
+        { key: "when", label: "Wanneer" },
+        { key: "shop", label: "Shop" },
+        { key: "customer", label: "Klant" },
+        { key: "service", label: "Dienst" },
+        { key: "staff", label: "Medewerker" },
+        { key: "status", label: "Boekingsstatus" },
+        { key: "payment_status", label: "Betaalstatus" },
+        { key: "price_eur", label: "Prijs (EUR)" },
+        { key: "currency", label: "Valuta" },
+      ],
+    );
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(`flowybookings-bookings-${stamp}.csv`, csv);
+  };
 
   return (
     <AdminLayout>
-      <PageHeader title={t("adminBookings.title")} description={t("adminBookings.description")} />
+      <PageHeader
+        title={t("adminBookings.title")}
+        description={t("adminBookings.description")}
+        actions={
+          <Button variant="outline" size="sm" onClick={exportCsv} disabled={list.length === 0}>
+            <Download className="h-4 w-4" /> CSV exporteren
+          </Button>
+        }
+      />
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex max-w-sm flex-1 items-center gap-2 rounded-xl border border-border bg-card px-3"><Search className="h-4 w-4 text-muted-foreground" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("adminBookings.searchPlaceholder")} className="h-10 flex-1 bg-transparent text-sm outline-none" /></div>
         {statuses.map((s) => <button key={s} onClick={() => setStatusFilter(s)} className={cn("rounded-full px-3 py-1.5 text-xs font-medium capitalize", statusFilter === s ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted")}>{s === "no_show" ? "No-show" : s}</button>)}
