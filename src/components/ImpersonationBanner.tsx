@@ -48,3 +48,14 @@ export function useImpersonationReadOnly(): boolean {
   useEffect(() => subscribeImpersonation(() => setState(getImpersonation())), [])
   return isSuperAdmin && state != null
 }
+
+/**
+ * Synchronous guard voor binnenin mutationFn — gooit als impersonate actief is,
+ * zodat een muis-omzeiling van het disabled-attribute alsnog faalt.
+ */
+export function assertNotImpersonating(): void {
+  const state = getImpersonation()
+  if (state) {
+    throw new Error("Alleen-lezen tijdens impersonate")
+  }
+}
