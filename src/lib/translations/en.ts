@@ -620,6 +620,12 @@ export const en: Record<string, string> = {
   "adminMessages.noBroadcasts": "No broadcasts yet.",
   "adminMessages.deliveredTo": "Sent to {n}",
   "adminMessages.readBy": "{n} read",
+  "adminMessages.emailTemplates": "Email templates",
+  "adminMessages.emailTemplatesSub": "Preview how automated emails look for customers and shop owners.",
+  "adminMessages.preview": "Preview",
+  "adminMessages.previewSubject": "Subject",
+  "adminMessages.previewDescription": "Rendered from demo data — nothing is sent.",
+  "adminMessages.noPreviewData": "No preview data available for this template.",
 
   // ── Notifications ──
   "notifications.title": "Notifications",
