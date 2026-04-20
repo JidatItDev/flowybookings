@@ -55,6 +55,27 @@ function NotificationsPage() {
   const shopId = useActiveShopId();
   const { t } = useT();
   const [tab, setTab] = useState<"inbox" | "settings">("inbox");
+  const search = useSearch({ from: "/shop/notifications" });
+  const qc = useQueryClient();
+
+  // After Mollie redirect, refresh credits + show toast.
+  useEffect(() => {
+    if (!shopId) return;
+    if (search.topup === "return" || search.topup === "mock") {
+      toast.success(t("smsTopup.successReturn"));
+      qc.invalidateQueries({ queryKey: ["shop_sms_credits", shopId] });
+      // Also poll briefly: webhook may take a few seconds.
+      const timer = setTimeout(() => {
+        qc.invalidateQueries({ queryKey: ["shop_sms_credits", shopId] });
+      }, 3500);
+      setTab("settings");
+      return () => clearTimeout(timer);
+    }
+    if (search.topup === "cancel") {
+      toast.error(t("smsTopup.failedReturn"));
+      setTab("settings");
+    }
+  }, [search.topup, shopId, qc, t]);
 
   return (
     <ShopLayout>
