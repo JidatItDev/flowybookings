@@ -11,6 +11,7 @@ import {
   shopPaymentProviderQuery,
   type ConnectionStatus,
 } from "@/lib/payment-providers";
+import { assertNotImpersonating, useImpersonationReadOnly } from "@/components/ImpersonationBanner";
 
 interface Props {
   shopId: string;
@@ -19,6 +20,8 @@ interface Props {
 export function MollieConnectCard({ shopId }: Props) {
   const { t } = useT();
   const qc = useQueryClient();
+  const readOnly = useImpersonationReadOnly();
+  const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   // (no navigate needed — we use window.location for OAuth redirects)
   // Read mollie_connect=ok|error from the callback redirect to show toast.
   const search = useSearch({ strict: false }) as { mollie_connect?: string; reason?: string };
@@ -42,6 +45,7 @@ export function MollieConnectCard({ shopId }: Props) {
 
   const startConnect = useMutation({
     mutationFn: async () => {
+      assertNotImpersonating();
       const { data: session } = await supabase.auth.getSession();
       const token = session.session?.access_token;
       if (!token) throw new Error("Niet ingelogd");
@@ -66,6 +70,7 @@ export function MollieConnectCard({ shopId }: Props) {
 
   const disconnect = useMutation({
     mutationFn: async () => {
+      assertNotImpersonating();
       const { data: session } = await supabase.auth.getSession();
       const token = session.session?.access_token;
       if (!token) throw new Error("Niet ingelogd");
@@ -127,14 +132,14 @@ export function MollieConnectCard({ shopId }: Props) {
 
           <div className="mt-5 flex flex-wrap gap-2">
             {!isConnected && (
-              <Button onClick={() => startConnect.mutate()} disabled={startConnect.isPending} variant="hero">
+              <Button onClick={() => startConnect.mutate()} disabled={startConnect.isPending || readOnly} title={readOnlyTitle} variant="hero">
                 {startConnect.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plug className="h-4 w-4" />}
                 {isPending ? t("mollie.reconnect") : t("mollie.connect")}
                 {!startConnect.isPending && <ExternalLink className="h-3.5 w-3.5" />}
               </Button>
             )}
             {(isConnected || isPending) && (
-              <Button onClick={() => disconnect.mutate()} disabled={disconnect.isPending} variant="outline">
+              <Button onClick={() => disconnect.mutate()} disabled={disconnect.isPending || readOnly} title={readOnlyTitle} variant="outline">
                 {disconnect.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                 {t("mollie.disconnect")}
               </Button>

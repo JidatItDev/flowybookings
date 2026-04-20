@@ -19,6 +19,7 @@ import { SMS_PACKAGES, type SmsPackageId } from "@/lib/sms-packages";
 import { formatCents } from "@/lib/format";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { useImpersonationReadOnly } from "@/components/ImpersonationBanner";
 
 type Props = {
   shopId: string;
@@ -28,9 +29,12 @@ type Props = {
 
 export function SmsTopUpDialog({ shopId, open, onOpenChange }: Props) {
   const { t } = useT();
+  const readOnly = useImpersonationReadOnly();
+  const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const [pendingId, setPendingId] = useState<SmsPackageId | null>(null);
 
   const startCheckout = async (pkgId: SmsPackageId) => {
+    if (readOnly) return;
     setPendingId(pkgId);
     try {
       const { data: sess } = await supabase.auth.getSession();
@@ -105,7 +109,8 @@ export function SmsTopUpDialog({ shopId, open, onOpenChange }: Props) {
                   variant={featured ? "hero" : "outline"}
                   size="sm"
                   className="mt-4 w-full"
-                  disabled={!!pendingId}
+                  disabled={!!pendingId || readOnly}
+                  title={readOnlyTitle}
                   onClick={() => startCheckout(p.id)}
                 >
                   {isPending ? (
