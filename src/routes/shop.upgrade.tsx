@@ -28,7 +28,7 @@ type PlanKey = "starter" | "pro" | "premium"; // DB plan values for BASIC/PRO/PR
 
 function UpgradePage() {
   const { t } = useT();
-  const { activeShop, user } = useAuth();
+  const { activeShop, user, refreshShops } = useAuth() as ReturnType<typeof useAuth> & { refreshShops?: () => void };
   const { canManageBilling, isStaffOnly } = usePermissions();
   const qc = useQueryClient();
   const currentPlan = (activeShop?.plan ?? "trial") as DbPlan;
@@ -36,8 +36,29 @@ function UpgradePage() {
   const [cycle, setCycle] = useState<"monthly" | "yearly">("monthly");
   const readOnly = useImpersonationReadOnly();
   const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
+  const search = Route.useSearch();
+  const navigate = useNavigate();
 
   const checkout = usePlanCheckout();
+
+  // After Mollie redirect (?billing=success|mock), poll a few times so the
+  // header badge + Jouw abonnement card pick up the new plan immediately.
+  useEffect(() => {
+    if (!search.billing || !activeShop?.id) return;
+    const sid = activeShop.id;
+    let attempts = 0;
+    const tick = () => {
+      attempts += 1;
+      qc.invalidateQueries({ queryKey: ["auth", "shops"] });
+      qc.invalidateQueries({ queryKey: shopKeys.shopFull(sid) });
+      refreshShops?.();
+      if (attempts >= 5) return;
+      setTimeout(tick, 1500);
+    };
+    tick();
+    navigate({ to: "/shop/upgrade", search: {}, replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.billing, activeShop?.id]);
 
   // Downgrades don't require payment — keep them as direct plan changes.
   const downgrade = useMutation({
