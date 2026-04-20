@@ -22,6 +22,7 @@ import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { useFeatureAccess } from "@/lib/use-feature-access";
+import { logActivity } from "@/lib/activity-log";
 
 export const Route = createFileRoute("/shop/staff")({ head: () => ({ meta: [{ title: "Staff — FlowyBookings" }] }), component: StaffPage });
 type StaffRow = { id: string; full_name: string; email: string | null; phone: string | null; is_active: boolean; working_hours: unknown };
@@ -161,6 +162,13 @@ function StaffFormDialog({ open, onClose, member, shopId, services, links }: { o
         const { error } = await supabase.from("staff").update(payload).eq("id", member.id); if (error) throw error;
       } else {
         const { data, error } = await supabase.from("staff").insert(payload).select("id").single(); if (error) throw error; staffId = data.id;
+        // Admin onboarding-funnel: log staff_invited bij nieuwe staff.
+        void logActivity({
+          entity: "staff",
+          action: "staff_invited",
+          shopId,
+          metadata: { staff_id: data.id, full_name: payload.full_name, email: payload.email },
+        });
       }
       if (!staffId) throw new Error(t("errors.missingStaffId"));
       const desired = selectedServiceIds;

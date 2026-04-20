@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatCents } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+import { logActivity } from "@/lib/activity-log";
 
 export const Route = createFileRoute("/shop/services")({ head: () => ({ meta: [{ title: "Services — FlowyBookings" }] }), component: ServicesPage });
 
@@ -116,7 +117,24 @@ function ServiceFormDialog({ open, onClose, service, shopId }: { open: boolean; 
       if (hasErrors) throw new Error(depositError ?? priceError ?? "Invalid input");
       const payload = { shop_id: shopId, name: form.name.trim(), category: form.category.trim() || null, description: form.description.trim() || null, duration_minutes: Number(form.duration_minutes) || 30, price_cents: Math.round(priceNum * 100), deposit_cents: Math.round(depositNum * 100), is_active: form.is_active };
       if (service) { const { error } = await supabase.from("services").update(payload).eq("id", service.id); if (error) throw error; }
-      else { const { error } = await supabase.from("services").insert(payload); if (error) throw error; }
+      else {
+        // Check of dit de eerste service van de shop is — log alleen dan service_created
+        // (admin onboarding-funnel; latere services zijn niet relevant voor de funnel).
+        const { count: existingCount } = await supabase
+          .from("services")
+          .select("id", { count: "exact", head: true })
+          .eq("shop_id", shopId);
+        const { data: inserted, error } = await supabase.from("services").insert(payload).select("id").single();
+        if (error) throw error;
+        if ((existingCount ?? 0) === 0) {
+          void logActivity({
+            entity: "service",
+            action: "service_created",
+            shopId,
+            metadata: { service_id: inserted.id, name: payload.name, is_first: true },
+          });
+        }
+      }
     },
     onSuccess: () => { toast.success(service ? t("services.updated") : t("services.created")); onClose(); if (shopId) qc.invalidateQueries({ queryKey: shopKeys.services(shopId) }); },
     onError: (e: Error) => toast.error(e.message),

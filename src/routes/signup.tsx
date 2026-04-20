@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { recordConsent } from "@/lib/legal-consent";
+import { logActivity } from "@/lib/activity-log";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "Create account — FlowyBookings" }] }),
@@ -110,6 +111,14 @@ function SignupPage() {
 
       // Make sure the user has the shop_owner role.
       await supabase.from("user_roles").insert({ user_id: userId, role: "shop_owner", shop_id: shop.id });
+
+      // Admin onboarding-funnel: log shop_created.
+      void logActivity({
+        entity: "shop",
+        action: "shop_created",
+        shopId: shop.id,
+        metadata: { shop_name: businessName.trim(), category, plan: "trial" },
+      });
 
       refreshShops();
       setActiveShopId(shop.id);
