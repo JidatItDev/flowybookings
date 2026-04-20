@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, Check, QrCode, Share2, MessageCircle, Instagram, Download } from "lucide-react";
+import { Copy, Check, QrCode, Share2, MessageCircle, Instagram, Download, FileText } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -7,12 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useT } from "@/lib/i18n";
 import { getBookingUrl, getBookingUrlDisplay } from "@/lib/booking-url";
+import { downloadBookingPoster } from "@/lib/booking-poster";
 
 type Props = {
   /** Shop slug — wordt gebruikt om de boekings-URL op te bouwen. */
   slug: string | null | undefined;
   /** Optionele shop-naam voor het deelbericht. */
   shopName?: string | null;
+  /** Optionele logo-URL van de shop (voor de printbare poster). */
+  logoUrl?: string | null;
   /** Compacte variant zonder kop/intro — voor in /shop/settings. */
   compact?: boolean;
 };
@@ -21,10 +24,11 @@ type Props = {
  * Toont de publieke boekingslink van een shop met kopieer-, deel- en QR-acties.
  * Wordt gebruikt op het shop-dashboard én in /shop/settings.
  */
-export function BookingLinkCard({ slug, shopName, compact = false }: Props) {
+export function BookingLinkCard({ slug, shopName, logoUrl, compact = false }: Props) {
   const { t } = useT();
   const [copied, setCopied] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [posterLoading, setPosterLoading] = useState(false);
 
   const canonicalUrl = getBookingUrl(slug, true); // altijd de productie-URL voor delen
   const displayUrl = getBookingUrlDisplay(slug);
@@ -88,6 +92,37 @@ export function BookingLinkCard({ slug, shopName, compact = false }: Props) {
     link.download = `boekingslink-${slug ?? "shop"}.png`;
     link.href = url;
     link.click();
+  };
+
+  const downloadPoster = async () => {
+    if (!slug) return;
+    const canvas = document.getElementById("booking-qr") as HTMLCanvasElement | null;
+    if (!canvas) {
+      toast.error(t("bookingLink.posterError"));
+      return;
+    }
+    setPosterLoading(true);
+    try {
+      const qrDataUrl = canvas.toDataURL("image/png");
+      await downloadBookingPoster({
+        shopName: shopName ?? "",
+        bookingUrl: canonicalUrl,
+        displayUrl,
+        qrDataUrl,
+        logoUrl: logoUrl ?? null,
+        labels: {
+          headline: t("bookingLink.posterHeadline"),
+          scanHint: t("bookingLink.posterScanHint"),
+          orVisit: t("bookingLink.posterOrVisit"),
+          poweredBy: t("bookingLink.posterPoweredBy"),
+        },
+      });
+      toast.success(t("bookingLink.posterReady"));
+    } catch {
+      toast.error(t("bookingLink.posterError"));
+    } finally {
+      setPosterLoading(false);
+    }
   };
 
   if (!slug) {
@@ -162,9 +197,17 @@ export function BookingLinkCard({ slug, shopName, compact = false }: Props) {
               />
             </div>
             <p className="text-center text-xs font-mono text-muted-foreground break-all">{displayUrl}</p>
-            <Button type="button" variant="outline" size="sm" onClick={downloadQR}>
-              <Download className="h-4 w-4" /> {t("bookingLink.qrDownload")}
-            </Button>
+            <p className="text-center text-xs font-mono text-muted-foreground break-all">{displayUrl}</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={downloadQR}>
+                <Download className="h-4 w-4" /> {t("bookingLink.qrDownload")}
+              </Button>
+              <Button type="button" variant="default" size="sm" onClick={downloadPoster} disabled={posterLoading}>
+                <FileText className="h-4 w-4" />
+                {posterLoading ? t("bookingLink.posterLoading") : t("bookingLink.posterDownload")}
+              </Button>
+            </div>
+            <p className="text-center text-[11px] text-muted-foreground">{t("bookingLink.posterHint")}</p>
           </div>
         </DialogContent>
       </Dialog>
