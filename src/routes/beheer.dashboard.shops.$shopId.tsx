@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShopOverridesPanel } from "@/components/admin/ShopOverridesPanel";
+import { RevenueSparkline } from "@/components/RevenueSparkline";
 import { adminShopDetailQuery } from "@/lib/admin-queries";
 import { formatCents, formatDate, relativeFromNow } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -108,7 +109,7 @@ function ShopDetailPage() {
     );
   }
 
-  const { shop, owner, stats, customerSources, events } = data;
+  const { shop, owner, stats, customerSources, revenueLast30Days, events } = data;
   const policyDateFmt = new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", year: "numeric" });
   const sourceLabel = (src: string): string => {
     const map: Record<string, string> = {
@@ -167,6 +168,20 @@ function ShopDetailPage() {
             </Button>
           )}
         </div>
+      </div>
+
+      {/* Omzet sparkline laatste 30 dagen */}
+      <div className="mb-6 rounded-2xl border border-border bg-card p-5 shadow-soft">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Omzet (laatste 30 dagen)</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">Boekingsomzet per dag, exclusief geannuleerd & no-show</p>
+          </div>
+          <p className="text-right text-lg font-semibold tabular-nums">
+            {formatCents(revenueLast30Days.reduce((s, d) => s + d.revenue, 0))}
+          </p>
+        </div>
+        <RevenueSparkline data={revenueLast30Days} height={120} />
       </div>
 
       {/* Statistieken grid */}

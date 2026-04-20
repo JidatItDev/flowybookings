@@ -284,6 +284,7 @@ export type AdminShopDetail = {
     failedPayments: number;
   };
   customerSources: { source: string; count: number }[];
+  revenueLast30Days: { key: string; label: string; revenue: number; count: number }[];
   events: {
     id: string;
     action: string;
@@ -313,7 +314,7 @@ export const adminShopDetailQuery = (shopId: string) =>
       monthStart.setDate(1);
       monthStart.setHours(0, 0, 0, 0);
 
-      const [ownerRes, bookingsRes, bookingsMonthRes, customersRes, servicesRes, staffRes, paymentsRes, eventsRes] =
+      const [ownerRes, bookingsRes, bookingsMonthRes, bookings30Res, customersRes, servicesRes, staffRes, paymentsRes, eventsRes] =
         await Promise.all([
           supabase.from("profiles").select("id, email, full_name, phone").eq("id", shop.owner_id).maybeSingle(),
           supabase.from("bookings").select("id", { count: "exact", head: true }).eq("shop_id", shopId),
@@ -322,6 +323,11 @@ export const adminShopDetailQuery = (shopId: string) =>
             .select("id", { count: "exact", head: true })
             .eq("shop_id", shopId)
             .gte("created_at", monthStart.toISOString()),
+          supabase
+            .from("bookings")
+            .select("starts_at, price_cents, status")
+            .eq("shop_id", shopId)
+            .gte("starts_at", new Date(Date.now() - 30 * 86400000).toISOString()),
           supabase.from("customers").select("import_source").eq("shop_id", shopId),
           supabase.from("services").select("id", { count: "exact", head: true }).eq("shop_id", shopId),
           supabase.from("staff").select("id", { count: "exact", head: true }).eq("shop_id", shopId).eq("is_active", true),
@@ -333,6 +339,22 @@ export const adminShopDetailQuery = (shopId: string) =>
             .order("created_at", { ascending: false })
             .limit(15),
         ]);
+
+      // Daily revenue buckets for the last 30 days (booking starts_at, paid bookings only)
+      const dayLabels = new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short" });
+      const revenueLast30Days = Array.from({ length: 30 }, (_, i) => {
+        const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() - (29 - i));
+        return { key: d.toISOString().slice(0, 10), label: dayLabels.format(d), revenue: 0, count: 0 };
+      });
+      const dayIdx = new Map(revenueLast30Days.map((b, i) => [b.key, i]));
+      (bookings30Res.data ?? []).forEach((b) => {
+        if (b.status === "cancelled" || b.status === "no_show") return;
+        const k = new Date(b.starts_at).toISOString().slice(0, 10);
+        const i = dayIdx.get(k);
+        if (i == null) return;
+        revenueLast30Days[i].revenue += b.price_cents ?? 0;
+        revenueLast30Days[i].count += 1;
+      });
 
       const sourceMap = new Map<string, number>();
       let imported = 0;
@@ -370,6 +392,7 @@ export const adminShopDetailQuery = (shopId: string) =>
           failedPayments,
         },
         customerSources,
+        revenueLast30Days,
         events: (eventsRes.data ?? []).map((e) => ({
           id: e.id,
           action: e.action,
