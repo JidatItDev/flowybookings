@@ -156,6 +156,7 @@ export const en: Record<string, string> = {
   "auth.continueWithGoogle": "Continue with Google",
   "auth.orContinueWith": "or continue with email",
   "auth.googleNotEnabled": "Google login isn't enabled yet. Turn on Google in Authentication settings.",
+  "auth.googleResetDone": "Google button reset. It will reappear on the login page.",
   // ── Booking link widget ──
   "bookingLink.title": "Share your booking link",
   "bookingLink.subtitle": "Customers can book an appointment online with one click.",
