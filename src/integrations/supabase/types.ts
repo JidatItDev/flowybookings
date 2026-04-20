@@ -1029,6 +1029,16 @@ export type Database = {
           seeded_demo_data_visible: boolean
         }[]
       }
+      get_shop_feature_access: {
+        Args: { _feature_slug: string; _shop_id: string }
+        Returns: {
+          allowed: boolean
+          current_plan: string
+          limit_value: number
+          upgrade_plan: string
+          used: number
+        }[]
+      }
       has_shop_access: {
         Args: { _shop_id: string; _user_id: string }
         Returns: boolean

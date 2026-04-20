@@ -19,6 +19,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EmptyState, NoShopState } from "@/components/EmptyState";
+import { FeatureLock } from "@/components/FeatureLock";
 import { useActiveShopId } from "@/lib/shop-context";
 import {
   bookingsQuery, customersQuery, servicesQuery, shopKeys, staffQuery,
@@ -30,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { getTrialState } from "@/lib/trial";
+import { useFeatureAccess, usagePercentage } from "@/lib/use-feature-access";
 
 export const Route = createFileRoute("/shop/calendar")({
   head: () => ({ meta: [{ title: "Calendar — FlowyBookings" }] }),
@@ -42,6 +44,17 @@ function CalendarPage() {
   const shopId = useActiveShopId();
   const { activeShop } = useAuth();
   const trial = getTrialState(activeShop as never);
+  const bookingsAccess = useFeatureAccess(shopId, "max_bookings_per_month");
+  const bookingsBlocked = !!bookingsAccess.data && !bookingsAccess.data.allowed;
+  const bookingsPct = usagePercentage(bookingsAccess.data);
+  const bookingsWarn =
+    !!bookingsAccess.data && bookingsAccess.data.limit != null && bookingsPct >= 80 && bookingsPct < 100;
+  const newBookingDisabled = !shopId || trial.isExpired || bookingsBlocked;
+  const newBookingTitle = trial.isExpired
+    ? "Je proefperiode is verlopen — kies een plan om nieuwe afspraken aan te maken."
+    : bookingsBlocked
+      ? `Je hebt het maximum aantal boekingen bereikt (${bookingsAccess.data?.used}/${bookingsAccess.data?.limit}). Kies een plan om door te gaan.`
+      : undefined;
   const qc = useQueryClient();
   const { t } = useT();
   const [filter, setFilter] = useState<(typeof statuses)[number]>("all");
@@ -117,13 +130,19 @@ function CalendarPage() {
           <Button
             variant="hero"
             onClick={() => setCreating(true)}
-            disabled={!shopId || trial.isExpired}
-            title={trial.isExpired ? "Je proefperiode is verlopen — kies een plan om nieuwe afspraken aan te maken." : undefined}
+            disabled={newBookingDisabled}
+            title={newBookingTitle}
           >
             <Plus className="h-4 w-4" /> {t("calendar.newBooking")}
           </Button>
         }
       />
+
+      {bookingsAccess.data && (bookingsWarn || bookingsBlocked) && (
+        <div className="mb-4">
+          <FeatureLock access={bookingsAccess.data} featureLabel="boekingen" mode="inline" />
+        </div>
+      )}
 
       {!shopId ? (
         <NoShopState />
@@ -192,7 +211,7 @@ function CalendarPage() {
               title={filter === "all" ? t("calendar.noBookings") : t("calendar.noMatch")}
               description={filter === "all" ? t("calendar.noBookingsDesc") : t("calendar.noMatchDesc")}
               action={filter === "all" && (
-                <Button variant="hero" onClick={() => setCreating(true)} disabled={trial.isExpired}>
+                <Button variant="hero" onClick={() => setCreating(true)} disabled={newBookingDisabled} title={newBookingTitle}>
                   <Plus className="h-4 w-4" /> {t("calendar.newBooking")}
                 </Button>
               )}
