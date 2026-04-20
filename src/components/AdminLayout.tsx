@@ -20,6 +20,7 @@ import {
   Plug,
   TrendingUp,
   UserCheck,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,7 @@ const nav: NavItem[] = [
   { to: "/beheer/dashboard/plans", labelKey: "adminNav.plans", icon: Layers },
   { to: "/beheer/dashboard/billing", labelKey: "adminNav.billing", icon: Receipt },
   { to: "/beheer/dashboard/messages", labelKey: "adminNav.messages", icon: Bell },
+  { to: "/beheer/dashboard/sms", labelKey: "adminNav.sms", icon: MessageSquare },
   { to: "/beheer/dashboard/support", labelKey: "adminNav.support", icon: LifeBuoy },
   { to: "/beheer/dashboard/logs", labelKey: "adminNav.auditLogs", icon: ScrollText },
   { to: "/beheer/dashboard/demo", labelKey: "adminNav.demo", icon: Beaker },
