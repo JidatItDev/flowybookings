@@ -261,8 +261,11 @@ function CalendarPage() {
                         <td className="hidden px-4 py-3 text-muted-foreground lg:table-cell">{stf?.full_name ?? "—"}</td>
                         <td className="px-4 py-3 text-right font-medium tabular-nums">{formatCents(b.price_cents)}</td>
                         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                          <Select value={b.status} onValueChange={(v) => updateStatus.mutate({ id: b.id, status: v as BookingWithRelations["status"] })}>
-                            <SelectTrigger className="h-8 w-[120px] text-xs"><SelectValue /></SelectTrigger>
+                          <Select value={b.status} disabled={readOnly} onValueChange={(v) => updateStatus.mutate({ id: b.id, status: v as BookingWithRelations["status"] })}>
+                            <SelectTrigger
+                              className="h-8 w-[120px] text-xs"
+                              title={readOnly ? t("impersonate.readOnlyTooltip") : undefined}
+                            ><SelectValue /></SelectTrigger>
                             <SelectContent>
                               {statuses.filter((s) => s !== "all").map((s) => (
                                 <SelectItem key={s} value={s}>{statusLabel[s]}</SelectItem>
@@ -271,8 +274,8 @@ function CalendarPage() {
                           </Select>
                         </td>
                         <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="sm" onClick={() => setEditing(b)}>{t("calendar.edit")}</Button>
-                          <Button variant="ghost" size="sm" onClick={() => setDeleting(b)}>{t("calendar.delete")}</Button>
+                          <Button variant="ghost" size="sm" disabled={readOnly} title={readOnly ? t("impersonate.readOnlyTooltip") : undefined} onClick={() => setEditing(b)}>{t("calendar.edit")}</Button>
+                          <Button variant="ghost" size="sm" disabled={readOnly} title={readOnly ? t("impersonate.readOnlyTooltip") : undefined} onClick={() => setDeleting(b)}>{t("calendar.delete")}</Button>
                         </td>
                       </tr>
                     );
