@@ -36,12 +36,45 @@ export const Route = createFileRoute("/book")({
   validateSearch: (s: Record<string, unknown>): BookSearch => ({
     shop: typeof s.shop === "string" ? s.shop : undefined,
   }),
-  head: () => ({
-    meta: [
-      { title: "Een afspraak boeken — FlowyBookings" },
-      { name: "description", content: "Kies een winkel, dienst en tijd. Bevestig in seconden." },
-    ],
-  }),
+  loaderDeps: ({ search }) => ({ shop: search.shop }),
+  loader: async ({ deps }) => {
+    if (!deps.shop) return { shopName: null as string | null };
+    const { data } = await supabase
+      .from("shops")
+      .select("name")
+      .eq("id", deps.shop)
+      .eq("status", "active")
+      .maybeSingle();
+    return { shopName: data?.name ?? null };
+  },
+  head: ({ loaderData, match }) => {
+    const search = (match?.search ?? {}) as BookSearch;
+    const shopId = search.shop;
+    const shopName = loaderData?.shopName ?? null;
+    const title = shopName
+      ? `Boek bij ${shopName} — FlowyBookings`
+      : "Een afspraak boeken — FlowyBookings";
+    const description = shopName
+      ? `Boek direct online een afspraak bij ${shopName}. Snel, veilig en 24/7 beschikbaar.`
+      : "Kies een winkel, dienst en tijd. Bevestig in seconden.";
+    const ogImage = shopId
+      ? `/api/og/book?shop=${encodeURIComponent(shopId)}`
+      : `/api/og/book`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:image", content: ogImage },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+        { name: "twitter:image", content: ogImage },
+      ],
+    };
+  },
   component: BookingFlow,
 });
 
