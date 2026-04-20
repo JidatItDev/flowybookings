@@ -180,6 +180,8 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          import_source: string | null
+          imported_at: string | null
           last_visit_at: string | null
           no_show_count: number
           notes: string | null
@@ -196,6 +198,8 @@ export type Database = {
           email?: string | null
           full_name: string
           id?: string
+          import_source?: string | null
+          imported_at?: string | null
           last_visit_at?: string | null
           no_show_count?: number
           notes?: string | null
@@ -212,6 +216,8 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+          import_source?: string | null
+          imported_at?: string | null
           last_visit_at?: string | null
           no_show_count?: number
           notes?: string | null
