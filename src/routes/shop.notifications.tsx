@@ -335,6 +335,8 @@ type SmsCreditsRow = {
 function AutomationSettings({ shopId }: { shopId: string }) {
   const qc = useQueryClient();
   const { t } = useT();
+  const readOnly = useImpersonationReadOnly();
+  const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const [row, setRow] = useState<AutomationRow>(AUTO_DEFAULTS);
   const [dirty, setDirty] = useState(false);
   const [topUpOpen, setTopUpOpen] = useState(false);
@@ -376,6 +378,7 @@ function AutomationSettings({ shopId }: { shopId: string }) {
 
   const save = useMutation({
     mutationFn: async () => {
+      assertNotImpersonating();
       const { error } = await supabase
         .from("shop_automations")
         .upsert({ shop_id: shopId, ...row }, { onConflict: "shop_id" });
@@ -432,7 +435,7 @@ function AutomationSettings({ shopId }: { shopId: string }) {
             <span className={cn("inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold", balanceTone)}>
               {balance}
             </span>
-            <Button size="sm" variant="hero" onClick={() => setTopUpOpen(true)}>
+            <Button size="sm" variant="hero" onClick={() => setTopUpOpen(true)} disabled={readOnly} title={readOnlyTitle}>
               <Plus className="mr-1 h-3.5 w-3.5" />
               {t("automations.smsCreditsTopUp")}
             </Button>
@@ -488,7 +491,9 @@ function AutomationSettings({ shopId }: { shopId: string }) {
                 </div>
                 <Toggle
                   on={row[it.key]}
-                  onChange={() => { setRow((r) => ({ ...r, [it.key]: !r[it.key] })); setDirty(true); }}
+                  onChange={() => { if (readOnly) return; setRow((r) => ({ ...r, [it.key]: !r[it.key] })); setDirty(true); }}
+                  disabled={readOnly}
+                  title={readOnlyTitle}
                 />
               </div>
             );
@@ -512,7 +517,7 @@ function AutomationSettings({ shopId }: { shopId: string }) {
         </div>
         <div className="flex items-center justify-between border-t border-border px-6 py-4">
           <span className="text-[11px] text-muted-foreground">{t("automations.poweredBy")}</span>
-          <Button variant="hero" onClick={() => save.mutate()} disabled={!dirty || save.isPending}>
+          <Button variant="hero" onClick={() => save.mutate()} disabled={!dirty || save.isPending || readOnly} title={readOnlyTitle}>
             {save.isPending ? t("notifications.saving") : t("notifications.saveChanges")}
           </Button>
         </div>
