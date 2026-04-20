@@ -28,18 +28,20 @@ type ServiceRow = { id: string; name: string; description: string | null; catego
 
 function ServicesPage() {
   const shopId = useActiveShopId(); const qc = useQueryClient(); const { t } = useT();
+  const readOnly = useImpersonationReadOnly();
+  const roTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const [editing, setEditing] = useState<ServiceRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<ServiceRow | null>(null);
   const { data: services = [], isLoading } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
 
   const toggleActive = useMutation({
-    mutationFn: async (s: ServiceRow) => { const { error } = await supabase.from("services").update({ is_active: !s.is_active }).eq("id", s.id); if (error) throw error; },
+    mutationFn: async (s: ServiceRow) => { assertNotImpersonating(); const { error } = await supabase.from("services").update({ is_active: !s.is_active }).eq("id", s.id); if (error) throw error; },
     onSuccess: () => { if (shopId) qc.invalidateQueries({ queryKey: shopKeys.services(shopId) }); },
     onError: (e: Error) => toast.error(e.message),
   });
   const remove = useMutation({
-    mutationFn: async (id: string) => { const { error } = await supabase.from("services").delete().eq("id", id); if (error) throw error; },
+    mutationFn: async (id: string) => { assertNotImpersonating(); const { error } = await supabase.from("services").delete().eq("id", id); if (error) throw error; },
     onSuccess: () => { toast.success(t("services.deleted")); setDeleting(null); if (shopId) qc.invalidateQueries({ queryKey: shopKeys.services(shopId) }); },
     onError: (e: Error) => toast.error(e.message),
   });
