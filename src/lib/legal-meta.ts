@@ -7,3 +7,12 @@ export const LEGAL_LAST_UPDATED = {
 } as const;
 
 export type LegalDocKey = keyof typeof LEGAL_LAST_UPDATED;
+
+/**
+ * Current published policy version — used for the per-shop acceptance check.
+ * Equals the most recent date among all policy documents.
+ */
+export const CURRENT_POLICY_VERSION: string = (() => {
+  const dates = Object.values(LEGAL_LAST_UPDATED) as string[];
+  return dates.reduce((max, d) => (d > max ? d : max), dates[0]);
+})();
