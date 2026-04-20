@@ -4,8 +4,8 @@ import { Loader2, ScrollText } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 import { useT } from "@/lib/i18n";
-import { LEGAL_LAST_UPDATED, type LegalDocKey } from "@/lib/legal-meta";
-import { fetchConsent, outdatedPolicies, recordConsent } from "@/lib/legal-consent";
+import { LEGAL_LAST_UPDATED, CURRENT_POLICY_VERSION, type LegalDocKey } from "@/lib/legal-meta";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -23,38 +23,32 @@ const DOC_LINKS: Record<LegalDocKey, "/legal/privacy" | "/legal/terms" | "/legal
   refunds: "/legal/refunds",
 };
 
+const DOC_KEYS = Object.keys(LEGAL_LAST_UPDATED) as LegalDocKey[];
+
 /**
- * Renders inside authenticated app shells. Compares the user's stored consent
- * against LEGAL_LAST_UPDATED and forces re-acceptance when policies have changed.
+ * Renders inside authenticated shop shells. Compares the active shop's stored
+ * policy version against CURRENT_POLICY_VERSION and forces re-acceptance when
+ * the published version is newer. Super admins never see this dialog.
  */
 export function LegalReconsentDialog() {
-  const { user, loading } = useAuth();
+  const { user, loading, isSuperAdmin, activeShop, refreshShops } = useAuth();
   const { t, locale } = useT();
-  const [outdated, setOutdated] = useState<LegalDocKey[] | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [open, setOpen] = useState(false);
 
-  // Fetch the user's stored consent once auth resolves.
+  // Decide visibility from auth + active shop. Super admins are always skipped.
   useEffect(() => {
-    if (loading || !user) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const accepted = await fetchConsent(user.id);
-        if (cancelled) return;
-        const stale = outdatedPolicies(accepted);
-        setOutdated(stale);
-        setOpen(stale.length > 0);
-      } catch {
-        // Don't block the app on consent-check failures.
-        setOutdated([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [user, loading]);
+    if (loading || !user) { setOpen(false); return; }
+    if (isSuperAdmin) { setOpen(false); return; }
+    if (!activeShop) { setOpen(false); return; }
+
+    const accepted = (activeShop as unknown as { policy_accepted_at: string | null; policy_version: string | null });
+    const acceptedAt = accepted.policy_accepted_at;
+    const acceptedVersion = accepted.policy_version;
+    const stale = !acceptedAt || !acceptedVersion || acceptedVersion < CURRENT_POLICY_VERSION;
+    setOpen(stale);
+  }, [user, loading, isSuperAdmin, activeShop]);
 
   const dateFormatter = useMemo(
     () =>
@@ -67,12 +61,19 @@ export function LegalReconsentDialog() {
   );
 
   const handleAccept = async () => {
-    if (!user || !agreed) return;
+    if (!user || !agreed || !activeShop) return;
     setSubmitting(true);
     try {
-      await recordConsent(user.id);
+      const { error } = await supabase
+        .from("shops")
+        .update({
+          policy_accepted_at: new Date().toISOString(),
+          policy_version: CURRENT_POLICY_VERSION,
+        })
+        .eq("id", activeShop.id);
+      if (error) throw error;
       setOpen(false);
-      setOutdated([]);
+      refreshShops();
       toast.success(t("legal.reconsent.accepted"));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save consent");
@@ -81,7 +82,7 @@ export function LegalReconsentDialog() {
     }
   };
 
-  if (!user || !outdated || outdated.length === 0) return null;
+  if (!user || isSuperAdmin || !activeShop || !open) return null;
 
   return (
     <Dialog open={open} onOpenChange={() => { /* not dismissible until accepted */ }}>
@@ -99,7 +100,7 @@ export function LegalReconsentDialog() {
         </DialogHeader>
 
         <ul className="space-y-2 rounded-xl border border-border bg-muted/40 p-3 text-sm">
-          {outdated.map((key) => (
+          {DOC_KEYS.map((key) => (
             <li key={key} className="flex items-center justify-between gap-3">
               <Link
                 to={DOC_LINKS[key]}

@@ -28,6 +28,7 @@ function ShopsPage() {
   const { user, setActiveShopId } = useAuth();
   const navigate = useNavigate();
   const [q, setQ] = useState(""); const [statusFilter, setStatusFilter] = useState<"all" | ShopStatus>("all");
+  const [policyFilter, setPolicyFilter] = useState<"all" | "accepted" | "missing">("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const { data: shops, isLoading } = useQuery(adminShopsQuery()); const qc = useQueryClient();
   const updateStatus = useMutation({
@@ -42,7 +43,13 @@ function ShopsPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin"] }); toast.success(t("adminShops.planUpdated")); },
     onError: (e: Error) => toast.error(e.message),
   });
-  const list = (shops ?? []).filter((s) => (statusFilter === "all" || s.status === statusFilter) && s.name.toLowerCase().includes(q.toLowerCase()));
+  const list = (shops ?? []).filter((s) => {
+    if (statusFilter !== "all" && s.status !== statusFilter) return false;
+    if (policyFilter === "accepted" && !s.policy_accepted_at) return false;
+    if (policyFilter === "missing" && s.policy_accepted_at) return false;
+    return s.name.toLowerCase().includes(q.toLowerCase());
+  });
+  const policyDateFmt = new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", year: "numeric" });
 
   return (
     <AdminLayout>
@@ -50,15 +57,29 @@ function ShopsPage() {
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="flex max-w-sm flex-1 items-center gap-2 rounded-xl border border-border bg-card px-3"><Search className="h-4 w-4 text-muted-foreground" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("adminShops.searchPlaceholder")} className="h-10 flex-1 bg-transparent text-sm outline-none" /></div>
         {(["all", "active", "pending", "suspended"] as const).map((s) => <button key={s} onClick={() => setStatusFilter(s)} className={cn("rounded-full px-3 py-1.5 text-xs font-medium capitalize", statusFilter === s ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted")}>{s === "all" ? t("adminShops.all") : s}</button>)}
+        <div className="ml-2 h-6 w-px bg-border" />
+        {(["all", "accepted", "missing"] as const).map((p) => (
+          <button
+            key={p}
+            onClick={() => setPolicyFilter(p)}
+            className={cn(
+              "rounded-full px-3 py-1.5 text-xs font-medium",
+              policyFilter === p ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted",
+            )}
+            title={t(`adminShops.policyFilter.${p}`)}
+          >
+            {t(`adminShops.policyFilter.${p}`)}
+          </button>
+        ))}
       </div>
       {isLoading ? <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}</div> : (
         <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground"><tr>
-              <th className="px-6 py-3 text-left">{t("adminShops.shop")}</th><th className="hidden px-6 py-3 text-left md:table-cell">{t("adminShops.owner")}</th><th className="px-6 py-3 text-left">{t("adminShops.plan")}</th><th className="px-6 py-3 text-left">{t("adminShops.status")}</th><th className="hidden px-6 py-3 text-left lg:table-cell">{t("adminShops.bookings")}</th><th className="hidden px-6 py-3 text-left lg:table-cell">{t("adminShops.revenue")}</th><th className="hidden px-6 py-3 text-left xl:table-cell">{t("adminShops.created")}</th><th className="px-6 py-3" />
+              <th className="px-6 py-3 text-left">{t("adminShops.shop")}</th><th className="hidden px-6 py-3 text-left md:table-cell">{t("adminShops.owner")}</th><th className="px-6 py-3 text-left">{t("adminShops.plan")}</th><th className="px-6 py-3 text-left">{t("adminShops.status")}</th><th className="hidden px-6 py-3 text-left lg:table-cell">{t("adminShops.bookings")}</th><th className="hidden px-6 py-3 text-left lg:table-cell">{t("adminShops.revenue")}</th><th className="hidden px-6 py-3 text-left xl:table-cell">{t("adminShops.policyAccepted")}</th><th className="hidden px-6 py-3 text-left xl:table-cell">{t("adminShops.created")}</th><th className="px-6 py-3" />
             </tr></thead>
             <tbody className="divide-y divide-border">
-              {list.length === 0 && <tr><td colSpan={8} className="px-6 py-8 text-center text-muted-foreground">{t("adminShops.noShops")}</td></tr>}
+              {list.length === 0 && <tr><td colSpan={9} className="px-6 py-8 text-center text-muted-foreground">{t("adminShops.noShops")}</td></tr>}
               {list.map((s) => {
                 const isExpanded = expandedId === s.id;
                 return (
@@ -83,6 +104,11 @@ function ShopsPage() {
                       <td className="px-6 py-4"><StatusBadge status={s.status} /></td>
                       <td className="hidden px-6 py-4 lg:table-cell">{s.booking_count ?? 0}</td>
                       <td className="hidden px-6 py-4 font-medium lg:table-cell">{formatCents(s.revenue_cents ?? 0)}</td>
+                      <td className="hidden px-6 py-4 xl:table-cell">
+                        {s.policy_accepted_at
+                          ? <span className="inline-flex items-center gap-1 text-success-foreground" title={s.policy_version ?? ""}>✅ {policyDateFmt.format(new Date(s.policy_accepted_at))}</span>
+                          : <span className="inline-flex items-center gap-1 text-destructive">❌ {t("adminShops.policyMissing")}</span>}
+                      </td>
                       <td className="hidden px-6 py-4 text-muted-foreground xl:table-cell">{formatDate(s.created_at)}</td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
@@ -116,7 +142,18 @@ function ShopsPage() {
                     </tr>
                     {isExpanded && (
                       <tr className="bg-muted/10">
-                        <td colSpan={8} className="px-4 py-4 sm:px-6">
+                        <td colSpan={9} className="px-4 py-4 sm:px-6">
+                          <div className="mb-3 rounded-xl border border-border bg-card px-4 py-3 text-sm">
+                            {s.policy_accepted_at ? (
+                              <p className="text-foreground">
+                                ✅ <span className="font-medium">{t("adminShops.policyAcceptedOn")}:</span>{" "}
+                                <span className="text-muted-foreground">{policyDateFmt.format(new Date(s.policy_accepted_at))}</span>
+                                {s.policy_version && <span className="ml-2 text-xs text-muted-foreground">(v{s.policy_version})</span>}
+                              </p>
+                            ) : (
+                              <p className="font-medium text-destructive">⚠️ {t("adminShops.policyNotAcceptedWarning")}</p>
+                            )}
+                          </div>
                           <ShopOverridesPanel shopId={s.id} shopName={s.name} plan={s.plan} />
                         </td>
                       </tr>

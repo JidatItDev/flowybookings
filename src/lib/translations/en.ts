@@ -908,6 +908,13 @@ export const en: Record<string, string> = {
   "adminShops.bookings": "Bookings",
   "adminShops.revenue": "Revenue",
   "adminShops.created": "Created",
+  "adminShops.policyAccepted": "Policy accepted",
+  "adminShops.policyMissing": "Not accepted",
+  "adminShops.policyAcceptedOn": "Policy accepted on",
+  "adminShops.policyNotAcceptedWarning": "Policy not yet accepted",
+  "adminShops.policyFilter.all": "All",
+  "adminShops.policyFilter.accepted": "Policy ✅",
+  "adminShops.policyFilter.missing": "Policy ❌",
   "adminShops.noShops": "No shops found.",
   "adminShops.updated": "Shop status updated",
 
