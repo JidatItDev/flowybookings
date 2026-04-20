@@ -392,6 +392,7 @@ export const adminShopDetailQuery = (shopId: string) =>
           failedPayments,
         },
         customerSources,
+        revenueLast30Days,
         events: (eventsRes.data ?? []).map((e) => ({
           id: e.id,
           action: e.action,
