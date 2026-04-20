@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Mail, Phone, Pencil, Trash2, Users, AlertTriangle, ShieldAlert } from "lucide-react";
+import { Plus, Search, Mail, Phone, Pencil, Trash2, Users, AlertTriangle, ShieldAlert, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState, NoShopState } from "@/components/EmptyState";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
+import { CustomerImportDialog } from "@/components/CustomerImportDialog";
 import { useActiveShopId } from "@/lib/shop-context";
 import { customersQuery, bookingsQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +39,7 @@ function CustomersPage() {
   const [editing, setEditing] = useState<CustomerRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<CustomerRow | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const { data: customers = [], isLoading } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
   const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
@@ -56,7 +58,20 @@ function CustomersPage() {
 
   return (
     <ShopLayout>
-      <PageHeader title={t("customers.title")} description={t("customers.description")} actions={<Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId || readOnly} title={roTitle}><Plus className="h-4 w-4" /> {t("customers.newCustomer")}</Button>} />
+      <PageHeader
+        title={t("customers.title")}
+        description={t("customers.description")}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" onClick={() => setImporting(true)} disabled={!shopId || readOnly} title={roTitle}>
+              <Upload className="h-4 w-4" /> {t("customerImport.cta")}
+            </Button>
+            <Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId || readOnly} title={roTitle}>
+              <Plus className="h-4 w-4" /> {t("customers.newCustomer")}
+            </Button>
+          </div>
+        }
+      />
       {!shopId ? <NoShopState /> : (
         <>
           <div className="mb-4 flex max-w-md items-center gap-2 rounded-xl border border-border bg-card px-3 shadow-xs">
@@ -117,7 +132,7 @@ function CustomersPage() {
                       </td>
                       <td className="hidden px-6 py-4 text-xs text-muted-foreground md:table-cell">{c.email && <div className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" />{c.email}</div>}{c.phone && <div className="mt-1 flex items-center gap-2"><Phone className="h-3.5 w-3.5" />{c.phone}</div>}</td>
                       <td className="hidden px-6 py-4 sm:table-cell"><span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{visitsByCustomer[c.id] ?? 0}</span></td>
-                      <td className="hidden px-6 py-4 sm:table-cell">{formatCents(c.total_spent_cents)}</td>
+                      <td className="hidden px-6 py-4 sm:table-cell"><span className="font-medium text-success-foreground tabular-nums">{formatCents(c.total_spent_cents)}</span></td>
                       <td className="hidden px-6 py-4 text-muted-foreground lg:table-cell">{relativeFromNow(c.last_visit_at)}</td>
                       <td className="hidden px-6 py-4 sm:table-cell">
                         <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium", ns === 0 ? "bg-mint/40 text-mint-foreground" : ns === 1 ? "bg-amber-500/15 text-amber-700" : "bg-destructive/15 text-destructive")}>
@@ -135,6 +150,7 @@ function CustomersPage() {
         </>
       )}
       <CustomerFormDialog open={creating || !!editing} onClose={() => { setCreating(false); setEditing(null); }} customer={editing} shopId={shopId} />
+      <CustomerImportDialog open={importing} onClose={() => setImporting(false)} shopId={shopId} />
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -50,6 +50,8 @@ type CustomerRow = {
   requires_deposit: boolean;
   tags: string[] | null;
   created_at: string;
+  import_source: string | null;
+  imported_at: string | null;
 };
 
 const SUGGESTED_TAGS = ["VIP", "New", "Risky", "Loyal", "Walk-in"];
@@ -162,6 +164,16 @@ function CustomerProfilePage() {
   const ns = customer.no_show_count ?? 0;
   const totalBookings = customerBookings.length;
   const completedBookings = customerBookings.filter((b) => b.status === "completed").length;
+  const firstBooking = customerBookings[customerBookings.length - 1];
+  const avgSpend = totalBookings > 0 ? Math.round(customer.total_spent_cents / totalBookings) : 0;
+  const sourceLabels: Record<string, string> = {
+    fresha: "Fresha", salonized: "Salonized", treatwell: "Treatwell",
+    simplybook: "SimplyBook", planity: "Planity", csv: "CSV",
+    manual: t("customers.sourceManual"), booking_page: t("customers.sourceBookingPage"),
+  };
+  const sourceText = customer.import_source
+    ? t("customers.sourceImported", { platform: sourceLabels[customer.import_source] ?? customer.import_source })
+    : t("customers.sourceManual");
 
   return (
     <ShopLayout>
@@ -213,6 +225,10 @@ function CustomerProfilePage() {
                     <Sparkle className="h-3.5 w-3.5" /> {t("customers.customerSince", { date: relativeFromNow(customer.created_at) })}
                   </span>
                 </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {sourceText}
+                  {customer.imported_at && ` · ${formatDateTime(customer.imported_at)}`}
+                </p>
               </div>
             </div>
 
@@ -335,6 +351,18 @@ function CustomerProfilePage() {
               value={`${completedBookings}/${totalBookings}`}
               hint={t("customers.completedOfTotal")}
             />
+            <StatTile
+              icon={Wallet}
+              label={t("customers.avgPerVisit")}
+              value={formatCents(avgSpend)}
+            />
+            {firstBooking && (
+              <StatTile
+                icon={Sparkle}
+                label={t("customers.firstVisit")}
+                value={relativeFromNow(firstBooking.starts_at)}
+              />
+            )}
             <StatTile
               icon={AlertTriangle}
               label={t("customers.noShows")}
