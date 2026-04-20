@@ -14,7 +14,7 @@ import { useAuth } from "@/lib/auth-context"
  * een super_admin "Login als [shop]" heeft gebruikt.
  */
 export function ImpersonationBanner() {
-  const { isSuperAdmin } = useAuth()
+  const { isSuperAdmin, user } = useAuth()
   const [state, setState] = useState<ImpersonationState | null>(() => getImpersonation())
 
   useEffect(() => subscribeImpersonation(() => setState(getImpersonation())), [])
@@ -31,7 +31,7 @@ export function ImpersonationBanner() {
       </div>
       <Link
         to="/beheer/dashboard/shops"
-        onClick={() => stopImpersonate()}
+        onClick={() => stopImpersonate({ userId: user?.id ?? null, email: user?.email ?? null })}
         className="inline-flex items-center gap-1.5 rounded-lg bg-destructive-foreground/10 px-3 py-1 text-xs font-semibold hover:bg-destructive-foreground/20"
       >
         <ArrowLeft className="h-3.5 w-3.5" />

@@ -116,7 +116,10 @@ function ShopsPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => {
-                              startImpersonate({ shopId: s.id, shopName: s.name });
+                              startImpersonate(
+                                { shopId: s.id, shopName: s.name },
+                                { userId: user?.id ?? null, email: user?.email ?? null },
+                              );
                               setActiveShopId(s.id);
                               navigate({ to: "/shop" });
                             }}
