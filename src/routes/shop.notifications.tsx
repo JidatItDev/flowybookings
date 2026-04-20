@@ -324,6 +324,7 @@ function AutomationSettings({ shopId }: { shopId: string }) {
   const { t } = useT();
   const [row, setRow] = useState<AutomationRow>(AUTO_DEFAULTS);
   const [dirty, setDirty] = useState(false);
+  const [topUpOpen, setTopUpOpen] = useState(false);
 
   const q = useQuery({
     queryKey: ["shop_automations", shopId],
@@ -403,9 +404,15 @@ function AutomationSettings({ shopId }: { shopId: string }) {
               <p className="text-xs text-muted-foreground">{t("automations.smsCreditsHint")}</p>
             </div>
           </div>
-          <span className={cn("inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold", balanceTone)}>
-            {balance}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={cn("inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold", balanceTone)}>
+              {balance}
+            </span>
+            <Button size="sm" variant="hero" onClick={() => setTopUpOpen(true)}>
+              <Plus className="mr-1 h-3.5 w-3.5" />
+              {t("automations.smsCreditsTopUp")}
+            </Button>
+          </div>
         </div>
         <div className="mt-4 grid grid-cols-3 gap-3 text-center">
           <div className="rounded-xl bg-muted/40 px-3 py-2">
