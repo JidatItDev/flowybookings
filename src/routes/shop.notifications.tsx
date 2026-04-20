@@ -468,6 +468,8 @@ function AutomationSettings({ shopId }: { shopId: string }) {
           </Button>
         </div>
       </div>
+
+      <SmsTopUpDialog shopId={shopId} open={topUpOpen} onOpenChange={setTopUpOpen} />
     </>
   );
 }
