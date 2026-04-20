@@ -1,6 +1,7 @@
 import { useEffect } from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Activity, Store } from "lucide-react"
+import { toast } from "sonner"
 import { supabase } from "@/integrations/supabase/client"
 import { adminEventFeedQuery, type AdminEvent } from "@/lib/admin-dashboard-extras"
 import { relativeFromNow } from "@/lib/format"
@@ -8,13 +9,26 @@ import { relativeFromNow } from "@/lib/format"
 const ACTION_LABELS: Record<string, string> = {
   shop_plan_change: "Plan gewijzigd",
   shop_status_change: "Status gewijzigd",
+  shop_subscription_change: "Abonnement gewijzigd",
+  shop_cancelled: "Shop geannuleerd",
+  payment_failed: "Betaling mislukt",
   mollie_connected: "Mollie gekoppeld",
   mollie_disconnected: "Mollie ontkoppeld",
   feature_override_set: "Feature override",
   feature_override_removed: "Override verwijderd",
 }
 
-function eventLabel(e: AdminEvent): string {
+// Acties die als kritiek gelden — admin krijgt direct een subtiele toast.
+function isHighPriority(action: string, metadata: Record<string, unknown> | null): boolean {
+  if (action === "payment_failed" || action === "shop_cancelled") return true
+  if (action === "shop_subscription_change") {
+    const next = (metadata?.subscription_status ?? metadata?.status) as string | undefined
+    return next === "cancelled" || next === "expired" || next === "payment_failed"
+  }
+  return false
+}
+
+function eventLabel(e: { action: string }): string {
   return ACTION_LABELS[e.action] ?? e.action.replace(/_/g, " ")
 }
 
@@ -22,14 +36,27 @@ export function LiveEventFeed() {
   const qc = useQueryClient()
   const { data, isLoading } = useQuery(adminEventFeedQuery())
 
-  // Realtime: nieuwe rij in activity_log → invalidate
+  // Realtime: nieuwe rij in activity_log → invalidate + toast bij hoge prioriteit
   useEffect(() => {
     const channel = supabase
       .channel("admin-activity-log")
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "activity_log" },
-        () => qc.invalidateQueries({ queryKey: ["admin", "event-feed"] }),
+        (payload) => {
+          qc.invalidateQueries({ queryKey: ["admin", "event-feed"] })
+          qc.invalidateQueries({ queryKey: ["admin", "unread-activity"] })
+
+          const row = payload.new as {
+            action?: string
+            metadata?: Record<string, unknown> | null
+          }
+          if (row?.action && isHighPriority(row.action, row.metadata ?? null)) {
+            toast.warning(eventLabel({ action: row.action }), {
+              description: "Bekijk de activiteit-feed voor details.",
+            })
+          }
+        },
       )
       .subscribe()
     return () => {
@@ -50,7 +77,7 @@ export function LiveEventFeed() {
         {!isLoading && (data?.length ?? 0) === 0 && (
           <p className="px-6 py-6 text-sm text-muted-foreground">Nog geen activiteit.</p>
         )}
-        {(data ?? []).map((e) => (
+        {(data ?? []).map((e: AdminEvent) => (
           <div key={e.id} className="flex items-start gap-3 px-6 py-3 text-sm">
             <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
               <Store className="h-3.5 w-3.5" />
