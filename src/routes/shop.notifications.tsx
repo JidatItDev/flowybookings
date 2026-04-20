@@ -10,7 +10,7 @@ import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { NoShopState } from "@/components/EmptyState";
-import { UpgradeNudge, PremiumBadge } from "@/components/UpgradeNudge";
+// UpgradeNudge/PremiumBadge no longer needed: WhatsApp is uniformly "Coming soon".
 import { NotificationsInbox } from "@/components/NotificationsInbox";
 import { SmsTopUpDialog } from "@/components/SmsTopUpDialog";
 import { FeatureLock } from "@/components/FeatureLock";
