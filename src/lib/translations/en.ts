@@ -967,6 +967,7 @@ export const en: Record<string, string> = {
   "adminShops.policyFilter.missing": "Policy ❌",
   "adminShops.noShops": "No shops found.",
   "adminShops.updated": "Shop status updated",
+  "adminShops.customersStat": "Customers: {total} (of which {imported} imported)",
 
   // ── Admin users ──
   "adminUsers.title": "Users",
