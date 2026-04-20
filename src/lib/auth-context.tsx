@@ -56,10 +56,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Subscribe FIRST, then read existing session — order matters for race-free hydration.
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       // Reset cached per-user data when auth changes
       qc.invalidateQueries();
+      // Best-effort: stamp last_login_at on real sign-in so admins can see activity.
+      if (event === "SIGNED_IN" && s?.user?.id) {
+        const uid = s.user.id;
+        setTimeout(() => {
+          void supabase.from("profiles").update({ last_login_at: new Date().toISOString() }).eq("id", uid);
+        }, 0);
+      }
     });
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
