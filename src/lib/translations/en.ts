@@ -1665,6 +1665,9 @@ export const en: Record<string, string> = {
   "billing.cancelSuccess": "Subscription cancelled. Active until end of period.",
   "billing.statusCancelled": "Cancelled",
   "billing.statusPaymentFailed": "Payment failed",
+  "billing.statusPending": "Activating",
+  "billing.activating": "activating…",
+  "billing.activatingShort": "ACTIVATING…",
   "impersonate.readOnlyTooltip": "Read-only while impersonating",
 };
 

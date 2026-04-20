@@ -16,6 +16,8 @@ import { PLATFORM_PROVIDER, type BillingCycle } from "@/lib/platform-billing";
 import { planLabel } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 import { assertNotImpersonating, useImpersonationReadOnly } from "@/components/ImpersonationBanner";
+import { usePlanPricing, formatPlanPrice } from "@/lib/use-plan-pricing";
+import { usePendingBilling, markBillingPending } from "@/lib/use-pending-billing";
 
 export function ShopBillingCard() {
   const { t } = useT();
@@ -26,7 +28,8 @@ export function ShopBillingCard() {
   const search = useSearch({ strict: false }) as { billing?: string; payment?: string };
 
   const shopId = activeShop?.id ?? null;
-
+  const { data: pricing } = usePlanPricing();
+  const pending = usePendingBilling();
   const { data: payments, isLoading } = useQuery({
     queryKey: ["shop", "billing-payments", shopId],
     enabled: !!shopId,
@@ -57,6 +60,9 @@ export function ShopBillingCard() {
       });
       const data = (await res.json()) as { ok?: boolean; checkout_url?: string; error?: string };
       if (!res.ok || !data.checkout_url) throw new Error(data.error ?? "checkout_failed");
+      if (shopId) {
+        markBillingPending({ shopId, plan, cycle: cycle === "yearly" ? "yearly" : "monthly" });
+      }
       return data.checkout_url;
     },
     onSuccess: (url) => { window.location.href = url; },
@@ -134,8 +140,13 @@ export function ShopBillingCard() {
             <Receipt className="h-4 w-4 text-primary" /> {t("shopBilling.title")}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {t("shopBilling.currentPlan")}: <span className="font-medium text-foreground">{planLabel(activeShop.plan)}</span>
+            {t("shopBilling.currentPlan")}: <span className="font-medium text-foreground">{pending && activeShop?.id === pending.shopId ? planLabel(pending.plan) : planLabel(activeShop!.plan)}</span>
             {cycle ? ` · ${t(`shopBilling.cycle.${cycle === "yearly" ? "yearly" : "monthly"}`)}` : ""}
+            {pending && activeShop?.id === pending.shopId && activeShop?.plan !== pending.plan ? (
+              <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary">
+                <Loader2 className="h-3 w-3 animate-spin" /> {t("billing.activating")}
+              </span>
+            ) : null}
           </p>
         </div>
         <span className={cn(
@@ -243,6 +254,14 @@ export function usePlanCheckout() {
       });
       const data = (await res.json()) as { ok?: boolean; checkout_url?: string; error?: string };
       if (!res.ok || !data.checkout_url) throw new Error(data.error ?? "checkout_failed");
+      // Optimistic UI: mark this shop as pending the requested plan so the
+      // header + cards can show "Activatie loopt…" instead of stale TRIAL
+      // while the user comes back from Mollie and the webhook fires.
+      markBillingPending({
+        shopId: activeShop.id,
+        plan,
+        cycle: cycle === "yearly" ? "yearly" : "monthly",
+      });
       window.location.href = data.checkout_url;
     },
     onError: (e: Error) => toast.error(e.message),

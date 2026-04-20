@@ -27,6 +27,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NotificationBell } from "@/components/NotificationBell";
+import { usePendingBilling } from "@/lib/use-pending-billing";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,7 +75,17 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
     user?.email ||
     "";
   const initials = (displayName || "?").trim().charAt(0).toUpperCase();
+  const pendingBilling = usePendingBilling();
   const planText = (() => {
+    // Optimistic: while a Mollie upgrade is in flight, show "ACTIVATIE…" instead
+    // of stale TRIAL. Auto-clears once activeShop.plan matches the requested plan.
+    if (
+      pendingBilling &&
+      activeShop?.id === pendingBilling.shopId &&
+      activeShop?.plan !== pendingBilling.plan
+    ) {
+      return t("billing.activatingShort");
+    }
     const p = activeShop?.plan ?? "trial";
     if (p === "trial") return "TRIAL";
     if (p === "starter") return "STARTER";

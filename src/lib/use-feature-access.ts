@@ -29,8 +29,6 @@ export type FeatureAccess = {
   currentPlan: string;
 };
 
-const PLAN_PRICE: Record<string, number> = { trial: 0, starter: 19, pro: 49, premium: 99 };
-
 export function planLabelFor(plan: string | null | undefined): string {
   if (!plan) return "—";
   if (plan === "trial") return "Trial";
@@ -40,11 +38,13 @@ export function planLabelFor(plan: string | null | undefined): string {
   return plan;
 }
 
-export function planPriceLabel(plan: string | null | undefined): string {
-  if (!plan) return "";
-  const price = PLAN_PRICE[plan];
-  if (price === undefined) return "";
-  return `€${price}/maand`;
+/**
+ * @deprecated Use formatPlanPrice from @/lib/use-plan-pricing — that hook reads
+ * plan_pricing from the DB. This stub keeps existing imports compiling but
+ * always returns "" so we never render hardcoded prices anymore.
+ */
+export function planPriceLabel(_plan: string | null | undefined): string {
+  return "";
 }
 
 export const featureAccessKeys = {
