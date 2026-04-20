@@ -108,6 +108,13 @@ function ShopsPage() {
                       <td className="px-6 py-4"><StatusBadge status={s.status} /></td>
                       <td className="hidden px-6 py-4 lg:table-cell">{s.booking_count ?? 0}</td>
                       <td className="hidden px-6 py-4 font-medium lg:table-cell">{formatCents(s.revenue_cents ?? 0)}</td>
+                      <td className="hidden px-6 py-4 text-muted-foreground xl:table-cell">{s.owner_last_login_at ? formatDate(s.owner_last_login_at) : "—"}</td>
+                      <td className="hidden px-6 py-4 xl:table-cell">
+                        <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium", s.is_active_recently ? "bg-success/15 text-success-foreground" : "bg-muted text-muted-foreground")}>
+                          <span className={cn("h-1.5 w-1.5 rounded-full", s.is_active_recently ? "bg-success-foreground" : "bg-muted-foreground")} />
+                          {s.is_active_recently ? t("adminShops.activityActive") : t("adminShops.activityInactive")}
+                        </span>
+                      </td>
                       <td className="hidden px-6 py-4 xl:table-cell">
                         {s.policy_accepted_at
                           ? <span className="inline-flex items-center gap-1 text-success-foreground" title={s.policy_version ?? ""}>✅ {policyDateFmt.format(new Date(s.policy_accepted_at))}</span>
@@ -149,7 +156,7 @@ function ShopsPage() {
                     </tr>
                     {isExpanded && (
                       <tr className="bg-muted/10">
-                        <td colSpan={9} className="px-4 py-4 sm:px-6">
+                        <td colSpan={11} className="px-4 py-4 sm:px-6">
                           <div className="mb-3 grid gap-3 sm:grid-cols-2">
                             <div className="rounded-xl border border-border bg-card px-4 py-3 text-sm">
                               {s.policy_accepted_at ? (
