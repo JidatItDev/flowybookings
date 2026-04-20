@@ -86,18 +86,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // While there's a session, treat roles as "loading" until the query has resolved at least once.
   const rolesLoading = !!userId && (rolesQueryLoading || rolesFetching);
 
-  // Shops the user can access (owner or any role)
+  // Shops the user can access (owner or any role).
+  // CRITICAL: own shop (owner_id == user) must come first, so a new signup
+  // never lands in a demo shop they happen to have role-access to via RLS.
   const { data: shops = [] } = useQuery({
     queryKey: ["auth", "shops", userId],
     enabled: !!userId,
     queryFn: async (): Promise<ShopRow[]> => {
-      // Super admin sees all shops; everyone else sees shops via RLS (owner + role).
       const { data, error } = await supabase
         .from("shops")
-        .select("id, name, slug, status, plan, plan_expires_at, plan_billing_cycle, onboarding, policy_accepted_at, policy_version")
+        .select("id, name, slug, status, plan, plan_expires_at, plan_billing_cycle, onboarding, policy_accepted_at, policy_version, owner_id, is_demo, created_at")
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as ShopRow[];
+      const rows = (data ?? []) as (ShopRow & { owner_id: string; is_demo: boolean })[];
+      // Sort: own non-demo shop first, then own demo, then others (non-demo first).
+      rows.sort((a, b) => {
+        const aOwn = a.owner_id === userId ? 0 : 1;
+        const bOwn = b.owner_id === userId ? 0 : 1;
+        if (aOwn !== bOwn) return aOwn - bOwn;
+        const aDemo = a.is_demo ? 1 : 0;
+        const bDemo = b.is_demo ? 1 : 0;
+        if (aDemo !== bDemo) return aDemo - bDemo;
+        return 0;
+      });
+      return rows as ShopRow[];
     },
   });
 
