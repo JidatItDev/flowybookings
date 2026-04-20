@@ -1,6 +1,6 @@
 import * as React from 'react'
 import {
-  Body, Container, Head, Heading, Html, Preview, Section, Text,
+  Body, Container, Head, Heading, Html, Img, Preview, Section, Text,
 } from '@react-email/components'
 import type { TemplateEntry } from './registry'
 
@@ -13,6 +13,7 @@ interface BookingReminderProps {
   shopAddress?: string
   /** "morgen" of "over 2 uur" */
   windowLabel?: string
+  logoUrl?: string
 }
 
 const BookingReminderEmail = ({
@@ -23,12 +24,18 @@ const BookingReminderEmail = ({
   whenLabel,
   shopAddress,
   windowLabel = 'binnenkort',
+  logoUrl,
 }: BookingReminderProps) => (
   <Html lang="nl" dir="ltr">
     <Head />
     <Preview>{`Herinnering: je afspraak bij ${shopName} is ${windowLabel}`}</Preview>
     <Body style={main}>
       <Container style={container}>
+        {logoUrl && (
+          <Section style={logoWrap}>
+            <Img src={logoUrl} alt={shopName} width="56" height="56" style={logoImg} />
+          </Section>
+        )}
         <Heading style={h1}>
           {customerName
             ? `Hoi ${customerName}, tot ${windowLabel}!`
@@ -84,6 +91,8 @@ const main = {
   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
 }
 const container = { padding: '32px 28px', maxWidth: '560px' }
+const logoWrap = { margin: '0 0 20px' }
+const logoImg = { borderRadius: '12px', objectFit: 'cover' as const, display: 'block' }
 const h1 = { fontSize: '22px', fontWeight: 'bold' as const, color: '#1a1330', margin: '0 0 20px' }
 const text = { fontSize: '15px', color: '#4a4660', lineHeight: '1.6', margin: '0 0 20px' }
 const card = {
