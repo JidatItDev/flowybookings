@@ -53,7 +53,7 @@ export const Route = createFileRoute("/api/booking/$bookingId/ics")({
 
         const { data: booking, error } = await supabaseAdmin
           .from("bookings")
-          .select("id, starts_at, ends_at, shop_id, service_id, created_at")
+          .select("id, starts_at, ends_at, shop_id, service_id, status, created_at, updated_at")
           .eq("id", bookingId)
           .maybeSingle();
 
@@ -94,39 +94,57 @@ export const Route = createFileRoute("/api/booking/$bookingId/ics")({
         const dtStamp = toIcsUtc(new Date());
         const uid = `${booking.id}@flowybookings`;
 
+        // Bereken SEQUENCE op basis van updates: elke wijziging verhoogt SEQUENCE.
+        // We gebruiken het aantal volle minuten tussen created_at en updated_at,
+        // gekapt op een redelijk maximum. Zelfde UID + hogere SEQUENCE = update.
+        const createdMs = new Date(booking.created_at).getTime();
+        const updatedMs = new Date(booking.updated_at).getTime();
+        const diffMinutes = Math.max(0, Math.floor((updatedMs - createdMs) / 60000));
+        const sequence = Math.min(diffMinutes, 999999);
+
+        const isCancelled = booking.status === "cancelled";
+        const method = isCancelled ? "CANCEL" : "REQUEST";
+        const eventStatus = isCancelled ? "CANCELLED" : "CONFIRMED";
+
         const lines = [
           "BEGIN:VCALENDAR",
           "VERSION:2.0",
           "PRODID:-//FlowyBookings//Booking//NL",
           "CALSCALE:GREGORIAN",
-          "METHOD:PUBLISH",
+          `METHOD:${method}`,
           "BEGIN:VEVENT",
           `UID:${uid}`,
+          `SEQUENCE:${sequence}`,
           `DTSTAMP:${dtStamp}`,
           `DTSTART:${dtStart}`,
           `DTEND:${dtEnd}`,
-          `SUMMARY:${escapeIcs(summary)}`,
+          `SUMMARY:${escapeIcs(isCancelled ? "[Geannuleerd] " + summary : summary)}`,
           `DESCRIPTION:${escapeIcs(description)}`,
           `LOCATION:${escapeIcs(location)}`,
-          "STATUS:CONFIRMED",
+          `STATUS:${eventStatus}`,
           "TRANSP:OPAQUE",
-          // Herinnering 24u van tevoren
-          "BEGIN:VALARM",
-          "ACTION:DISPLAY",
-          `DESCRIPTION:${escapeIcs("Herinnering: " + summary)}`,
-          "TRIGGER:-PT24H",
-          "END:VALARM",
+          // Herinnering 24u van tevoren — alleen voor actieve afspraken
+          ...(isCancelled
+            ? []
+            : [
+                "BEGIN:VALARM",
+                "ACTION:DISPLAY",
+                `DESCRIPTION:${escapeIcs("Herinnering: " + summary)}`,
+                "TRIGGER:-PT24H",
+                "END:VALARM",
+              ]),
           "END:VEVENT",
           "END:VCALENDAR",
         ];
 
         const ics = lines.map(foldLine).join("\r\n") + "\r\n";
 
+        const filenameSuffix = isCancelled ? "-geannuleerd" : "";
         return new Response(ics, {
           status: 200,
           headers: {
             "Content-Type": "text/calendar; charset=utf-8",
-            "Content-Disposition": `attachment; filename="afspraak-${booking.id.slice(0, 8)}.ics"`,
+            "Content-Disposition": `attachment; filename="afspraak-${booking.id.slice(0, 8)}${filenameSuffix}.ics"`,
             "Cache-Control": "private, no-cache",
           },
         });
