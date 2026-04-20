@@ -53,7 +53,7 @@ export const Route = createFileRoute('/hooks/booking-confirmation')({
           booking.customer_id
             ? supabase.from('customers').select('full_name, email').eq('id', booking.customer_id).maybeSingle()
             : Promise.resolve({ data: null }),
-          supabase.from('shops').select('name, address').eq('id', booking.shop_id).maybeSingle(),
+          supabase.from('shops').select('name, address, logo_url').eq('id', booking.shop_id).maybeSingle(),
           booking.service_id
             ? supabase.from('services').select('name').eq('id', booking.service_id).maybeSingle()
             : Promise.resolve({ data: null }),
@@ -84,6 +84,7 @@ export const Route = createFileRoute('/hooks/booking-confirmation')({
             whenLabel,
             priceLabel,
             shopAddress: shop?.address,
+            logoUrl: shop?.logo_url ?? undefined,
           },
         })
 
