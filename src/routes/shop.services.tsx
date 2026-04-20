@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState, LoadingGrid, NoShopState } from "@/components/EmptyState";
+import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { useActiveShopId } from "@/lib/shop-context";
 import { servicesQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,27 +28,29 @@ type ServiceRow = { id: string; name: string; description: string | null; catego
 
 function ServicesPage() {
   const shopId = useActiveShopId(); const qc = useQueryClient(); const { t } = useT();
+  const readOnly = useImpersonationReadOnly();
+  const roTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const [editing, setEditing] = useState<ServiceRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<ServiceRow | null>(null);
   const { data: services = [], isLoading } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
 
   const toggleActive = useMutation({
-    mutationFn: async (s: ServiceRow) => { const { error } = await supabase.from("services").update({ is_active: !s.is_active }).eq("id", s.id); if (error) throw error; },
+    mutationFn: async (s: ServiceRow) => { assertNotImpersonating(); const { error } = await supabase.from("services").update({ is_active: !s.is_active }).eq("id", s.id); if (error) throw error; },
     onSuccess: () => { if (shopId) qc.invalidateQueries({ queryKey: shopKeys.services(shopId) }); },
     onError: (e: Error) => toast.error(e.message),
   });
   const remove = useMutation({
-    mutationFn: async (id: string) => { const { error } = await supabase.from("services").delete().eq("id", id); if (error) throw error; },
+    mutationFn: async (id: string) => { assertNotImpersonating(); const { error } = await supabase.from("services").delete().eq("id", id); if (error) throw error; },
     onSuccess: () => { toast.success(t("services.deleted")); setDeleting(null); if (shopId) qc.invalidateQueries({ queryKey: shopKeys.services(shopId) }); },
     onError: (e: Error) => toast.error(e.message),
   });
 
   return (
     <ShopLayout>
-      <PageHeader title={t("services.title")} description={t("services.description")} actions={<Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId}><Plus className="h-4 w-4" /> {t("services.addService")}</Button>} />
+      <PageHeader title={t("services.title")} description={t("services.description")} actions={<Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId || readOnly} title={roTitle}><Plus className="h-4 w-4" /> {t("services.addService")}</Button>} />
       {!shopId ? <NoShopState /> : isLoading ? <LoadingGrid /> : services.length === 0 ? (
-        <EmptyState icon={Sparkles} title={t("services.noServices")} description={t("services.noServicesDesc")} action={<Button variant="hero" onClick={() => setCreating(true)}><Plus className="h-4 w-4" /> {t("services.addService")}</Button>} />
+        <EmptyState icon={Sparkles} title={t("services.noServices")} description={t("services.noServicesDesc")} action={<Button variant="hero" onClick={() => setCreating(true)} disabled={readOnly} title={roTitle}><Plus className="h-4 w-4" /> {t("services.addService")}</Button>} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {services.map((s) => (
@@ -58,7 +61,7 @@ function ServicesPage() {
                   <h3 className="mt-2 truncate text-base font-semibold">{s.name}</h3>
                   <p className="mt-0.5 text-xs text-muted-foreground">{t("services.min", { n: s.duration_minutes })}</p>
                 </div>
-                <button onClick={() => toggleActive.mutate(s)} className={cn("inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium transition", s.is_active ? "bg-mint text-mint-foreground" : "bg-muted text-muted-foreground")}>{s.is_active ? t("services.active") : t("services.inactive")}</button>
+                <button onClick={() => toggleActive.mutate(s)} disabled={readOnly} title={roTitle} className={cn("inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-60", s.is_active ? "bg-mint text-mint-foreground" : "bg-muted text-muted-foreground")}>{s.is_active ? t("services.active") : t("services.inactive")}</button>
               </div>
               <div className="mt-4 flex items-end justify-between">
                 <div>
@@ -66,8 +69,8 @@ function ServicesPage() {
                   {s.deposit_cents > 0 && <p className="text-xs text-muted-foreground">{t("services.deposit", { amount: formatCents(s.deposit_cents, s.currency) })}</p>}
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => setEditing(s)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => setDeleting(s)}><Trash2 className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" disabled={readOnly} title={roTitle} onClick={() => setEditing(s)}><Pencil className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" disabled={readOnly} title={roTitle} onClick={() => setDeleting(s)}><Trash2 className="h-4 w-4" /></Button>
                 </div>
               </div>
             </div>
@@ -108,6 +111,7 @@ function ServiceFormDialog({ open, onClose, service, shopId }: { open: boolean; 
 
   const save = useMutation({
     mutationFn: async () => {
+      assertNotImpersonating();
       if (!shopId) throw new Error(t("errors.noActiveShop"));
       if (hasErrors) throw new Error(depositError ?? priceError ?? "Invalid input");
       const payload = { shop_id: shopId, name: form.name.trim(), category: form.category.trim() || null, description: form.description.trim() || null, duration_minutes: Number(form.duration_minutes) || 30, price_cents: Math.round(priceNum * 100), deposit_cents: Math.round(depositNum * 100), is_active: form.is_active };

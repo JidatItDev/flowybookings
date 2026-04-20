@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { EmptyState, NoShopState } from "@/components/EmptyState";
 import { FeatureLock } from "@/components/FeatureLock";
+import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { useActiveShopId } from "@/lib/shop-context";
 import {
   bookingsQuery, customersQuery, servicesQuery, shopKeys, staffQuery,
@@ -44,26 +45,29 @@ function CalendarPage() {
   const shopId = useActiveShopId();
   const { activeShop } = useAuth();
   const trial = getTrialState(activeShop as never);
+  const readOnly = useImpersonationReadOnly();
   const bookingsAccess = useFeatureAccess(shopId, "max_bookings_per_month");
   const bookingsBlocked = !!bookingsAccess.data && !bookingsAccess.data.allowed;
   const bookingsPct = usagePercentage(bookingsAccess.data);
   const bookingsWarn =
     !!bookingsAccess.data && bookingsAccess.data.limit != null && bookingsPct >= 80 && bookingsPct < 100;
-  // Block when trial expired OR payment failed grace expired OR feature limit hit.
+  // Block when trial expired OR payment failed grace expired OR feature limit hit OR impersonate.
   const subscriptionBlocked = trial.isExpired || trial.paymentFailedGraceExpired;
-  const newBookingDisabled = !shopId || subscriptionBlocked || bookingsBlocked;
+  const newBookingDisabled = !shopId || subscriptionBlocked || bookingsBlocked || readOnly;
   const qc = useQueryClient();
   const { t } = useT();
-  const newBookingTitle = trial.paymentFailedGraceExpired
-    ? t("billing.paymentFailedBlockedTitle")
-    : trial.isExpired
-      ? t("calendar.trialExpiredBookingTitle")
-      : bookingsBlocked
-        ? t("calendar.bookingLimitReached", {
-            used: bookingsAccess.data?.used ?? 0,
-            limit: bookingsAccess.data?.limit ?? 0,
-          })
-        : undefined;
+  const newBookingTitle = readOnly
+    ? t("impersonate.readOnlyTooltip")
+    : trial.paymentFailedGraceExpired
+      ? t("billing.paymentFailedBlockedTitle")
+      : trial.isExpired
+        ? t("calendar.trialExpiredBookingTitle")
+        : bookingsBlocked
+          ? t("calendar.bookingLimitReached", {
+              used: bookingsAccess.data?.used ?? 0,
+              limit: bookingsAccess.data?.limit ?? 0,
+            })
+          : undefined;
   const [filter, setFilter] = useState<(typeof statuses)[number]>("all");
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<BookingWithRelations | null>(null);
@@ -83,6 +87,7 @@ function CalendarPage() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: BookingWithRelations["status"] }) => {
+      assertNotImpersonating();
       const { error } = await supabase.from("bookings").update({ status }).eq("id", id);
       if (error) throw error;
     },
@@ -95,6 +100,7 @@ function CalendarPage() {
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
+      assertNotImpersonating();
       const { error } = await supabase.from("bookings").delete().eq("id", id);
       if (error) throw error;
     },
@@ -255,8 +261,11 @@ function CalendarPage() {
                         <td className="hidden px-4 py-3 text-muted-foreground lg:table-cell">{stf?.full_name ?? "—"}</td>
                         <td className="px-4 py-3 text-right font-medium tabular-nums">{formatCents(b.price_cents)}</td>
                         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                          <Select value={b.status} onValueChange={(v) => updateStatus.mutate({ id: b.id, status: v as BookingWithRelations["status"] })}>
-                            <SelectTrigger className="h-8 w-[120px] text-xs"><SelectValue /></SelectTrigger>
+                          <Select value={b.status} disabled={readOnly} onValueChange={(v) => updateStatus.mutate({ id: b.id, status: v as BookingWithRelations["status"] })}>
+                            <SelectTrigger
+                              className="h-8 w-[120px] text-xs"
+                              title={readOnly ? t("impersonate.readOnlyTooltip") : undefined}
+                            ><SelectValue /></SelectTrigger>
                             <SelectContent>
                               {statuses.filter((s) => s !== "all").map((s) => (
                                 <SelectItem key={s} value={s}>{statusLabel[s]}</SelectItem>
@@ -265,8 +274,8 @@ function CalendarPage() {
                           </Select>
                         </td>
                         <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="sm" onClick={() => setEditing(b)}>{t("calendar.edit")}</Button>
-                          <Button variant="ghost" size="sm" onClick={() => setDeleting(b)}>{t("calendar.delete")}</Button>
+                          <Button variant="ghost" size="sm" disabled={readOnly} title={readOnly ? t("impersonate.readOnlyTooltip") : undefined} onClick={() => setEditing(b)}>{t("calendar.edit")}</Button>
+                          <Button variant="ghost" size="sm" disabled={readOnly} title={readOnly ? t("impersonate.readOnlyTooltip") : undefined} onClick={() => setDeleting(b)}>{t("calendar.delete")}</Button>
                         </td>
                       </tr>
                     );
@@ -348,6 +357,7 @@ function BookingFormDialog({ open, onClose, booking, shopId }: { open: boolean; 
 
   const save = useMutation({
     mutationFn: async () => {
+      assertNotImpersonating();
       if (!shopId) throw new Error(t("errors.noActiveShop"));
       if (!form.starts_at) throw new Error(t("errors.pickStartTime"));
       const svc = services.find((s) => s.id === form.service_id);

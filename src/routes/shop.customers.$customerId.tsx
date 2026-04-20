@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { StatusBadge } from "@/components/StatusBadge";
 import { NoShopState } from "@/components/EmptyState";
+import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { useActiveShopId } from "@/lib/shop-context";
 import { bookingsQuery, servicesQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,6 +60,8 @@ function CustomerProfilePage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { t } = useT();
+  const readOnly = useImpersonationReadOnly();
+  const roTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
 
   const customerQuery = useQuery({
     queryKey: ["customer", customerId],
@@ -105,6 +108,7 @@ function CustomerProfilePage() {
 
   const update = useMutation({
     mutationFn: async (patch: { notes?: string | null; tags?: string[]; requires_deposit?: boolean }) => {
+      assertNotImpersonating();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await supabase.from("customers").update(patch as any).eq("id", customerId);
       if (error) throw error;
@@ -230,7 +234,9 @@ function CustomerProfilePage() {
                     <button
                       type="button"
                       onClick={() => removeTag(tg)}
-                      className="rounded-full p-0.5 hover:bg-primary/20"
+                      disabled={readOnly}
+                      title={roTitle}
+                      className="rounded-full p-0.5 hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
                       aria-label={`Remove ${tg}`}
                     >
                       <X className="h-3 w-3" />
@@ -243,6 +249,8 @@ function CustomerProfilePage() {
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   placeholder={t("customers.addTagPlaceholder")}
+                  disabled={readOnly}
+                  title={roTitle}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
@@ -251,7 +259,7 @@ function CustomerProfilePage() {
                   }}
                   className="h-9 max-w-xs"
                 />
-                <Button size="sm" variant="outline" onClick={() => addTag(tagInput)} disabled={!tagInput.trim()}>
+                <Button size="sm" variant="outline" onClick={() => addTag(tagInput)} disabled={!tagInput.trim() || readOnly} title={roTitle}>
                   <Plus className="h-4 w-4" /> {t("customers.addTag")}
                 </Button>
               </div>
@@ -261,7 +269,9 @@ function CustomerProfilePage() {
                     key={s}
                     type="button"
                     onClick={() => addTag(s)}
-                    className="rounded-full border border-dashed border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:border-primary/50 hover:text-foreground"
+                    disabled={readOnly}
+                    title={roTitle}
+                    className="rounded-full border border-dashed border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:border-primary/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     + {s}
                   </button>
@@ -344,12 +354,16 @@ function CustomerProfilePage() {
               onChange={(e) => setNotes(e.target.value)}
               rows={6}
               placeholder={t("customers.notesPlaceholder")}
+              disabled={readOnly}
+              title={roTitle}
             />
             <div className="mt-3 flex items-center justify-between">
               <label className="flex items-center gap-2 text-xs text-muted-foreground">
                 <input
                   type="checkbox"
                   checked={requiresDeposit}
+                  disabled={readOnly}
+                  title={roTitle}
                   onChange={(e) => {
                     setRequiresDeposit(e.target.checked);
                     update.mutate({ requires_deposit: e.target.checked });
@@ -361,7 +375,8 @@ function CustomerProfilePage() {
                 size="sm"
                 variant="hero"
                 onClick={() => update.mutate({ notes: notes.trim() || null })}
-                disabled={update.isPending}
+                disabled={update.isPending || readOnly}
+                title={roTitle}
               >
                 <Save className="h-4 w-4" /> {update.isPending ? t("customers.saving") : t("customers.saveNotes")}
               </Button>

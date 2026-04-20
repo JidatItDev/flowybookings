@@ -1507,5 +1507,6 @@ export const nl: Record<string, string> = {
   "billing.cancel": "Abonnement opzeggen",
   "billing.cancelConfirm": "Weet je zeker dat je je abonnement wilt opzeggen? Je plan blijft actief tot het einde van de huidige periode.",
   "billing.cancelSuccess": "Abonnement opgezegd. Actief tot einde periode.",
+  "impersonate.readOnlyTooltip": "Alleen-lezen tijdens impersonate",
 };
 
