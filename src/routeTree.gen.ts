@@ -33,6 +33,7 @@ import { Route as HooksWelcomeShopOwnerRouteImport } from './routes/hooks/welcom
 import { Route as HooksTrialRemindersRouteImport } from './routes/hooks/trial-reminders'
 import { Route as HooksSmsLowBalanceCheckRouteImport } from './routes/hooks/sms-low-balance-check'
 import { Route as HooksMollieRefreshTokensRouteImport } from './routes/hooks/mollie-refresh-tokens'
+import { Route as HooksExpireCancelledSubscriptionsRouteImport } from './routes/hooks/expire-cancelled-subscriptions'
 import { Route as HooksBookingConfirmationRouteImport } from './routes/hooks/booking-confirmation'
 import { Route as HooksBookingAutomationsRouteImport } from './routes/hooks/booking-automations'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
@@ -198,6 +199,12 @@ const HooksMollieRefreshTokensRoute =
   HooksMollieRefreshTokensRouteImport.update({
     id: '/hooks/mollie-refresh-tokens',
     path: '/hooks/mollie-refresh-tokens',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const HooksExpireCancelledSubscriptionsRoute =
+  HooksExpireCancelledSubscriptionsRouteImport.update({
+    id: '/hooks/expire-cancelled-subscriptions',
+    path: '/hooks/expire-cancelled-subscriptions',
     getParentRoute: () => rootRouteImport,
   } as any)
 const HooksBookingConfirmationRoute =
@@ -448,6 +455,7 @@ export interface FileRoutesByFullPath {
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
+  '/hooks/expire-cancelled-subscriptions': typeof HooksExpireCancelledSubscriptionsRoute
   '/hooks/mollie-refresh-tokens': typeof HooksMollieRefreshTokensRoute
   '/hooks/sms-low-balance-check': typeof HooksSmsLowBalanceCheckRoute
   '/hooks/trial-reminders': typeof HooksTrialRemindersRoute
@@ -519,6 +527,7 @@ export interface FileRoutesByTo {
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
+  '/hooks/expire-cancelled-subscriptions': typeof HooksExpireCancelledSubscriptionsRoute
   '/hooks/mollie-refresh-tokens': typeof HooksMollieRefreshTokensRoute
   '/hooks/sms-low-balance-check': typeof HooksSmsLowBalanceCheckRoute
   '/hooks/trial-reminders': typeof HooksTrialRemindersRoute
@@ -591,6 +600,7 @@ export interface FileRoutesById {
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
+  '/hooks/expire-cancelled-subscriptions': typeof HooksExpireCancelledSubscriptionsRoute
   '/hooks/mollie-refresh-tokens': typeof HooksMollieRefreshTokensRoute
   '/hooks/sms-low-balance-check': typeof HooksSmsLowBalanceCheckRoute
   '/hooks/trial-reminders': typeof HooksTrialRemindersRoute
@@ -664,6 +674,7 @@ export interface FileRouteTypes {
     | '/email/unsubscribe'
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
+    | '/hooks/expire-cancelled-subscriptions'
     | '/hooks/mollie-refresh-tokens'
     | '/hooks/sms-low-balance-check'
     | '/hooks/trial-reminders'
@@ -735,6 +746,7 @@ export interface FileRouteTypes {
     | '/email/unsubscribe'
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
+    | '/hooks/expire-cancelled-subscriptions'
     | '/hooks/mollie-refresh-tokens'
     | '/hooks/sms-low-balance-check'
     | '/hooks/trial-reminders'
@@ -806,6 +818,7 @@ export interface FileRouteTypes {
     | '/email/unsubscribe'
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
+    | '/hooks/expire-cancelled-subscriptions'
     | '/hooks/mollie-refresh-tokens'
     | '/hooks/sms-low-balance-check'
     | '/hooks/trial-reminders'
@@ -878,6 +891,7 @@ export interface RootRouteChildren {
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   HooksBookingAutomationsRoute: typeof HooksBookingAutomationsRoute
   HooksBookingConfirmationRoute: typeof HooksBookingConfirmationRoute
+  HooksExpireCancelledSubscriptionsRoute: typeof HooksExpireCancelledSubscriptionsRoute
   HooksMollieRefreshTokensRoute: typeof HooksMollieRefreshTokensRoute
   HooksSmsLowBalanceCheckRoute: typeof HooksSmsLowBalanceCheckRoute
   HooksTrialRemindersRoute: typeof HooksTrialRemindersRoute
@@ -1104,6 +1118,13 @@ declare module '@tanstack/react-router' {
       path: '/hooks/mollie-refresh-tokens'
       fullPath: '/hooks/mollie-refresh-tokens'
       preLoaderRoute: typeof HooksMollieRefreshTokensRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hooks/expire-cancelled-subscriptions': {
+      id: '/hooks/expire-cancelled-subscriptions'
+      path: '/hooks/expire-cancelled-subscriptions'
+      fullPath: '/hooks/expire-cancelled-subscriptions'
+      preLoaderRoute: typeof HooksExpireCancelledSubscriptionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/hooks/booking-confirmation': {
@@ -1458,6 +1479,8 @@ const rootRouteChildren: RootRouteChildren = {
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   HooksBookingAutomationsRoute: HooksBookingAutomationsRoute,
   HooksBookingConfirmationRoute: HooksBookingConfirmationRoute,
+  HooksExpireCancelledSubscriptionsRoute:
+    HooksExpireCancelledSubscriptionsRoute,
   HooksMollieRefreshTokensRoute: HooksMollieRefreshTokensRoute,
   HooksSmsLowBalanceCheckRoute: HooksSmsLowBalanceCheckRoute,
   HooksTrialRemindersRoute: HooksTrialRemindersRoute,
