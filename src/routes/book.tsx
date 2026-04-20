@@ -163,7 +163,7 @@ function BookingFlow() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shops")
-        .select("id, name, slug, address, is_demo, business_hours, timezone, plan, plan_expires_at, logo_url")
+        .select("id, name, slug, address, is_demo, business_hours, timezone, plan, plan_expires_at, onboarding, logo_url")
         .eq("id", presetShopId!)
         .maybeSingle();
       if (error) throw error;
@@ -173,7 +173,10 @@ function BookingFlow() {
 
   const selectedShop = shopsQ.data?.find((s) => s.id === shopId) ?? presetShopQ.data ?? null;
   const isDemoShop = !!selectedShop?.is_demo;
-  const shopTrialExpired = !!selectedShop && (selectedShop as { plan?: string; plan_expires_at?: string | null }).plan === "trial" && !!(selectedShop as { plan_expires_at?: string | null }).plan_expires_at && new Date((selectedShop as { plan_expires_at?: string }).plan_expires_at!).getTime() < Date.now();
+  // Use shared trial state — covers trial expiry AND payment_failed grace period.
+  const { getTrialState } = require("@/lib/trial") as typeof import("@/lib/trial");
+  const shopBookingState = getTrialState(selectedShop as never);
+  const shopTrialExpired = !shopBookingState.canAcceptBookings;
   const selectedService = servicesQ.data?.find((s) => s.id === serviceId);
   const selectedStaff = staffQ.data?.find((s) => s.id === staffId);
 
