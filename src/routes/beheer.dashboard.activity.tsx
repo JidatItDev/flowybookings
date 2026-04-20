@@ -344,3 +344,45 @@ function formatMetaValue(v: unknown): string {
   if (typeof v === "number" || typeof v === "boolean") return String(v);
   return JSON.stringify(v).slice(0, 30);
 }
+
+type DatePickerButtonProps = {
+  value: Date | undefined;
+  onChange: (date: Date | undefined) => void;
+  placeholder: string;
+  minDate?: Date;
+  maxDate?: Date;
+};
+
+function DatePickerButton({ value, onChange, placeholder, minDate, maxDate }: DatePickerButtonProps) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(
+            "h-9 w-[170px] justify-start gap-2 font-normal",
+            !value && "text-muted-foreground",
+          )}
+        >
+          <CalendarIcon className="h-3.5 w-3.5" />
+          {value ? format(value, "dd MMM yyyy") : <span>{placeholder}</span>}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={value}
+          onSelect={onChange}
+          disabled={(date) => {
+            if (minDate && date < new Date(new Date(minDate).setHours(0, 0, 0, 0))) return true;
+            if (maxDate && date > new Date(new Date(maxDate).setHours(23, 59, 59, 999))) return true;
+            return false;
+          }}
+          initialFocus
+          className={cn("p-3 pointer-events-auto")}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
