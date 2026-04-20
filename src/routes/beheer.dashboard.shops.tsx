@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Search, Ban, CheckCircle2 } from "lucide-react";
+import { Search, Ban, CheckCircle2, ChevronDown } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AdminLayout } from "@/components/AdminLayout";
@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ShopOverridesPanel } from "@/components/admin/ShopOverridesPanel";
 import { adminShopsQuery } from "@/lib/admin-queries";
 import { formatCents, formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ function ShopsPage() {
   const { t } = useT();
   const { user } = useAuth();
   const [q, setQ] = useState(""); const [statusFilter, setStatusFilter] = useState<"all" | ShopStatus>("all");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const { data: shops, isLoading } = useQuery(adminShopsQuery()); const qc = useQueryClient();
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: ShopStatus }) => { const { error } = await supabase.from("shops").update({ status }).eq("id", id); if (error) throw error; },
@@ -55,37 +57,58 @@ function ShopsPage() {
             </tr></thead>
             <tbody className="divide-y divide-border">
               {list.length === 0 && <tr><td colSpan={8} className="px-6 py-8 text-center text-muted-foreground">{t("adminShops.noShops")}</td></tr>}
-              {list.map((s) => (
-                <tr key={s.id} className="hover:bg-muted/30">
-                  <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-warm text-xs font-semibold text-pink-foreground">{s.name[0]}</div><div><p className="font-medium">{s.name}</p><p className="text-xs text-muted-foreground">{s.slug}</p></div></div></td>
-                  <td className="hidden px-6 py-4 text-muted-foreground md:table-cell">{s.owner_email ?? "—"}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium capitalize", planColor[s.plan] ?? planColor.trial)}>{planLabel(s.plan)}</span>
-                      <select
-                        aria-label="Change plan"
-                        value={s.plan}
-                        disabled={updatePlan.isPending}
-                        onChange={(e) => updatePlan.mutate({ id: s.id, plan: e.target.value as DbPlan, prev: s.plan })}
-                        className="h-7 rounded-md border border-border bg-background px-1 text-xs"
-                      >
-                        {ALL_DB_PLANS.map((p) => <option key={p} value={p}>{planLabel(p)}</option>)}
-                      </select>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4"><StatusBadge status={s.status} /></td>
-                  <td className="hidden px-6 py-4 lg:table-cell">{s.booking_count ?? 0}</td>
-                  <td className="hidden px-6 py-4 font-medium lg:table-cell">{formatCents(s.revenue_cents ?? 0)}</td>
-                  <td className="hidden px-6 py-4 text-muted-foreground xl:table-cell">{formatDate(s.created_at)}</td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      {s.status === "suspended" ? <Button variant="ghost" size="sm" onClick={() => updateStatus.mutate({ id: s.id, status: "active" })}><CheckCircle2 className="h-4 w-4 text-success-foreground" /></Button>
-                       : s.status === "pending" ? <><Button variant="ghost" size="sm" onClick={() => updateStatus.mutate({ id: s.id, status: "active" })}><CheckCircle2 className="h-4 w-4 text-success-foreground" /></Button><Button variant="ghost" size="sm" onClick={() => updateStatus.mutate({ id: s.id, status: "suspended" })}><Ban className="h-4 w-4 text-destructive" /></Button></>
-                       : <Button variant="ghost" size="sm" onClick={() => updateStatus.mutate({ id: s.id, status: "suspended" })}><Ban className="h-4 w-4 text-destructive" /></Button>}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {list.map((s) => {
+                const isExpanded = expandedId === s.id;
+                return (
+                  <Fragment key={s.id}>
+                    <tr className="hover:bg-muted/30">
+                      <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-warm text-xs font-semibold text-pink-foreground">{s.name[0]}</div><div><p className="font-medium">{s.name}</p><p className="text-xs text-muted-foreground">{s.slug}</p></div></div></td>
+                      <td className="hidden px-6 py-4 text-muted-foreground md:table-cell">{s.owner_email ?? "—"}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-medium capitalize", planColor[s.plan] ?? planColor.trial)}>{planLabel(s.plan)}</span>
+                          <select
+                            aria-label="Change plan"
+                            value={s.plan}
+                            disabled={updatePlan.isPending}
+                            onChange={(e) => updatePlan.mutate({ id: s.id, plan: e.target.value as DbPlan, prev: s.plan })}
+                            className="h-7 rounded-md border border-border bg-background px-1 text-xs"
+                          >
+                            {ALL_DB_PLANS.map((p) => <option key={p} value={p}>{planLabel(p)}</option>)}
+                          </select>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4"><StatusBadge status={s.status} /></td>
+                      <td className="hidden px-6 py-4 lg:table-cell">{s.booking_count ?? 0}</td>
+                      <td className="hidden px-6 py-4 font-medium lg:table-cell">{formatCents(s.revenue_cents ?? 0)}</td>
+                      <td className="hidden px-6 py-4 text-muted-foreground xl:table-cell">{formatDate(s.created_at)}</td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setExpandedId((cur) => (cur === s.id ? null : s.id))}
+                            aria-label={isExpanded ? "Verberg plan & overrides" : "Toon plan & overrides"}
+                            aria-expanded={isExpanded}
+                          >
+                            <ChevronDown className={cn("h-4 w-4 transition-transform", isExpanded && "rotate-180")} />
+                          </Button>
+                          {s.status === "suspended" ? <Button variant="ghost" size="sm" onClick={() => updateStatus.mutate({ id: s.id, status: "active" })}><CheckCircle2 className="h-4 w-4 text-success-foreground" /></Button>
+                           : s.status === "pending" ? <><Button variant="ghost" size="sm" onClick={() => updateStatus.mutate({ id: s.id, status: "active" })}><CheckCircle2 className="h-4 w-4 text-success-foreground" /></Button><Button variant="ghost" size="sm" onClick={() => updateStatus.mutate({ id: s.id, status: "suspended" })}><Ban className="h-4 w-4 text-destructive" /></Button></>
+                           : <Button variant="ghost" size="sm" onClick={() => updateStatus.mutate({ id: s.id, status: "suspended" })}><Ban className="h-4 w-4 text-destructive" /></Button>}
+                        </div>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr className="bg-muted/10">
+                        <td colSpan={8} className="px-4 py-4 sm:px-6">
+                          <ShopOverridesPanel shopId={s.id} shopName={s.name} plan={s.plan} />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>

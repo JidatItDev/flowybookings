@@ -4,6 +4,7 @@ import { AdminLayout } from "@/components/AdminLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { PlatformBillingCard } from "@/components/PlatformBillingCard";
+import { PlanConfigurationCard } from "@/components/admin/PlanConfigurationCard";
 import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/beheer/dashboard/settings")({
@@ -46,6 +47,11 @@ function AdminSettings() {
           </div>
           <p className="mt-1 text-xs text-muted-foreground">{t("platformBilling.sectionBDesc")}</p>
         </Link>
+      </div>
+
+      {/* Plan & feature configuration — full width above the rest */}
+      <div className="mb-6">
+        <PlanConfigurationCard />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">

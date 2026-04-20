@@ -460,6 +460,39 @@ export type Database = {
         }
         Relationships: []
       }
+      plan_pricing: {
+        Row: {
+          created_at: string
+          currency: string
+          id: string
+          monthly_price_cents: number
+          notes: string | null
+          plan_name: Database["public"]["Enums"]["subscription_plan"]
+          platform_fee_bps: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          id?: string
+          monthly_price_cents?: number
+          notes?: string | null
+          plan_name: Database["public"]["Enums"]["subscription_plan"]
+          platform_fee_bps?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          id?: string
+          monthly_price_cents?: number
+          notes?: string | null
+          plan_name?: Database["public"]["Enums"]["subscription_plan"]
+          platform_fee_bps?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       platform_billing_config: {
         Row: {
           expects_client_id: boolean
@@ -636,6 +669,56 @@ export type Database = {
             foreignKeyName: "shop_automations_shop_id_fkey"
             columns: ["shop_id"]
             isOneToOne: true
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_feature_overrides: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          feature_slug: string
+          granted_by: string | null
+          granted_by_email: string | null
+          id: string
+          is_included: boolean
+          limit_value: number | null
+          reason: string | null
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          feature_slug: string
+          granted_by?: string | null
+          granted_by_email?: string | null
+          id?: string
+          is_included?: boolean
+          limit_value?: number | null
+          reason?: string | null
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          feature_slug?: string
+          granted_by?: string | null
+          granted_by_email?: string | null
+          id?: string
+          is_included?: boolean
+          limit_value?: number | null
+          reason?: string | null
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_feature_overrides_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
             referencedRelation: "shops"
             referencedColumns: ["id"]
           },
