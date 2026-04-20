@@ -44,6 +44,7 @@ import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/em
 import { Route as BookConfirmationBookingIdRouteImport } from './routes/book.confirmation.$bookingId'
 import { Route as BeheerDashboardUsersRouteImport } from './routes/beheer.dashboard.users'
 import { Route as BeheerDashboardSupportRouteImport } from './routes/beheer.dashboard.support'
+import { Route as BeheerDashboardSmsRouteImport } from './routes/beheer.dashboard.sms'
 import { Route as BeheerDashboardShopsRouteImport } from './routes/beheer.dashboard.shops'
 import { Route as BeheerDashboardSettingsRouteImport } from './routes/beheer.dashboard.settings'
 import { Route as BeheerDashboardRevenueRouteImport } from './routes/beheer.dashboard.revenue'
@@ -253,6 +254,11 @@ const BeheerDashboardUsersRoute = BeheerDashboardUsersRouteImport.update({
 const BeheerDashboardSupportRoute = BeheerDashboardSupportRouteImport.update({
   id: '/beheer/dashboard/support',
   path: '/beheer/dashboard/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BeheerDashboardSmsRoute = BeheerDashboardSmsRouteImport.update({
+  id: '/beheer/dashboard/sms',
+  path: '/beheer/dashboard/sms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BeheerDashboardShopsRoute = BeheerDashboardShopsRouteImport.update({
@@ -480,6 +486,7 @@ export interface FileRoutesByFullPath {
   '/beheer/dashboard/revenue': typeof BeheerDashboardRevenueRoute
   '/beheer/dashboard/settings': typeof BeheerDashboardSettingsRoute
   '/beheer/dashboard/shops': typeof BeheerDashboardShopsRoute
+  '/beheer/dashboard/sms': typeof BeheerDashboardSmsRoute
   '/beheer/dashboard/support': typeof BeheerDashboardSupportRoute
   '/beheer/dashboard/users': typeof BeheerDashboardUsersRoute
   '/book/confirmation/$bookingId': typeof BookConfirmationBookingIdRoute
@@ -549,6 +556,7 @@ export interface FileRoutesByTo {
   '/beheer/dashboard/revenue': typeof BeheerDashboardRevenueRoute
   '/beheer/dashboard/settings': typeof BeheerDashboardSettingsRoute
   '/beheer/dashboard/shops': typeof BeheerDashboardShopsRoute
+  '/beheer/dashboard/sms': typeof BeheerDashboardSmsRoute
   '/beheer/dashboard/support': typeof BeheerDashboardSupportRoute
   '/beheer/dashboard/users': typeof BeheerDashboardUsersRoute
   '/book/confirmation/$bookingId': typeof BookConfirmationBookingIdRoute
@@ -619,6 +627,7 @@ export interface FileRoutesById {
   '/beheer/dashboard/revenue': typeof BeheerDashboardRevenueRoute
   '/beheer/dashboard/settings': typeof BeheerDashboardSettingsRoute
   '/beheer/dashboard/shops': typeof BeheerDashboardShopsRoute
+  '/beheer/dashboard/sms': typeof BeheerDashboardSmsRoute
   '/beheer/dashboard/support': typeof BeheerDashboardSupportRoute
   '/beheer/dashboard/users': typeof BeheerDashboardUsersRoute
   '/book/confirmation/$bookingId': typeof BookConfirmationBookingIdRoute
@@ -690,6 +699,7 @@ export interface FileRouteTypes {
     | '/beheer/dashboard/revenue'
     | '/beheer/dashboard/settings'
     | '/beheer/dashboard/shops'
+    | '/beheer/dashboard/sms'
     | '/beheer/dashboard/support'
     | '/beheer/dashboard/users'
     | '/book/confirmation/$bookingId'
@@ -759,6 +769,7 @@ export interface FileRouteTypes {
     | '/beheer/dashboard/revenue'
     | '/beheer/dashboard/settings'
     | '/beheer/dashboard/shops'
+    | '/beheer/dashboard/sms'
     | '/beheer/dashboard/support'
     | '/beheer/dashboard/users'
     | '/book/confirmation/$bookingId'
@@ -828,6 +839,7 @@ export interface FileRouteTypes {
     | '/beheer/dashboard/revenue'
     | '/beheer/dashboard/settings'
     | '/beheer/dashboard/shops'
+    | '/beheer/dashboard/sms'
     | '/beheer/dashboard/support'
     | '/beheer/dashboard/users'
     | '/book/confirmation/$bookingId'
@@ -898,6 +910,7 @@ export interface RootRouteChildren {
   BeheerDashboardRevenueRoute: typeof BeheerDashboardRevenueRoute
   BeheerDashboardSettingsRoute: typeof BeheerDashboardSettingsRoute
   BeheerDashboardShopsRoute: typeof BeheerDashboardShopsRoute
+  BeheerDashboardSmsRoute: typeof BeheerDashboardSmsRoute
   BeheerDashboardSupportRoute: typeof BeheerDashboardSupportRoute
   BeheerDashboardUsersRoute: typeof BeheerDashboardUsersRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
@@ -1155,6 +1168,13 @@ declare module '@tanstack/react-router' {
       path: '/beheer/dashboard/support'
       fullPath: '/beheer/dashboard/support'
       preLoaderRoute: typeof BeheerDashboardSupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/beheer/dashboard/sms': {
+      id: '/beheer/dashboard/sms'
+      path: '/beheer/dashboard/sms'
+      fullPath: '/beheer/dashboard/sms'
+      preLoaderRoute: typeof BeheerDashboardSmsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/beheer/dashboard/shops': {
@@ -1462,6 +1482,7 @@ const rootRouteChildren: RootRouteChildren = {
   BeheerDashboardRevenueRoute: BeheerDashboardRevenueRoute,
   BeheerDashboardSettingsRoute: BeheerDashboardSettingsRoute,
   BeheerDashboardShopsRoute: BeheerDashboardShopsRoute,
+  BeheerDashboardSmsRoute: BeheerDashboardSmsRoute,
   BeheerDashboardSupportRoute: BeheerDashboardSupportRoute,
   BeheerDashboardUsersRoute: BeheerDashboardUsersRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
