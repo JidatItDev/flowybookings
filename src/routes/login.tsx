@@ -62,8 +62,16 @@ function LoginPage() {
     setSubmitting(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setSubmitting(false);
-    if (error) toast.error(error.message);
-    else toast.success(t("auth.welcomeBackToast"));
+    if (error) {
+      const msg = (error.message || "").toLowerCase();
+      if (msg.includes("invalid login") || msg.includes("invalid credentials")) {
+        toast.error(t("auth.invalidCredentials"));
+      } else {
+        toast.error(error.message);
+      }
+    } else {
+      toast.success(t("auth.welcomeBackToast"));
+    }
   };
 
   const fillDemo = (demoEmail: string) => { setEmail(demoEmail); setPassword(DEMO_PASSWORD); };
