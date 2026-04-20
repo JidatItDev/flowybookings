@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NoShopState } from "@/components/EmptyState";
 import { MollieConnectCard } from "@/components/MollieConnectCard";
+import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { FeatureLock } from "@/components/FeatureLock";
 import { useActiveShopId } from "@/lib/shop-context";
 import { shopFullQuery, shopKeys } from "@/lib/queries";
@@ -47,6 +48,8 @@ function SettingsPage() {
   const shopId = useActiveShopId();
   const qc = useQueryClient();
   const { t } = useT();
+  const readOnly = useImpersonationReadOnly();
+  const roTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const { refreshShops } = useAuth() as ReturnType<typeof useAuth> & { refreshShops?: () => void };
   const brandingAccess = useFeatureAccess(shopId, "custom_branding");
   const brandingAllowed = brandingAccess.data?.allowed ?? true;
@@ -72,6 +75,7 @@ function SettingsPage() {
 
   const save = useMutation({
     mutationFn: async () => {
+      assertNotImpersonating();
       if (!shopId || !shop) throw new Error(t("errors.noActiveShop"));
       const newBranding = { ...((shop.branding ?? {}) as Record<string, unknown>), color: branding.color, rules };
       const payload = {
@@ -119,7 +123,7 @@ function SettingsPage() {
       <PageHeader
         title={t("settings.title")}
         description={t("settings.description")}
-        actions={<Button variant="hero" onClick={() => save.mutate()} disabled={!dirty || save.isPending || !shopId}>{save.isPending ? t("settings.saving") : t("settings.saveChanges")}</Button>}
+        actions={<Button variant="hero" onClick={() => save.mutate()} disabled={!dirty || save.isPending || !shopId || readOnly} title={roTitle}>{save.isPending ? t("settings.saving") : t("settings.saveChanges")}</Button>}
       />
       {!shopId ? <NoShopState /> : isLoading ? (
         <div className="h-72 animate-pulse rounded-2xl border border-border bg-card" />
