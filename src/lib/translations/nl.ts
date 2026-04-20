@@ -620,6 +620,12 @@ export const nl: Record<string, string> = {
   "adminMessages.noBroadcasts": "Nog geen broadcasts.",
   "adminMessages.deliveredTo": "Verstuurd naar {n}",
   "adminMessages.readBy": "{n} gelezen",
+  "adminMessages.emailTemplates": "E-mailtemplates",
+  "adminMessages.emailTemplatesSub": "Bekijk hoe automatische e-mails er voor klanten en shop-eigenaren uitzien.",
+  "adminMessages.preview": "Preview",
+  "adminMessages.previewSubject": "Onderwerp",
+  "adminMessages.previewDescription": "Voorbeeld op basis van demo-data — er wordt niets verstuurd.",
+  "adminMessages.noPreviewData": "Geen previewdata beschikbaar voor deze template.",
 
   // ── Notifications ──
   "notifications.title": "Meldingen",
