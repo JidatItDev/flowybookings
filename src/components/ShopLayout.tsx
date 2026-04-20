@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useLocation } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -20,7 +20,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ShopPicker } from "@/components/ShopPicker";
 import { RequireShopAccess } from "@/components/RouteGuard";
-import { ShopOnboarding } from "@/components/ShopOnboarding";
 import { LegalReconsentDialog } from "@/components/LegalReconsentDialog";
 import { TrialBanner } from "@/components/TrialBanner";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
@@ -64,13 +63,24 @@ export function ShopLayout({ children }: { children: React.ReactNode }) {
 function ShopLayoutInner({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { shops, loading, user, signOut, isSuperAdmin, isShopOwner, isStaff } = useAuth();
   const { t } = useT();
   const isStaffOnly = isStaff && !isShopOwner && !isSuperAdmin;
   const visibleNav = nav.filter((n) => !n.ownerOnly || !isStaffOnly);
+  const needsOnboarding = !loading && shops.length === 0 && !isSuperAdmin;
 
-  if (!loading && shops.length === 0 && !isSuperAdmin) {
-    return <ShopOnboarding />;
+  // Legacy accounts (or users who lost their only shop) land on /shop with
+  // an empty context. Send them to the dedicated onboarding route so the
+  // URL reflects state and refreshes/share-links keep working.
+  useEffect(() => {
+    if (needsOnboarding && location.pathname !== "/shop/onboarding") {
+      navigate({ to: "/shop/onboarding", replace: true });
+    }
+  }, [needsOnboarding, location.pathname, navigate]);
+
+  if (needsOnboarding) {
+    return null;
   }
 
   const isActive = (to: string, exact?: boolean) =>

@@ -21,6 +21,7 @@ import { Route as ShopStaffRouteImport } from './routes/shop.staff'
 import { Route as ShopSettingsRouteImport } from './routes/shop.settings'
 import { Route as ShopServicesRouteImport } from './routes/shop.services'
 import { Route as ShopPaymentsRouteImport } from './routes/shop.payments'
+import { Route as ShopOnboardingRouteImport } from './routes/shop.onboarding'
 import { Route as ShopNotificationsRouteImport } from './routes/shop.notifications'
 import { Route as ShopCustomersRouteImport } from './routes/shop.customers'
 import { Route as ShopCalendarRouteImport } from './routes/shop.calendar'
@@ -139,6 +140,11 @@ const ShopServicesRoute = ShopServicesRouteImport.update({
 const ShopPaymentsRoute = ShopPaymentsRouteImport.update({
   id: '/shop/payments',
   path: '/shop/payments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShopOnboardingRoute = ShopOnboardingRouteImport.update({
+  id: '/shop/onboarding',
+  path: '/shop/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShopNotificationsRoute = ShopNotificationsRouteImport.update({
@@ -475,6 +481,7 @@ export interface FileRoutesByFullPath {
   '/shop/calendar': typeof ShopCalendarRoute
   '/shop/customers': typeof ShopCustomersRouteWithChildren
   '/shop/notifications': typeof ShopNotificationsRoute
+  '/shop/onboarding': typeof ShopOnboardingRoute
   '/shop/payments': typeof ShopPaymentsRoute
   '/shop/services': typeof ShopServicesRoute
   '/shop/settings': typeof ShopSettingsRoute
@@ -548,6 +555,7 @@ export interface FileRoutesByTo {
   '/shop/calendar': typeof ShopCalendarRoute
   '/shop/customers': typeof ShopCustomersRouteWithChildren
   '/shop/notifications': typeof ShopNotificationsRoute
+  '/shop/onboarding': typeof ShopOnboardingRoute
   '/shop/payments': typeof ShopPaymentsRoute
   '/shop/services': typeof ShopServicesRoute
   '/shop/settings': typeof ShopSettingsRoute
@@ -622,6 +630,7 @@ export interface FileRoutesById {
   '/shop/calendar': typeof ShopCalendarRoute
   '/shop/customers': typeof ShopCustomersRouteWithChildren
   '/shop/notifications': typeof ShopNotificationsRoute
+  '/shop/onboarding': typeof ShopOnboardingRoute
   '/shop/payments': typeof ShopPaymentsRoute
   '/shop/services': typeof ShopServicesRoute
   '/shop/settings': typeof ShopSettingsRoute
@@ -697,6 +706,7 @@ export interface FileRouteTypes {
     | '/shop/calendar'
     | '/shop/customers'
     | '/shop/notifications'
+    | '/shop/onboarding'
     | '/shop/payments'
     | '/shop/services'
     | '/shop/settings'
@@ -770,6 +780,7 @@ export interface FileRouteTypes {
     | '/shop/calendar'
     | '/shop/customers'
     | '/shop/notifications'
+    | '/shop/onboarding'
     | '/shop/payments'
     | '/shop/services'
     | '/shop/settings'
@@ -843,6 +854,7 @@ export interface FileRouteTypes {
     | '/shop/calendar'
     | '/shop/customers'
     | '/shop/notifications'
+    | '/shop/onboarding'
     | '/shop/payments'
     | '/shop/services'
     | '/shop/settings'
@@ -917,6 +929,7 @@ export interface RootRouteChildren {
   ShopCalendarRoute: typeof ShopCalendarRoute
   ShopCustomersRoute: typeof ShopCustomersRouteWithChildren
   ShopNotificationsRoute: typeof ShopNotificationsRoute
+  ShopOnboardingRoute: typeof ShopOnboardingRoute
   ShopPaymentsRoute: typeof ShopPaymentsRoute
   ShopServicesRoute: typeof ShopServicesRoute
   ShopSettingsRoute: typeof ShopSettingsRoute
@@ -1047,6 +1060,13 @@ declare module '@tanstack/react-router' {
       path: '/shop/payments'
       fullPath: '/shop/payments'
       preLoaderRoute: typeof ShopPaymentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shop/onboarding': {
+      id: '/shop/onboarding'
+      path: '/shop/onboarding'
+      fullPath: '/shop/onboarding'
+      preLoaderRoute: typeof ShopOnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/shop/notifications': {
@@ -1524,6 +1544,7 @@ const rootRouteChildren: RootRouteChildren = {
   ShopCalendarRoute: ShopCalendarRoute,
   ShopCustomersRoute: ShopCustomersRouteWithChildren,
   ShopNotificationsRoute: ShopNotificationsRoute,
+  ShopOnboardingRoute: ShopOnboardingRoute,
   ShopPaymentsRoute: ShopPaymentsRoute,
   ShopServicesRoute: ShopServicesRoute,
   ShopSettingsRoute: ShopSettingsRoute,
