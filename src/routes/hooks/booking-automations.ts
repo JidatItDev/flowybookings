@@ -143,6 +143,7 @@ async function sendReminder(
       staffName: ctx.staffName,
       whenLabel: ctx.whenLabel,
       shopAddress: ctx.shopAddress,
+      logoUrl: ctx.logoUrl,
       windowLabel,
     },
   })
@@ -201,7 +202,7 @@ async function loadContext(supabase: any, b: any) {
     b.customer_id
       ? supabase.from('customers').select('full_name, email').eq('id', b.customer_id).maybeSingle()
       : Promise.resolve({ data: null } as any),
-    supabase.from('shops').select('name, address').eq('id', b.shop_id).maybeSingle(),
+    supabase.from('shops').select('name, address, logo_url').eq('id', b.shop_id).maybeSingle(),
     b.service_id
       ? supabase.from('services').select('name').eq('id', b.service_id).maybeSingle()
       : Promise.resolve({ data: null } as any),
@@ -216,6 +217,7 @@ async function loadContext(supabase: any, b: any) {
     firstName: (customer.full_name as string | null)?.split(' ')[0],
     shopName: shop?.name as string | undefined,
     shopAddress: shop?.address as string | undefined,
+    logoUrl: (shop?.logo_url as string | null) ?? undefined,
     serviceName: service?.name as string | undefined,
     staffName: staff?.full_name as string | undefined,
     whenLabel: startsAt.toLocaleString('en-GB', {
