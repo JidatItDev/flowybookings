@@ -48,6 +48,7 @@ function CalendarPage() {
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<BookingWithRelations | null>(null);
   const [deleting, setDeleting] = useState<BookingWithRelations | null>(null);
+  const [viewing, setViewing] = useState<BookingWithRelations | null>(null);
   const [dayOffset, setDayOffset] = useState<number | null>(0); // 0 = vandaag, null = alle
 
   const statusLabel: Record<string, string> = {
