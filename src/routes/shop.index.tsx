@@ -85,6 +85,9 @@ function ShopDashboard() {
               <UpgradeNudge variant="no-shows" count={noShows7d} plan="Pro" />
             </div>
           )}
+          <div className="mb-4">
+            <BookingLinkCard slug={activeShop?.slug ?? null} shopName={activeShop?.name} />
+          </div>
           <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
             <StatCard label={t("dashboard.todayBookings")} value={String(todayBookings.length)} icon={CalendarCheck} accent="primary" />
             <StatCard label={t("dashboard.todayRevenue")} value={formatCents(todayRevenue)} icon={CircleDollarSign} accent="mint" />

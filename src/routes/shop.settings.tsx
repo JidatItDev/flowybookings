@@ -195,7 +195,11 @@ function SettingsPage() {
                   <Lock className="h-3 w-3 text-muted-foreground" />
                 </Label>
                 <Input value={shop?.slug ?? ""} disabled className="h-10 font-mono text-xs" />
-                <p className="mt-1 text-xs text-muted-foreground">{t("settings.shopSlugHint")} · /book/{shop?.slug}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t("settings.shopSlugHint")}</p>
+              </div>
+              <div className="sm:col-span-2">
+                <Label className="mb-1.5 block">{t("bookingLink.title")}</Label>
+                <BookingLinkCard slug={shop?.slug ?? null} shopName={shop?.name} compact />
               </div>
             </div>
           </Card>
