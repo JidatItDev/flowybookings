@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShopOverridesPanel } from "@/components/admin/ShopOverridesPanel";
+import { RevenueSparkline } from "@/components/RevenueSparkline";
 import { adminShopDetailQuery } from "@/lib/admin-queries";
 import { formatCents, formatDate, relativeFromNow } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -108,7 +109,7 @@ function ShopDetailPage() {
     );
   }
 
-  const { shop, owner, stats, customerSources, events } = data;
+  const { shop, owner, stats, customerSources, revenueLast30Days, events } = data;
   const policyDateFmt = new Intl.DateTimeFormat("nl-NL", { day: "2-digit", month: "short", year: "numeric" });
   const sourceLabel = (src: string): string => {
     const map: Record<string, string> = {
