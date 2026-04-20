@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NoShopState } from "@/components/EmptyState";
+import { BookingLinkCard } from "@/components/BookingLinkCard";
 import { MollieConnectCard } from "@/components/MollieConnectCard";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { FeatureLock } from "@/components/FeatureLock";
