@@ -27,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { servicesQuery, staffQuery } from "@/lib/queries";
 import { publicAppSettingsQuery } from "@/lib/app-settings";
 import { useT } from "@/lib/i18n";
+import { getTrialState } from "@/lib/trial";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { cn } from "@/lib/utils";
 
@@ -173,10 +174,9 @@ function BookingFlow() {
 
   const selectedShop = shopsQ.data?.find((s) => s.id === shopId) ?? presetShopQ.data ?? null;
   const isDemoShop = !!selectedShop?.is_demo;
-  // Use shared trial state — covers trial expiry AND payment_failed grace period.
-  const { getTrialState } = require("@/lib/trial") as typeof import("@/lib/trial");
+  // Shared trial-state covers trial expiry AND payment_failed grace.
   const shopBookingState = getTrialState(selectedShop as never);
-  const shopTrialExpired = !shopBookingState.canAcceptBookings;
+  const shopTrialExpired = !!selectedShop && !shopBookingState.canAcceptBookings;
   const selectedService = servicesQ.data?.find((s) => s.id === serviceId);
   const selectedStaff = staffQ.data?.find((s) => s.id === staffId);
 
