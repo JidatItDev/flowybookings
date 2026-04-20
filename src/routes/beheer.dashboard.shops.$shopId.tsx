@@ -19,7 +19,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { startImpersonate } from "@/lib/impersonation";
-import { ALL_DB_PLANS, planLabel, type DbPlan } from "@/lib/plans";
+import { planLabel } from "@/lib/plans";
 
 type ShopStatus = Database["public"]["Enums"]["shop_status"];
 
@@ -216,26 +216,22 @@ function ShopDetailPage() {
           </div>
         </div>
 
-        {/* Abonnement */}
+        {/* Abonnement (compact summary; volledig beheer in panel hieronder) */}
         <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t("adminShopDetail.subscription")}</h2>
-          <div className="space-y-3 text-sm">
-            <div>
-              <p className="text-xs text-muted-foreground">{t("adminShopDetail.changePlan")}</p>
-              <select
-                value={shop.plan}
-                disabled={updatePlan.isPending}
-                onChange={(e) => updatePlan.mutate({ plan: e.target.value as DbPlan, prev: shop.plan })}
-                className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-sm"
-              >
-                {ALL_DB_PLANS.map((p) => <option key={p} value={p}>{planLabel(p)}</option>)}
-              </select>
-            </div>
+          <div className="space-y-2 text-sm">
+            <p><span className="text-muted-foreground">{t("adminShopDetail.changePlan")}:</span> <span className="font-medium">{planLabel(shop.plan)}</span></p>
+            {shop.subscription_status && (
+              <p><span className="text-muted-foreground">Status:</span> <span className="font-medium capitalize">{shop.subscription_status}</span></p>
+            )}
             {shop.plan_billing_cycle && (
               <p className="text-muted-foreground"><span className="font-medium text-foreground">{t("adminShopDetail.billingCycle")}:</span> {shop.plan_billing_cycle}</p>
             )}
             {shop.plan_expires_at && (
               <p className="text-muted-foreground"><span className="font-medium text-foreground">{t("adminShopDetail.expiresAt")}:</span> {formatDate(shop.plan_expires_at)}</p>
+            )}
+            {shop.next_billing_at && (
+              <p className="text-muted-foreground"><span className="font-medium text-foreground">{t("adminShopDetail.nextBilling")}:</span> {formatDate(shop.next_billing_at)}</p>
             )}
           </div>
         </div>
