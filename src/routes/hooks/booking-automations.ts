@@ -132,8 +132,16 @@ async function sendReminder(
 ): Promise<'sent' | 'skipped'> {
   const ctx = await loadContext(supabase, b)
   if (!ctx) return 'skipped'
+
+  // 2u-reminder gebruikt de aparte korte 'tot zo!' template met route-link.
+  // 24u-reminder blijft de uitgebreide booking-reminder template gebruiken.
+  const templateName = kind === 'reminder-2h' ? 'booking-reminder-2h' : 'booking-reminder'
+  const routeUrl = ctx.shopAddress
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ctx.shopAddress)}`
+    : undefined
+
   const result = await enqueueBookingEmail({
-    templateName: 'booking-reminder',
+    templateName,
     recipientEmail: ctx.email,
     idempotencyKey: `${kind}-${b.id}`,
     templateData: {
@@ -145,6 +153,7 @@ async function sendReminder(
       shopAddress: ctx.shopAddress,
       logoUrl: ctx.logoUrl,
       windowLabel,
+      ...(kind === 'reminder-2h' ? { routeUrl } : {}),
     },
   })
   return result.success || ('reason' in result && result.reason === 'already_sent') ? 'sent' : 'skipped'

@@ -11,6 +11,7 @@ export interface TemplateEntry {
 
 import { template as bookingConfirmation } from './booking-confirmation'
 import { template as bookingReminder } from './booking-reminder'
+import { template as bookingReminder2h } from './booking-reminder-2h'
 import { template as bookingFollowup } from './booking-followup'
 import { template as trialEnding } from './trial-ending'
 import { template as welcomeShopOwner } from './welcome-shop-owner'
@@ -26,6 +27,7 @@ import { template as smsTopupApplied } from './sms-topup-applied'
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'booking-confirmation': bookingConfirmation,
   'booking-reminder': bookingReminder,
+  'booking-reminder-2h': bookingReminder2h,
   'booking-followup': bookingFollowup,
   'trial-ending': trialEnding,
   'welcome-shop-owner': welcomeShopOwner,
