@@ -100,7 +100,7 @@ function BookingFlow() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shops")
-        .select("id, name, slug, address, is_demo, business_hours, timezone")
+        .select("id, name, slug, address, is_demo, business_hours, timezone, plan, plan_expires_at")
         .eq("status", "active");
       if (error) throw error;
       let rows = data ?? [];
@@ -108,6 +108,13 @@ function BookingFlow() {
         (appSettings && appSettings.public_booking_on_demo_shops_enabled === false) ||
         (appSettings && appSettings.seeded_demo_data_visible === false);
       if (hideDemo) rows = rows.filter((s) => !s.is_demo);
+      // Hide shops with expired trial — they cannot accept new bookings
+      const now = Date.now();
+      rows = rows.filter((s) => {
+        if (s.plan && s.plan !== "trial") return true;
+        if (!s.plan_expires_at) return true;
+        return new Date(s.plan_expires_at).getTime() > now;
+      });
       return rows;
     },
   });
@@ -122,7 +129,7 @@ function BookingFlow() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shops")
-        .select("id, name, slug, address, is_demo, business_hours, timezone")
+        .select("id, name, slug, address, is_demo, business_hours, timezone, plan, plan_expires_at")
         .eq("id", presetShopId!)
         .maybeSingle();
       if (error) throw error;

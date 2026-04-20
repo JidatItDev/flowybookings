@@ -290,3 +290,85 @@ function NumField({ label, value, onChange }: { label: string; value: number; on
     </div>
   );
 }
+
+function LogoUploader({ shopId, currentLogoUrl, fallbackInitials, fallbackColor }: { shopId: string; currentLogoUrl: string | null; fallbackInitials: string; fallbackColor: string }) {
+  const qc = useQueryClient();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const upload = async (file: File) => {
+    if (!shopId) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Logo is te groot (max 2MB)");
+      return;
+    }
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "png";
+      const path = `${shopId}/logo-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("shop-logos").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type,
+      });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("shop-logos").getPublicUrl(path);
+      const { error: updErr } = await supabase.from("shops").update({ logo_url: pub.publicUrl }).eq("id", shopId);
+      if (updErr) throw updErr;
+      toast.success("Logo geüpload");
+      qc.invalidateQueries({ queryKey: shopKeys.shopFull(shopId) });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  const remove = async () => {
+    if (!shopId) return;
+    setUploading(true);
+    try {
+      const { error } = await supabase.from("shops").update({ logo_url: null }).eq("id", shopId);
+      if (error) throw error;
+      toast.success("Logo verwijderd");
+      qc.invalidateQueries({ queryKey: shopKeys.shopFull(shopId) });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-4">
+      {currentLogoUrl ? (
+        <img src={currentLogoUrl} alt="Shop logo" className="h-16 w-16 rounded-2xl object-cover border border-border" />
+      ) : (
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl text-xl font-semibold text-primary-foreground" style={{ background: fallbackColor }}>
+          {fallbackInitials}
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-muted-foreground">PNG, JPG, WEBP of SVG · max 2MB</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) upload(f); }}
+          />
+          <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={uploading}>
+            <Upload className="h-4 w-4" /> {uploading ? "Bezig..." : currentLogoUrl ? "Vervangen" : "Upload logo"}
+          </Button>
+          {currentLogoUrl && (
+            <Button variant="ghost" size="sm" onClick={remove} disabled={uploading} className="text-destructive">
+              <X className="h-4 w-4" /> Verwijder
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
