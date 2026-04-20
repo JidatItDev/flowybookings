@@ -838,6 +838,8 @@ export type Database = {
           plan: Database["public"]["Enums"]["subscription_plan"]
           plan_billing_cycle: string | null
           plan_expires_at: string | null
+          policy_accepted_at: string | null
+          policy_version: string | null
           slug: string
           status: Database["public"]["Enums"]["shop_status"]
           timezone: string
@@ -861,6 +863,8 @@ export type Database = {
           plan?: Database["public"]["Enums"]["subscription_plan"]
           plan_billing_cycle?: string | null
           plan_expires_at?: string | null
+          policy_accepted_at?: string | null
+          policy_version?: string | null
           slug: string
           status?: Database["public"]["Enums"]["shop_status"]
           timezone?: string
@@ -884,6 +888,8 @@ export type Database = {
           plan?: Database["public"]["Enums"]["subscription_plan"]
           plan_billing_cycle?: string | null
           plan_expires_at?: string | null
+          policy_accepted_at?: string | null
+          policy_version?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["shop_status"]
           timezone?: string
