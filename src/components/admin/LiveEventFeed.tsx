@@ -5,6 +5,11 @@ import { toast } from "sonner"
 import { supabase } from "@/integrations/supabase/client"
 import { adminEventFeedQuery, type AdminEvent } from "@/lib/admin-dashboard-extras"
 import { relativeFromNow } from "@/lib/format"
+import {
+  ensureNotificationPermission,
+  playChime,
+  showBrowserNotification,
+} from "@/lib/admin-alerts"
 
 const ACTION_LABELS: Record<string, string> = {
   shop_plan_change: "Plan gewijzigd",
@@ -36,7 +41,12 @@ export function LiveEventFeed() {
   const qc = useQueryClient()
   const { data, isLoading } = useQuery(adminEventFeedQuery())
 
-  // Realtime: nieuwe rij in activity_log → invalidate + toast bij hoge prioriteit
+  // Vraag eenmalig permission voor browser-notificaties zodra de admin de feed opent.
+  useEffect(() => {
+    ensureNotificationPermission()
+  }, [])
+
+  // Realtime: nieuwe rij in activity_log → invalidate + toast/chime/notificatie bij hoge prioriteit
   useEffect(() => {
     const channel = supabase
       .channel("admin-activity-log")
@@ -52,9 +62,11 @@ export function LiveEventFeed() {
             metadata?: Record<string, unknown> | null
           }
           if (row?.action && isHighPriority(row.action, row.metadata ?? null)) {
-            toast.warning(eventLabel({ action: row.action }), {
-              description: "Bekijk de activiteit-feed voor details.",
-            })
+            const label = eventLabel({ action: row.action })
+            const description = "Bekijk de activiteit-feed voor details."
+            toast.warning(label, { description })
+            playChime()
+            showBrowserNotification(`FlowyBookings · ${label}`, description)
           }
         },
       )
