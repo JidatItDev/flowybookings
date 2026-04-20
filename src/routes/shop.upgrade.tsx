@@ -13,6 +13,7 @@ import { changeShopPlan, tierOf, TIER_RANK, type DbPlan } from "@/lib/plans";
 import { usePermissions } from "@/lib/use-permissions";
 import { shopKeys } from "@/lib/queries";
 import { ShopBillingCard, usePlanCheckout } from "@/components/ShopBillingCard";
+import { assertNotImpersonating, useImpersonationReadOnly } from "@/components/ImpersonationBanner";
 
 export const Route = createFileRoute("/shop/upgrade")({
   head: () => ({ meta: [{ title: "Upgrade — FlowyBookings" }] }),
@@ -29,12 +30,15 @@ function UpgradePage() {
   const currentPlan = (activeShop?.plan ?? "trial") as DbPlan;
   const currentTier = tierOf(currentPlan);
   const [cycle, setCycle] = useState<"monthly" | "yearly">("monthly");
+  const readOnly = useImpersonationReadOnly();
+  const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
 
   const checkout = usePlanCheckout();
 
   // Downgrades don't require payment — keep them as direct plan changes.
   const downgrade = useMutation({
     mutationFn: async (newPlan: PlanKey) => {
+      assertNotImpersonating();
       if (!activeShop) throw new Error("No active shop");
       await changeShopPlan({
         shopId: activeShop.id,
@@ -253,9 +257,10 @@ function UpgradePage() {
                 variant={featured ? "hero" : isCurrent ? "outline" : "default"}
                 className="mt-6 w-full"
                 size="lg"
-                disabled={isCurrent || busy || !canManageBilling}
+                disabled={isCurrent || busy || !canManageBilling || readOnly}
+                title={readOnlyTitle}
                 onClick={() => {
-                  if (!canManageBilling) return;
+                  if (!canManageBilling || readOnly) return;
                   if (isCurrent) return;
                   if (isDowngrade) {
                     if (!window.confirm(t("upgrade.confirmDowngrade", { plan: p.name }))) return;

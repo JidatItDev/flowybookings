@@ -26,10 +26,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { assertNotImpersonating, useImpersonationReadOnly } from "@/components/ImpersonationBanner";
 
 export function MollieConnectPayments({ shopId }: { shopId: string }) {
   const { t } = useT();
   const qc = useQueryClient();
+  const readOnly = useImpersonationReadOnly();
+  const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const [refundTarget, setRefundTarget] = useState<{
     id: string;
     amount: number;
@@ -47,6 +50,7 @@ export function MollieConnectPayments({ shopId }: { shopId: string }) {
 
   const refundMut = useMutation({
     mutationFn: async (paymentId: string) => {
+      assertNotImpersonating();
       const { data: sess } = await supabase.auth.getSession();
       const accessToken = sess.session?.access_token;
       if (!accessToken) throw new Error("unauthenticated");
@@ -139,7 +143,8 @@ export function MollieConnectPayments({ shopId }: { shopId: string }) {
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={!canRefund || refundMut.isPending}
+                        disabled={!canRefund || refundMut.isPending || readOnly}
+                        title={readOnlyTitle}
                         onClick={() =>
                           setRefundTarget({
                             id: p.id,
