@@ -790,6 +790,19 @@ function CalendarPage() {
                   description: "Kies een tijdstip binnen de werkuren of wijzig het rooster van de medewerker.",
                 });
               }}
+              onCreateBooking={() => {
+                if (newBookingDisabled) return;
+                setSlotPrefill(null);
+                setCreating(true);
+              }}
+              createBookingDisabled={newBookingDisabled}
+              createBookingTitle={newBookingTitle}
+              emptyLabels={{
+                title: t("calendar.emptyTitle"),
+                noStaffSelected: t("calendar.emptyNoStaffSelected"),
+                noStaffActive: t("calendar.emptyNoStaffActive"),
+                cta: t("calendar.newBooking"),
+              }}
             />
           ) : (
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
