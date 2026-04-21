@@ -365,6 +365,8 @@ export function DayTimeGrid({
             return (
             <div
               key={`col-${c.key}`}
+              data-col-key={c.key}
+              data-col-staff-id={c.staffId ?? ""}
               className="relative border-l border-border"
               style={{ height: totalHeight }}
               onDragOver={onReschedule ? (e) => {
