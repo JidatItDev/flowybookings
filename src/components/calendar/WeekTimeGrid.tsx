@@ -781,8 +781,12 @@ export function WeekTimeGrid({
                             const slotStart = new Date(targetDay);
                             slotStart.setUTCMinutes(totalMin);
                             const slotEnd = new Date(slotStart.getTime() + durMs);
-                            // Blokkeer commit bij invalid (werkuren/pauze/conflict).
-                            if (computeValidation(slotStart, slotEnd).invalid) return;
+                            // Blokkeer commit bij invalid (werkuren/pauze/conflict) + notify parent.
+                            const tv = computeValidation(slotStart, slotEnd);
+                            if (tv.invalid) {
+                              if (tv.reason) onDropBlocked?.(tv.reason);
+                              return;
+                            }
                             const newStart = new Date(targetDay);
                             newStart.setUTCMinutes(totalMin);
                             if (newStart.getTime() === startTs) return;
@@ -930,8 +934,10 @@ export function WeekTimeGrid({
                         const commit = () => {
                           setResizing((cur) => {
                             if (!cur || cur.bookingId !== b.id) return null;
-                            if (
-                              !cur.invalid &&
+                            if (cur.invalid) {
+                              // Resize geblokkeerd door pre-validatie — toast in parent.
+                              if (cur.reason) onDropBlocked?.(cur.reason);
+                            } else if (
                               Math.round(cur.newDurMin) !== Math.round(fullDurMin) &&
                               onReschedule
                             ) {
