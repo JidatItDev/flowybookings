@@ -185,7 +185,12 @@ function CustomerProfilePage() {
   }, [customer?.id]);
 
   const update = useMutation({
-    mutationFn: async (patch: { notes?: string | null; tags?: string[]; requires_deposit?: boolean }) => {
+    mutationFn: async (patch: {
+      notes?: string | null;
+      tags?: string[];
+      requires_deposit?: boolean;
+      preferences?: CustomerPreferences;
+    }) => {
       assertNotImpersonating();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await supabase.from("customers").update(patch as any).eq("id", customerId);
@@ -198,6 +203,20 @@ function CustomerProfilePage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const savePreferences = () => {
+    const next: CustomerPreferences = {
+      ...(customer?.preferences ?? {}),
+      favorite_staff_id: favStaff === "none" ? null : favStaff,
+      favorite_service_id: favService === "none" ? null : favService,
+      allergies: allergies.trim() || undefined,
+      communication,
+    };
+    update.mutate(
+      { preferences: next },
+      { onSuccess: () => toast.success(t("customers.preferencesSaved")) },
+    );
+  };
 
   const addTag = (raw: string) => {
     const v = raw.trim();
