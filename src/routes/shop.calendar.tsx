@@ -358,7 +358,42 @@ function CalendarPage() {
             </div>
           )}
 
-          {filtered.length === 0 ? (
+          {/* View toggle: lijst of tijdgrid. Grid alleen zinvol als 1 dag is gekozen. */}
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="text-xs text-muted-foreground">
+              {filtered.length} {filtered.length === 1 ? t("calendar.appointment") : t("calendar.appointments")}
+            </div>
+            <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 p-1 text-xs">
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                disabled={dayOffset === null}
+                title={dayOffset === null ? "Kies een dag om het rooster te tonen" : "Rooster"}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full px-3 py-1 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                  viewMode === "grid" && dayOffset !== null
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" /> Rooster
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full px-3 py-1 font-medium transition-colors",
+                  viewMode === "list" || dayOffset === null
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <List className="h-3.5 w-3.5" /> Lijst
+              </button>
+            </div>
+          </div>
+
+          {filtered.length === 0 && viewMode === "list" ? (
             <EmptyState
               icon={CalendarDays}
               title={filter === "all" ? t("calendar.noBookings") : t("calendar.noMatch")}
@@ -368,6 +403,27 @@ function CalendarPage() {
                   <Plus className="h-4 w-4" /> {t("calendar.newBooking")}
                 </Button>
               )}
+            />
+          ) : viewMode === "grid" && dayOffset !== null ? (
+            <DayTimeGrid
+              day={(() => {
+                const d = new Date();
+                d.setUTCHours(0, 0, 0, 0);
+                d.setUTCDate(d.getUTCDate() + dayOffset);
+                return d;
+              })()}
+              bookings={filtered}
+              staff={staff}
+              customers={customers}
+              services={services}
+              colors={colors}
+              staffFilter={staffFilter}
+              onSelectBooking={(b) => setViewing(b)}
+              onSelectSlot={(slot) => {
+                if (newBookingDisabled) return;
+                setSlotPrefill(slot);
+                setCreating(true);
+              }}
             />
           ) : (
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
