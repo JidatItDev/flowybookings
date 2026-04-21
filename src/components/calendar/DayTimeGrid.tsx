@@ -508,7 +508,8 @@ export function DayTimeGrid({
                   );
                 })}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
