@@ -211,6 +211,18 @@ export function WeekTimeGrid({
     return m;
   }, [staff]);
 
+  const customerById = useMemo(() => {
+    const m = new Map<string, CustomerLite>();
+    for (const c of customers ?? []) m.set(c.id, c);
+    return m;
+  }, [customers]);
+
+  const serviceById = useMemo(() => {
+    const m = new Map<string, ServiceLite>();
+    for (const s of services ?? []) m.set(s.id, s);
+    return m;
+  }, [services]);
+
   // Drag-preview: gesnapte drop-positie binnen één dag-kolom (tijdelijke UI-state).
   const grabOffsetRef = useRef<number>(0);
   // Booking-id van het actief gesleepte blok (in dragover is dataTransfer.getData
