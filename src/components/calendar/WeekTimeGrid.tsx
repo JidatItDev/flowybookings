@@ -311,34 +311,68 @@ export function WeekTimeGrid({
                   const clampedInWin = Math.max(0, Math.min(winSize - SNAP_MINUTES, snapped));
                   const totalMin = winStart + clampedInWin;
 
-                  // Pre-validatie tegen working_hours van de booking-eigenaar
-                  // (booking.staff_id wijzigt niet in week-view, alleen tijd/datum).
+                  // Pre-validatie: werkuren/pauze van booking-eigenaar +
+                  // conflict-overlap met andere bookings van dezelfde medewerker
+                  // op de doel-dag. Server blijft autoritair.
                   let invalid = false;
                   let reason: string | undefined;
                   const draggedId = draggedIdRef.current;
                   if (draggedId && dropInvalidLabels) {
                     const src = bookingsById.get(draggedId);
-                    const stf = src?.staff_id ? staffById.get(src.staff_id) : undefined;
-                    const wh = stf?.working_hours as StaffWorkingHours | undefined;
-                    if (src && wh) {
+                    if (src) {
                       const durMs = +new Date(src.ends_at) - +new Date(src.starts_at);
                       const slotStart = new Date(d);
                       slotStart.setUTCMinutes(totalMin);
                       const slotEnd = new Date(slotStart.getTime() + durMs);
-                      const v = validateBookingSlot(slotStart, slotEnd, wh);
-                      if (v.kind === "closed_day") {
-                        invalid = true;
-                        reason = dropInvalidLabels.closedDay;
-                      } else if (v.kind === "off_hours") {
-                        invalid = true;
-                        const w = v.window;
-                        reason = w
-                          ? dropInvalidLabels.offHours(`${formatMinutesOfDay(w.startMin)}–${formatMinutesOfDay(w.endMin)}`)
-                          : dropInvalidLabels.offHours("—");
-                      } else if (v.kind === "break") {
-                        invalid = true;
-                        const br = v.window;
-                        reason = dropInvalidLabels.duringBreak(`${formatMinutesOfDay(br.startMin)}–${formatMinutesOfDay(br.endMin)}`);
+
+                      // 1) Conflict-check: overlap met andere booking van
+                      // dezelfde medewerker (negeer cancelled/no_show + zichzelf).
+                      if (dropInvalidLabels.conflictWith && src.staff_id != null) {
+                        const newStartTs = slotStart.getTime();
+                        const newEndTs = slotEnd.getTime();
+                        for (const other of bookings) {
+                          if (other.id === src.id) continue;
+                          if ((other.staff_id ?? null) !== (src.staff_id ?? null)) continue;
+                          if (other.status === "cancelled" || other.status === "no_show") continue;
+                          const oStart = new Date(other.starts_at).getTime();
+                          const oEnd = new Date(other.ends_at).getTime();
+                          if (newStartTs < oEnd && newEndTs > oStart) {
+                            const oStartDate = new Date(other.starts_at);
+                            const oEndDate = new Date(other.ends_at);
+                            const oStartMin =
+                              oStartDate.getUTCHours() * 60 + oStartDate.getUTCMinutes();
+                            const oEndMin =
+                              oEndDate.getUTCHours() * 60 + oEndDate.getUTCMinutes();
+                            invalid = true;
+                            reason = dropInvalidLabels.conflictWith(
+                              `${formatMinutesOfDay(oStartMin)}–${formatMinutesOfDay(oEndMin)}`,
+                            );
+                            break;
+                          }
+                        }
+                      }
+
+                      // 2) Werkuren/pauze (alleen als nog geen conflict).
+                      if (!invalid) {
+                        const stf = src.staff_id ? staffById.get(src.staff_id) : undefined;
+                        const wh = stf?.working_hours as StaffWorkingHours | undefined;
+                        if (wh) {
+                          const v = validateBookingSlot(slotStart, slotEnd, wh);
+                          if (v.kind === "closed_day") {
+                            invalid = true;
+                            reason = dropInvalidLabels.closedDay;
+                          } else if (v.kind === "off_hours") {
+                            invalid = true;
+                            const w = v.window;
+                            reason = w
+                              ? dropInvalidLabels.offHours(`${formatMinutesOfDay(w.startMin)}–${formatMinutesOfDay(w.endMin)}`)
+                              : dropInvalidLabels.offHours("—");
+                          } else if (v.kind === "break") {
+                            invalid = true;
+                            const br = v.window;
+                            reason = dropInvalidLabels.duringBreak(`${formatMinutesOfDay(br.startMin)}–${formatMinutesOfDay(br.endMin)}`);
+                          }
+                        }
                       }
                     }
                   }

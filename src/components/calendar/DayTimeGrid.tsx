@@ -394,37 +394,63 @@ export function DayTimeGrid({
                   const clampedInWin = Math.max(0, Math.min(winMin - SNAP_MINUTES, snapped));
                   const totalMin = START_HOUR * 60 + clampedInWin;
 
-                  // Pre-validatie: zoek de gesleepte booking + valideer tegen
-                  // de doel-kolom (staff working_hours). Server blijft autoritair.
+                  // Pre-validatie: werkuren/pauze + conflict-overlap met andere
+                  // bookings van de doel-medewerker. Server blijft autoritair.
                   let invalid = false;
                   let reason: string | undefined;
-                  // Booking-id zit in dataTransfer maar is in dragover niet
-                  // leesbaar (browser-restrictie). We gebruiken ref-loze lookup
-                  // via de single-column working_hours: als de doel-staff niet
-                  // beschikbaar is op deze tijd → rood. Voor accurate duur
-                  // zoeken we de meest recent gesleepte booking via grabOffsetRef
-                  // is niet nodig; we valideren met een minimale 15-min slot.
-                  // Voor betere UX gebruiken we de gemiddelde duur uit
-                  // visibleBookings als de booking-id beschikbaar zou zijn.
-                  if (c.workingHours && dropInvalidLabels) {
-                    const slotStart = new Date(dayStart);
-                    slotStart.setUTCMinutes(totalMin);
-                    // Gebruik 15 min als minimale check-window (snap-resolutie).
-                    const slotEnd = new Date(slotStart.getTime() + SNAP_MINUTES * 60_000);
-                    const v = validateBookingSlot(slotStart, slotEnd, c.workingHours);
-                    if (v.kind === "closed_day") {
-                      invalid = true;
-                      reason = dropInvalidLabels.closedDay;
-                    } else if (v.kind === "off_hours") {
-                      invalid = true;
-                      const w = v.window;
-                      reason = w
-                        ? dropInvalidLabels.offHours(`${formatMinutes(w.startMin)}–${formatMinutes(w.endMin)}`)
-                        : dropInvalidLabels.offHours("—");
-                    } else if (v.kind === "break") {
-                      invalid = true;
-                      const br = v.window;
-                      reason = dropInvalidLabels.duringBreak(`${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`);
+                  // Bepaal duur van de gesleepte booking via gecachte id.
+                  const draggedId = draggedIdRef.current;
+                  const src = draggedId ? bookings.find((bk) => bk.id === draggedId) : null;
+                  const durMs = src
+                    ? +new Date(src.ends_at) - +new Date(src.starts_at)
+                    : SNAP_MINUTES * 60_000;
+                  const slotStart = new Date(dayStart);
+                  slotStart.setUTCMinutes(totalMin);
+                  const slotEnd = new Date(slotStart.getTime() + durMs);
+
+                  if (dropInvalidLabels) {
+                    // 1) Conflict-check tegen andere bookings van doel-medewerker.
+                    if (dropInvalidLabels.conflictWith && c.staffId != null && src) {
+                      const newStartTs = slotStart.getTime();
+                      const newEndTs = slotEnd.getTime();
+                      for (const other of visibleBookings) {
+                        if (other.id === src.id) continue;
+                        if ((other.staff_id ?? null) !== c.staffId) continue;
+                        if (other.status === "cancelled" || other.status === "no_show") continue;
+                        const oStart = new Date(other.starts_at).getTime();
+                        const oEnd = new Date(other.ends_at).getTime();
+                        if (newStartTs < oEnd && newEndTs > oStart) {
+                          const oStartDate = new Date(other.starts_at);
+                          const oEndDate = new Date(other.ends_at);
+                          const oStartMin =
+                            oStartDate.getUTCHours() * 60 + oStartDate.getUTCMinutes();
+                          const oEndMin =
+                            oEndDate.getUTCHours() * 60 + oEndDate.getUTCMinutes();
+                          invalid = true;
+                          reason = dropInvalidLabels.conflictWith(
+                            `${formatMinutes(oStartMin)}–${formatMinutes(oEndMin)}`,
+                          );
+                          break;
+                        }
+                      }
+                    }
+                    // 2) Werkuren/pauze van doel-medewerker (alleen als nog geen conflict).
+                    if (!invalid && c.workingHours) {
+                      const v = validateBookingSlot(slotStart, slotEnd, c.workingHours);
+                      if (v.kind === "closed_day") {
+                        invalid = true;
+                        reason = dropInvalidLabels.closedDay;
+                      } else if (v.kind === "off_hours") {
+                        invalid = true;
+                        const w = v.window;
+                        reason = w
+                          ? dropInvalidLabels.offHours(`${formatMinutes(w.startMin)}–${formatMinutes(w.endMin)}`)
+                          : dropInvalidLabels.offHours("—");
+                      } else if (v.kind === "break") {
+                        invalid = true;
+                        const br = v.window;
+                        reason = dropInvalidLabels.duringBreak(`${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`);
+                      }
                     }
                   }
 
@@ -663,8 +689,15 @@ export function DayTimeGrid({
                           const grabPx = e.clientY - blockRect.top;
                           const grabMin = Math.max(0, grabPx / PX_PER_MIN);
                           grabOffsetRef.current = grabMin;
+                          // Cache booking-id voor pre-validatie tijdens dragOver
+                          // (waar dataTransfer.getData niet leesbaar is).
+                          draggedIdRef.current = b.id;
                           e.dataTransfer.setData("application/x-grab-offset-min", String(grabMin));
                         } : undefined}
+                        onDragEnd={() => {
+                          draggedIdRef.current = null;
+                          setDragPreview(null);
+                        }}
                         onTouchStart={draggable ? (e) => {
                           // Touch long-press → drag flow voor iPad/tablet in salons.
                           // Native HTML5 drag werkt niet op touch, dus we doen het zelf.
