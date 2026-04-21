@@ -182,12 +182,6 @@ export const Route = createFileRoute("/api/mollie/webhook")({
   },
 });
 
-function ok() {
-  return new Response(JSON.stringify({ ok: true }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
-}
 
 // Constant-time string comparison to avoid timing attacks on the shared-secret guard.
 function safeEqual(a: string, b: string): boolean {
