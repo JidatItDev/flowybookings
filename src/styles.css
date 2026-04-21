@@ -238,6 +238,24 @@
   h4 {
     letter-spacing: -0.02em;
   }
+
+  /*
+   * iOS Safari auto-zooms on input focus when the computed font-size is
+   * < 16px. Force a minimum of 16px on form controls at the mobile
+   * breakpoint (≤640px). Above that, the original Tailwind text-sm
+   * (md:text-sm) is allowed to take over so the desktop UI keeps its
+   * compact rhythm. This is the single root-level fix for the
+   * "zoomed/broken" feeling reported on mobile.
+   */
+  @media (max-width: 640px) {
+    input,
+    textarea,
+    select,
+    [role="combobox"],
+    [role="textbox"] {
+      font-size: 16px !important;
+    }
+  }
 }
 
 @layer utilities {
