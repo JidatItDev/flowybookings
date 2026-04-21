@@ -864,6 +864,7 @@ export function DayTimeGrid({
                               return;
                             }
                             ev.preventDefault();
+                            autoScroller.update(t.clientY);
                             updatePreview(t.clientX, t.clientY);
                           };
 
