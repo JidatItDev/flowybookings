@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/lib/format";
 import { staffInitials, type StaffColor } from "@/lib/staff-color";
@@ -207,6 +207,19 @@ export function WeekTimeGrid({
   // Booking-id van het actief gesleepte blok (in dragover is dataTransfer.getData
   // niet leesbaar — we cachen het hier vanuit onDragStart voor pre-validatie).
   const draggedIdRef = useRef<string | null>(null);
+  // Na een keyboard-reschedule onthouden we welke booking gefocust moet
+  // blijven; na re-render zetten we focus terug op dezelfde id.
+  const restoreFocusIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const id = restoreFocusIdRef.current;
+    if (!id) return;
+    const el = document.querySelector<HTMLElement>(`[data-booking-id="${CSS.escape(id)}"]`);
+    if (el) {
+      el.focus({ preventScroll: false });
+      el.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+      restoreFocusIdRef.current = null;
+    }
+  }, [bookings]);
   const [dragPreview, setDragPreview] = useState<
     { dayKey: string; topPx: number; label: string; invalid?: boolean; reason?: string } | null
   >(null);
@@ -596,6 +609,7 @@ export function WeekTimeGrid({
                     >
                       <button
                         type="button"
+                        data-booking-id={b.id}
                         onClick={() => {
                           if (isResizingThis) return;
                           if (touchDrag?.bookingId === b.id) return;
@@ -700,6 +714,8 @@ export function WeekTimeGrid({
                             if (reason) onDropBlocked?.(reason);
                             return;
                           }
+                          // Mark this booking-id voor focus-restore na re-render.
+                          restoreFocusIdRef.current = b.id;
                           onReschedule?.({
                             booking: b,
                             newStaffId: b.staff_id ?? null,

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatCents, formatTime } from "@/lib/format";
 import { staffInitials, type StaffColor } from "@/lib/staff-color";
@@ -246,6 +246,22 @@ export function DayTimeGrid({
   // hier de id zodat we tijdens dragOver de juiste duur + conflict-check
   // kunnen uitvoeren tegen visibleBookings.
   const draggedIdRef = useRef<string | null>(null);
+  // Na een keyboard-reschedule (pijltjestoetsen) wordt het bookings-array
+  // opnieuw geladen, waardoor de DOM-node van de gefocuste booking wordt
+  // vervangen en focus naar <body> springt. We onthouden hier de id zodat
+  // we na re-render de focus terug kunnen zetten op hetzelfde blok.
+  const restoreFocusIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const id = restoreFocusIdRef.current;
+    if (!id) return;
+    const el = document.querySelector<HTMLElement>(`[data-booking-id="${CSS.escape(id)}"]`);
+    if (el) {
+      el.focus({ preventScroll: false });
+      // Houd het blok in beeld zonder de pagina naar boven te scrollen.
+      el.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+      restoreFocusIdRef.current = null;
+    }
+  }, [bookings]);
   const [dragPreview, setDragPreview] = useState<
     { colKey: string; topPx: number; label: string; invalid?: boolean; reason?: string } | null
   >(null);
@@ -754,6 +770,7 @@ export function DayTimeGrid({
                     >
                       <button
                         type="button"
+                        data-booking-id={b.id}
                         draggable={draggable && !isResizingThis}
                         onDragStart={draggable ? (e) => {
                           e.dataTransfer.effectAllowed = "move";
@@ -1070,6 +1087,8 @@ export function DayTimeGrid({
                             if (reason) onDropBlocked?.(reason);
                             return;
                           }
+                          // Mark this booking-id voor focus-restore na re-render.
+                          restoreFocusIdRef.current = b.id;
                           onReschedule?.({
                             booking: b,
                             newStaffId: targetCol.staffId,
