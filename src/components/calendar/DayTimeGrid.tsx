@@ -34,6 +34,7 @@ const MIN_HOUR = 6;
 const MAX_HOUR = 23;
 const MIN_WINDOW_HOURS = 4;
 const SLOT_MINUTES = 60;
+const SNAP_MINUTES = 15; // Drag-and-drop snap-raster (15 min)
 const PX_PER_HOUR = 64; // 64px per uur → 1 min ≈ 1.07px
 const PX_PER_MIN = PX_PER_HOUR / 60;
 
@@ -160,6 +161,7 @@ export function DayTimeGrid({
   onSelectBooking,
   onSelectSlot,
   onUnavailableSlot,
+  onReschedule,
 }: DayTimeGridProps) {
   const dayStart = useMemo(() => {
     const d = new Date(day);
