@@ -85,6 +85,8 @@ export type DayTimeGridProps = {
   colors: ColorResolver;
   /** Filter op één staff_id, "all", of "unassigned". */
   staffFilter: string | "all" | "unassigned";
+  /** Optioneel: shop business_hours per weekdag, gebruikt om het tijdvenster dynamisch te bepalen. */
+  businessHours?: BusinessHours;
   onSelectBooking?: (b: BookingWithRelations) => void;
   /** Klik op een lege cel → opent nieuwe boeking voor (staffId, time). */
   onSelectSlot?: (params: { staffId: string | null; startsAt: Date }) => void;
@@ -105,6 +107,7 @@ export function DayTimeGrid({
   services,
   colors,
   staffFilter,
+  businessHours,
   onSelectBooking,
   onSelectSlot,
 }: DayTimeGridProps) {
