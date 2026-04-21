@@ -609,6 +609,7 @@ function CalendarPage() {
                 setSlotPrefill(slot);
                 setCreating(true);
               }}
+              onReschedule={readOnly ? undefined : (params) => reschedule.mutate(params)}
               onUnavailableSlot={({ staffName, reason }) => {
                 const label =
                   reason === "closed"
