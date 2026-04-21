@@ -353,13 +353,27 @@ export function WeekTimeGrid({
                   const stf = b.staff_id ? staffById.get(b.staff_id) : undefined;
                   const c = colors.get(b.staff_id);
                   const cancelled = b.status === "cancelled" || b.status === "no_show";
+                  const draggable = !!onReschedule && !cancelled;
                   return (
                     <button
                       key={b.id}
                       type="button"
                       onClick={() => onSelectBooking?.(b)}
+                      draggable={draggable}
+                      onDragStart={(e) => {
+                        if (!draggable) return;
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        const grabOffsetPx = e.clientY - rect.top;
+                        const grabOffsetMin = grabOffsetPx / PX_PER_MIN;
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData(
+                          DRAG_MIME,
+                          JSON.stringify({ id: b.id, grabOffsetMin }),
+                        );
+                      }}
                       className={cn(
                         "group absolute left-1 right-1 z-[4] overflow-hidden rounded-md border px-1.5 py-1 text-left text-[11px] shadow-sm transition-all hover:z-[6] hover:shadow-md",
+                        draggable && "cursor-grab active:cursor-grabbing",
                         cancelled
                           ? "border-dashed border-border bg-muted/60 text-muted-foreground line-through"
                           : `border-transparent ${c.bg} ${c.text}`,
