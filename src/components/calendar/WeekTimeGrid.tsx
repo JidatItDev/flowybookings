@@ -125,7 +125,13 @@ export function WeekTimeGrid({
   businessHours,
   onSelectBooking,
   onSelectDay,
+  onReschedule,
 }: WeekTimeGridProps) {
+  const bookingsById = useMemo(() => {
+    const m = new Map<string, BookingWithRelations>();
+    for (const b of bookings) m.set(b.id, b);
+    return m;
+  }, [bookings]);
   const dayList = useMemo(() => {
     const start = new Date(weekStart);
     start.setUTCHours(0, 0, 0, 0);
