@@ -153,7 +153,7 @@ function ShopDashboard() {
                       <p className="truncate text-xs text-muted-foreground"><span className="sm:hidden">{formatTime(b.starts_at)} · </span>{svc?.name ?? "—"}</p>
                       <p className="mt-1 truncate text-xs">
                         {stf ? (() => {
-                          const c = staffColor(stf.id);
+                          const c = colors.get(stf.id);
                           return (
                             <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium ${c.bg} ${c.text}`}>
                               <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-semibold ${c.dot}`}>
