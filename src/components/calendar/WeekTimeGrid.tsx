@@ -351,6 +351,7 @@ export function WeekTimeGrid({
                   if (!raw) return;
                   e.preventDefault();
                   setDragPreview(null);
+                  draggedIdRef.current = null;
                   let payload: { id: string; grabOffsetMin: number };
                   try {
                     payload = JSON.parse(raw);
