@@ -715,6 +715,7 @@ export function WeekTimeGrid({
                               return;
                             }
                             ev.preventDefault();
+                            autoScroller.update(t.clientY);
                             updatePreview(t.clientX, t.clientY);
                           };
 
