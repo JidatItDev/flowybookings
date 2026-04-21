@@ -714,6 +714,7 @@ function CalendarPage() {
                   closedDay: t("calendar.dropInvalidClosed"),
                   offHours: (range) => t("calendar.dropInvalidOffHours", { range }),
                   duringBreak: (range) => t("calendar.dropInvalidBreak", { range }),
+                  conflictWith: (range) => t("calendar.dropInvalidConflict", { range }),
                 }}
               />
             );
