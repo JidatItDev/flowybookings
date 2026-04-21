@@ -1184,6 +1184,10 @@ export type Database = {
           read_ct: number
         }[]
       }
+      recalc_customer_last_visit: {
+        Args: { _customer_id: string }
+        Returns: undefined
+      }
       recalc_customer_total_spent: {
         Args: { _customer_id: string }
         Returns: undefined
