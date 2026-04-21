@@ -309,7 +309,35 @@ function BookingFlow() {
       const dateStr = format(date, "yyyy-MM-dd");
       const startsAt = new Date(`${dateStr}T${time}:00`);
       const endsAt = new Date(startsAt.getTime() + selectedService.duration_minutes * 60_000);
-      const realStaffId = staffId === "any" ? null : staffId;
+      // Auto-assign for "Eerste beschikbare": deterministically pick the first
+      // eligible+free staff member. Tie-break: order from staffQuery (created_at asc).
+      let realStaffId: string | null = staffId === "any" ? null : staffId;
+
+      if (staffId === "any") {
+        const eligibleIds = eligibleStaff.map((s) => s.id);
+        if (eligibleIds.length === 0) {
+          toast.error(t("book.slotTaken"));
+          setSubmitting(false);
+          return;
+        }
+        // Re-fetch overlapping bookings server-side to avoid race conditions.
+        const { data: overlaps, error: oErr } = await supabase
+          .from("bookings")
+          .select("staff_id")
+          .eq("shop_id", shopId)
+          .in("status", ["pending", "confirmed"])
+          .lt("starts_at", endsAt.toISOString())
+          .gt("ends_at", startsAt.toISOString());
+        if (oErr) throw oErr;
+        const busy = new Set((overlaps ?? []).map((b) => b.staff_id).filter(Boolean) as string[]);
+        const pick = eligibleStaff.find((s) => !busy.has(s.id));
+        if (!pick) {
+          toast.error(t("book.slotTaken"));
+          setSubmitting(false);
+          return;
+        }
+        realStaffId = pick.id;
+      }
 
       if (realStaffId) {
         const { data: conflicts, error: cErr } = await supabase
