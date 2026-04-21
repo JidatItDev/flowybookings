@@ -974,6 +974,61 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
             <div><Label htmlFor="dt">{t("calendar.startUTC")}</Label><Input id="dt" type="datetime-local" value={form.starts_at} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} /></div>
             <div><Label htmlFor="du">{t("calendar.duration")}</Label><Input id="du" type="number" value={form.duration} onChange={(e) => setForm({ ...form, duration: Number(e.target.value) })} /></div>
           </div>
+          <div className="-mt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              disabled={!form.staff_id || !form.duration}
+              onClick={() => {
+                const stf = staff.find((s) => s.id === form.staff_id);
+                if (!stf) return;
+                const wh = (stf.working_hours ?? undefined) as StaffWorkingHours | undefined;
+                const SNAP = 15;
+                const durMs = form.duration * 60000;
+                // Startpunt: max(now+15min, huidige form-tijd+15min) gesnapt naar 15min UTC.
+                const now = new Date();
+                const baseFromForm = form.starts_at ? new Date(form.starts_at + "Z") : null;
+                const baseTs = Math.max(
+                  now.getTime() + SNAP * 60000,
+                  baseFromForm && !Number.isNaN(baseFromForm.getTime()) ? baseFromForm.getTime() + SNAP * 60000 : 0,
+                );
+                let cursor = new Date(Math.ceil(baseTs / (SNAP * 60000)) * SNAP * 60000);
+                // Conflict-set: bookings van dezelfde staff, niet cancelled/no_show, niet zichzelf.
+                const conflicts = allBookings.filter((b) =>
+                  b.staff_id === form.staff_id &&
+                  b.status !== "cancelled" &&
+                  b.status !== "no_show" &&
+                  b.id !== booking?.id,
+                ).map((b) => ({ s: +new Date(b.starts_at), e: +new Date(b.ends_at) }));
+                const MAX_STEPS = 7 * 24 * (60 / SNAP); // max 7 dagen vooruit
+                let found: Date | null = null;
+                for (let i = 0; i < MAX_STEPS; i += 1) {
+                  const start = cursor;
+                  const end = new Date(start.getTime() + durMs);
+                  // Working-hours check (advisory; bij no_data slaan we deze over).
+                  const v = validateBookingSlot(start, end, wh);
+                  const whOk = v.kind === "ok" || v.kind === "no_data";
+                  // Conflict check.
+                  const sTs = start.getTime();
+                  const eTs = end.getTime();
+                  const overlap = conflicts.some((c) => sTs < c.e && eTs > c.s);
+                  if (whOk && !overlap) { found = start; break; }
+                  cursor = new Date(cursor.getTime() + SNAP * 60000);
+                }
+                if (!found) {
+                  toast.warning("Geen vrij slot gevonden in de komende 7 dagen.");
+                  return;
+                }
+                setForm({ ...form, starts_at: toLocalInput(found.toISOString()) });
+                toast.success(`Eerstvolgende vrije slot: ${found.toLocaleString("nl-NL", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" })}`);
+              }}
+              title={!form.staff_id ? "Kies eerst een medewerker" : !form.duration ? "Kies een duur" : "Vind het eerstvolgende vrije slot voor deze medewerker"}
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Eerstvolgende vrije slot
+            </Button>
+          </div>
           <div>
             <Label>{t("calendar.status")}</Label>
             <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as BookingWithRelations["status"] })}>
