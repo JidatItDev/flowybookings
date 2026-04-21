@@ -828,6 +828,8 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
   const { data: customers = [] } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId && open });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId && open });
   const { data: staff = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId && open });
+  // Hits the same cache als de calendar-pagina; geen extra request.
+  const { data: allBookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId && open });
 
   const statusLabel: Record<string, string> = {
     pending: t("calendar.pending"), confirmed: t("calendar.confirmed"),
