@@ -1184,6 +1184,10 @@ export type Database = {
           read_ct: number
         }[]
       }
+      recalc_customer_total_spent: {
+        Args: { _customer_id: string }
+        Returns: undefined
+      }
       shop_can_accept_bookings: { Args: { _shop_id: string }; Returns: boolean }
     }
     Enums: {
