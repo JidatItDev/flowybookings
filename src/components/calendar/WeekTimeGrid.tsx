@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { formatTime } from "@/lib/format";
 import { staffInitials, type StaffColor } from "@/lib/staff-color";
 import type { BookingWithRelations } from "@/lib/queries";
+import { createEdgeAutoScroller } from "@/lib/auto-scroll-edge";
 import {
   formatMinutesOfDay,
   parseMinutes,
