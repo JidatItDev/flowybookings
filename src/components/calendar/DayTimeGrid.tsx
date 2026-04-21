@@ -933,8 +933,12 @@ export function DayTimeGrid({
                             const slotStart = new Date(dayStart);
                             slotStart.setUTCMinutes(totalMin);
                             const slotEnd = new Date(slotStart.getTime() + durMin * 60_000);
-                            // Blokkeer commit bij invalid (werkuren/pauze/conflict).
-                            if (computeValidation(targetCol, slotStart, slotEnd).invalid) return;
+                            // Blokkeer commit bij invalid (werkuren/pauze/conflict) + notify parent.
+                            const tv = computeValidation(targetCol, slotStart, slotEnd);
+                            if (tv.invalid) {
+                              if (tv.reason) onDropBlocked?.(tv.reason);
+                              return;
+                            }
                             const newStart = new Date(dayStart);
                             newStart.setUTCHours(0, 0, 0, 0);
                             newStart.setUTCMinutes(totalMin);
@@ -1091,8 +1095,10 @@ export function DayTimeGrid({
                         const commit = () => {
                           setResizing((cur) => {
                             if (!cur || cur.bookingId !== b.id) return null;
-                            if (
-                              !cur.invalid &&
+                            if (cur.invalid) {
+                              // Resize geblokkeerd door pre-validatie — toast in parent.
+                              if (cur.reason) onDropBlocked?.(cur.reason);
+                            } else if (
                               Math.round(cur.newDurMin) !== Math.round(startDurInit) &&
                               onReschedule
                             ) {
