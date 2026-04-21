@@ -45,6 +45,9 @@ type StaffLite = {
   working_hours?: unknown;
 };
 
+type CustomerLite = { id: string; full_name: string };
+type ServiceLite = { id: string; name: string };
+
 type ColorResolver = {
   get: (staffId: string | null | undefined) => StaffColor;
 };
