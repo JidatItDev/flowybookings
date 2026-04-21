@@ -1025,17 +1025,28 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <Label>{t("calendar.service")}</Label>
-                <Select value={form.service_id} onValueChange={(v) => { const svc = services.find((s) => s.id === v); setForm({ ...form, service_id: v, duration: svc?.duration_minutes ?? form.duration }); }}>
-                  <SelectTrigger className="h-11 sm:h-9"><SelectValue placeholder={t("calendar.pickService")} /></SelectTrigger>
-                  <SelectContent className="max-h-[60dvh] min-w-[14rem]">{services.map((s) => <SelectItem key={s.id} value={s.id} className="py-2.5 sm:py-1.5">{s.name}</SelectItem>)}</SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={form.service_id}
+                  onChange={(v) => {
+                    const svc = services.find((s) => s.id === v);
+                    setForm({ ...form, service_id: v, duration: svc?.duration_minutes ?? form.duration });
+                  }}
+                  options={services.map((s) => ({ id: s.id, label: s.name, hint: `${s.duration_minutes} min` }))}
+                  placeholder={t("calendar.pickService")}
+                  searchPlaceholder={t("calendar.searchService")}
+                  emptyLabel={t("calendar.noServiceMatch")}
+                />
               </div>
               <div>
                 <Label>{t("calendar.staffCol")}</Label>
-                <Select value={form.staff_id} onValueChange={(v) => setForm({ ...form, staff_id: v })}>
-                  <SelectTrigger className="h-11 sm:h-9"><SelectValue placeholder={t("calendar.pickStaff")} /></SelectTrigger>
-                  <SelectContent className="max-h-[60dvh] min-w-[14rem]">{staff.map((s) => <SelectItem key={s.id} value={s.id} className="py-2.5 sm:py-1.5">{s.full_name}</SelectItem>)}</SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={form.staff_id}
+                  onChange={(v) => setForm({ ...form, staff_id: v })}
+                  options={staff.map((s) => ({ id: s.id, label: s.full_name }))}
+                  placeholder={t("calendar.pickStaff")}
+                  searchPlaceholder={t("calendar.searchStaff")}
+                  emptyLabel={t("calendar.noStaffMatch")}
+                />
               </div>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -1419,5 +1430,87 @@ function LiveIndicator({ status }: { status: import("@/lib/use-bookings-realtime
       </span>
       <span>{view.label}</span>
     </span>
+  );
+}
+
+/**
+ * Compact searchable single-select used inside the booking dialog for service
+ * and staff fields. Reuses the same Popover + Command stack as
+ * `CustomerCombobox` so we don't introduce a parallel selection system.
+ */
+function SearchableSelect({
+  value,
+  onChange,
+  options,
+  placeholder,
+  searchPlaceholder,
+  emptyLabel,
+}: {
+  value: string;
+  onChange: (id: string) => void;
+  options: { id: string; label: string; hint?: string }[];
+  placeholder: string;
+  searchPlaceholder: string;
+  emptyLabel: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const selected = useMemo(() => options.find((o) => o.id === value) ?? null, [options, value]);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options;
+    return options.filter((o) => o.label.toLowerCase().includes(q) || (o.hint ?? "").toLowerCase().includes(q));
+  }, [options, query]);
+
+  return (
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQuery(""); }}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="h-11 w-full justify-between font-normal sm:h-9"
+        >
+          <span className={cn("truncate", !selected && "text-muted-foreground")}>
+            {selected ? selected.label : placeholder}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="z-[60] w-[--radix-popover-trigger-width] min-w-[14rem] max-w-[calc(100vw-2rem)] p-0"
+        align="start"
+        sideOffset={4}
+      >
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder={searchPlaceholder}
+            value={query}
+            onValueChange={setQuery}
+            autoFocus
+          />
+          <CommandList className="max-h-[50dvh]">
+            <CommandEmpty>
+              <div className="py-2 text-center text-sm text-muted-foreground">{emptyLabel}</div>
+            </CommandEmpty>
+            <CommandGroup>
+              {filtered.map((o) => (
+                <CommandItem
+                  key={o.id}
+                  value={o.id}
+                  onSelect={() => { onChange(o.id); setOpen(false); setQuery(""); }}
+                  className="cursor-pointer py-2.5 sm:py-1.5"
+                >
+                  <Check className={cn("mr-2 h-4 w-4", value === o.id ? "opacity-100" : "opacity-0")} />
+                  <span className="flex-1 truncate">{o.label}</span>
+                  {o.hint && <span className="ml-2 text-xs text-muted-foreground">{o.hint}</span>}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
