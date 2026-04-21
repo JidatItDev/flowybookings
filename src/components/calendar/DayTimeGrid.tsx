@@ -551,6 +551,7 @@ export function DayTimeGrid({
                         const blockRect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
                         const grabPx = e.clientY - blockRect.top;
                         const grabMin = Math.max(0, grabPx / PX_PER_MIN);
+                        grabOffsetRef.current = grabMin;
                         e.dataTransfer.setData("application/x-grab-offset-min", String(grabMin));
                       } : undefined}
                       onClick={() => onSelectBooking?.(b)}
