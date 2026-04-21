@@ -94,6 +94,50 @@ function CustomerProfilePage() {
 
   const serviceMap = useMemo(() => Object.fromEntries(services.map((s) => [s.id, s])), [services]);
 
+  // All payments for this customer's bookings (for the unified timeline).
+  const customerBookingIds = useMemo(() => customerBookings.map((b) => b.id), [customerBookings]);
+  const paymentsQuery = useQuery({
+    queryKey: ["customer-payments", customerId, customerBookingIds],
+    enabled: !!shopId && customerBookingIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payments")
+        .select("id, booking_id, amount_cents, currency, status, provider, provider_payment_id, created_at, metadata")
+        .in("booking_id", customerBookingIds)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const customerPayments = paymentsQuery.data ?? [];
+
+  // Unified, sorted timeline (newest first) of bookings + payments.
+  type TimelineItem =
+    | { kind: "booking"; id: string; at: string; data: (typeof customerBookings)[number] }
+    | { kind: "payment"; id: string; at: string; data: (typeof customerPayments)[number] };
+  const timeline: TimelineItem[] = useMemo(() => {
+    const b: TimelineItem[] = customerBookings.map((row) => ({
+      kind: "booking",
+      id: `b-${row.id}`,
+      at: row.starts_at,
+      data: row,
+    }));
+    const p: TimelineItem[] = customerPayments.map((row) => ({
+      kind: "payment",
+      id: `p-${row.id}`,
+      at: row.created_at,
+      data: row,
+    }));
+    return [...b, ...p].sort((x, y) => new Date(y.at).getTime() - new Date(x.at).getTime());
+  }, [customerBookings, customerPayments]);
+
+  const [timelineFilter, setTimelineFilter] = useState<"all" | "bookings" | "payments">("all");
+  const filteredTimeline = useMemo(() => {
+    if (timelineFilter === "all") return timeline;
+    if (timelineFilter === "bookings") return timeline.filter((i) => i.kind === "booking");
+    return timeline.filter((i) => i.kind === "payment");
+  }, [timeline, timelineFilter]);
+
   const customer = customerQuery.data;
 
   // Local editable state
