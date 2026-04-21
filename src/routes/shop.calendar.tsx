@@ -75,6 +75,7 @@ function CalendarPage() {
   const newBookingDisabled = !shopId || subscriptionBlocked || bookingsBlocked || readOnly;
   const qc = useQueryClient();
   const { t } = useT();
+  const isMobile = useIsMobile();
   const newBookingTitle = readOnly
     ? t("impersonate.readOnlyTooltip")
     : trial.paymentFailedGraceExpired
