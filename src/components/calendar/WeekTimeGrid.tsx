@@ -925,7 +925,7 @@ export function WeekTimeGrid({
                           window.addEventListener("touchcancel", onCancel);
                         } : undefined}
                         className={cn(
-                          "group block h-full w-full overflow-hidden rounded-md border px-1.5 py-1 text-left text-[11px] shadow-sm transition-all hover:z-[6] hover:shadow-md",
+                          "group block h-full w-full overflow-hidden rounded-md border px-1.5 py-1 text-left text-[11px] shadow-sm transition-all hover:z-[6] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
                           draggable && !isResizingThis && "cursor-grab active:cursor-grabbing",
                           cancelled
                             ? "border-dashed border-border bg-muted/60 text-muted-foreground line-through"
@@ -934,7 +934,8 @@ export function WeekTimeGrid({
                           touchDrag?.bookingId === b.id && "scale-[1.03] opacity-70 ring-2 ring-primary/70",
                         )}
                         style={touchDrag?.bookingId === b.id ? { touchAction: "none" } : undefined}
-                        title={`${formatTime(b.starts_at)} — ${stf?.full_name ?? "Niet toegewezen"}`}
+                        title={`${formatTime(b.starts_at)} — ${stf?.full_name ?? "Niet toegewezen"}${draggable ? " · Pijltjes om te verplaatsen" : ""}`}
+                        aria-label={draggable ? `${stf?.full_name ?? "Niet toegewezen"} · ${formatTime(b.starts_at)} · Pijltjes: ±15 min of ±1 dag` : undefined}
                       >
                         <div className="flex items-center gap-1">
                           <span
