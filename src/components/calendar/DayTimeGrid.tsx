@@ -626,9 +626,6 @@ export function DayTimeGrid({
                           onMouseDown={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            const blockEl = (e.currentTarget.parentElement as HTMLDivElement | null);
-                            if (!blockEl) return;
-                            const blockRect = blockEl.getBoundingClientRect();
                             const startTopPx = top;
                             const startY = e.clientY;
                             const startDur = durMin;
