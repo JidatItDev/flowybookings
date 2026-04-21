@@ -292,10 +292,45 @@ export function WeekTimeGrid({
                   const winSize = winEnd - winStart;
                   const clampedInWin = Math.max(0, Math.min(winSize - SNAP_MINUTES, snapped));
                   const totalMin = winStart + clampedInWin;
+
+                  // Pre-validatie tegen working_hours van de booking-eigenaar
+                  // (booking.staff_id wijzigt niet in week-view, alleen tijd/datum).
+                  let invalid = false;
+                  let reason: string | undefined;
+                  const draggedId = draggedIdRef.current;
+                  if (draggedId && dropInvalidLabels) {
+                    const src = bookingsById.get(draggedId);
+                    const stf = src?.staff_id ? staffById.get(src.staff_id) : undefined;
+                    const wh = stf?.working_hours as StaffWorkingHours | undefined;
+                    if (src && wh) {
+                      const durMs = +new Date(src.ends_at) - +new Date(src.starts_at);
+                      const slotStart = new Date(d);
+                      slotStart.setUTCMinutes(totalMin);
+                      const slotEnd = new Date(slotStart.getTime() + durMs);
+                      const v = validateBookingSlot(slotStart, slotEnd, wh);
+                      if (v.kind === "closed_day") {
+                        invalid = true;
+                        reason = dropInvalidLabels.closedDay;
+                      } else if (v.kind === "off_hours") {
+                        invalid = true;
+                        const w = v.window;
+                        reason = w
+                          ? dropInvalidLabels.offHours(`${formatMinutesOfDay(w.startMin)}–${formatMinutesOfDay(w.endMin)}`)
+                          : dropInvalidLabels.offHours("—");
+                      } else if (v.kind === "break") {
+                        invalid = true;
+                        const br = v.window;
+                        reason = dropInvalidLabels.duringBreak(`${formatMinutesOfDay(br.startMin)}–${formatMinutesOfDay(br.endMin)}`);
+                      }
+                    }
+                  }
+
                   setDragPreview({
                     dayKey,
                     topPx: clampedInWin * PX_PER_MIN,
                     label: formatMinutesOfDay(totalMin),
+                    invalid,
+                    reason,
                   });
                 }}
                 onDragLeave={(e) => {
