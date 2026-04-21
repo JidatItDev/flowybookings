@@ -342,16 +342,17 @@ function CalendarPage() {
             <div className="mb-3 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
               <div className="flex items-center gap-2 pb-1">
                 <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Vandaag aan het werk
+                  {t("calendar.workingToday")}
                 </span>
                 {workingToday.map((row) => {
                   const c = colors.get(row.staff.id);
                   const active = staffFilter === row.staff.id;
+                  const apptLabel = row.count === 1 ? t("calendar.appointment") : t("calendar.appointments");
                   const subtitle = row.closed
-                    ? "Vrij vandaag"
+                    ? t("calendar.dayOff")
                     : row.window
-                      ? `${row.window} · ${row.count} ${row.count === 1 ? "afspraak" : "afspraken"}`
-                      : `${row.count} ${row.count === 1 ? "afspraak" : "afspraken"}`;
+                      ? `${row.window} · ${row.count} ${apptLabel}`
+                      : `${row.count} ${apptLabel}`;
                   return (
                     <button
                       key={`today-${row.staff.id}`}
