@@ -6,8 +6,10 @@ import type { BookingWithRelations } from "@/lib/queries";
 import {
   formatMinutesOfDay,
   parseMinutes,
+  validateBookingSlot,
   type BusinessHours,
   type DayKey,
+  type StaffWorkingHours,
 } from "@/lib/staff-availability";
 
 /**
