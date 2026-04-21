@@ -241,7 +241,12 @@ function StaffFormDialog({ open, onClose, member, shopId, services, links }: { o
           <div><Label htmlFor="fn">{t("staff.fullName")}</Label><Input id="fn" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
           <div><Label htmlFor="em">{t("staff.email")}</Label><Input id="em" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
           <div><Label htmlFor="ph">{t("staff.phone")}</Label><Input id="ph" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-          <div><Label htmlFor="hr">{t("staff.workingHours")}</Label><Input id="hr" value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })} placeholder={t("staff.workingHoursPlaceholder")} /></div>
+          <WeeklyHoursEditor schedule={schedule} onChange={setSchedule} />
+          <div>
+            <Label htmlFor="hr" className="text-xs text-muted-foreground">Vrije-tekst notitie (optioneel)</Label>
+            <Input id="hr" value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })} placeholder={t("staff.workingHoursPlaceholder")} />
+            <p className="mt-1 text-[11px] text-muted-foreground">Wordt alleen op de overzichtskaart getoond als er geen weekrooster is ingesteld.</p>
+          </div>
           <div>
             <div className="flex items-center justify-between">
               <Label>{t("staff.assignServices")}</Label>
