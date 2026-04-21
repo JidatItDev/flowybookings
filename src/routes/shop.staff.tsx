@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, CalendarRange, Pencil, Trash2, UserCog, Check, Palette, RotateCcw } from "lucide-react";
+import { Plus, CalendarRange, Pencil, Trash2, UserCog, Check, Palette, RotateCcw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -136,6 +136,15 @@ function StaffPage() {
                     currentKey={overrideKey}
                     disabled={readOnly}
                     readOnlyTitle={roTitle}
+                    usageByOthers={(() => {
+                      const map: Partial<Record<PaletteKey, string[]>> = {};
+                      for (const other of staff) {
+                        if (other.id === m.id || !other.is_active) continue;
+                        const k = colors.get(other.id).key;
+                        (map[k] ||= []).push(other.full_name);
+                      }
+                      return map;
+                    })()}
                   />
                 </div>
                 <div className="mt-5">
@@ -279,18 +288,22 @@ function StaffColorPicker({
   currentKey,
   disabled,
   readOnlyTitle,
+  usageByOthers,
 }: {
   staffId: string;
   shopId: string | null;
   currentKey: PaletteKey | null;
   disabled?: boolean;
   readOnlyTitle?: string;
+  usageByOthers?: Partial<Record<PaletteKey, string[]>>;
 }) {
   const qc = useQueryClient();
   const { t } = useT();
   const [open, setOpen] = useState(false);
   const autoColor = staffColor(staffId);
   const activeKey = currentKey ?? autoColor.key;
+  const usage = usageByOthers ?? {};
+  const conflictNames = usage[activeKey] ?? [];
 
   const save = useMutation({
     mutationFn: async (nextKey: PaletteKey | null) => {
@@ -351,16 +364,27 @@ function StaffColorPicker({
             </button>
           )}
         </div>
+        {conflictNames.length > 0 && (
+          <div className="mb-2 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-[11px] text-amber-700 dark:text-amber-300">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>
+              Deze kleur is al in gebruik door{" "}
+              <span className="font-semibold">{conflictNames.join(", ")}</span>. Kies een andere kleur voor betere herkenning.
+            </span>
+          </div>
+        )}
         <div className="grid grid-cols-5 gap-2">
           {PALETTE_LIST.map((p) => {
             const selected = p.key === activeKey;
+            const usedBy = usage[p.key] ?? [];
+            const isConflict = usedBy.length > 0;
             return (
               <button
                 key={p.key}
                 type="button"
                 disabled={save.isPending}
                 onClick={() => save.mutate(p.key)}
-                title={p.label}
+                title={isConflict ? `${p.label} — al in gebruik door ${usedBy.join(", ")}` : p.label}
                 aria-label={p.label}
                 aria-pressed={selected}
                 className={cn(
@@ -370,11 +394,19 @@ function StaffColorPicker({
                 )}
               >
                 {selected && <Check className="h-4 w-4 text-white drop-shadow" />}
+                {isConflict && !selected && (
+                  <span
+                    className="absolute -right-0.5 -top-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-amber-500 text-[8px] font-bold text-white ring-1 ring-background"
+                    aria-hidden
+                  >
+                    !
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
-        {!currentKey && (
+        {!currentKey && conflictNames.length === 0 && (
           <p className="mt-3 text-[11px] text-muted-foreground">
             Auto-kleur (op basis van medewerker-id). Kies een kleur om te overrulen.
           </p>
