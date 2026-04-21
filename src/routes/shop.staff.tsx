@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, CalendarRange, Pencil, Trash2, UserCog, Check, Palette, RotateCcw } from "lucide-react";
+import { Plus, CalendarRange, Pencil, Trash2, UserCog, Check, Palette, RotateCcw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
