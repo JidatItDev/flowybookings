@@ -358,7 +358,7 @@ function CalendarPage() {
                         <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">{svc?.name ?? "—"}</td>
                         <td className="px-4 py-3">
                           {stf ? (() => {
-                            const c = staffColor(stf.id);
+                            const c = colors.get(stf.id);
                             return (
                               <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${c.bg} ${c.text}`}>
                                 <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold ${c.dot}`}>
