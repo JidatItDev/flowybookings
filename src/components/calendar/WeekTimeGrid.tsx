@@ -81,6 +81,11 @@ export type WeekTimeGridProps = {
     /** Resize-flow: nieuwe ends_at overlapt met andere booking van dezelfde medewerker. */
     conflictWith?: (range: string) => string;
   };
+  /**
+   * Aangeroepen wanneer een drop/resize fysiek geblokkeerd is door pre-validatie
+   * (werkuren/pauze/conflict). De parent kan hierop bv. een toast tonen.
+   */
+  onDropBlocked?: (reason: string) => void;
 };
 
 function parseHour(value: string | undefined, mode: "floor" | "ceil"): number | null {
@@ -146,6 +151,7 @@ export function WeekTimeGrid({
   onReschedule,
   resizeHandleLabel,
   dropInvalidLabels,
+  onDropBlocked,
 }: WeekTimeGridProps) {
   const bookingsById = useMemo(() => {
     const m = new Map<string, BookingWithRelations>();
