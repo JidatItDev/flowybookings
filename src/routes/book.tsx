@@ -455,7 +455,19 @@ function BookingFlow() {
       navigate({ to: "/book/confirmation/$bookingId", params: { bookingId: booking.id } });
     } catch (err) {
       console.error("Booking failed:", err);
-      toast.error(err instanceof Error ? err.message : t("book.failed"));
+      // Map DB trigger conflict (race-condition safety net) to a friendly message,
+      // refresh the slots, and bounce the customer back to the time picker.
+      const raw = err instanceof Error ? err.message : String(err);
+      const isConflict = /BOOKING_CONFLICT/i.test(raw);
+      if (isConflict) {
+        toast.error(t("book.slotTaken"));
+        setTime(null);
+        await bookingsQ.refetch().catch(() => {});
+        // Step index for "Datum/tijd" depends on whether shop was preset.
+        setStep(presetShopId ? 2 : 3);
+      } else {
+        toast.error(err instanceof Error ? err.message : t("book.failed"));
+      }
     } finally {
       setSubmitting(false);
     }
