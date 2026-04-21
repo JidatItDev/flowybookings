@@ -81,6 +81,16 @@ export const Route = createFileRoute("/api/mollie/webhook")({
           }
 
           // Always record the ping for audit.
+          const mappedLocalStatus = mapStatus(mollie?.status);
+          console.log("[mollie/webhook] received", {
+            mollie_id: mollieId,
+            mollie_status: mollie?.status ?? null,
+            mapped_local_status: mappedLocalStatus,
+            previous_local_status: payment?.status ?? null,
+            provider: payment?.provider ?? null,
+            shop_id: payment?.shop_id ?? null,
+            kind: (payment?.metadata as Record<string, unknown> | null)?.kind ?? null,
+          });
           await supabaseAdmin.from("activity_log").insert({
             entity: "mollie_webhook",
             action: "received",
@@ -88,6 +98,7 @@ export const Route = createFileRoute("/api/mollie/webhook")({
             metadata: {
               mollie_id: mollieId,
               mollie_status: mollie?.status ?? null,
+              mapped_local_status: mappedLocalStatus,
               local_status: payment?.status ?? null,
               provider: payment?.provider ?? null,
             },
@@ -145,6 +156,7 @@ export const Route = createFileRoute("/api/mollie/webhook")({
                 shopId: payment.shop_id,
                 metadata: meta,
                 effectiveStatus,
+                rawMollieStatus: mollie?.status ?? null,
               });
             }
           }
@@ -196,10 +208,21 @@ async function handleSubscriptionLifecycle(opts: {
   shopId: string;
   metadata: Record<string, unknown>;
   effectiveStatus: string;
+  rawMollieStatus?: string | null;
 }) {
   const plan = opts.metadata.plan as DbPlan | undefined;
   const cycle = (opts.metadata.cycle as BillingCycle | undefined) ?? "monthly";
   if (!plan || !["starter", "pro", "premium"].includes(plan)) return;
+
+  // Mollie's `canceled` and `expired` on a FIRST payment mean the user
+  // abandoned/timed-out checkout — not a real billing failure. We must NOT
+  // mark the shop as `payment_failed` in that case (would surface a wrong
+  // banner + email). Only `failed` (true decline) or canceled/expired on
+  // RECURRING payments triggers the failed-banner path.
+  const raw = opts.rawMollieStatus ?? null;
+  const kind = (opts.metadata.kind as string | undefined) ?? null;
+  const isAbandonedFirstAttempt =
+    (raw === "canceled" || raw === "expired") && kind === "subscription_first";
 
   if (opts.effectiveStatus === "paid") {
     const expiry = nextExpiry(new Date(), cycle).toISOString();
@@ -281,6 +304,18 @@ async function handleSubscriptionLifecycle(opts: {
       action_url: "/shop/settings",
       metadata: { kind: "subscription", subkind: "activated", plan, cycle },
     });
+  } else if (opts.effectiveStatus === "failed" && isAbandonedFirstAttempt) {
+    // User canceled/expired the FIRST checkout attempt → no DB state change,
+    // no banner, no email. Just log it for admin visibility.
+    console.log("[mollie/webhook] subscription_first abandoned", {
+      shop_id: opts.shopId, payment_id: opts.paymentId, raw, plan, cycle,
+    });
+    await supabaseAdmin.from("activity_log").insert({
+      entity: BILLING_ENTITY,
+      action: "subscription_checkout_abandoned",
+      shop_id: opts.shopId,
+      metadata: { payment_id: opts.paymentId, plan, cycle, mollie_status: raw },
+    });
   } else if (opts.effectiveStatus === "failed") {
     const { data: prevShop } = await supabaseAdmin
       .from("shops")
@@ -309,7 +344,7 @@ async function handleSubscriptionLifecycle(opts: {
       entity: BILLING_ENTITY,
       action: "subscription_payment_failed",
       shop_id: opts.shopId,
-      metadata: { payment_id: opts.paymentId, plan, cycle, failed_at: failedAt, failure_count: failedCount },
+      metadata: { payment_id: opts.paymentId, plan, cycle, failed_at: failedAt, failure_count: failedCount, mollie_status: raw },
     });
     await supabaseAdmin.from("notifications").insert({
       shop_id: opts.shopId,
@@ -357,6 +392,17 @@ async function handleSubscriptionLifecycle(opts: {
       console.error("[mollie/webhook] platform-payment-failed email error", err);
     }
   }
+
+  console.log("[mollie/webhook] subscription_lifecycle done", {
+    shop_id: opts.shopId,
+    payment_id: opts.paymentId,
+    effective_status: opts.effectiveStatus,
+    raw_mollie_status: raw,
+    kind,
+    plan,
+    cycle,
+    abandoned_first: isAbandonedFirstAttempt,
+  });
 }
 
 // Local helper — keeps webhook self-contained without circular import on platform-billing.
