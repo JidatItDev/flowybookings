@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { formatTime } from "@/lib/format";
 import { staffInitials, type StaffColor } from "@/lib/staff-color";
 import type { BookingWithRelations } from "@/lib/queries";
+import { createEdgeAutoScroller } from "@/lib/auto-scroll-edge";
 import {
   formatMinutesOfDay,
   parseMinutes,
@@ -588,12 +589,17 @@ export function WeekTimeGrid({
                           let cancelled = false;
                           const LONG_PRESS_MS = 400;
                           const MOVE_TOLERANCE_PX = 8;
+                          // Auto-scroll bij rand: scrollt het week-grid wanneer de vinger
+                          // binnen 60px van de boven-/onderrand komt — onmisbaar voor
+                          // lange dagen op tablet/iPad.
+                          const autoScroller = createEdgeAutoScroller(e.currentTarget as HTMLElement);
 
                           const cleanup = () => {
                             window.removeEventListener("touchmove", onMove);
                             window.removeEventListener("touchend", onEnd);
                             window.removeEventListener("touchcancel", onCancel);
                             clearTimeout(longPressTimer);
+                            autoScroller.stop();
                           };
 
                           const computeAt = (clientX: number, clientY: number) => {
@@ -709,6 +715,7 @@ export function WeekTimeGrid({
                               return;
                             }
                             ev.preventDefault();
+                            autoScroller.update(t.clientY);
                             updatePreview(t.clientX, t.clientY);
                           };
 

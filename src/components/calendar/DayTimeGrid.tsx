@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { formatCents, formatTime } from "@/lib/format";
 import { staffInitials, type StaffColor } from "@/lib/staff-color";
 import type { BookingWithRelations } from "@/lib/queries";
+import { createEdgeAutoScroller } from "@/lib/auto-scroll-edge";
 import {
   parseMinutes,
   resolveStaffAvailability as resolveStaffAvailabilityCore,
@@ -738,12 +739,18 @@ export function DayTimeGrid({
                           let cancelled = false;
                           const LONG_PRESS_MS = 400;
                           const MOVE_TOLERANCE_PX = 8;
+                          // Auto-scroll bij rand: scrollt het grid wanneer de vinger binnen
+                          // 60px van de boven-/onderrand komt — anders zijn lange dagen
+                          // (bv. 08:00–22:00) onbereikbaar buiten het zichtbare venster
+                          // op tablet/iPad. Pas geactiveerd na long-press.
+                          const autoScroller = createEdgeAutoScroller(e.currentTarget as HTMLElement);
 
                           const cleanup = () => {
                             window.removeEventListener("touchmove", onMove);
                             window.removeEventListener("touchend", onEnd);
                             window.removeEventListener("touchcancel", onCancel);
                             clearTimeout(longPressTimer);
+                            autoScroller.stop();
                           };
 
                           const computeAt = (clientX: number, clientY: number) => {
@@ -857,6 +864,7 @@ export function DayTimeGrid({
                               return;
                             }
                             ev.preventDefault();
+                            autoScroller.update(t.clientY);
                             updatePreview(t.clientX, t.clientY);
                           };
 
