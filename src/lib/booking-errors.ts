@@ -92,6 +92,8 @@ export function bookingErrorToast(
       return info.breakRange
         ? t("bookingError.duringBreakRange", { range: info.breakRange })
         : t("bookingError.duringBreak");
+    case "closed_day":
+      return t("bookingError.closedDay");
     default:
       return fallback;
   }
