@@ -15,7 +15,7 @@ import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { bookingsQuery, customersQuery, servicesQuery, staffQuery } from "@/lib/queries";
 import { formatCents, formatTime, initials } from "@/lib/format";
 import { useT } from "@/lib/i18n";
-import { staffColor, staffInitials } from "@/lib/staff-color";
+import { staffInitials, useStaffColors } from "@/lib/staff-color";
 import { getTrialState } from "@/lib/trial";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
