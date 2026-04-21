@@ -368,10 +368,47 @@ export function DayTimeGrid({
                   const winMin = (END_HOUR - START_HOUR) * 60;
                   const clampedInWin = Math.max(0, Math.min(winMin - SNAP_MINUTES, snapped));
                   const totalMin = START_HOUR * 60 + clampedInWin;
+
+                  // Pre-validatie: zoek de gesleepte booking + valideer tegen
+                  // de doel-kolom (staff working_hours). Server blijft autoritair.
+                  let invalid = false;
+                  let reason: string | undefined;
+                  // Booking-id zit in dataTransfer maar is in dragover niet
+                  // leesbaar (browser-restrictie). We gebruiken ref-loze lookup
+                  // via de single-column working_hours: als de doel-staff niet
+                  // beschikbaar is op deze tijd → rood. Voor accurate duur
+                  // zoeken we de meest recent gesleepte booking via grabOffsetRef
+                  // is niet nodig; we valideren met een minimale 15-min slot.
+                  // Voor betere UX gebruiken we de gemiddelde duur uit
+                  // visibleBookings als de booking-id beschikbaar zou zijn.
+                  if (c.workingHours && dropInvalidLabels) {
+                    const slotStart = new Date(dayStart);
+                    slotStart.setUTCMinutes(totalMin);
+                    // Gebruik 15 min als minimale check-window (snap-resolutie).
+                    const slotEnd = new Date(slotStart.getTime() + SNAP_MINUTES * 60_000);
+                    const v = validateBookingSlot(slotStart, slotEnd, c.workingHours);
+                    if (v.kind === "closed_day") {
+                      invalid = true;
+                      reason = dropInvalidLabels.closedDay;
+                    } else if (v.kind === "off_hours") {
+                      invalid = true;
+                      const w = v.window;
+                      reason = w
+                        ? dropInvalidLabels.offHours(`${formatMinutes(w.startMin)}–${formatMinutes(w.endMin)}`)
+                        : dropInvalidLabels.offHours("—");
+                    } else if (v.kind === "break") {
+                      invalid = true;
+                      const br = v.window;
+                      reason = dropInvalidLabels.duringBreak(`${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`);
+                    }
+                  }
+
                   setDragPreview({
                     colKey: c.key,
                     topPx: clampedInWin * PX_PER_MIN,
                     label: formatMinutes(totalMin),
+                    invalid,
+                    reason,
                   });
                 }
               } : undefined}
