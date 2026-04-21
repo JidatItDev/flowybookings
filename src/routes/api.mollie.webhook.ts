@@ -208,10 +208,21 @@ async function handleSubscriptionLifecycle(opts: {
   shopId: string;
   metadata: Record<string, unknown>;
   effectiveStatus: string;
+  rawMollieStatus?: string | null;
 }) {
   const plan = opts.metadata.plan as DbPlan | undefined;
   const cycle = (opts.metadata.cycle as BillingCycle | undefined) ?? "monthly";
   if (!plan || !["starter", "pro", "premium"].includes(plan)) return;
+
+  // Mollie's `canceled` and `expired` on a FIRST payment mean the user
+  // abandoned/timed-out checkout — not a real billing failure. We must NOT
+  // mark the shop as `payment_failed` in that case (would surface a wrong
+  // banner + email). Only `failed` (true decline) or canceled/expired on
+  // RECURRING payments triggers the failed-banner path.
+  const raw = opts.rawMollieStatus ?? null;
+  const kind = (opts.metadata.kind as string | undefined) ?? null;
+  const isAbandonedFirstAttempt =
+    (raw === "canceled" || raw === "expired") && kind === "subscription_first";
 
   if (opts.effectiveStatus === "paid") {
     const expiry = nextExpiry(new Date(), cycle).toISOString();
