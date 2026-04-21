@@ -876,7 +876,7 @@ function BookingActionDialog({
   onClose: () => void;
   onEdit: (b: BookingWithRelations) => void;
   onAction: (id: string, status: BookingWithRelations["status"]) => void;
-  customers: Array<{ id: string; full_name: string; email: string | null; phone: string | null }>;
+  customers: Array<{ id: string; full_name: string; email: string | null; phone: string | null; preferences?: unknown }>;
   services: Array<{ id: string; name: string }>;
   staff: Array<{ id: string; full_name: string }>;
 }) {
@@ -886,6 +886,11 @@ function BookingActionDialog({
   const cust = customers.find((c) => c.id === booking.customer_id);
   const svc = services.find((s) => s.id === booking.service_id);
   const stf = staff.find((s) => s.id === booking.staff_id);
+  const prefs = cust?.preferences;
+  const allergyRaw = prefs && typeof prefs === "object" && !Array.isArray(prefs)
+    ? (prefs as Record<string, unknown>).allergies
+    : null;
+  const allergy = typeof allergyRaw === "string" && allergyRaw.trim().length > 0 ? allergyRaw.trim() : null;
   return (
     <Dialog open={!!booking} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
@@ -893,6 +898,15 @@ function BookingActionDialog({
           <DialogTitle>Afspraak details</DialogTitle>
         </DialogHeader>
         <div className="space-y-3 py-2 text-sm">
+          {allergy && (
+            <div className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-destructive">
+              <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wider">Allergie / aandachtspunt</p>
+                <p className="mt-0.5 whitespace-pre-wrap text-sm font-medium">{allergy}</p>
+              </div>
+            </div>
+          )}
           <div className="rounded-xl bg-muted/40 p-3">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">Wanneer</p>
             <p className="mt-1 font-medium">

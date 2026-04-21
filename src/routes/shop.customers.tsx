@@ -26,7 +26,16 @@ export const Route = createFileRoute("/shop/customers")({
   component: CustomersPage,
 });
 
-type CustomerRow = { id: string; full_name: string; email: string | null; phone: string | null; notes: string | null; total_spent_cents: number; last_visit_at: string | null; no_show_count?: number; requires_deposit?: boolean; tags?: string[] | null };
+type CustomerRow = { id: string; full_name: string; email: string | null; phone: string | null; notes: string | null; total_spent_cents: number; last_visit_at: string | null; no_show_count?: number; requires_deposit?: boolean; tags?: string[] | null; preferences?: unknown };
+
+function getAllergyText(c: { preferences?: unknown }): string | null {
+  const p = c.preferences;
+  if (!p || typeof p !== "object" || Array.isArray(p)) return null;
+  const a = (p as Record<string, unknown>).allergies;
+  if (typeof a !== "string") return null;
+  const trimmed = a.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
 
 function CustomersPage() {
   const shopId = useActiveShopId();
@@ -98,11 +107,12 @@ function CustomersPage() {
                   {list.map((c) => {
                     const ns = c.no_show_count ?? 0;
                     const repeat = ns >= 2;
+                    const allergy = getAllergyText(c);
                     return (
                     <tr
                       key={c.id}
                       onClick={() => navigate({ to: "/shop/customers/$customerId", params: { customerId: c.id } })}
-                      className={cn("cursor-pointer hover:bg-muted/30", repeat && "bg-destructive/5")}
+                      className={cn("cursor-pointer hover:bg-muted/30", (repeat || allergy) && "bg-destructive/5")}
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -110,6 +120,14 @@ function CustomersPage() {
                           <div className="min-w-0">
                             <p className="truncate font-medium flex items-center gap-2 flex-wrap">
                               {c.full_name}
+                              {allergy && (
+                                <span
+                                  className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-destructive ring-1 ring-destructive/30"
+                                  title={allergy}
+                                >
+                                  <AlertTriangle className="h-3 w-3" /> {t("customers.allergyBadge")}
+                                </span>
+                              )}
                               {repeat && (
                                 <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-destructive">
                                   <ShieldAlert className="h-3 w-3" /> {t("customers.repeatNoShow")}
@@ -126,6 +144,11 @@ function CustomersPage() {
                                 </span>
                               ))}
                             </p>
+                            {allergy && (
+                              <p className="truncate text-xs font-medium text-destructive" title={allergy}>
+                                ⚠ {allergy}
+                              </p>
+                            )}
                             {c.notes && <p className="truncate text-xs text-muted-foreground">{c.notes}</p>}
                           </div>
                         </div>

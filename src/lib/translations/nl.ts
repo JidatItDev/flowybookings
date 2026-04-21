@@ -511,6 +511,7 @@ export const nl: Record<string, string> = {
   "customers.favoriteServiceNone": "Geen voorkeur",
   "customers.allergies": "Allergieën / aandachtspunten",
   "customers.allergiesPlaceholder": "Bv. PPD-allergie, gevoelige hoofdhuid, latex-vrij…",
+  "customers.allergyBadge": "Allergie",
   "customers.communication": "Communicatievoorkeur",
   "customers.commEmail": "E-mail",
   "customers.commSms": "SMS",

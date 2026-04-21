@@ -511,6 +511,7 @@ export const en: Record<string, string> = {
   "customers.favoriteServiceNone": "No preference",
   "customers.allergies": "Allergies / things to watch",
   "customers.allergiesPlaceholder": "E.g. PPD allergy, sensitive scalp, latex-free…",
+  "customers.allergyBadge": "Allergy",
   "customers.communication": "Communication preference",
   "customers.commEmail": "Email",
   "customers.commSms": "SMS",
