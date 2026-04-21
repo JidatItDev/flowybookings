@@ -319,6 +319,18 @@ export const en: Record<string, string> = {
   "dashboard.totalCustomers": "Total customers",
   "dashboard.noShowRate30d": "No-show rate (30d)",
   "dashboard.monthRevenue": "Revenue this month",
+  "dashboard.weekRevenue": "Revenue this week",
+  "dashboard.upcoming": "Upcoming bookings",
+  "dashboard.upcomingHint": "Next 7 days",
+  "dashboard.cancellations30d": "Cancellations (30d)",
+  "dashboard.bookingsCount": "{n} bookings",
+  "dashboard.staffPerformance": "Staff performance",
+  "dashboard.staffPerformanceHint": "Bookings & revenue per staff (last 30 days)",
+  "dashboard.occupancy": "Occupancy",
+  "dashboard.occupancyHint": "Booked vs. available time, last 7 days",
+  "dashboard.occupancyBooked": "Booked: {hours}",
+  "dashboard.occupancyAvailable": "Available: {hours}",
+  "dashboard.occupancyNoHours": "Set staff working hours to see occupancy.",
 
   // ── Onboarding checklist ──
   "checklist.badge": "Get started",
