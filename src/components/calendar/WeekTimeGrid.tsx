@@ -1,0 +1,352 @@
+import { useMemo } from "react";
+import { cn } from "@/lib/utils";
+import { formatTime } from "@/lib/format";
+import { staffInitials, type StaffColor } from "@/lib/staff-color";
+import type { BookingWithRelations } from "@/lib/queries";
+import {
+  parseMinutes,
+  type BusinessHours,
+  type DayKey,
+} from "@/lib/staff-availability";
+
+/**
+ * Weekrooster (5–7 dagen) als compacte salon-stijl agenda.
+ *
+ * - Kolommen: één per dag (UTC midnight)
+ * - Rijen: uren binnen het venster (afgeleid van shop business_hours of fallback)
+ * - Bookings: gepositioneerd op basis van starts_at/ends_at, gekleurd via de
+ *   medewerker-kleur-dot (staff samengevouwen tot één blok per booking).
+ * - Overlay: dagen waarop de salon gesloten is worden gestreept; voor open
+ *   dagen tonen we off-hours buiten business_hours (consistent met DayTimeGrid).
+ *
+ * Pure presentatie — hergebruikt bookingsQuery-data en staff-availability
+ * primitives. Geen mutaties, geen extra endpoints.
+ */
+
+const DEFAULT_START_HOUR = 8;
+const DEFAULT_END_HOUR = 21;
+const MIN_HOUR = 6;
+const MAX_HOUR = 23;
+const PX_PER_HOUR = 56;
+const PX_PER_MIN = PX_PER_HOUR / 60;
+const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+
+type StaffLite = {
+  id: string;
+  full_name: string;
+  is_active: boolean;
+};
+
+type ColorResolver = {
+  get: (staffId: string | null | undefined) => StaffColor;
+};
+
+export type WeekTimeGridProps = {
+  /** Startdag van de week (UTC midnight). Doorgaans maandag. */
+  weekStart: Date;
+  /** Aantal dagen om te tonen (5 = werkweek, 7 = volledige week). */
+  days?: number;
+  bookings: BookingWithRelations[];
+  staff: StaffLite[];
+  colors: ColorResolver;
+  businessHours?: BusinessHours;
+  onSelectBooking?: (b: BookingWithRelations) => void;
+  /** Klik op een dag-header → spring naar die dag in de dag-weergave. */
+  onSelectDay?: (day: Date) => void;
+};
+
+function parseHour(value: string | undefined, mode: "floor" | "ceil"): number | null {
+  const mins = parseMinutes(value);
+  if (mins == null) return null;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (mode === "floor") return h;
+  return m > 0 ? Math.min(24, h + 1) : h;
+}
+
+/** Verzamel het uur-venster over alle dagen in de week (union van open/close). */
+function resolveWeekWindow(
+  days: Date[],
+  bh: BusinessHours | undefined,
+): { startHour: number; endHour: number } {
+  let minOpen = DEFAULT_START_HOUR;
+  let maxClose = DEFAULT_END_HOUR;
+  if (bh) {
+    let any = false;
+    let lo = 24;
+    let hi = 0;
+    for (const d of days) {
+      const dh = bh[DAY_KEYS[d.getUTCDay()] as DayKey];
+      if (!dh || dh.closed) continue;
+      const o = parseHour(dh.open, "floor");
+      const c = parseHour(dh.close, "ceil");
+      if (o == null || c == null || c <= o) continue;
+      any = true;
+      if (o < lo) lo = o;
+      if (c > hi) hi = c;
+    }
+    if (any) {
+      minOpen = lo;
+      maxClose = hi;
+    }
+  }
+  const startHour = Math.max(MIN_HOUR, Math.min(MAX_HOUR - 4, minOpen));
+  const endHour = Math.min(MAX_HOUR, Math.max(startHour + 4, maxClose));
+  return { startHour, endHour };
+}
+
+function dayWindow(d: Date, bh: BusinessHours | undefined): { open: number; close: number; closed: boolean } | null {
+  if (!bh) return null;
+  const dh = bh[DAY_KEYS[d.getUTCDay()] as DayKey];
+  if (!dh) return null;
+  if (dh.closed) return { open: 0, close: 0, closed: true };
+  const o = parseHour(dh.open, "floor");
+  const c = parseHour(dh.close, "ceil");
+  if (o == null || c == null || c <= o) return null;
+  return { open: o * 60, close: c * 60, closed: false };
+}
+
+export function WeekTimeGrid({
+  weekStart,
+  days = 7,
+  bookings,
+  staff,
+  colors,
+  businessHours,
+  onSelectBooking,
+  onSelectDay,
+}: WeekTimeGridProps) {
+  const dayList = useMemo(() => {
+    const start = new Date(weekStart);
+    start.setUTCHours(0, 0, 0, 0);
+    return Array.from({ length: days }, (_, i) => {
+      const d = new Date(start);
+      d.setUTCDate(d.getUTCDate() + i);
+      return d;
+    });
+  }, [weekStart, days]);
+
+  const { startHour: START_HOUR, endHour: END_HOUR } = useMemo(
+    () => resolveWeekWindow(dayList, businessHours),
+    [dayList, businessHours],
+  );
+
+  const hours = useMemo(() => {
+    const arr: number[] = [];
+    for (let h = START_HOUR; h <= END_HOUR; h += 1) arr.push(h);
+    return arr;
+  }, [START_HOUR, END_HOUR]);
+
+  const totalHeight = (END_HOUR - START_HOUR) * PX_PER_HOUR;
+  const winStart = START_HOUR * 60;
+  const winEnd = END_HOUR * 60;
+
+  // Snelle lookup: bookings per dag-key (YYYY-M-D in UTC).
+  const bookingsByDay = useMemo(() => {
+    const map = new Map<string, BookingWithRelations[]>();
+    for (const b of bookings) {
+      const d = new Date(b.starts_at);
+      const key = `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
+      const list = map.get(key) ?? [];
+      list.push(b);
+      map.set(key, list);
+    }
+    return map;
+  }, [bookings]);
+
+  const staffById = useMemo(() => {
+    const m = new Map<string, StaffLite>();
+    for (const s of staff) m.set(s.id, s);
+    return m;
+  }, [staff]);
+
+  const now = new Date();
+  const todayKey = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}`;
+  const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes() - winStart;
+  const nowTop = nowMinutes >= 0 && nowMinutes <= (END_HOUR - START_HOUR) * 60 ? nowMinutes * PX_PER_MIN : null;
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+      <div className="overflow-x-auto">
+        <div
+          className="grid min-w-[720px]"
+          style={{ gridTemplateColumns: `56px repeat(${dayList.length}, minmax(120px, 1fr))` }}
+        >
+          {/* Header rij */}
+          <div className="sticky top-0 z-10 border-b border-border bg-muted/40 px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Tijd
+          </div>
+          {dayList.map((d) => {
+            const isToday =
+              `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}` === todayKey;
+            const dw = dayWindow(d, businessHours);
+            const closed = dw?.closed ?? false;
+            return (
+              <button
+                key={`h-${d.toISOString()}`}
+                type="button"
+                onClick={() => onSelectDay?.(d)}
+                className={cn(
+                  "sticky top-0 z-10 flex flex-col items-center gap-0.5 border-b border-l border-border bg-muted/40 px-2 py-2 text-center transition-colors hover:bg-muted",
+                  isToday && "bg-primary/10 hover:bg-primary/15",
+                )}
+                title="Open dag-weergave"
+              >
+                <span className={cn("text-[10px] font-semibold uppercase tracking-wider", isToday ? "text-primary" : "text-muted-foreground")}>
+                  {d.toLocaleDateString("nl-NL", { weekday: "short", timeZone: "UTC" })}
+                </span>
+                <span className={cn("text-sm font-semibold tabular-nums", isToday && "text-primary")}>
+                  {d.toLocaleDateString("nl-NL", { day: "2-digit", month: "short", timeZone: "UTC" })}
+                </span>
+                {closed && (
+                  <span className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground/70">
+                    Gesloten
+                  </span>
+                )}
+              </button>
+            );
+          })}
+
+          {/* Tijd-kolom */}
+          <div className="relative border-r border-border" style={{ height: totalHeight }}>
+            {hours.map((h, i) => (
+              <div
+                key={`time-${h}`}
+                className="absolute left-0 right-0 -translate-y-2 px-2 text-right text-[10px] font-medium tabular-nums text-muted-foreground"
+                style={{ top: i * PX_PER_HOUR }}
+              >
+                {String(h).padStart(2, "0")}:00
+              </div>
+            ))}
+          </div>
+
+          {/* Dag-kolommen */}
+          {dayList.map((d) => {
+            const dayKey = `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
+            const isToday = dayKey === todayKey;
+            const dw = dayWindow(d, businessHours);
+            const dayStartTs = d.getTime();
+            const dayEndTs = dayStartTs + 24 * 3600 * 1000;
+            const dayBookings = bookingsByDay.get(dayKey) ?? [];
+
+            // Off-hours ranges binnen het venster (wat NIET binnen open/close valt).
+            const offRanges: Array<{ startMin: number; endMin: number }> = [];
+            if (dw && !dw.closed) {
+              if (dw.open > winStart) offRanges.push({ startMin: winStart, endMin: Math.min(dw.open, winEnd) });
+              if (dw.close < winEnd) offRanges.push({ startMin: Math.max(dw.close, winStart), endMin: winEnd });
+            }
+            const fullClosed = dw?.closed ?? false;
+
+            return (
+              <div
+                key={`col-${dayKey}`}
+                className="relative border-l border-border"
+                style={{ height: totalHeight }}
+              >
+                {/* Hele dag gesloten */}
+                {fullClosed && (
+                  <div
+                    className="pointer-events-none absolute inset-x-0 z-[1] bg-muted/40"
+                    style={{
+                      top: 0,
+                      height: totalHeight,
+                      backgroundImage:
+                        "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground) / 0.08) 6px 7px)",
+                    }}
+                    title="Salon gesloten"
+                  />
+                )}
+                {/* Off-hours blokken */}
+                {!fullClosed && offRanges.map((r, i) => (
+                  <div
+                    key={`off-${dayKey}-${i}`}
+                    className="pointer-events-none absolute inset-x-0 z-[1] bg-muted/30"
+                    style={{
+                      top: (r.startMin - winStart) * PX_PER_MIN,
+                      height: (r.endMin - r.startMin) * PX_PER_MIN,
+                      backgroundImage:
+                        "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground) / 0.07) 6px 7px)",
+                    }}
+                  />
+                ))}
+                {/* Uur-grid lijnen */}
+                {hours.slice(0, -1).map((h, i) => (
+                  <div
+                    key={`grid-${dayKey}-${h}`}
+                    className="absolute left-0 right-0 z-[2] border-t border-dashed border-border/60"
+                    style={{ top: i * PX_PER_HOUR, height: PX_PER_HOUR }}
+                  />
+                ))}
+                {/* Now-lijn */}
+                {isToday && nowTop !== null && (
+                  <div
+                    className="pointer-events-none absolute left-0 right-0 z-[5] flex items-center"
+                    style={{ top: nowTop }}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    <span className="h-px flex-1 bg-primary" />
+                  </div>
+                )}
+                {/* Bookings */}
+                {dayBookings.map((b) => {
+                  const start = new Date(b.starts_at);
+                  const end = new Date(b.ends_at);
+                  const startTs = start.getTime();
+                  const endTs = end.getTime();
+                  if (endTs <= dayStartTs || startTs >= dayEndTs) return null;
+                  const startMin = Math.max(
+                    winStart,
+                    start.getUTCHours() * 60 + start.getUTCMinutes(),
+                  );
+                  const endMinRaw =
+                    endTs > dayEndTs ? 24 * 60 : end.getUTCHours() * 60 + end.getUTCMinutes();
+                  const endMin = Math.min(winEnd, endMinRaw);
+                  if (endMin <= startMin) return null;
+                  const top = (startMin - winStart) * PX_PER_MIN;
+                  const height = Math.max(20, (endMin - startMin) * PX_PER_MIN - 2);
+                  const stf = b.staff_id ? staffById.get(b.staff_id) : undefined;
+                  const c = colors.get(b.staff_id);
+                  const cancelled = b.status === "cancelled" || b.status === "no_show";
+                  return (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => onSelectBooking?.(b)}
+                      className={cn(
+                        "group absolute left-1 right-1 z-[4] overflow-hidden rounded-md border px-1.5 py-1 text-left text-[11px] shadow-sm transition-all hover:z-[6] hover:shadow-md",
+                        cancelled
+                          ? "border-dashed border-border bg-muted/60 text-muted-foreground line-through"
+                          : `border-transparent ${c.bg} ${c.text}`,
+                      )}
+                      style={{ top, height }}
+                      title={`${formatTime(b.starts_at)} — ${stf?.full_name ?? "Niet toegewezen"}`}
+                    >
+                      <div className="flex items-center gap-1">
+                        <span
+                          className={cn(
+                            "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[8px] font-bold",
+                            cancelled ? "bg-muted-foreground/20 text-muted-foreground" : c.dot,
+                          )}
+                        >
+                          {stf ? staffInitials(stf.full_name) : "—"}
+                        </span>
+                        <span className="truncate text-[10px] font-semibold tabular-nums">
+                          {formatTime(b.starts_at)}
+                        </span>
+                      </div>
+                      {height > 32 && (
+                        <div className="mt-0.5 truncate text-[10px] opacity-90">
+                          {stf?.full_name ?? "Niet toegewezen"}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}

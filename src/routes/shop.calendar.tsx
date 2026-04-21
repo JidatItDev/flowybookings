@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Plus, Filter, CalendarDays, UserX, Check, ChevronsUpDown, UserPlus, Search, List, LayoutGrid, AlertTriangle } from "lucide-react";
 import { DayTimeGrid } from "@/components/calendar/DayTimeGrid";
+import { WeekTimeGrid } from "@/components/calendar/WeekTimeGrid";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -89,6 +90,9 @@ function CalendarPage() {
   const [viewing, setViewing] = useState<BookingWithRelations | null>(null);
   const [dayOffset, setDayOffset] = useState<number | null>(0); // 0 = vandaag, null = alle
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
+  const [calendarMode, setCalendarMode] = useState<"day" | "week">("day");
+  // Aantal weken offset t.o.v. huidige week (0 = deze week, -1 = vorige, +1 = volgende)
+  const [weekOffset, setWeekOffset] = useState(0);
   const [slotPrefill, setSlotPrefill] = useState<{ staffId: string | null; startsAt: Date } | null>(null);
 
   const statusLabel: Record<string, string> = {
@@ -375,20 +379,50 @@ function CalendarPage() {
             </div>
           )}
 
-          {/* View toggle: lijst of tijdgrid. Grid alleen zinvol als 1 dag is gekozen. */}
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <div className="text-xs text-muted-foreground">
-              {filtered.length} {filtered.length === 1 ? t("calendar.appointment") : t("calendar.appointments")}
+          {/* View toggle: lijst of tijdgrid + Dag/Week schakelaar. */}
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>
+                {filtered.length} {filtered.length === 1 ? t("calendar.appointment") : t("calendar.appointments")}
+              </span>
+              {viewMode === "grid" && (
+                <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 p-1 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setCalendarMode("day")}
+                    className={cn(
+                      "rounded-full px-3 py-1 font-medium transition-colors",
+                      calendarMode === "day"
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Dag
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCalendarMode("week")}
+                    className={cn(
+                      "rounded-full px-3 py-1 font-medium transition-colors",
+                      calendarMode === "week"
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Week
+                  </button>
+                </div>
+              )}
             </div>
             <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 p-1 text-xs">
               <button
                 type="button"
                 onClick={() => setViewMode("grid")}
-                disabled={dayOffset === null}
-                title={dayOffset === null ? "Kies een dag om het rooster te tonen" : "Rooster"}
+                disabled={dayOffset === null && calendarMode === "day"}
+                title={dayOffset === null && calendarMode === "day" ? "Kies een dag om het rooster te tonen" : "Rooster"}
                 className={cn(
                   "inline-flex items-center gap-1 rounded-full px-3 py-1 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-                  viewMode === "grid" && dayOffset !== null
+                  viewMode === "grid" && (dayOffset !== null || calendarMode === "week")
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
                 )}
@@ -400,7 +434,7 @@ function CalendarPage() {
                 onClick={() => setViewMode("list")}
                 className={cn(
                   "inline-flex items-center gap-1 rounded-full px-3 py-1 font-medium transition-colors",
-                  viewMode === "list" || dayOffset === null
+                  viewMode === "list" || (dayOffset === null && calendarMode === "day")
                     ? "bg-card text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
                 )}
@@ -409,6 +443,45 @@ function CalendarPage() {
               </button>
             </div>
           </div>
+
+          {/* Week-navigatie: vorige/volgende week + label. Alleen in week-modus. */}
+          {viewMode === "grid" && calendarMode === "week" && (() => {
+            const today = new Date(); today.setUTCHours(0, 0, 0, 0);
+            // Maandag-start (UTC): getUTCDay() → 0=zo, 1=ma, … 6=za
+            const dow = today.getUTCDay();
+            const mondayOffset = dow === 0 ? -6 : 1 - dow;
+            const weekStart = new Date(today);
+            weekStart.setUTCDate(weekStart.getUTCDate() + mondayOffset + weekOffset * 7);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
+            const fmt = (d: Date) =>
+              d.toLocaleDateString("nl-NL", { day: "2-digit", month: "short", timeZone: "UTC" });
+            return (
+              <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-border bg-card px-3 py-2">
+                <Button variant="ghost" size="sm" onClick={() => setWeekOffset((w) => w - 1)}>
+                  <ChevronLeft className="h-4 w-4" /> Vorige week
+                </Button>
+                <div className="text-center">
+                  <div className="text-sm font-semibold tabular-nums">{fmt(weekStart)} – {fmt(weekEnd)}</div>
+                  {weekOffset !== 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setWeekOffset(0)}
+                      className="text-[11px] font-medium text-primary hover:underline"
+                    >
+                      Naar deze week
+                    </button>
+                  )}
+                  {weekOffset === 0 && (
+                    <div className="text-[11px] text-muted-foreground">Deze week</div>
+                  )}
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setWeekOffset((w) => w + 1)}>
+                  Volgende week <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            );
+          })()}
 
           {filtered.length === 0 && viewMode === "list" ? (
             <EmptyState
@@ -421,7 +494,41 @@ function CalendarPage() {
                 </Button>
               )}
             />
-          ) : viewMode === "grid" && dayOffset !== null ? (
+          ) : viewMode === "grid" && calendarMode === "week" ? (() => {
+            const today = new Date(); today.setUTCHours(0, 0, 0, 0);
+            const dow = today.getUTCDay();
+            const mondayOffset = dow === 0 ? -6 : 1 - dow;
+            const weekStart = new Date(today);
+            weekStart.setUTCDate(weekStart.getUTCDate() + mondayOffset + weekOffset * 7);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
+            // Week-bookings: ignoreer dayOffset, maar respecteer status- en staff-filter.
+            const weekBookings = bookings.filter((b) => {
+              if (filter !== "all" && b.status !== filter) return false;
+              if (staffFilter === "unassigned" && b.staff_id) return false;
+              if (staffFilter !== "all" && staffFilter !== "unassigned" && b.staff_id !== staffFilter) return false;
+              const t = new Date(b.starts_at).getTime();
+              return t >= weekStart.getTime() && t < weekEnd.getTime();
+            });
+            return (
+              <WeekTimeGrid
+                weekStart={weekStart}
+                days={7}
+                bookings={weekBookings}
+                staff={staff}
+                colors={colors}
+                businessHours={businessHours}
+                onSelectBooking={(b) => setViewing(b)}
+                onSelectDay={(d) => {
+                  // Bepaal offset t.o.v. vandaag en spring naar dag-weergave.
+                  const today2 = new Date(); today2.setUTCHours(0, 0, 0, 0);
+                  const offset = Math.round((d.getTime() - today2.getTime()) / (24 * 3600 * 1000));
+                  setDayOffset(offset);
+                  setCalendarMode("day");
+                }}
+              />
+            );
+          })() : viewMode === "grid" && dayOffset !== null ? (
             <DayTimeGrid
               day={(() => {
                 const d = new Date();
