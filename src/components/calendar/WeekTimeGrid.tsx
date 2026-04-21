@@ -190,8 +190,11 @@ export function WeekTimeGrid({
 
   // Drag-preview: gesnapte drop-positie binnen één dag-kolom (tijdelijke UI-state).
   const grabOffsetRef = useRef<number>(0);
+  // Booking-id van het actief gesleepte blok (in dragover is dataTransfer.getData
+  // niet leesbaar — we cachen het hier vanuit onDragStart voor pre-validatie).
+  const draggedIdRef = useRef<string | null>(null);
   const [dragPreview, setDragPreview] = useState<
-    { dayKey: string; topPx: number; label: string } | null
+    { dayKey: string; topPx: number; label: string; invalid?: boolean; reason?: string } | null
   >(null);
 
   const now = new Date();
