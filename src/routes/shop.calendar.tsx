@@ -229,6 +229,60 @@ function CalendarPage() {
             ))}
           </div>
 
+          {staff.filter((s) => s.is_active).length > 0 && (
+            <div className="mb-4 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+              <div className="flex items-center gap-2 pb-1">
+                <span className="shrink-0 text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("calendar.staffCol")}</span>
+                <button
+                  onClick={() => setStaffFilter("all")}
+                  className={cn(
+                    "shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                    staffFilter === "all" ? "bg-foreground text-background" : "bg-card text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {t("calendar.filterAll")}
+                </button>
+                {staff.filter((s) => s.is_active).map((s) => {
+                  const c = staffColor(s.id);
+                  const active = staffFilter === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => setStaffFilter(s.id)}
+                      className={cn(
+                        "group inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all",
+                        active
+                          ? `${c.bg} ${c.text} border-transparent ring-2 ring-offset-1 ring-offset-background`
+                          : "border-border bg-card text-muted-foreground hover:bg-muted",
+                      )}
+                      style={active ? { boxShadow: "0 0 0 1px currentColor inset" } : undefined}
+                      title={s.full_name}
+                    >
+                      <span className={cn(
+                        "flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-semibold",
+                        active ? c.dot : "bg-muted-foreground/20",
+                      )}>
+                        {staffInitials(s.full_name)}
+                      </span>
+                      <span className="max-w-[100px] truncate">{s.full_name}</span>
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setStaffFilter("unassigned")}
+                  className={cn(
+                    "shrink-0 rounded-full border px-3 py-1 text-xs font-medium italic transition-colors",
+                    staffFilter === "unassigned"
+                      ? "border-dashed border-foreground bg-muted text-foreground"
+                      : "border-dashed border-border bg-card text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  Niet toegewezen
+                </button>
+              </div>
+            </div>
+          )}
+
           {filtered.length === 0 ? (
             <EmptyState
               icon={CalendarDays}
