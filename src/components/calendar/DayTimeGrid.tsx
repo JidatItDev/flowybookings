@@ -166,6 +166,7 @@ export function DayTimeGrid({
   onSelectSlot,
   onUnavailableSlot,
   onReschedule,
+  resizeHandleLabel,
 }: DayTimeGridProps) {
   const dayStart = useMemo(() => {
     const d = new Date(day);
