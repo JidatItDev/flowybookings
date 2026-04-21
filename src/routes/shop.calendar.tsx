@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Plus, Filter, CalendarDays, UserX, Check, ChevronsUpDown, UserPlus, Search, List, LayoutGrid } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Filter, CalendarDays, UserX, Check, ChevronsUpDown, UserPlus, Search, List, LayoutGrid, AlertTriangle } from "lucide-react";
 import { DayTimeGrid } from "@/components/calendar/DayTimeGrid";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
@@ -41,6 +41,11 @@ import { useAuth } from "@/lib/auth-context";
 import { getTrialState } from "@/lib/trial";
 import { useFeatureAccess, usagePercentage } from "@/lib/use-feature-access";
 import { staffColor, staffInitials, useStaffColors } from "@/lib/staff-color";
+import {
+  formatMinutesOfDay,
+  validateBookingSlot,
+  type StaffWorkingHours,
+} from "@/lib/staff-availability";
 
 export const Route = createFileRoute("/shop/calendar")({
   head: () => ({ meta: [{ title: "Calendar — FlowyBookings" }] }),
@@ -595,6 +600,41 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
     });
   }, [open, booking?.id, prefill?.staffId, prefill?.startsAt?.getTime()]);
 
+  /**
+   * Client-side pre-validation against `staff.working_hours`.
+   *
+   * Reuses the same helper that the DayTimeGrid uses for its overlay, so the
+   * warning shown here always matches what the user sees on the calendar.
+   * The DB trigger remains the source of truth — this is purely advisory and
+   * never blocks submit (server still validates and returns mapped errors).
+   */
+  const slotWarning = useMemo(() => {
+    if (!form.staff_id || !form.starts_at) return null;
+    if (form.status === "cancelled" || form.status === "no_show") return null;
+    const stf = staff.find((s) => s.id === form.staff_id);
+    const wh = (stf?.working_hours ?? undefined) as StaffWorkingHours | undefined;
+    if (!wh) return null;
+    const startUtc = new Date(form.starts_at + "Z");
+    if (Number.isNaN(startUtc.getTime())) return null;
+    const ends = new Date(startUtc.getTime() + form.duration * 60000);
+    const result = validateBookingSlot(startUtc, ends, wh);
+    if (result.kind === "ok" || result.kind === "no_data") return null;
+    if (result.kind === "closed_day") return { message: t("bookingError.closedDay") };
+    if (result.kind === "break") {
+      const range = `${formatMinutesOfDay(result.window.startMin)}–${formatMinutesOfDay(result.window.endMin)}`;
+      return { message: t("bookingError.duringBreakRange", { range }) };
+    }
+    // off_hours
+    const range = result.window
+      ? `${formatMinutesOfDay(result.window.startMin)}–${formatMinutesOfDay(result.window.endMin)}`
+      : "";
+    return {
+      message: range
+        ? t("bookingError.outsideHoursRange", { range })
+        : t("bookingError.outsideHours"),
+    };
+  }, [form.staff_id, form.starts_at, form.duration, form.status, staff, t]);
+
   const save = useMutation({
     mutationFn: async () => {
       assertNotImpersonating();
@@ -687,6 +727,16 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
             </Select>
           </div>
           <div><Label htmlFor="nt">{t("calendar.notes")}</Label><Input id="nt" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+          {slotWarning && (
+            <div
+              role="alert"
+              aria-live="polite"
+              className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300"
+            >
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>{slotWarning.message}</span>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{t("calendar.cancel")}</Button>
