@@ -35,6 +35,7 @@ import {
   type BookingWithRelations,
 } from "@/lib/queries";
 import { Sparkles } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCents, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
