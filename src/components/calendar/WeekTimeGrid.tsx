@@ -490,6 +490,7 @@ export function WeekTimeGrid({
                         type="button"
                         onClick={() => {
                           if (isResizingThis) return;
+                          if (touchDrag?.bookingId === b.id) return;
                           onSelectBooking?.(b);
                         }}
                         draggable={draggable && !isResizingThis}
@@ -510,6 +511,161 @@ export function WeekTimeGrid({
                           draggedIdRef.current = null;
                           setDragPreview(null);
                         }}
+                        onTouchStart={draggable ? (e) => {
+                          // Touch long-press → drag flow voor iPad/tablet.
+                          if (e.touches.length !== 1) return;
+                          const touch = e.touches[0];
+                          const startX = touch.clientX;
+                          const startY = touch.clientY;
+                          const blockRect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                          const grabPx = touch.clientY - blockRect.top;
+                          const grabOffsetMin = Math.max(0, grabPx / PX_PER_MIN);
+                          // Duur van deze booking (voor pre-validatie).
+                          const durMs = endTs - startTs;
+
+                          let activated = false;
+                          let cancelled = false;
+                          const LONG_PRESS_MS = 400;
+                          const MOVE_TOLERANCE_PX = 8;
+
+                          const cleanup = () => {
+                            window.removeEventListener("touchmove", onMove);
+                            window.removeEventListener("touchend", onEnd);
+                            window.removeEventListener("touchcancel", onCancel);
+                            clearTimeout(longPressTimer);
+                          };
+
+                          const computeAt = (clientX: number, clientY: number) => {
+                            const el = document.elementFromPoint(clientX, clientY);
+                            const dayEl = el?.closest("[data-day-key]") as HTMLElement | null;
+                            if (!dayEl) return null;
+                            const targetDayKey = dayEl.getAttribute("data-day-key");
+                            if (!targetDayKey) return null;
+                            const targetDay = dayList.find(
+                              (d) => `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}` === targetDayKey,
+                            );
+                            if (!targetDay) return null;
+                            const rect = dayEl.getBoundingClientRect();
+                            const yPx = clientY - rect.top;
+                            const rawMin = yPx / PX_PER_MIN - grabOffsetMin;
+                            const snapped = Math.round(rawMin / SNAP_MINUTES) * SNAP_MINUTES;
+                            const winSize = winEnd - winStart;
+                            const clampedInWin = Math.max(0, Math.min(winSize - SNAP_MINUTES, snapped));
+                            const totalMin = winStart + clampedInWin;
+                            return { targetDay, targetDayKey, clampedInWin, totalMin };
+                          };
+
+                          const updatePreview = (clientX: number, clientY: number) => {
+                            const at = computeAt(clientX, clientY);
+                            if (!at) {
+                              setDragPreview(null);
+                              return;
+                            }
+                            const { targetDay, targetDayKey, clampedInWin, totalMin } = at;
+                            // Pre-validatie tegen working_hours van booking-eigenaar.
+                            let invalid = false;
+                            let reason: string | undefined;
+                            const wh = stf?.working_hours as StaffWorkingHours | undefined;
+                            if (wh && dropInvalidLabels) {
+                              const slotStart = new Date(targetDay);
+                              slotStart.setUTCMinutes(totalMin);
+                              const slotEnd = new Date(slotStart.getTime() + durMs);
+                              const v = validateBookingSlot(slotStart, slotEnd, wh);
+                              if (v.kind === "closed_day") {
+                                invalid = true;
+                                reason = dropInvalidLabels.closedDay;
+                              } else if (v.kind === "off_hours") {
+                                invalid = true;
+                                const w = v.window;
+                                reason = w
+                                  ? dropInvalidLabels.offHours(`${formatMinutesOfDay(w.startMin)}–${formatMinutesOfDay(w.endMin)}`)
+                                  : dropInvalidLabels.offHours("—");
+                              } else if (v.kind === "break") {
+                                invalid = true;
+                                const br = v.window;
+                                reason = dropInvalidLabels.duringBreak(`${formatMinutesOfDay(br.startMin)}–${formatMinutesOfDay(br.endMin)}`);
+                              }
+                            }
+                            setDragPreview({
+                              dayKey: targetDayKey,
+                              topPx: clampedInWin * PX_PER_MIN,
+                              label: formatMinutesOfDay(totalMin),
+                              invalid,
+                              reason,
+                            });
+                          };
+
+                          const onMove = (ev: TouchEvent) => {
+                            if (ev.touches.length !== 1) return;
+                            const t = ev.touches[0];
+                            if (!activated) {
+                              const dx = Math.abs(t.clientX - startX);
+                              const dy = Math.abs(t.clientY - startY);
+                              if (dx > MOVE_TOLERANCE_PX || dy > MOVE_TOLERANCE_PX) {
+                                cancelled = true;
+                                cleanup();
+                              }
+                              return;
+                            }
+                            ev.preventDefault();
+                            updatePreview(t.clientX, t.clientY);
+                          };
+
+                          const onEnd = (ev: TouchEvent) => {
+                            cleanup();
+                            if (!activated || cancelled) {
+                              setTouchDrag(null);
+                              setDragPreview(null);
+                              return;
+                            }
+                            const t = ev.changedTouches[0];
+                            const at = computeAt(t.clientX, t.clientY);
+                            setTouchDrag(null);
+                            setDragPreview(null);
+                            if (!at) return;
+                            const { targetDay, totalMin } = at;
+                            const wh = stf?.working_hours as StaffWorkingHours | undefined;
+                            if (wh && dropInvalidLabels) {
+                              const slotStart = new Date(targetDay);
+                              slotStart.setUTCMinutes(totalMin);
+                              const slotEnd = new Date(slotStart.getTime() + durMs);
+                              const v = validateBookingSlot(slotStart, slotEnd, wh);
+                              if (v.kind === "closed_day" || v.kind === "off_hours" || v.kind === "break") {
+                                return;
+                              }
+                            }
+                            const newStart = new Date(targetDay);
+                            newStart.setUTCMinutes(totalMin);
+                            if (newStart.getTime() === startTs) return;
+                            onReschedule?.({
+                              booking: b,
+                              newStaffId: b.staff_id ?? null,
+                              newStartsAt: newStart,
+                            });
+                          };
+
+                          const onCancel = () => {
+                            cleanup();
+                            setTouchDrag(null);
+                            setDragPreview(null);
+                          };
+
+                          const longPressTimer = setTimeout(() => {
+                            if (cancelled) return;
+                            activated = true;
+                            grabOffsetRef.current = grabOffsetMin;
+                            draggedIdRef.current = b.id;
+                            setTouchDrag({ bookingId: b.id });
+                            updatePreview(startX, startY);
+                            if ("vibrate" in navigator) {
+                              try { navigator.vibrate(15); } catch { /* noop */ }
+                            }
+                          }, LONG_PRESS_MS);
+
+                          window.addEventListener("touchmove", onMove, { passive: false });
+                          window.addEventListener("touchend", onEnd);
+                          window.addEventListener("touchcancel", onCancel);
+                        } : undefined}
                         className={cn(
                           "group block h-full w-full overflow-hidden rounded-md border px-1.5 py-1 text-left text-[11px] shadow-sm transition-all hover:z-[6] hover:shadow-md",
                           draggable && !isResizingThis && "cursor-grab active:cursor-grabbing",
@@ -517,7 +673,9 @@ export function WeekTimeGrid({
                             ? "border-dashed border-border bg-muted/60 text-muted-foreground line-through"
                             : `border-transparent ${c.bg} ${c.text}`,
                           isResizingThis && "ring-2 ring-primary/60",
+                          touchDrag?.bookingId === b.id && "scale-[1.03] opacity-70 ring-2 ring-primary/70",
                         )}
+                        style={touchDrag?.bookingId === b.id ? { touchAction: "none" } : undefined}
                         title={`${formatTime(b.starts_at)} — ${stf?.full_name ?? "Niet toegewezen"}`}
                       >
                         <div className="flex items-center gap-1">
