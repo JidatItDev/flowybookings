@@ -74,6 +74,7 @@ function CalendarPage() {
             })
           : undefined;
   const [filter, setFilter] = useState<(typeof statuses)[number]>("all");
+  const [staffFilter, setStaffFilter] = useState<string | "all" | "unassigned">("all");
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<BookingWithRelations | null>(null);
   const [deleting, setDeleting] = useState<BookingWithRelations | null>(null);
@@ -119,6 +120,11 @@ function CalendarPage() {
 
   const filtered = bookings.filter((b) => {
     if (filter !== "all" && b.status !== filter) return false;
+    if (staffFilter === "unassigned") {
+      if (b.staff_id) return false;
+    } else if (staffFilter !== "all") {
+      if (b.staff_id !== staffFilter) return false;
+    }
     if (dayOffset !== null) {
       const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0); dayStart.setUTCDate(dayStart.getUTCDate() + dayOffset);
       const dayEnd = new Date(dayStart); dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
@@ -222,6 +228,60 @@ function CalendarPage() {
               </button>
             ))}
           </div>
+
+          {staff.filter((s) => s.is_active).length > 0 && (
+            <div className="mb-4 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+              <div className="flex items-center gap-2 pb-1">
+                <span className="shrink-0 text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("calendar.staffCol")}</span>
+                <button
+                  onClick={() => setStaffFilter("all")}
+                  className={cn(
+                    "shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                    staffFilter === "all" ? "bg-foreground text-background" : "bg-card text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {t("calendar.filterAll")}
+                </button>
+                {staff.filter((s) => s.is_active).map((s) => {
+                  const c = staffColor(s.id);
+                  const active = staffFilter === s.id;
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => setStaffFilter(s.id)}
+                      className={cn(
+                        "group inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-all",
+                        active
+                          ? `${c.bg} ${c.text} border-transparent ring-2 ring-offset-1 ring-offset-background`
+                          : "border-border bg-card text-muted-foreground hover:bg-muted",
+                      )}
+                      style={active ? { boxShadow: "0 0 0 1px currentColor inset" } : undefined}
+                      title={s.full_name}
+                    >
+                      <span className={cn(
+                        "flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-semibold",
+                        active ? c.dot : "bg-muted-foreground/20",
+                      )}>
+                        {staffInitials(s.full_name)}
+                      </span>
+                      <span className="max-w-[100px] truncate">{s.full_name}</span>
+                    </button>
+                  );
+                })}
+                <button
+                  onClick={() => setStaffFilter("unassigned")}
+                  className={cn(
+                    "shrink-0 rounded-full border px-3 py-1 text-xs font-medium italic transition-colors",
+                    staffFilter === "unassigned"
+                      ? "border-dashed border-foreground bg-muted text-foreground"
+                      : "border-dashed border-border bg-card text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  Niet toegewezen
+                </button>
+              </div>
+            </div>
+          )}
 
           {filtered.length === 0 ? (
             <EmptyState
