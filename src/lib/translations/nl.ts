@@ -422,6 +422,7 @@ export const nl: Record<string, string> = {
   "calendar.dropInvalidOffHours": "Buiten werkuren ({range})",
   "calendar.dropInvalidBreak": "Pauze {range}",
   "calendar.dropInvalidConflict": "Conflict met {range}",
+  "calendar.dropBlocked": "Verplaatsing geblokkeerd: {reason}",
   "calendar.bookingDeleted": "Boeking verwijderd",
   "calendar.bookingCreated": "Boeking aangemaakt",
   "calendar.conflictWith": "Conflict: {staff} heeft al een afspraak met {customer} ({service}) van {range}.",

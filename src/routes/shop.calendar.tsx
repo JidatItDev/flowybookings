@@ -716,6 +716,7 @@ function CalendarPage() {
                   duringBreak: (range) => t("calendar.dropInvalidBreak", { range }),
                   conflictWith: (range) => t("calendar.dropInvalidConflict", { range }),
                 }}
+                onDropBlocked={(reason) => toast.error(t("calendar.dropBlocked", { reason }))}
               />
             );
           })() : viewMode === "grid" && dayOffset !== null ? (
@@ -747,6 +748,7 @@ function CalendarPage() {
                 duringBreak: (range) => t("calendar.dropInvalidBreak", { range }),
                 conflictWith: (range) => t("calendar.dropInvalidConflict", { range }),
               }}
+              onDropBlocked={(reason) => toast.error(t("calendar.dropBlocked", { reason }))}
               onUnavailableSlot={({ staffName, reason }) => {
                 const label =
                   reason === "closed"

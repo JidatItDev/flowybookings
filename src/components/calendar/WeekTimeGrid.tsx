@@ -81,6 +81,11 @@ export type WeekTimeGridProps = {
     /** Resize-flow: nieuwe ends_at overlapt met andere booking van dezelfde medewerker. */
     conflictWith?: (range: string) => string;
   };
+  /**
+   * Aangeroepen wanneer een drop/resize fysiek geblokkeerd is door pre-validatie
+   * (werkuren/pauze/conflict). De parent kan hierop bv. een toast tonen.
+   */
+  onDropBlocked?: (reason: string) => void;
 };
 
 function parseHour(value: string | undefined, mode: "floor" | "ceil"): number | null {
@@ -146,6 +151,7 @@ export function WeekTimeGrid({
   onReschedule,
   resizeHandleLabel,
   dropInvalidLabels,
+  onDropBlocked,
 }: WeekTimeGridProps) {
   const bookingsById = useMemo(() => {
     const m = new Map<string, BookingWithRelations>();
@@ -430,11 +436,12 @@ export function WeekTimeGrid({
                   newStart.setUTCMinutes(clamped);
                   if (newStart.getTime() === new Date(src.starts_at).getTime()) return;
                   // Pre-validatie commit-block: werkuren/pauze + conflict.
+                  // Bij invalid: notify parent (toast) en abort.
                   if (dropInvalidLabels) {
                     const durMs = +new Date(src.ends_at) - +new Date(src.starts_at);
                     const slotEnd = new Date(newStart.getTime() + durMs);
                     // Conflict-check
-                    if (src.staff_id != null) {
+                    if (src.staff_id != null && dropInvalidLabels.conflictWith) {
                       const newStartTs = newStart.getTime();
                       const newEndTs = slotEnd.getTime();
                       for (const other of bookings) {
@@ -443,7 +450,20 @@ export function WeekTimeGrid({
                         if (other.status === "cancelled" || other.status === "no_show") continue;
                         const oStart = new Date(other.starts_at).getTime();
                         const oEnd = new Date(other.ends_at).getTime();
-                        if (newStartTs < oEnd && newEndTs > oStart) return;
+                        if (newStartTs < oEnd && newEndTs > oStart) {
+                          const oStartDate = new Date(other.starts_at);
+                          const oEndDate = new Date(other.ends_at);
+                          const oStartMin =
+                            oStartDate.getUTCHours() * 60 + oStartDate.getUTCMinutes();
+                          const oEndMin =
+                            oEndDate.getUTCHours() * 60 + oEndDate.getUTCMinutes();
+                          onDropBlocked?.(
+                            dropInvalidLabels.conflictWith(
+                              `${formatMinutesOfDay(oStartMin)}–${formatMinutesOfDay(oEndMin)}`,
+                            ),
+                          );
+                          return;
+                        }
                       }
                     }
                     // Werkuren/pauze
@@ -451,7 +471,26 @@ export function WeekTimeGrid({
                     const whDrop = stfDrop?.working_hours as StaffWorkingHours | undefined;
                     if (whDrop) {
                       const v = validateBookingSlot(newStart, slotEnd, whDrop);
-                      if (v.kind === "closed_day" || v.kind === "off_hours" || v.kind === "break") return;
+                      if (v.kind === "closed_day") {
+                        onDropBlocked?.(dropInvalidLabels.closedDay);
+                        return;
+                      }
+                      if (v.kind === "off_hours") {
+                        const w = v.window;
+                        onDropBlocked?.(
+                          w
+                            ? dropInvalidLabels.offHours(`${formatMinutesOfDay(w.startMin)}–${formatMinutesOfDay(w.endMin)}`)
+                            : dropInvalidLabels.offHours("—"),
+                        );
+                        return;
+                      }
+                      if (v.kind === "break") {
+                        const br = v.window;
+                        onDropBlocked?.(
+                          dropInvalidLabels.duringBreak(`${formatMinutesOfDay(br.startMin)}–${formatMinutesOfDay(br.endMin)}`),
+                        );
+                        return;
+                      }
                     }
                   }
                   onReschedule({ booking: src, newStaffId: src.staff_id ?? null, newStartsAt: newStart });
@@ -742,8 +781,12 @@ export function WeekTimeGrid({
                             const slotStart = new Date(targetDay);
                             slotStart.setUTCMinutes(totalMin);
                             const slotEnd = new Date(slotStart.getTime() + durMs);
-                            // Blokkeer commit bij invalid (werkuren/pauze/conflict).
-                            if (computeValidation(slotStart, slotEnd).invalid) return;
+                            // Blokkeer commit bij invalid (werkuren/pauze/conflict) + notify parent.
+                            const tv = computeValidation(slotStart, slotEnd);
+                            if (tv.invalid) {
+                              if (tv.reason) onDropBlocked?.(tv.reason);
+                              return;
+                            }
                             const newStart = new Date(targetDay);
                             newStart.setUTCMinutes(totalMin);
                             if (newStart.getTime() === startTs) return;
@@ -891,8 +934,10 @@ export function WeekTimeGrid({
                         const commit = () => {
                           setResizing((cur) => {
                             if (!cur || cur.bookingId !== b.id) return null;
-                            if (
-                              !cur.invalid &&
+                            if (cur.invalid) {
+                              // Resize geblokkeerd door pre-validatie — toast in parent.
+                              if (cur.reason) onDropBlocked?.(cur.reason);
+                            } else if (
                               Math.round(cur.newDurMin) !== Math.round(fullDurMin) &&
                               onReschedule
                             ) {
