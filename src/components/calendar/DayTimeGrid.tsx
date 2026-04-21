@@ -192,6 +192,11 @@ export function DayTimeGrid({
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+      {isClosed && (
+        <div className="border-b border-border bg-muted/30 px-4 py-2 text-center text-xs text-muted-foreground">
+          Salon gesloten op deze dag — venster toont standaardtijden ({String(START_HOUR).padStart(2, "0")}:00–{String(END_HOUR).padStart(2, "0")}:00).
+        </div>
+      )}
       <div className="overflow-x-auto">
         <div
           className="grid min-w-[640px]"
