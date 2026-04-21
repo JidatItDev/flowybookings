@@ -514,12 +514,49 @@ function BookingFormDialog({ open, onClose, booking, shopId }: { open: boolean; 
       const svc = services.find((s) => s.id === form.service_id);
       const startUtc = new Date(form.starts_at + "Z");
       const ends = new Date(startUtc.getTime() + form.duration * 60000);
+
+      // Pre-flight conflict check: only when staff is assigned and booking is not cancelled/no_show.
+      if (form.staff_id && form.status !== "cancelled" && form.status !== "no_show") {
+        const { data: conflicts, error: cErr } = await supabase
+          .from("bookings")
+          .select("id, starts_at, ends_at, customer_id, service_id, status")
+          .eq("shop_id", shopId)
+          .eq("staff_id", form.staff_id)
+          .not("status", "in", "(cancelled,no_show)")
+          .lt("starts_at", ends.toISOString())
+          .gt("ends_at", startUtc.toISOString())
+          .limit(2);
+        if (cErr) throw cErr;
+        const conflict = (conflicts ?? []).find((c) => c.id !== booking?.id);
+        if (conflict) {
+          const stf = staff.find((s) => s.id === form.staff_id);
+          const cust = customers.find((c) => c.id === conflict.customer_id);
+          const svcName = services.find((s) => s.id === conflict.service_id)?.name;
+          const range = `${formatTime(conflict.starts_at)}–${formatTime(conflict.ends_at)}`;
+          throw new Error(
+            t("calendar.conflictWith", {
+              staff: stf?.full_name ?? t("calendar.staffCol"),
+              customer: cust?.full_name ?? t("dashboard.unknown"),
+              service: svcName ?? "—",
+              range,
+            }),
+          );
+        }
+      }
+
       const payload = { shop_id: shopId, customer_id: form.customer_id || null, service_id: form.service_id || null, staff_id: form.staff_id || null, starts_at: startUtc.toISOString(), ends_at: ends.toISOString(), status: form.status, price_cents: svc?.price_cents ?? booking?.price_cents ?? 0, deposit_cents: svc?.deposit_cents ?? booking?.deposit_cents ?? 0, notes: form.notes || null };
       if (booking) { const { error } = await supabase.from("bookings").update(payload).eq("id", booking.id); if (error) throw error; }
       else { const { error } = await supabase.from("bookings").insert(payload); if (error) throw error; }
     },
     onSuccess: () => { toast.success(booking ? t("calendar.bookingUpdated") : t("calendar.bookingCreated")); onClose(); if (shopId) qc.invalidateQueries({ queryKey: shopKeys.bookings(shopId) }); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      // Map DB-side trigger errors (race conditions) to a friendly message.
+      if (e.message?.includes("BOOKING_CONFLICT")) {
+        toast.error(t("calendar.conflictGeneric"));
+      } else {
+        toast.error(e.message);
+      }
+    },
   });
 
   return (
