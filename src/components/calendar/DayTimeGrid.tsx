@@ -682,119 +682,155 @@ export function DayTimeGrid({
                           </div>
                         )}
                       </button>
-                      {/* Resize-handle: alleen wanneer reschedule beschikbaar is en booking actief is. */}
-                      {draggable && (
-                        <div
-                          role="slider"
-                          aria-label={resizeHandleLabel ?? "Sleep om duur aan te passen"}
-                          aria-valuemin={15}
-                          aria-valuenow={Math.round(liveDurMin)}
-                          tabIndex={-1}
-                          title={resizeHandleLabel ?? "Sleep om duur aan te passen"}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            const startTopPx = top;
-                            const startY = e.clientY;
-                            const startDur = durMin;
-                            const winMin = (END_HOUR - START_HOUR) * 60;
-                            const startMinAbs = startMin; // relatief t.o.v. window-start
-                            const maxDur = Math.max(SNAP_MINUTES, winMin - startMinAbs);
-                            // Pre-validatie: alleen ends_at wijzigt — starts_at blijft gelijk.
-                            // Hergebruikt validateBookingSlot tegen de werkuren van de
-                            // toegewezen medewerker (c.workingHours). Onassigned kolom →
-                            // geen validatie (geen werkuren beschikbaar).
-                            const wh = c.workingHours;
-                            const computeValidation = (
-                              newDurMin: number,
-                            ): { invalid: boolean; reason?: string } => {
-                              if (!wh || !dropInvalidLabels) return { invalid: false };
-                              const slotEnd = new Date(start.getTime() + newDurMin * 60_000);
-                              const v = validateBookingSlot(start, slotEnd, wh);
-                              if (v.kind === "ok" || v.kind === "no_data") return { invalid: false };
-                              if (v.kind === "closed_day") {
-                                return { invalid: true, reason: dropInvalidLabels.closedDay };
-                              }
-                              if (v.kind === "off_hours") {
-                                const w = v.window;
-                                return {
-                                  invalid: true,
-                                  reason: w
-                                    ? dropInvalidLabels.offHours(`${formatMinutes(w.startMin)}–${formatMinutes(w.endMin)}`)
-                                    : dropInvalidLabels.offHours("—"),
-                                };
-                              }
-                              if (v.kind === "break") {
-                                const br = v.window;
-                                return {
-                                  invalid: true,
-                                  reason: dropInvalidLabels.duringBreak(`${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`),
-                                };
-                              }
-                              return { invalid: false };
+                      {/* Resize-handle: alleen wanneer reschedule beschikbaar is en booking actief is.
+                          Ondersteunt zowel mouse als touch (tablet/iPad in salons) met
+                          vergrote hit-area op coarse-pointer devices. */}
+                      {draggable && (() => {
+                        const startTopPx = top;
+                        const startDurInit = durMin;
+                        const winMinTotal = (END_HOUR - START_HOUR) * 60;
+                        const startMinAbs = startMin;
+                        const maxDur = Math.max(SNAP_MINUTES, winMinTotal - startMinAbs);
+                        const wh = c.workingHours;
+                        const computeValidation = (
+                          newDurMin: number,
+                        ): { invalid: boolean; reason?: string } => {
+                          if (!wh || !dropInvalidLabels) return { invalid: false };
+                          const slotEnd = new Date(start.getTime() + newDurMin * 60_000);
+                          const v = validateBookingSlot(start, slotEnd, wh);
+                          if (v.kind === "ok" || v.kind === "no_data") return { invalid: false };
+                          if (v.kind === "closed_day") {
+                            return { invalid: true, reason: dropInvalidLabels.closedDay };
+                          }
+                          if (v.kind === "off_hours") {
+                            const w = v.window;
+                            return {
+                              invalid: true,
+                              reason: w
+                                ? dropInvalidLabels.offHours(`${formatMinutes(w.startMin)}–${formatMinutes(w.endMin)}`)
+                                : dropInvalidLabels.offHours("—"),
                             };
-                            const onMove = (ev: MouseEvent) => {
-                              const dy = ev.clientY - startY;
-                              const rawDur = startDur + dy / PX_PER_MIN;
-                              const snapped = Math.round(rawDur / SNAP_MINUTES) * SNAP_MINUTES;
-                              const clamped = Math.max(SNAP_MINUTES, Math.min(maxDur, snapped));
-                              const endTotalMin = START_HOUR * 60 + startMinAbs + clamped;
-                              const v = computeValidation(clamped);
-                              setResizing({
-                                bookingId: b.id,
-                                colKey: c.key,
-                                startTopPx,
-                                newDurMin: clamped,
-                                label: formatMinutes(endTotalMin),
-                                invalid: v.invalid,
-                                reason: v.reason,
+                          }
+                          if (v.kind === "break") {
+                            const br = v.window;
+                            return {
+                              invalid: true,
+                              reason: dropInvalidLabels.duringBreak(`${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`),
+                            };
+                          }
+                          return { invalid: false };
+                        };
+                        const updateFromY = (clientY: number, startY: number) => {
+                          const dy = clientY - startY;
+                          const rawDur = startDurInit + dy / PX_PER_MIN;
+                          const snapped = Math.round(rawDur / SNAP_MINUTES) * SNAP_MINUTES;
+                          const clamped = Math.max(SNAP_MINUTES, Math.min(maxDur, snapped));
+                          const endTotalMin = START_HOUR * 60 + startMinAbs + clamped;
+                          const v = computeValidation(clamped);
+                          setResizing({
+                            bookingId: b.id,
+                            colKey: c.key,
+                            startTopPx,
+                            newDurMin: clamped,
+                            label: formatMinutes(endTotalMin),
+                            invalid: v.invalid,
+                            reason: v.reason,
+                          });
+                        };
+                        const commit = () => {
+                          setResizing((cur) => {
+                            if (!cur || cur.bookingId !== b.id) return null;
+                            if (
+                              !cur.invalid &&
+                              Math.round(cur.newDurMin) !== Math.round(startDurInit) &&
+                              onReschedule
+                            ) {
+                              const newEnds = new Date(start.getTime() + cur.newDurMin * 60_000);
+                              onReschedule({
+                                booking: b,
+                                newStaffId: c.staffId,
+                                newStartsAt: start,
+                                newEndsAt: newEnds,
                               });
-                            };
-                            const onUp = () => {
-                              window.removeEventListener("mousemove", onMove);
-                              window.removeEventListener("mouseup", onUp);
-                              setResizing((cur) => {
-                                if (!cur || cur.bookingId !== b.id) return null;
-                                // Commit alleen wanneer duur veranderd is én geldig is.
-                                // Bij invalid: rollback (geen mutation), blok springt terug.
-                                if (
-                                  !cur.invalid &&
-                                  Math.round(cur.newDurMin) !== Math.round(durMin) &&
-                                  onReschedule
-                                ) {
-                                  const newEnds = new Date(start.getTime() + cur.newDurMin * 60_000);
-                                  onReschedule({
-                                    booking: b,
-                                    newStaffId: c.staffId,
-                                    newStartsAt: start,
-                                    newEndsAt: newEnds,
-                                  });
-                                }
-                                return null;
-                              });
-                            };
-                            window.addEventListener("mousemove", onMove);
-                            window.addEventListener("mouseup", onUp);
-                            const initial = computeValidation(startDur);
-                            setResizing({
-                              bookingId: b.id,
-                              colKey: c.key,
-                              startTopPx,
-                              newDurMin: startDur,
-                              label: formatMinutes(START_HOUR * 60 + startMinAbs + startDur),
-                              invalid: initial.invalid,
-                              reason: initial.reason,
-                            });
-                          }}
-                          className={cn(
-                            "absolute inset-x-0 bottom-0 z-[6] flex h-2.5 cursor-ns-resize items-center justify-center rounded-b-lg",
-                            "opacity-0 transition-opacity hover:opacity-100",
-                            isResizingThis && "opacity-100",
-                          )}
-                        >
-                          <span className="h-1 w-8 rounded-full bg-foreground/30" />
-                        </div>
-                      )}
+                            }
+                            return null;
+                          });
+                        };
+                        const seedInitial = (clientY: number) => {
+                          const initial = computeValidation(startDurInit);
+                          setResizing({
+                            bookingId: b.id,
+                            colKey: c.key,
+                            startTopPx,
+                            newDurMin: startDurInit,
+                            label: formatMinutes(START_HOUR * 60 + startMinAbs + startDurInit),
+                            invalid: initial.invalid,
+                            reason: initial.reason,
+                          });
+                          // Niet direct updaten — wachten op eerste move event.
+                          void clientY;
+                        };
+                        return (
+                          <div
+                            role="slider"
+                            aria-label={resizeHandleLabel ?? "Sleep om duur aan te passen"}
+                            aria-valuemin={15}
+                            aria-valuenow={Math.round(liveDurMin)}
+                            tabIndex={-1}
+                            title={resizeHandleLabel ?? "Sleep om duur aan te passen"}
+                            // touchAction:none voorkomt page-scroll tijdens vertical drag op touch.
+                            style={{ touchAction: "none" }}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const startY = e.clientY;
+                              const onMove = (ev: MouseEvent) => updateFromY(ev.clientY, startY);
+                              const onUp = () => {
+                                window.removeEventListener("mousemove", onMove);
+                                window.removeEventListener("mouseup", onUp);
+                                commit();
+                              };
+                              window.addEventListener("mousemove", onMove);
+                              window.addEventListener("mouseup", onUp);
+                              seedInitial(startY);
+                            }}
+                            onTouchStart={(e) => {
+                              if (e.touches.length !== 1) return;
+                              e.stopPropagation();
+                              const startY = e.touches[0].clientY;
+                              const onMove = (ev: TouchEvent) => {
+                                if (ev.touches.length !== 1) return;
+                                // preventDefault voorkomt scroll tijdens resize.
+                                ev.preventDefault();
+                                updateFromY(ev.touches[0].clientY, startY);
+                              };
+                              const onEnd = () => {
+                                window.removeEventListener("touchmove", onMove);
+                                window.removeEventListener("touchend", onEnd);
+                                window.removeEventListener("touchcancel", onEnd);
+                                commit();
+                              };
+                              // passive:false → preventDefault binnen onMove werkt.
+                              window.addEventListener("touchmove", onMove, { passive: false });
+                              window.addEventListener("touchend", onEnd);
+                              window.addEventListener("touchcancel", onEnd);
+                              seedInitial(startY);
+                            }}
+                            className={cn(
+                              "absolute inset-x-0 bottom-0 z-[6] flex h-2.5 cursor-ns-resize items-center justify-center rounded-b-lg",
+                              // Vergrote hit-area op coarse-pointer (touch) devices.
+                              "[@media(pointer:coarse)]:h-6",
+                              // Zichtbaarheid: standaard verborgen, altijd zichtbaar op
+                              // coarse-pointer (geen hover op touch) of tijdens resize.
+                              "opacity-0 transition-opacity hover:opacity-100",
+                              "[@media(pointer:coarse)]:opacity-100",
+                              isResizingThis && "opacity-100",
+                            )}
+                          >
+                            <span className="h-1 w-8 rounded-full bg-foreground/30 [@media(pointer:coarse)]:h-1.5 [@media(pointer:coarse)]:w-10" />
+                          </div>
+                        );
+                      })()}
                       {/* Live tijd-badge tijdens resize. Rood (destructive) wanneer de
                           nieuwe eindtijd buiten werkuren of in een pauze valt. */}
                       {isResizingThis && (
