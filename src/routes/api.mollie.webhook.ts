@@ -304,6 +304,18 @@ async function handleSubscriptionLifecycle(opts: {
       action_url: "/shop/settings",
       metadata: { kind: "subscription", subkind: "activated", plan, cycle },
     });
+  } else if (opts.effectiveStatus === "failed" && isAbandonedFirstAttempt) {
+    // User canceled/expired the FIRST checkout attempt → no DB state change,
+    // no banner, no email. Just log it for admin visibility.
+    console.log("[mollie/webhook] subscription_first abandoned", {
+      shop_id: opts.shopId, payment_id: opts.paymentId, raw, plan, cycle,
+    });
+    await supabaseAdmin.from("activity_log").insert({
+      entity: BILLING_ENTITY,
+      action: "subscription_checkout_abandoned",
+      shop_id: opts.shopId,
+      metadata: { payment_id: opts.paymentId, plan, cycle, mollie_status: raw },
+    });
   } else if (opts.effectiveStatus === "failed") {
     const { data: prevShop } = await supabaseAdmin
       .from("shops")
@@ -332,7 +344,7 @@ async function handleSubscriptionLifecycle(opts: {
       entity: BILLING_ENTITY,
       action: "subscription_payment_failed",
       shop_id: opts.shopId,
-      metadata: { payment_id: opts.paymentId, plan, cycle, failed_at: failedAt, failure_count: failedCount },
+      metadata: { payment_id: opts.paymentId, plan, cycle, failed_at: failedAt, failure_count: failedCount, mollie_status: raw },
     });
     await supabaseAdmin.from("notifications").insert({
       shop_id: opts.shopId,
@@ -380,6 +392,17 @@ async function handleSubscriptionLifecycle(opts: {
       console.error("[mollie/webhook] platform-payment-failed email error", err);
     }
   }
+
+  console.log("[mollie/webhook] subscription_lifecycle done", {
+    shop_id: opts.shopId,
+    payment_id: opts.paymentId,
+    effective_status: opts.effectiveStatus,
+    raw_mollie_status: raw,
+    kind,
+    plan,
+    cycle,
+    abandoned_first: isAbandonedFirstAttempt,
+  });
 }
 
 // Local helper — keeps webhook self-contained without circular import on platform-billing.
