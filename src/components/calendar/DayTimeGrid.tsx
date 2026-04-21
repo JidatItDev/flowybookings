@@ -246,6 +246,22 @@ export function DayTimeGrid({
   // hier de id zodat we tijdens dragOver de juiste duur + conflict-check
   // kunnen uitvoeren tegen visibleBookings.
   const draggedIdRef = useRef<string | null>(null);
+  // Na een keyboard-reschedule (pijltjestoetsen) wordt het bookings-array
+  // opnieuw geladen, waardoor de DOM-node van de gefocuste booking wordt
+  // vervangen en focus naar <body> springt. We onthouden hier de id zodat
+  // we na re-render de focus terug kunnen zetten op hetzelfde blok.
+  const restoreFocusIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const id = restoreFocusIdRef.current;
+    if (!id) return;
+    const el = document.querySelector<HTMLElement>(`[data-booking-id="${CSS.escape(id)}"]`);
+    if (el) {
+      el.focus({ preventScroll: false });
+      // Houd het blok in beeld zonder de pagina naar boven te scrollen.
+      el.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+      restoreFocusIdRef.current = null;
+    }
+  }, [bookings]);
   const [dragPreview, setDragPreview] = useState<
     { colKey: string; topPx: number; label: string; invalid?: boolean; reason?: string } | null
   >(null);
