@@ -105,7 +105,12 @@ export const Route = createFileRoute("/api/mollie/webhook")({
           });
 
           // If we don't know this payment locally, just acknowledge.
-          if (!payment) return ok();
+          if (!payment) {
+            return new Response(JSON.stringify({ ok: true }), {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            });
+          }
 
           // Map Mollie status → local payment status
           const newStatus = mapStatus(mollie?.status);
@@ -161,25 +166,22 @@ export const Route = createFileRoute("/api/mollie/webhook")({
             }
           }
 
-          return ok();
-        } catch (err) {
-          console.error("[mollie/webhook] error:", err);
-          return new Response(JSON.stringify({ error: "internal_error" }), {
-            status: 500,
+          return new Response(JSON.stringify({ ok: true }), {
+            status: 200,
             headers: { "Content-Type": "application/json" },
           });
+        } catch (err) {
+          console.error("[mollie/webhook] error:", err);
+          return new Response(
+            JSON.stringify({ error: "internal_error", message: err instanceof Error ? err.message : String(err) }),
+            { status: 500, headers: { "Content-Type": "application/json" } },
+          );
         }
       },
     },
   },
 });
 
-function ok() {
-  return new Response(JSON.stringify({ ok: true }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
-}
 
 // Constant-time string comparison to avoid timing attacks on the shared-secret guard.
 function safeEqual(a: string, b: string): boolean {
