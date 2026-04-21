@@ -34,6 +34,7 @@ import {
   bookingsQuery, customersQuery, servicesQuery, shopFullQuery, shopKeys, staffQuery,
   type BookingWithRelations,
 } from "@/lib/queries";
+import { Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCents, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
