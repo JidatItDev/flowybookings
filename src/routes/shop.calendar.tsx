@@ -728,6 +728,8 @@ function CalendarPage() {
                 days={7}
                 bookings={weekBookings}
                 staff={staff}
+                customers={customers}
+                services={services}
                 colors={colors}
                 businessHours={businessHours}
                 onSelectBooking={(b) => setViewing(b)}
