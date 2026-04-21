@@ -14,6 +14,8 @@ import {
   X,
   Tag as TagIcon,
   Sparkle,
+  CreditCard,
+  Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
@@ -91,6 +93,50 @@ function CustomerProfilePage() {
   );
 
   const serviceMap = useMemo(() => Object.fromEntries(services.map((s) => [s.id, s])), [services]);
+
+  // All payments for this customer's bookings (for the unified timeline).
+  const customerBookingIds = useMemo(() => customerBookings.map((b) => b.id), [customerBookings]);
+  const paymentsQuery = useQuery({
+    queryKey: ["customer-payments", customerId, customerBookingIds],
+    enabled: !!shopId && customerBookingIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payments")
+        .select("id, booking_id, amount_cents, currency, status, provider, provider_payment_id, created_at, metadata")
+        .in("booking_id", customerBookingIds)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const customerPayments = paymentsQuery.data ?? [];
+
+  // Unified, sorted timeline (newest first) of bookings + payments.
+  type TimelineItem =
+    | { kind: "booking"; id: string; at: string; data: (typeof customerBookings)[number] }
+    | { kind: "payment"; id: string; at: string; data: (typeof customerPayments)[number] };
+  const timeline: TimelineItem[] = useMemo(() => {
+    const b: TimelineItem[] = customerBookings.map((row) => ({
+      kind: "booking",
+      id: `b-${row.id}`,
+      at: row.starts_at,
+      data: row,
+    }));
+    const p: TimelineItem[] = customerPayments.map((row) => ({
+      kind: "payment",
+      id: `p-${row.id}`,
+      at: row.created_at,
+      data: row,
+    }));
+    return [...b, ...p].sort((x, y) => new Date(y.at).getTime() - new Date(x.at).getTime());
+  }, [customerBookings, customerPayments]);
+
+  const [timelineFilter, setTimelineFilter] = useState<"all" | "bookings" | "payments">("all");
+  const filteredTimeline = useMemo(() => {
+    if (timelineFilter === "all") return timeline;
+    if (timelineFilter === "bookings") return timeline.filter((i) => i.kind === "booking");
+    return timeline.filter((i) => i.kind === "payment");
+  }, [timeline, timelineFilter]);
 
   const customer = customerQuery.data;
 
@@ -296,43 +342,148 @@ function CustomerProfilePage() {
             </div>
           </div>
 
-          {/* Booking history */}
+          {/* Unified timeline: bookings + payments, newest first */}
           <div className="rounded-2xl border border-border bg-card shadow-soft">
-            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-6 py-4">
               <div>
-                <h3 className="text-sm font-semibold">{t("customers.bookingHistory")}</h3>
+                <h3 className="text-sm font-semibold">{t("customers.timeline")}</h3>
                 <p className="text-xs text-muted-foreground">
-                  {t("customers.bookingHistoryCount", { count: String(totalBookings) })}
+                  {timeline.length === 0
+                    ? t("customers.timelineSubtitle")
+                    : t("customers.timelineCount", { count: String(timeline.length) })}
                 </p>
               </div>
+              <div className="flex items-center gap-1 rounded-full border border-border bg-muted/40 p-1 text-xs">
+                {(["all", "bookings", "payments"] as const).map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    onClick={() => setTimelineFilter(f)}
+                    className={cn(
+                      "rounded-full px-3 py-1 font-medium transition-colors",
+                      timelineFilter === f
+                        ? "bg-card text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {f === "all"
+                      ? t("customers.timelineFilterAll")
+                      : f === "bookings"
+                        ? t("customers.timelineFilterBookings")
+                        : t("customers.timelineFilterPayments")}
+                  </button>
+                ))}
+              </div>
             </div>
-            {customerBookings.length === 0 ? (
+            {filteredTimeline.length === 0 ? (
               <div className="p-8 text-center text-sm text-muted-foreground">
-                {t("customers.noBookings")}
+                {timeline.length === 0 ? t("customers.timelineEmpty") : t("customers.noBookings")}
               </div>
             ) : (
-              <ul className="divide-y divide-border">
-                {customerBookings.map((b) => {
-                  const svc = b.service_id ? serviceMap[b.service_id] : null;
+              <ol className="divide-y divide-border">
+                {filteredTimeline.map((item) => {
+                  if (item.kind === "booking") {
+                    const b = item.data;
+                    const svc = b.service_id ? serviceMap[b.service_id] : null;
+                    return (
+                      <li
+                        key={item.id}
+                        className="flex flex-wrap items-center gap-3 px-6 py-3 transition-colors hover:bg-muted/30"
+                      >
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                          <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-medium">
+                            {svc?.name ?? t("customers.serviceRemoved")}
+                          </p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {formatDateTime(b.starts_at)}
+                          </p>
+                        </div>
+                        <StatusBadge status={b.status} />
+                        <span className="w-24 text-right text-sm font-medium tabular-nums">
+                          {formatCents(b.price_cents)}
+                        </span>
+                      </li>
+                    );
+                  }
+                  // Payment row
+                  const p = item.data;
+                  const isRefund = p.status === "refunded";
+                  const linkedBooking = customerBookings.find((b) => b.id === p.booking_id);
+                  const providerLabel =
+                    p.provider && p.provider.length > 0
+                      ? p.provider.charAt(0).toUpperCase() + p.provider.slice(1)
+                      : null;
+                  const title = providerLabel
+                    ? t("customers.timelinePaymentTitle", { provider: providerLabel })
+                    : t("customers.timelinePaymentNoProvider");
+                  const subtitle = linkedBooking
+                    ? t("customers.timelinePaymentForBooking", {
+                        date: formatDateTime(linkedBooking.starts_at),
+                      })
+                    : t("customers.timelinePaymentNoBooking");
+                  const statusKey = `customers.paymentStatus.${p.status}` as
+                    | "customers.paymentStatus.unpaid"
+                    | "customers.paymentStatus.deposit_paid"
+                    | "customers.paymentStatus.paid"
+                    | "customers.paymentStatus.refunded"
+                    | "customers.paymentStatus.failed";
+                  const statusToneCls =
+                    p.status === "paid"
+                      ? "bg-success/15 text-success-foreground"
+                      : p.status === "deposit_paid"
+                        ? "bg-primary/15 text-primary"
+                        : p.status === "refunded"
+                          ? "bg-amber-500/15 text-amber-700"
+                          : p.status === "failed"
+                            ? "bg-destructive/15 text-destructive"
+                            : "bg-muted text-muted-foreground";
                   return (
-                    <li key={b.id} className="flex flex-wrap items-center gap-3 px-6 py-3 hover:bg-muted/30">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
-                        <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                    <li
+                      key={item.id}
+                      className="flex flex-wrap items-center gap-3 px-6 py-3 transition-colors hover:bg-muted/30"
+                    >
+                      <div
+                        className={cn(
+                          "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+                          isRefund ? "bg-amber-500/10 text-amber-700" : "bg-primary/10 text-primary",
+                        )}
+                      >
+                        {isRefund ? (
+                          <Undo2 className="h-4 w-4" />
+                        ) : (
+                          <CreditCard className="h-4 w-4" />
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">
-                          {svc?.name ?? t("customers.serviceRemoved")}
+                        <p className="truncate text-sm font-medium">{title}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {formatDateTime(p.created_at)} · {subtitle}
                         </p>
-                        <p className="truncate text-xs text-muted-foreground">{formatDateTime(b.starts_at)}</p>
                       </div>
-                      <StatusBadge status={b.status} />
-                      <span className="w-20 text-right text-sm font-medium tabular-nums">
-                        {formatCents(b.price_cents)}
+                      <span
+                        className={cn(
+                          "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+                          statusToneCls,
+                        )}
+                      >
+                        {t(statusKey)}
+                      </span>
+                      <span
+                        className={cn(
+                          "w-24 text-right text-sm font-semibold tabular-nums",
+                          isRefund ? "text-amber-700" : "text-foreground",
+                        )}
+                      >
+                        {isRefund ? "−" : ""}
+                        {formatCents(p.amount_cents)}
                       </span>
                     </li>
                   );
                 })}
-              </ul>
+              </ol>
             )}
           </div>
         </div>
