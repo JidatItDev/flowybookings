@@ -86,7 +86,7 @@ export function DayTimeGrid({
       key: s.id,
       label: s.full_name,
       staffId: s.id,
-      color: colors.get(s.id) ?? null,
+      color: colors.get(s.id),
     }));
     // Voeg "niet toegewezen" alleen toe als er bookings zonder staff zijn op deze dag.
     const hasUnassigned = bookings.some(
