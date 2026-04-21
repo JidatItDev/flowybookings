@@ -427,6 +427,18 @@ function CalendarPage() {
               >
                 {t("calendar.allUpcoming")}
               </button>
+              <button
+                onClick={() => { setDayOffset(0); setWeekOffset(0); }}
+                className={cn(
+                  "shrink-0 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors",
+                  dayOffset === 0
+                    ? "border-primary bg-primary-soft text-primary"
+                    : "border-border bg-card text-foreground hover:bg-muted",
+                )}
+                title={t("calendar.today")}
+              >
+                {t("calendar.today")}
+              </button>
               {dayChips.map((c) => {
                 const isToday = c.offset === 0;
                 const active = dayOffset === c.offset;
