@@ -34,6 +34,7 @@ import {
   bookingsQuery, customersQuery, servicesQuery, shopFullQuery, shopKeys, staffQuery,
   type BookingWithRelations,
 } from "@/lib/queries";
+import { Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCents, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,7 @@ import { useFeatureAccess, usagePercentage } from "@/lib/use-feature-access";
 import { staffColor, staffInitials, useStaffColors } from "@/lib/staff-color";
 import {
   formatMinutesOfDay,
+  resolveStaffAvailability,
   validateBookingSlot,
   type StaffWorkingHours,
 } from "@/lib/staff-availability";
@@ -239,6 +241,33 @@ function CalendarPage() {
     return { offset: i, date: d, count };
   });
 
+  /**
+   * "Vandaag aan het werk" — afgeleid van staff.working_hours + bookings van vandaag.
+   * Toont alleen actieve staff met een werkblok of afspraken vandaag.
+   */
+  const workingToday = useMemo(() => {
+    const today = new Date(); today.setUTCHours(0, 0, 0, 0);
+    const tomorrow = new Date(today); tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    const todaysBookings = bookings.filter((b) => {
+      const t = new Date(b.starts_at).getTime();
+      return t >= today.getTime() && t < tomorrow.getTime() && b.status !== "cancelled" && b.status !== "no_show";
+    });
+    return staff
+      .filter((s) => s.is_active)
+      .map((s) => {
+        const wh = (s.working_hours ?? undefined) as StaffWorkingHours | undefined;
+        const av = wh ? resolveStaffAvailability(today, wh) : null;
+        const count = todaysBookings.filter((b) => b.staff_id === s.id).length;
+        const firstW = av?.working[0];
+        const lastW = av?.working[(av?.working.length ?? 1) - 1];
+        const window = firstW && lastW ? `${formatMinutesOfDay(firstW.startMin)}–${formatMinutesOfDay(lastW.endMin)}` : null;
+        const closed = !!av?.dayClosed;
+        return { staff: s, count, window, closed, hasData: !!av?.hasStructuredData };
+      })
+      .filter((row) => row.window || row.closed || row.count > 0);
+  }, [staff, bookings]);
+
+
   return (
     <ShopLayout>
       <PageHeader
@@ -300,6 +329,61 @@ function CalendarPage() {
                         )}
                       >
                         {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Vandaag aan het werk: compacte avatar-strip met werkuren + bookings vandaag */}
+          {workingToday.length > 0 && (
+            <div className="mb-3 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+              <div className="flex items-center gap-2 pb-1">
+                <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Vandaag aan het werk
+                </span>
+                {workingToday.map((row) => {
+                  const c = colors.get(row.staff.id);
+                  const active = staffFilter === row.staff.id;
+                  const subtitle = row.closed
+                    ? "Vrij vandaag"
+                    : row.window
+                      ? `${row.window} · ${row.count} ${row.count === 1 ? "afspraak" : "afspraken"}`
+                      : `${row.count} ${row.count === 1 ? "afspraak" : "afspraken"}`;
+                  return (
+                    <button
+                      key={`today-${row.staff.id}`}
+                      type="button"
+                      onClick={() => setStaffFilter((prev) => (prev === row.staff.id ? "all" : row.staff.id))}
+                      className={cn(
+                        "group inline-flex shrink-0 items-center gap-2 rounded-full border px-2.5 py-1 text-left transition-colors",
+                        active
+                          ? `${c.bg} ${c.text} border-transparent`
+                          : "border-border bg-card hover:bg-muted",
+                        row.closed && !active && "opacity-60",
+                      )}
+                      title={`${row.staff.full_name} — ${subtitle}`}
+                    >
+                      <span
+                        className={cn(
+                          "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
+                          active ? "bg-background/20 text-current" : c.dot,
+                        )}
+                      >
+                        {staffInitials(row.staff.full_name)}
+                      </span>
+                      <span className="flex flex-col leading-tight">
+                        <span className="max-w-[120px] truncate text-xs font-semibold">
+                          {row.staff.full_name}
+                        </span>
+                        <span className={cn(
+                          "text-[10px] tabular-nums",
+                          active ? "text-current/85" : "text-muted-foreground",
+                        )}>
+                          {subtitle}
+                        </span>
                       </span>
                     </button>
                   );
@@ -744,6 +828,8 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
   const { data: customers = [] } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId && open });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId && open });
   const { data: staff = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId && open });
+  // Hits the same cache als de calendar-pagina; geen extra request.
+  const { data: allBookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId && open });
 
   const statusLabel: Record<string, string> = {
     pending: t("calendar.pending"), confirmed: t("calendar.confirmed"),
@@ -887,6 +973,61 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
           <div className="grid grid-cols-2 gap-3">
             <div><Label htmlFor="dt">{t("calendar.startUTC")}</Label><Input id="dt" type="datetime-local" value={form.starts_at} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} /></div>
             <div><Label htmlFor="du">{t("calendar.duration")}</Label><Input id="du" type="number" value={form.duration} onChange={(e) => setForm({ ...form, duration: Number(e.target.value) })} /></div>
+          </div>
+          <div className="-mt-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1.5 text-xs"
+              disabled={!form.staff_id || !form.duration}
+              onClick={() => {
+                const stf = staff.find((s) => s.id === form.staff_id);
+                if (!stf) return;
+                const wh = (stf.working_hours ?? undefined) as StaffWorkingHours | undefined;
+                const SNAP = 15;
+                const durMs = form.duration * 60000;
+                // Startpunt: max(now+15min, huidige form-tijd+15min) gesnapt naar 15min UTC.
+                const now = new Date();
+                const baseFromForm = form.starts_at ? new Date(form.starts_at + "Z") : null;
+                const baseTs = Math.max(
+                  now.getTime() + SNAP * 60000,
+                  baseFromForm && !Number.isNaN(baseFromForm.getTime()) ? baseFromForm.getTime() + SNAP * 60000 : 0,
+                );
+                let cursor = new Date(Math.ceil(baseTs / (SNAP * 60000)) * SNAP * 60000);
+                // Conflict-set: bookings van dezelfde staff, niet cancelled/no_show, niet zichzelf.
+                const conflicts = allBookings.filter((b) =>
+                  b.staff_id === form.staff_id &&
+                  b.status !== "cancelled" &&
+                  b.status !== "no_show" &&
+                  b.id !== booking?.id,
+                ).map((b) => ({ s: +new Date(b.starts_at), e: +new Date(b.ends_at) }));
+                const MAX_STEPS = 7 * 24 * (60 / SNAP); // max 7 dagen vooruit
+                let found: Date | null = null;
+                for (let i = 0; i < MAX_STEPS; i += 1) {
+                  const start = cursor;
+                  const end = new Date(start.getTime() + durMs);
+                  // Working-hours check (advisory; bij no_data slaan we deze over).
+                  const v = validateBookingSlot(start, end, wh);
+                  const whOk = v.kind === "ok" || v.kind === "no_data";
+                  // Conflict check.
+                  const sTs = start.getTime();
+                  const eTs = end.getTime();
+                  const overlap = conflicts.some((c) => sTs < c.e && eTs > c.s);
+                  if (whOk && !overlap) { found = start; break; }
+                  cursor = new Date(cursor.getTime() + SNAP * 60000);
+                }
+                if (!found) {
+                  toast.warning("Geen vrij slot gevonden in de komende 7 dagen.");
+                  return;
+                }
+                setForm({ ...form, starts_at: toLocalInput(found.toISOString()) });
+                toast.success(`Eerstvolgende vrije slot: ${found.toLocaleString("nl-NL", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" })}`);
+              }}
+              title={!form.staff_id ? "Kies eerst een medewerker" : !form.duration ? "Kies een duur" : "Vind het eerstvolgende vrije slot voor deze medewerker"}
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Eerstvolgende vrije slot
+            </Button>
           </div>
           <div>
             <Label>{t("calendar.status")}</Label>
