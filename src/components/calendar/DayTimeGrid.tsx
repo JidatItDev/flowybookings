@@ -252,6 +252,12 @@ export function DayTimeGrid({
     } | null
   >(null);
 
+  // Touch drag-and-drop: native HTML5 drag werkt niet op touch (iPad/tablet).
+  // We implementeren een long-press → move → drop flow met dezelfde snap- en
+  // pre-validatie-logica als de mouse drag-flow. State houdt de actief
+  // "opgepakte" booking + grab-offset bij; visuele feedback via dragPreview.
+  const [touchDrag, setTouchDrag] = useState<{ bookingId: string } | null>(null);
+
   const hours = useMemo(() => {
     const arr: number[] = [];
     for (let h = START_HOUR; h <= END_HOUR; h += 1) arr.push(h);
@@ -365,6 +371,8 @@ export function DayTimeGrid({
             return (
             <div
               key={`col-${c.key}`}
+              data-col-key={c.key}
+              data-col-staff-id={c.staffId ?? ""}
               className="relative border-l border-border"
               style={{ height: totalHeight }}
               onDragOver={onReschedule ? (e) => {
@@ -652,8 +660,161 @@ export function DayTimeGrid({
                           grabOffsetRef.current = grabMin;
                           e.dataTransfer.setData("application/x-grab-offset-min", String(grabMin));
                         } : undefined}
+                        onTouchStart={draggable ? (e) => {
+                          // Touch long-press → drag flow voor iPad/tablet in salons.
+                          // Native HTML5 drag werkt niet op touch, dus we doen het zelf.
+                          if (e.touches.length !== 1) return;
+                          const touch = e.touches[0];
+                          const startX = touch.clientX;
+                          const startY = touch.clientY;
+                          const blockRect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                          const grabPx = touch.clientY - blockRect.top;
+                          const grabMin = Math.max(0, grabPx / PX_PER_MIN);
+
+                          let activated = false;
+                          let cancelled = false;
+                          const LONG_PRESS_MS = 400;
+                          const MOVE_TOLERANCE_PX = 8;
+
+                          const cleanup = () => {
+                            window.removeEventListener("touchmove", onMove);
+                            window.removeEventListener("touchend", onEnd);
+                            window.removeEventListener("touchcancel", onCancel);
+                            clearTimeout(longPressTimer);
+                          };
+
+                          const computeAt = (clientX: number, clientY: number) => {
+                            const el = document.elementFromPoint(clientX, clientY);
+                            const colEl = el?.closest("[data-col-key]") as HTMLElement | null;
+                            if (!colEl) return null;
+                            const colKey = colEl.getAttribute("data-col-key");
+                            if (!colKey) return null;
+                            const targetCol = columns.find((cc) => cc.key === colKey);
+                            if (!targetCol) return null;
+                            const rect = colEl.getBoundingClientRect();
+                            const yPx = clientY - rect.top;
+                            const rawMin = yPx / PX_PER_MIN - grabMin;
+                            const snapped = Math.round(rawMin / SNAP_MINUTES) * SNAP_MINUTES;
+                            const winMin = (END_HOUR - START_HOUR) * 60;
+                            const clampedInWin = Math.max(0, Math.min(winMin - SNAP_MINUTES, snapped));
+                            const totalMin = START_HOUR * 60 + clampedInWin;
+                            return { targetCol, clampedInWin, totalMin };
+                          };
+
+                          const updatePreview = (clientX: number, clientY: number) => {
+                            const at = computeAt(clientX, clientY);
+                            if (!at) {
+                              setDragPreview(null);
+                              return;
+                            }
+                            const { targetCol, clampedInWin, totalMin } = at;
+                            // Pre-validatie tegen working_hours van doel-kolom + duur van booking.
+                            let invalid = false;
+                            let reason: string | undefined;
+                            if (targetCol.workingHours && dropInvalidLabels) {
+                              const slotStart = new Date(dayStart);
+                              slotStart.setUTCMinutes(totalMin);
+                              const slotEnd = new Date(slotStart.getTime() + durMin * 60_000);
+                              const v = validateBookingSlot(slotStart, slotEnd, targetCol.workingHours);
+                              if (v.kind === "closed_day") {
+                                invalid = true;
+                                reason = dropInvalidLabels.closedDay;
+                              } else if (v.kind === "off_hours") {
+                                invalid = true;
+                                const w = v.window;
+                                reason = w
+                                  ? dropInvalidLabels.offHours(`${formatMinutes(w.startMin)}–${formatMinutes(w.endMin)}`)
+                                  : dropInvalidLabels.offHours("—");
+                              } else if (v.kind === "break") {
+                                invalid = true;
+                                const br = v.window;
+                                reason = dropInvalidLabels.duringBreak(`${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`);
+                              }
+                            }
+                            setDragPreview({
+                              colKey: targetCol.key,
+                              topPx: clampedInWin * PX_PER_MIN,
+                              label: formatMinutes(totalMin),
+                              invalid,
+                              reason,
+                            });
+                          };
+
+                          const onMove = (ev: TouchEvent) => {
+                            if (ev.touches.length !== 1) return;
+                            const t = ev.touches[0];
+                            if (!activated) {
+                              const dx = Math.abs(t.clientX - startX);
+                              const dy = Math.abs(t.clientY - startY);
+                              if (dx > MOVE_TOLERANCE_PX || dy > MOVE_TOLERANCE_PX) {
+                                cancelled = true;
+                                cleanup();
+                              }
+                              return;
+                            }
+                            ev.preventDefault();
+                            updatePreview(t.clientX, t.clientY);
+                          };
+
+                          const onEnd = (ev: TouchEvent) => {
+                            cleanup();
+                            if (!activated || cancelled) {
+                              setTouchDrag(null);
+                              setDragPreview(null);
+                              return;
+                            }
+                            const t = ev.changedTouches[0];
+                            const at = computeAt(t.clientX, t.clientY);
+                            setTouchDrag(null);
+                            setDragPreview(null);
+                            if (!at) return;
+                            const { targetCol, totalMin } = at;
+                            if (targetCol.workingHours && dropInvalidLabels) {
+                              const slotStart = new Date(dayStart);
+                              slotStart.setUTCMinutes(totalMin);
+                              const slotEnd = new Date(slotStart.getTime() + durMin * 60_000);
+                              const v = validateBookingSlot(slotStart, slotEnd, targetCol.workingHours);
+                              if (v.kind === "closed_day" || v.kind === "off_hours" || v.kind === "break") {
+                                return;
+                              }
+                            }
+                            const newStart = new Date(dayStart);
+                            newStart.setUTCHours(0, 0, 0, 0);
+                            newStart.setUTCMinutes(totalMin);
+                            const sameStaff = (b.staff_id ?? null) === targetCol.staffId;
+                            const sameTime = new Date(b.starts_at).getTime() === newStart.getTime();
+                            if (sameStaff && sameTime) return;
+                            onReschedule?.({
+                              booking: b,
+                              newStaffId: targetCol.staffId,
+                              newStartsAt: newStart,
+                            });
+                          };
+
+                          const onCancel = () => {
+                            cleanup();
+                            setTouchDrag(null);
+                            setDragPreview(null);
+                          };
+
+                          const longPressTimer = setTimeout(() => {
+                            if (cancelled) return;
+                            activated = true;
+                            grabOffsetRef.current = grabMin;
+                            setTouchDrag({ bookingId: b.id });
+                            updatePreview(startX, startY);
+                            if ("vibrate" in navigator) {
+                              try { navigator.vibrate(15); } catch { /* noop */ }
+                            }
+                          }, LONG_PRESS_MS);
+
+                          window.addEventListener("touchmove", onMove, { passive: false });
+                          window.addEventListener("touchend", onEnd);
+                          window.addEventListener("touchcancel", onCancel);
+                        } : undefined}
                         onClick={() => {
                           if (isResizingThis) return;
+                          if (touchDrag?.bookingId === b.id) return;
                           onSelectBooking?.(b);
                         }}
                         className={cn(
@@ -664,7 +825,9 @@ export function DayTimeGrid({
                             : "border-border bg-muted text-foreground",
                           isCancelled && "opacity-60 line-through decoration-1",
                           isResizingThis && "ring-2 ring-primary/60",
+                          touchDrag?.bookingId === b.id && "scale-[1.02] opacity-70 ring-2 ring-primary/70",
                         )}
+                        style={touchDrag?.bookingId === b.id ? { touchAction: "none" } : undefined}
                         title={`${cust?.full_name ?? "—"} · ${svc?.name ?? "—"} · ${formatTime(b.starts_at)}–${formatTime(b.ends_at)}${draggable ? " · Sleep om te verplaatsen" : ""}`}
                       >
                         <div className="flex items-center justify-between gap-1">
