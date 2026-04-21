@@ -342,12 +342,39 @@ export function DayTimeGrid({
                 if (Array.from(e.dataTransfer.types).includes("application/x-booking-id")) {
                   e.preventDefault();
                   e.dataTransfer.dropEffect = "move";
+                  // Bereken gesnapte positie + tijd-label voor de drop-indicator.
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const yPx = e.clientY - rect.top;
+                  const rawMin = yPx / PX_PER_MIN - grabOffsetRef.current;
+                  const snapped = Math.round(rawMin / SNAP_MINUTES) * SNAP_MINUTES;
+                  const winMin = (END_HOUR - START_HOUR) * 60;
+                  const clampedInWin = Math.max(0, Math.min(winMin - SNAP_MINUTES, snapped));
+                  const totalMin = START_HOUR * 60 + clampedInWin;
+                  setDragPreview({
+                    colKey: c.key,
+                    topPx: clampedInWin * PX_PER_MIN,
+                    label: formatMinutes(totalMin),
+                  });
+                }
+              } : undefined}
+              onDragLeave={onReschedule ? (e) => {
+                // Alleen resetten wanneer de cursor de kolom-bounds echt verlaat
+                // (anders flikkert het tijdens move-events binnen child-elementen).
+                const rect = e.currentTarget.getBoundingClientRect();
+                if (
+                  e.clientX < rect.left ||
+                  e.clientX > rect.right ||
+                  e.clientY < rect.top ||
+                  e.clientY > rect.bottom
+                ) {
+                  setDragPreview((prev) => (prev?.colKey === c.key ? null : prev));
                 }
               } : undefined}
               onDrop={onReschedule ? (e) => {
                 const bookingId = e.dataTransfer.getData("application/x-booking-id");
                 if (!bookingId) return;
                 e.preventDefault();
+                setDragPreview(null);
                 const grabOffsetMin = Number(e.dataTransfer.getData("application/x-grab-offset-min")) || 0;
                 const rect = e.currentTarget.getBoundingClientRect();
                 const yPx = e.clientY - rect.top;
