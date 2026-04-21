@@ -54,6 +54,17 @@ function ShopDashboard() {
   const monthStart = new Date(); monthStart.setUTCDate(1); monthStart.setUTCHours(0, 0, 0, 0);
   const monthRevenue = bookings.filter((b) => new Date(b.starts_at) >= monthStart && b.status !== "cancelled" && b.status !== "no_show").reduce((s, b) => s + b.price_cents, 0);
 
+  // Revenue this week (last 7 days, including today)
+  const weekStart = new Date(dayStart); weekStart.setUTCDate(weekStart.getUTCDate() - 6);
+  const weekRevenue = bookings.filter((b) => { const d = new Date(b.starts_at); return d >= weekStart && d < dayEnd && b.status !== "cancelled" && b.status !== "no_show"; }).reduce((s, b) => s + b.price_cents, 0);
+
+  // Upcoming bookings: next 7 days, not cancelled / no_show
+  const weekAhead = new Date(dayStart); weekAhead.setUTCDate(weekAhead.getUTCDate() + 7);
+  const upcomingCount = bookings.filter((b) => { const d = new Date(b.starts_at); return d >= dayStart && d < weekAhead && b.status !== "cancelled" && b.status !== "no_show"; }).length;
+
+  // Cancellations in last 30 days
+  const cancellations30 = last30.filter((b) => b.status === "cancelled").length;
+
   // Real weekly revenue (last 7 days)
   const weekly = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() - (6 - i));
