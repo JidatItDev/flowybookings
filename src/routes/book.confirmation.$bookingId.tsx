@@ -110,11 +110,12 @@ function ConfirmationPage() {
     );
   }
 
-  const { booking, shop, service } = data;
+  const { booking, shop, service, staff } = data;
   const startsAt = new Date(booking.starts_at);
   const endsAt = new Date(booking.ends_at);
   const dateLabel = startsAt.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
   const timeLabel = `${startsAt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })} — ${endsAt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}`;
+  const staffLabel = staff?.full_name ?? "Wordt toegewezen door de salon";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background bg-gradient-hero px-4 py-16">
@@ -131,6 +132,13 @@ function ConfirmationPage() {
             <div>
               <p className="font-medium">{service?.name ?? t("book.service")}</p>
               <p className="text-xs text-muted-foreground">{dateLabel} · {timeLabel}</p>
+            </div>
+          </div>
+          <div className="mt-3 flex items-center gap-3">
+            <User className="h-4 w-4 text-primary" />
+            <div>
+              <p className="font-medium">{staffLabel}</p>
+              <p className="text-xs text-muted-foreground">{staff ? "Je medewerker" : "De salon wijst zo snel mogelijk een medewerker toe"}</p>
             </div>
           </div>
           {shop && (
