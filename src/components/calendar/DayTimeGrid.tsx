@@ -15,11 +15,51 @@ import type { BookingWithRelations } from "@/lib/queries";
  * Pure presentatie — alle data komt van buitenaf, geen mutaties.
  */
 
-const START_HOUR = 8; // 08:00
-const END_HOUR = 21; // 21:00 (laatste rij toont 20:00–21:00)
+const DEFAULT_START_HOUR = 8; // fallback wanneer er geen business_hours zijn
+const DEFAULT_END_HOUR = 21;
+const MIN_HOUR = 6;
+const MAX_HOUR = 23;
+const MIN_WINDOW_HOURS = 4;
 const SLOT_MINUTES = 60;
 const PX_PER_HOUR = 64; // 64px per uur → 1 min ≈ 1.07px
 const PX_PER_MIN = PX_PER_HOUR / 60;
+
+const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+type DayKey = (typeof DAY_KEYS)[number];
+
+export type DayHours = { open?: string; close?: string; closed?: boolean };
+export type BusinessHours = Partial<Record<DayKey, DayHours>>;
+
+/** "HH:MM" → uur (afgerond omlaag voor open, omhoog voor close). Returns null bij ongeldig. */
+function parseHour(value: string | undefined, mode: "floor" | "ceil"): number | null {
+  if (!value) return null;
+  const [hStr, mStr] = value.split(":");
+  const h = Number(hStr);
+  const m = Number(mStr ?? "0");
+  if (!Number.isFinite(h) || h < 0 || h > 23) return null;
+  if (mode === "floor") return h;
+  return m > 0 ? Math.min(24, h + 1) : h;
+}
+
+/** Bereken weergave-venster voor een dag op basis van business_hours. */
+function resolveDayWindow(
+  day: Date,
+  businessHours: BusinessHours | undefined,
+): { startHour: number; endHour: number; isClosed: boolean } {
+  const fallback = { startHour: DEFAULT_START_HOUR, endHour: DEFAULT_END_HOUR, isClosed: false };
+  if (!businessHours) return fallback;
+  const key = DAY_KEYS[day.getUTCDay()];
+  const dh = businessHours[key];
+  if (!dh) return fallback;
+  if (dh.closed) return { ...fallback, isClosed: true };
+  const open = parseHour(dh.open, "floor");
+  const close = parseHour(dh.close, "ceil");
+  if (open == null || close == null || close <= open) return fallback;
+  let start = Math.max(MIN_HOUR, Math.min(MAX_HOUR - MIN_WINDOW_HOURS, open));
+  let end = Math.min(MAX_HOUR, Math.max(start + MIN_WINDOW_HOURS, close));
+  if (end - start < MIN_WINDOW_HOURS) end = Math.min(MAX_HOUR, start + MIN_WINDOW_HOURS);
+  return { startHour: start, endHour: end, isClosed: false };
+}
 
 type StaffLite = {
   id: string;
@@ -45,6 +85,8 @@ export type DayTimeGridProps = {
   colors: ColorResolver;
   /** Filter op één staff_id, "all", of "unassigned". */
   staffFilter: string | "all" | "unassigned";
+  /** Optioneel: shop business_hours per weekdag, gebruikt om het tijdvenster dynamisch te bepalen. */
+  businessHours?: BusinessHours;
   onSelectBooking?: (b: BookingWithRelations) => void;
   /** Klik op een lege cel → opent nieuwe boeking voor (staffId, time). */
   onSelectSlot?: (params: { staffId: string | null; startsAt: Date }) => void;
@@ -65,6 +107,7 @@ export function DayTimeGrid({
   services,
   colors,
   staffFilter,
+  businessHours,
   onSelectBooking,
   onSelectSlot,
 }: DayTimeGridProps) {
@@ -114,11 +157,17 @@ export function DayTimeGrid({
     });
   }, [bookings, columns, dayStart, dayEnd]);
 
+  // Dynamisch venster op basis van business_hours per weekdag.
+  const { startHour: START_HOUR, endHour: END_HOUR, isClosed } = useMemo(
+    () => resolveDayWindow(dayStart, businessHours),
+    [dayStart, businessHours],
+  );
+
   const hours = useMemo(() => {
     const arr: number[] = [];
     for (let h = START_HOUR; h <= END_HOUR; h += 1) arr.push(h);
     return arr;
-  }, []);
+  }, [START_HOUR, END_HOUR]);
 
   const totalHeight = (END_HOUR - START_HOUR) * PX_PER_HOUR;
 
@@ -143,6 +192,11 @@ export function DayTimeGrid({
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+      {isClosed && (
+        <div className="border-b border-border bg-muted/30 px-4 py-2 text-center text-xs text-muted-foreground">
+          Salon gesloten op deze dag — venster toont standaardtijden ({String(START_HOUR).padStart(2, "0")}:00–{String(END_HOUR).padStart(2, "0")}:00).
+        </div>
+      )}
       <div className="overflow-x-auto">
         <div
           className="grid min-w-[640px]"

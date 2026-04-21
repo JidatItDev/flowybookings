@@ -28,7 +28,7 @@ import { FeatureLock } from "@/components/FeatureLock";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { useActiveShopId } from "@/lib/shop-context";
 import {
-  bookingsQuery, customersQuery, servicesQuery, shopKeys, staffQuery,
+  bookingsQuery, customersQuery, servicesQuery, shopFullQuery, shopKeys, staffQuery,
   type BookingWithRelations,
 } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
@@ -93,6 +93,10 @@ function CalendarPage() {
   const { data: customers = [] } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
   const { data: staff = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
+  const { data: shopFull } = useQuery({ ...shopFullQuery(shopId ?? ""), enabled: !!shopId });
+  const businessHours = (shopFull?.business_hours ?? undefined) as
+    | import("@/components/calendar/DayTimeGrid").BusinessHours
+    | undefined;
   const colors = useStaffColors(shopId);
 
   const updateStatus = useMutation({
@@ -418,6 +422,7 @@ function CalendarPage() {
               services={services}
               colors={colors}
               staffFilter={staffFilter}
+              businessHours={businessHours}
               onSelectBooking={(b) => setViewing(b)}
               onSelectSlot={(slot) => {
                 if (newBookingDisabled) return;
