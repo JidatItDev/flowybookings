@@ -331,6 +331,38 @@ export function DayTimeGrid({
               key={`col-${c.key}`}
               className="relative border-l border-border"
               style={{ height: totalHeight }}
+              onDragOver={onReschedule ? (e) => {
+                // Sta drop alleen toe als er een booking-id meegegeven is.
+                if (Array.from(e.dataTransfer.types).includes("application/x-booking-id")) {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                }
+              } : undefined}
+              onDrop={onReschedule ? (e) => {
+                const bookingId = e.dataTransfer.getData("application/x-booking-id");
+                if (!bookingId) return;
+                e.preventDefault();
+                const grabOffsetMin = Number(e.dataTransfer.getData("application/x-grab-offset-min")) || 0;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const yPx = e.clientY - rect.top;
+                // Pixel → minuten t.o.v. START_HOUR; trek pak-offset af zodat het
+                // blok op de exact-zelfde relatieve positie blijft als waar de
+                // gebruiker het oppakte.
+                const rawMin = yPx / PX_PER_MIN - grabOffsetMin;
+                const snapped = Math.round(rawMin / SNAP_MINUTES) * SNAP_MINUTES;
+                const totalMinFromMidnight = START_HOUR * 60 + snapped;
+                const clamped = Math.max(0, Math.min(24 * 60 - SNAP_MINUTES, totalMinFromMidnight));
+                const newStart = new Date(dayStart);
+                newStart.setUTCHours(0, 0, 0, 0);
+                newStart.setUTCMinutes(clamped);
+                const booking = bookings.find((b) => b.id === bookingId);
+                if (!booking) return;
+                // No-op detectie: zelfde staff en zelfde tijd → niets doen.
+                const sameStaff = (booking.staff_id ?? null) === c.staffId;
+                const sameTime = new Date(booking.starts_at).getTime() === newStart.getTime();
+                if (sameStaff && sameTime) return;
+                onReschedule({ booking, newStaffId: c.staffId, newStartsAt: newStart });
+              } : undefined}
             >
               {/* Unavailable-overlay: alles buiten working hours wordt grijs gestreept.
                   Wanneer de hele dag gesloten is voor deze medewerker, vullen we de hele kolom. */}
