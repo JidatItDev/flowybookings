@@ -14,6 +14,8 @@ import {
   X,
   Tag as TagIcon,
   Sparkle,
+  CreditCard,
+  Undo2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
