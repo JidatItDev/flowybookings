@@ -417,6 +417,7 @@ export const en: Record<string, string> = {
   "calendar.cancel": "Cancel",
   "calendar.delete": "Delete",
   "calendar.bookingUpdated": "Booking updated",
+  "calendar.resizeHandle": "Drag to adjust duration",
   "calendar.bookingDeleted": "Booking deleted",
   "calendar.bookingCreated": "Booking created",
   "calendar.conflictWith": "Conflict: {staff} already has a booking with {customer} ({service}) from {range}.",
