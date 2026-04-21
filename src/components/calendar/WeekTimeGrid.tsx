@@ -302,6 +302,8 @@ export function WeekTimeGrid({
                   if (!onReschedule) return;
                   if (!Array.from(e.dataTransfer.types).includes(DRAG_MIME)) return;
                   e.preventDefault();
+                  // dropEffect wordt verderop op "none" gezet bij invalid, zodat
+                  // de browser de "verboden"-cursor toont en de drop blokkeert.
                   e.dataTransfer.dropEffect = "move";
                   // Bereken gesnapte positie + tijd-label voor de drop-indicator.
                   const rect = e.currentTarget.getBoundingClientRect();
@@ -376,6 +378,11 @@ export function WeekTimeGrid({
                         }
                       }
                     }
+                  }
+
+                  // Browser-niveau drop-block: cursor toont "verboden", onDrop vuurt niet.
+                  if (invalid) {
+                    e.dataTransfer.dropEffect = "none";
                   }
 
                   setDragPreview({
