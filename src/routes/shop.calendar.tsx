@@ -35,6 +35,7 @@ import {
   type BookingWithRelations,
 } from "@/lib/queries";
 import { Sparkles } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCents, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -74,6 +75,7 @@ function CalendarPage() {
   const newBookingDisabled = !shopId || subscriptionBlocked || bookingsBlocked || readOnly;
   const qc = useQueryClient();
   const { t } = useT();
+  const isMobile = useIsMobile();
   const newBookingTitle = readOnly
     ? t("impersonate.readOnlyTooltip")
     : trial.paymentFailedGraceExpired
@@ -427,6 +429,18 @@ function CalendarPage() {
               >
                 {t("calendar.allUpcoming")}
               </button>
+              <button
+                onClick={() => { setDayOffset(0); setWeekOffset(0); }}
+                className={cn(
+                  "shrink-0 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors",
+                  dayOffset === 0
+                    ? "border-primary bg-primary-soft text-primary"
+                    : "border-border bg-card text-foreground hover:bg-muted",
+                )}
+                title={t("calendar.today")}
+              >
+                {t("calendar.today")}
+              </button>
               {dayChips.map((c) => {
                 const isToday = c.offset === 0;
                 const active = dayOffset === c.offset;
@@ -614,9 +628,11 @@ function CalendarPage() {
                   <button
                     type="button"
                     onClick={() => setCalendarMode("week")}
+                    disabled={isMobile}
+                    title={isMobile ? "Week-weergave alleen op tablet/desktop" : "Week"}
                     className={cn(
-                      "rounded-full px-3 py-1 font-medium transition-colors",
-                      calendarMode === "week"
+                      "rounded-full px-3 py-1 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                      calendarMode === "week" && !isMobile
                         ? "bg-card text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground",
                     )}
@@ -706,7 +722,7 @@ function CalendarPage() {
                 </Button>
               )}
             />
-          ) : viewMode === "grid" && calendarMode === "week" ? (() => {
+          ) : viewMode === "grid" && calendarMode === "week" && !isMobile ? (() => {
             const today = new Date(); today.setUTCHours(0, 0, 0, 0);
             const dow = today.getUTCDay();
             const mondayOffset = dow === 0 ? -6 : 1 - dow;
@@ -728,6 +744,8 @@ function CalendarPage() {
                 days={7}
                 bookings={weekBookings}
                 staff={staff}
+                customers={customers}
+                services={services}
                 colors={colors}
                 businessHours={businessHours}
                 onSelectBooking={(b) => setViewing(b)}
@@ -908,6 +926,20 @@ function CalendarPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Mobile floating action button — opens dezelfde nieuwe-boeking dialog. */}
+      {isMobile && shopId && (
+        <button
+          type="button"
+          onClick={() => { if (!newBookingDisabled) { setSlotPrefill(null); setCreating(true); } }}
+          disabled={newBookingDisabled}
+          title={newBookingTitle ?? t("calendar.newBooking")}
+          aria-label={t("calendar.newBooking")}
+          className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+16px)] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 ring-4 ring-background transition-transform hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 sm:hidden"
+        >
+          <Plus className="h-6 w-6" />
+        </button>
+      )}
     </ShopLayout>
   );
 }

@@ -45,6 +45,9 @@ type StaffLite = {
   working_hours?: unknown;
 };
 
+type CustomerLite = { id: string; full_name: string };
+type ServiceLite = { id: string; name: string };
+
 type ColorResolver = {
   get: (staffId: string | null | undefined) => StaffColor;
 };
@@ -64,6 +67,10 @@ export type WeekTimeGridProps = {
   days?: number;
   bookings: BookingWithRelations[];
   staff: StaffLite[];
+  /** Optioneel — wanneer aanwezig tonen we klantnaam in elk booking-blok. */
+  customers?: CustomerLite[];
+  /** Optioneel — wanneer aanwezig tonen we de dienstnaam in elk booking-blok. */
+  services?: ServiceLite[];
   colors: ColorResolver;
   businessHours?: BusinessHours;
   onSelectBooking?: (b: BookingWithRelations) => void;
@@ -144,6 +151,8 @@ export function WeekTimeGrid({
   days = 7,
   bookings,
   staff,
+  customers,
+  services,
   colors,
   businessHours,
   onSelectBooking,
@@ -201,6 +210,18 @@ export function WeekTimeGrid({
     for (const s of staff) m.set(s.id, s);
     return m;
   }, [staff]);
+
+  const customerById = useMemo(() => {
+    const m = new Map<string, CustomerLite>();
+    for (const c of customers ?? []) m.set(c.id, c);
+    return m;
+  }, [customers]);
+
+  const serviceById = useMemo(() => {
+    const m = new Map<string, ServiceLite>();
+    for (const s of services ?? []) m.set(s.id, s);
+    return m;
+  }, [services]);
 
   // Drag-preview: gesnapte drop-positie binnen één dag-kolom (tijdelijke UI-state).
   const grabOffsetRef = useRef<number>(0);
@@ -941,36 +962,81 @@ export function WeekTimeGrid({
                           window.addEventListener("touchcancel", onCancel);
                         } : undefined}
                         className={cn(
-                          "group block h-full w-full overflow-hidden rounded-md border px-1.5 py-1 text-left text-[11px] shadow-sm transition-all hover:z-[6] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+                          // Card-stijl: subtiele bg, accent-rand links in staff-kleur (geen full-fill).
+                          "group relative block h-full w-full overflow-hidden rounded-md border border-border/60 bg-card pl-2 pr-1.5 py-1 text-left text-[11px] text-foreground shadow-sm transition-all hover:z-[6] hover:-translate-y-px hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
                           draggable && !isResizingThis && "cursor-grab active:cursor-grabbing",
-                          cancelled
-                            ? "border-dashed border-border bg-muted/60 text-muted-foreground line-through"
-                            : `border-transparent ${c.bg} ${c.text}`,
+                          cancelled && "opacity-60 line-through",
                           isResizingThis && "ring-2 ring-primary/60",
                           touchDrag?.bookingId === b.id && "scale-[1.03] opacity-70 ring-2 ring-primary/70",
                         )}
                         style={touchDrag?.bookingId === b.id ? { touchAction: "none" } : undefined}
-                        title={`${formatTime(b.starts_at)} — ${stf?.full_name ?? "Niet toegewezen"}${draggable ? " · Pijltjes om te verplaatsen" : ""}`}
+                        title={(() => {
+                          const cust = b.customer_id ? customerById.get(b.customer_id) : undefined;
+                          const svc = b.service_id ? serviceById.get(b.service_id) : undefined;
+                          const parts = [
+                            `${formatTime(b.starts_at)}–${formatTime(b.ends_at)}`,
+                            cust?.full_name,
+                            svc?.name,
+                            stf?.full_name ?? "Niet toegewezen",
+                          ].filter(Boolean);
+                          return `${parts.join(" · ")}${draggable ? " · Pijltjes om te verplaatsen" : ""}`;
+                        })()}
                         aria-label={draggable ? `${stf?.full_name ?? "Niet toegewezen"} · ${formatTime(b.starts_at)} · Pijltjes: ±15 min of ±1 dag` : undefined}
                       >
-                        <div className="flex items-center gap-1">
-                          <span
-                            className={cn(
-                              "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[8px] font-bold",
-                              cancelled ? "bg-muted-foreground/20 text-muted-foreground" : c.dot,
-                            )}
-                          >
-                            {stf ? staffInitials(stf.full_name) : "—"}
-                          </span>
-                          <span className="truncate text-[10px] font-semibold tabular-nums">
-                            {formatTime(b.starts_at)}
-                          </span>
-                        </div>
-                        {height > 32 && (
-                          <div className="mt-0.5 truncate text-[10px] opacity-90">
-                            {stf?.full_name ?? "Niet toegewezen"}
-                          </div>
-                        )}
+                        {/* Staff-color accent: linkerrand i.p.v. full-fill voor cleanere look. */}
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "pointer-events-none absolute inset-y-0 left-0 w-1 rounded-l-md",
+                            cancelled ? "bg-muted-foreground/40" : c.swatch,
+                          )}
+                        />
+                        {(() => {
+                          const cust = b.customer_id ? customerById.get(b.customer_id) : undefined;
+                          const svc = b.service_id ? serviceById.get(b.service_id) : undefined;
+                          const showName = height > 30;
+                          const showService = height > 46;
+                          const showStaff = height > 62;
+                          return (
+                            <>
+                              <div className="flex items-center gap-1">
+                                <span className="truncate text-[10px] font-semibold tabular-nums">
+                                  {formatTime(b.starts_at)}
+                                </span>
+                                {!showName && cust && (
+                                  <span className="truncate text-[10px] font-medium opacity-90">
+                                    · {cust.full_name}
+                                  </span>
+                                )}
+                              </div>
+                              {showName && (
+                                <div className="mt-0.5 truncate text-[10px] font-semibold leading-tight">
+                                  {cust?.full_name ?? "—"}
+                                </div>
+                              )}
+                              {showService && svc && (
+                                <div className="truncate text-[10px] leading-tight text-muted-foreground">
+                                  {svc.name}
+                                </div>
+                              )}
+                              {showStaff && (
+                                <div className="mt-0.5 flex items-center gap-1">
+                                  <span
+                                    className={cn(
+                                      "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[8px] font-bold",
+                                      cancelled ? "bg-muted-foreground/20 text-muted-foreground" : `${c.dot} ${c.text}`,
+                                    )}
+                                  >
+                                    {stf ? staffInitials(stf.full_name) : "—"}
+                                  </span>
+                                  <span className="truncate text-[10px] text-muted-foreground">
+                                    {stf?.full_name ?? "Niet toegewezen"}
+                                  </span>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                       </button>
                       {/* Resize-handle: alleen wanneer reschedule beschikbaar is en booking actief is.
                           Snapt aan 15 min, hergebruikt reschedule-mutation met newEndsAt override.
