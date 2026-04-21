@@ -160,6 +160,8 @@ export type DayTimeGridProps = {
   onSelectBooking?: (b: BookingWithRelations) => void;
   /** Klik op een lege cel → opent nieuwe boeking voor (staffId, time). */
   onSelectSlot?: (params: { staffId: string | null; startsAt: Date }) => void;
+  /** Klik op een onbeschikbare zone (closed/break/buiten werkuren) → UI hint. */
+  onUnavailableSlot?: (params: { staffId: string | null; staffName: string; reason: "closed" | "break" | "off_hours" }) => void;
 };
 
 type Column = {
@@ -167,6 +169,7 @@ type Column = {
   label: string;
   staffId: string | null; // null = unassigned
   color: StaffColor | null;
+  workingHours?: StaffWorkingHours;
 };
 
 export function DayTimeGrid({
@@ -180,6 +183,7 @@ export function DayTimeGrid({
   businessHours,
   onSelectBooking,
   onSelectSlot,
+  onUnavailableSlot,
 }: DayTimeGridProps) {
   const dayStart = useMemo(() => {
     const d = new Date(day);
@@ -200,6 +204,7 @@ export function DayTimeGrid({
       label: s.full_name,
       staffId: s.id,
       color: colors.get(s.id),
+      workingHours: (s.working_hours ?? undefined) as StaffWorkingHours | undefined,
     }));
     // Voeg "niet toegewezen" alleen toe als er bookings zonder staff zijn op deze dag.
     const hasUnassigned = bookings.some(
