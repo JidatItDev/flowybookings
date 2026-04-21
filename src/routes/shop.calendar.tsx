@@ -337,6 +337,61 @@ function CalendarPage() {
             </div>
           )}
 
+          {/* Vandaag aan het werk: compacte avatar-strip met werkuren + bookings vandaag */}
+          {workingToday.length > 0 && (
+            <div className="mb-3 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+              <div className="flex items-center gap-2 pb-1">
+                <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Vandaag aan het werk
+                </span>
+                {workingToday.map((row) => {
+                  const c = colors.get(row.staff.id);
+                  const active = staffFilter === row.staff.id;
+                  const subtitle = row.closed
+                    ? "Vrij vandaag"
+                    : row.window
+                      ? `${row.window} · ${row.count} ${row.count === 1 ? "afspraak" : "afspraken"}`
+                      : `${row.count} ${row.count === 1 ? "afspraak" : "afspraken"}`;
+                  return (
+                    <button
+                      key={`today-${row.staff.id}`}
+                      type="button"
+                      onClick={() => setStaffFilter((prev) => (prev === row.staff.id ? "all" : row.staff.id))}
+                      className={cn(
+                        "group inline-flex shrink-0 items-center gap-2 rounded-full border px-2.5 py-1 text-left transition-colors",
+                        active
+                          ? `${c.bg} ${c.text} border-transparent`
+                          : "border-border bg-card hover:bg-muted",
+                        row.closed && !active && "opacity-60",
+                      )}
+                      title={`${row.staff.full_name} — ${subtitle}`}
+                    >
+                      <span
+                        className={cn(
+                          "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
+                          active ? "bg-background/20 text-current" : c.dot,
+                        )}
+                      >
+                        {staffInitials(row.staff.full_name)}
+                      </span>
+                      <span className="flex flex-col leading-tight">
+                        <span className="max-w-[120px] truncate text-xs font-semibold">
+                          {row.staff.full_name}
+                        </span>
+                        <span className={cn(
+                          "text-[10px] tabular-nums",
+                          active ? "text-current/85" : "text-muted-foreground",
+                        )}>
+                          {subtitle}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Dag-selector: horizontaal scrollbaar */}
           <div className="mb-3 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
             <div className="flex items-center gap-2 pb-2">
