@@ -600,6 +600,41 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
     });
   }, [open, booking?.id, prefill?.staffId, prefill?.startsAt?.getTime()]);
 
+  /**
+   * Client-side pre-validation against `staff.working_hours`.
+   *
+   * Reuses the same helper that the DayTimeGrid uses for its overlay, so the
+   * warning shown here always matches what the user sees on the calendar.
+   * The DB trigger remains the source of truth — this is purely advisory and
+   * never blocks submit (server still validates and returns mapped errors).
+   */
+  const slotWarning = useMemo(() => {
+    if (!form.staff_id || !form.starts_at) return null;
+    if (form.status === "cancelled" || form.status === "no_show") return null;
+    const stf = staff.find((s) => s.id === form.staff_id);
+    const wh = (stf?.working_hours ?? undefined) as StaffWorkingHours | undefined;
+    if (!wh) return null;
+    const startUtc = new Date(form.starts_at + "Z");
+    if (Number.isNaN(startUtc.getTime())) return null;
+    const ends = new Date(startUtc.getTime() + form.duration * 60000);
+    const result = validateBookingSlot(startUtc, ends, wh);
+    if (result.kind === "ok" || result.kind === "no_data") return null;
+    if (result.kind === "closed_day") return { message: t("bookingError.closedDay") };
+    if (result.kind === "break") {
+      const range = `${formatMinutesOfDay(result.window.startMin)}–${formatMinutesOfDay(result.window.endMin)}`;
+      return { message: t("bookingError.duringBreakRange", { range }) };
+    }
+    // off_hours
+    const range = result.window
+      ? `${formatMinutesOfDay(result.window.startMin)}–${formatMinutesOfDay(result.window.endMin)}`
+      : "";
+    return {
+      message: range
+        ? t("bookingError.outsideHoursRange", { range })
+        : t("bookingError.outsideHours"),
+    };
+  }, [form.staff_id, form.starts_at, form.duration, form.status, staff, t]);
+
   const save = useMutation({
     mutationFn: async () => {
       assertNotImpersonating();
