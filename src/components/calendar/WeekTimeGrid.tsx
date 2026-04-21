@@ -52,6 +52,8 @@ export type WeekRescheduleParams = {
   booking: BookingWithRelations;
   newStaffId: string | null;
   newStartsAt: Date;
+  /** Optioneel — wanneer gezet, override van de afgeleide einde (voor resize-flow). */
+  newEndsAt?: Date;
 };
 
 export type WeekTimeGridProps = {
@@ -68,6 +70,8 @@ export type WeekTimeGridProps = {
   onSelectDay?: (day: Date) => void;
   /** Drag & drop reschedule. Behoudt staff_id, wijzigt alleen datum/tijd. */
   onReschedule?: (params: WeekRescheduleParams) => void;
+  /** i18n-label voor de resize-handle (tooltip + aria). */
+  resizeHandleLabel?: string;
   /** i18n-labels voor invalid drop-redenen (per-staff working-hours pre-validatie). */
   dropInvalidLabels?: {
     closedDay: string;
@@ -137,6 +141,7 @@ export function WeekTimeGrid({
   onSelectBooking,
   onSelectDay,
   onReschedule,
+  resizeHandleLabel,
   dropInvalidLabels,
 }: WeekTimeGridProps) {
   const bookingsById = useMemo(() => {
