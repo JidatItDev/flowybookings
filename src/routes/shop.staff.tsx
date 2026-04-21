@@ -288,18 +288,22 @@ function StaffColorPicker({
   currentKey,
   disabled,
   readOnlyTitle,
+  usageByOthers,
 }: {
   staffId: string;
   shopId: string | null;
   currentKey: PaletteKey | null;
   disabled?: boolean;
   readOnlyTitle?: string;
+  usageByOthers?: Partial<Record<PaletteKey, string[]>>;
 }) {
   const qc = useQueryClient();
   const { t } = useT();
   const [open, setOpen] = useState(false);
   const autoColor = staffColor(staffId);
   const activeKey = currentKey ?? autoColor.key;
+  const usage = usageByOthers ?? {};
+  const conflictNames = usage[activeKey] ?? [];
 
   const save = useMutation({
     mutationFn: async (nextKey: PaletteKey | null) => {
