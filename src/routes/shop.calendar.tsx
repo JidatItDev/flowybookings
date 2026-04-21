@@ -45,6 +45,7 @@ import { useFeatureAccess, usagePercentage } from "@/lib/use-feature-access";
 import { staffColor, staffInitials, useStaffColors } from "@/lib/staff-color";
 import {
   formatMinutesOfDay,
+  resolveStaffAvailability,
   validateBookingSlot,
   type StaffWorkingHours,
 } from "@/lib/staff-availability";
