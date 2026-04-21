@@ -276,23 +276,26 @@ function CalendarPage() {
 
   return (
     <ShopLayout>
-      <PageHeader
-        title={t("calendar.title")}
-        description={t("calendar.description")}
-        actions={
-          <>
-            <LiveIndicator status={realtimeStatus} />
-            <Button
-              variant="hero"
-              onClick={() => setCreating(true)}
-              disabled={newBookingDisabled}
-              title={newBookingTitle}
-            >
-              <Plus className="h-4 w-4" /> {t("calendar.newBooking")}
-            </Button>
-          </>
-        }
-      />
+      <div className="sticky top-0 z-30 -mx-4 mb-4 border-b border-border/60 bg-background/95 px-4 pb-3 pt-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+        <PageHeader
+          title={t("calendar.title")}
+          description={t("calendar.description")}
+          actions={
+            <>
+              <LiveIndicator status={realtimeStatus} />
+              <Button
+                variant="hero"
+                onClick={() => setCreating(true)}
+                disabled={newBookingDisabled}
+                title={newBookingTitle}
+                className="h-10 px-4 sm:h-9 sm:px-3"
+              >
+                <Plus className="h-4 w-4" /> {t("calendar.newBooking")}
+              </Button>
+            </>
+          }
+        />
+      </div>
 
       {bookingsAccess.data && (bookingsWarn || bookingsBlocked) && (
         <div className="mb-4">
@@ -996,116 +999,128 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader><DialogTitle>{booking ? t("calendar.editBooking") : t("calendar.newBookingTitle")}</DialogTitle></DialogHeader>
-        <div className="grid gap-4 py-2">
-          <div>
-            <Label>{t("calendar.customer")}</Label>
-            <CustomerCombobox
-              customers={customers}
-              value={form.customer_id}
-              onChange={(v) => setForm({ ...form, customer_id: v })}
-              onClose={onClose}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+      <DialogContent
+        className={cn(
+          // Mobile: bottom-sheet feel — full width, anchored bottom, rounded top, capped height with internal scroll.
+          "flex max-h-[92dvh] w-full flex-col gap-0 overflow-hidden p-0",
+          "left-1/2 top-auto bottom-0 translate-x-[-50%] translate-y-0 rounded-t-2xl rounded-b-none",
+          // Tablet+: classic centered modal.
+          "sm:top-1/2 sm:bottom-auto sm:translate-y-[-50%] sm:max-w-lg sm:rounded-2xl",
+        )}
+      >
+        <DialogHeader className="sticky top-0 z-10 border-b border-border/60 bg-background/95 px-5 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+          <DialogTitle>{booking ? t("calendar.editBooking") : t("calendar.newBookingTitle")}</DialogTitle>
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4">
+          <div className="grid gap-4">
             <div>
-              <Label>{t("calendar.service")}</Label>
-              <Select value={form.service_id} onValueChange={(v) => { const svc = services.find((s) => s.id === v); setForm({ ...form, service_id: v, duration: svc?.duration_minutes ?? form.duration }); }}>
-                <SelectTrigger><SelectValue placeholder={t("calendar.pickService")} /></SelectTrigger>
-                <SelectContent>{services.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+              <Label>{t("calendar.customer")}</Label>
+              <CustomerCombobox
+                customers={customers}
+                value={form.customer_id}
+                onChange={(v) => setForm({ ...form, customer_id: v })}
+                onClose={onClose}
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <Label>{t("calendar.service")}</Label>
+                <Select value={form.service_id} onValueChange={(v) => { const svc = services.find((s) => s.id === v); setForm({ ...form, service_id: v, duration: svc?.duration_minutes ?? form.duration }); }}>
+                  <SelectTrigger className="h-11 sm:h-9"><SelectValue placeholder={t("calendar.pickService")} /></SelectTrigger>
+                  <SelectContent className="max-h-[60dvh] min-w-[14rem]">{services.map((s) => <SelectItem key={s.id} value={s.id} className="py-2.5 sm:py-1.5">{s.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>{t("calendar.staffCol")}</Label>
+                <Select value={form.staff_id} onValueChange={(v) => setForm({ ...form, staff_id: v })}>
+                  <SelectTrigger className="h-11 sm:h-9"><SelectValue placeholder={t("calendar.pickStaff")} /></SelectTrigger>
+                  <SelectContent className="max-h-[60dvh] min-w-[14rem]">{staff.map((s) => <SelectItem key={s.id} value={s.id} className="py-2.5 sm:py-1.5">{s.full_name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div><Label htmlFor="dt">{t("calendar.startUTC")}</Label><Input id="dt" type="datetime-local" className="h-11 sm:h-9" value={form.starts_at} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} /></div>
+              <div><Label htmlFor="du">{t("calendar.duration")}</Label><Input id="du" type="number" inputMode="numeric" className="h-11 sm:h-9" value={form.duration} onChange={(e) => setForm({ ...form, duration: Number(e.target.value) })} /></div>
+            </div>
+            <div className="-mt-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-9 gap-1.5 text-xs"
+                disabled={!form.staff_id || !form.duration}
+                onClick={() => {
+                  const stf = staff.find((s) => s.id === form.staff_id);
+                  if (!stf) return;
+                  const wh = (stf.working_hours ?? undefined) as StaffWorkingHours | undefined;
+                  const SNAP = 15;
+                  const durMs = form.duration * 60000;
+                  // Startpunt: max(now+15min, huidige form-tijd+15min) gesnapt naar 15min UTC.
+                  const now = new Date();
+                  const baseFromForm = form.starts_at ? new Date(form.starts_at + "Z") : null;
+                  const baseTs = Math.max(
+                    now.getTime() + SNAP * 60000,
+                    baseFromForm && !Number.isNaN(baseFromForm.getTime()) ? baseFromForm.getTime() + SNAP * 60000 : 0,
+                  );
+                  let cursor = new Date(Math.ceil(baseTs / (SNAP * 60000)) * SNAP * 60000);
+                  // Conflict-set: bookings van dezelfde staff, niet cancelled/no_show, niet zichzelf.
+                  const conflicts = allBookings.filter((b) =>
+                    b.staff_id === form.staff_id &&
+                    b.status !== "cancelled" &&
+                    b.status !== "no_show" &&
+                    b.id !== booking?.id,
+                  ).map((b) => ({ s: +new Date(b.starts_at), e: +new Date(b.ends_at) }));
+                  const MAX_STEPS = 7 * 24 * (60 / SNAP); // max 7 dagen vooruit
+                  let found: Date | null = null;
+                  for (let i = 0; i < MAX_STEPS; i += 1) {
+                    const start = cursor;
+                    const end = new Date(start.getTime() + durMs);
+                    // Working-hours check (advisory; bij no_data slaan we deze over).
+                    const v = validateBookingSlot(start, end, wh);
+                    const whOk = v.kind === "ok" || v.kind === "no_data";
+                    // Conflict check.
+                    const sTs = start.getTime();
+                    const eTs = end.getTime();
+                    const overlap = conflicts.some((c) => sTs < c.e && eTs > c.s);
+                    if (whOk && !overlap) { found = start; break; }
+                    cursor = new Date(cursor.getTime() + SNAP * 60000);
+                  }
+                  if (!found) {
+                    toast.warning(t("calendar.firstAvailableNone"));
+                    return;
+                  }
+                  setForm({ ...form, starts_at: toLocalInput(found.toISOString()) });
+                  const when = found.toLocaleString("nl-NL", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+                  toast.success(t("calendar.firstAvailableFound", { when }));
+                }}
+                title={!form.staff_id ? t("calendar.firstAvailablePickStaff") : !form.duration ? t("calendar.firstAvailablePickDuration") : t("calendar.firstAvailableSlotTooltip")}
+              >
+                <Sparkles className="h-3.5 w-3.5" /> {t("calendar.firstAvailableSlot")}
+              </Button>
+            </div>
+            <div>
+              <Label>{t("calendar.status")}</Label>
+              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as BookingWithRelations["status"] })}>
+                <SelectTrigger className="h-11 sm:h-9"><SelectValue /></SelectTrigger>
+                <SelectContent className="max-h-[60dvh] min-w-[12rem]">{(["pending", "confirmed", "completed", "cancelled", "no_show"] as const).map((s) => <SelectItem key={s} value={s} className="py-2.5 sm:py-1.5">{statusLabel[s]}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>{t("calendar.staffCol")}</Label>
-              <Select value={form.staff_id} onValueChange={(v) => setForm({ ...form, staff_id: v })}>
-                <SelectTrigger><SelectValue placeholder={t("calendar.pickStaff")} /></SelectTrigger>
-                <SelectContent>{staff.map((s) => <SelectItem key={s.id} value={s.id}>{s.full_name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
+            <div><Label htmlFor="nt">{t("calendar.notes")}</Label><Input id="nt" className="h-11 sm:h-9" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+            {slotWarning && (
+              <div
+                role="alert"
+                aria-live="polite"
+                className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300"
+              >
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>{slotWarning.message}</span>
+              </div>
+            )}
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><Label htmlFor="dt">{t("calendar.startUTC")}</Label><Input id="dt" type="datetime-local" value={form.starts_at} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} /></div>
-            <div><Label htmlFor="du">{t("calendar.duration")}</Label><Input id="du" type="number" value={form.duration} onChange={(e) => setForm({ ...form, duration: Number(e.target.value) })} /></div>
-          </div>
-          <div className="-mt-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5 text-xs"
-              disabled={!form.staff_id || !form.duration}
-              onClick={() => {
-                const stf = staff.find((s) => s.id === form.staff_id);
-                if (!stf) return;
-                const wh = (stf.working_hours ?? undefined) as StaffWorkingHours | undefined;
-                const SNAP = 15;
-                const durMs = form.duration * 60000;
-                // Startpunt: max(now+15min, huidige form-tijd+15min) gesnapt naar 15min UTC.
-                const now = new Date();
-                const baseFromForm = form.starts_at ? new Date(form.starts_at + "Z") : null;
-                const baseTs = Math.max(
-                  now.getTime() + SNAP * 60000,
-                  baseFromForm && !Number.isNaN(baseFromForm.getTime()) ? baseFromForm.getTime() + SNAP * 60000 : 0,
-                );
-                let cursor = new Date(Math.ceil(baseTs / (SNAP * 60000)) * SNAP * 60000);
-                // Conflict-set: bookings van dezelfde staff, niet cancelled/no_show, niet zichzelf.
-                const conflicts = allBookings.filter((b) =>
-                  b.staff_id === form.staff_id &&
-                  b.status !== "cancelled" &&
-                  b.status !== "no_show" &&
-                  b.id !== booking?.id,
-                ).map((b) => ({ s: +new Date(b.starts_at), e: +new Date(b.ends_at) }));
-                const MAX_STEPS = 7 * 24 * (60 / SNAP); // max 7 dagen vooruit
-                let found: Date | null = null;
-                for (let i = 0; i < MAX_STEPS; i += 1) {
-                  const start = cursor;
-                  const end = new Date(start.getTime() + durMs);
-                  // Working-hours check (advisory; bij no_data slaan we deze over).
-                  const v = validateBookingSlot(start, end, wh);
-                  const whOk = v.kind === "ok" || v.kind === "no_data";
-                  // Conflict check.
-                  const sTs = start.getTime();
-                  const eTs = end.getTime();
-                  const overlap = conflicts.some((c) => sTs < c.e && eTs > c.s);
-                  if (whOk && !overlap) { found = start; break; }
-                  cursor = new Date(cursor.getTime() + SNAP * 60000);
-                }
-                if (!found) {
-                  toast.warning(t("calendar.firstAvailableNone"));
-                  return;
-                }
-                setForm({ ...form, starts_at: toLocalInput(found.toISOString()) });
-                const when = found.toLocaleString("nl-NL", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
-                toast.success(t("calendar.firstAvailableFound", { when }));
-              }}
-              title={!form.staff_id ? t("calendar.firstAvailablePickStaff") : !form.duration ? t("calendar.firstAvailablePickDuration") : t("calendar.firstAvailableSlotTooltip")}
-            >
-              <Sparkles className="h-3.5 w-3.5" /> {t("calendar.firstAvailableSlot")}
-            </Button>
-          </div>
-          <div>
-            <Label>{t("calendar.status")}</Label>
-            <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as BookingWithRelations["status"] })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{(["pending", "confirmed", "completed", "cancelled", "no_show"] as const).map((s) => <SelectItem key={s} value={s}>{statusLabel[s]}</SelectItem>)}</SelectContent>
-            </Select>
-          </div>
-          <div><Label htmlFor="nt">{t("calendar.notes")}</Label><Input id="nt" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
-          {slotWarning && (
-            <div
-              role="alert"
-              aria-live="polite"
-              className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300"
-            >
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>{slotWarning.message}</span>
-            </div>
-          )}
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>{t("calendar.cancel")}</Button>
-          <Button variant="hero" onClick={() => save.mutate()} disabled={save.isPending}>{save.isPending ? t("calendar.saving") : booking ? t("calendar.save") : t("calendar.save")}</Button>
+        <DialogFooter className="sticky bottom-0 z-10 flex-col-reverse gap-2 border-t border-border/60 bg-background/95 px-5 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:flex-row sm:justify-end sm:gap-2 [padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]">
+          <Button variant="outline" onClick={onClose} className="h-11 w-full sm:h-9 sm:w-auto">{t("calendar.cancel")}</Button>
+          <Button variant="hero" onClick={() => save.mutate()} disabled={save.isPending} className="h-11 w-full sm:h-9 sm:w-auto">{save.isPending ? t("calendar.saving") : booking ? t("calendar.save") : t("calendar.save")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -1159,7 +1174,7 @@ function CustomerCombobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="z-[60] w-[--radix-popover-trigger-width] p-0"
+        className="z-[60] w-[--radix-popover-trigger-width] min-w-[16rem] max-w-[calc(100vw-2rem)] p-0"
         align="start"
         sideOffset={4}
       >
