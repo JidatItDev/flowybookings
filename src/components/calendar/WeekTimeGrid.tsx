@@ -177,6 +177,12 @@ export function WeekTimeGrid({
     return m;
   }, [staff]);
 
+  // Drag-preview: gesnapte drop-positie binnen één dag-kolom (tijdelijke UI-state).
+  const grabOffsetRef = useRef<number>(0);
+  const [dragPreview, setDragPreview] = useState<
+    { dayKey: string; topPx: number; label: string } | null
+  >(null);
+
   const now = new Date();
   const todayKey = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}`;
   const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes() - winStart;
