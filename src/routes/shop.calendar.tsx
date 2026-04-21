@@ -632,12 +632,9 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
     },
     onSuccess: () => { toast.success(booking ? t("calendar.bookingUpdated") : t("calendar.bookingCreated")); onClose(); if (shopId) qc.invalidateQueries({ queryKey: shopKeys.bookings(shopId) }); },
     onError: (e: Error) => {
-      // Map DB-side trigger errors (race conditions) to a friendly message.
-      if (e.message?.includes("BOOKING_CONFLICT")) {
-        toast.error(t("calendar.conflictGeneric"));
-      } else {
-        toast.error(e.message);
-      }
+      // Map DB-side trigger errors (race conditions) to friendly messages:
+      // BOOKING_CONFLICT, BOOKING_OUTSIDE_HOURS, BOOKING_DURING_BREAK.
+      toast.error(bookingErrorToast(e, t, e.message));
     },
   });
 

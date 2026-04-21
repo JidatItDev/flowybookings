@@ -28,6 +28,7 @@ import { servicesQuery, staffQuery } from "@/lib/queries";
 import { publicAppSettingsQuery } from "@/lib/app-settings";
 import { useT } from "@/lib/i18n";
 import { getTrialState } from "@/lib/trial";
+import { classifyBookingError, bookingErrorToast } from "@/lib/booking-errors";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { cn } from "@/lib/utils";
 
@@ -455,12 +456,20 @@ function BookingFlow() {
       navigate({ to: "/book/confirmation/$bookingId", params: { bookingId: booking.id } });
     } catch (err) {
       console.error("Booking failed:", err);
-      // Map DB trigger conflict (race-condition safety net) to a friendly message,
-      // refresh the slots, and bounce the customer back to the time picker.
-      const raw = err instanceof Error ? err.message : String(err);
-      const isConflict = /BOOKING_CONFLICT/i.test(raw);
-      if (isConflict) {
-        toast.error(t("book.slotTaken"));
+      // Map DB trigger errors (race-condition safety net) to friendly messages,
+      // refresh the slots, and bounce the customer back to the time picker
+      // when the slot is no longer valid.
+      const info = classifyBookingError(err);
+      if (
+        info.kind === "conflict" ||
+        info.kind === "outside_hours" ||
+        info.kind === "during_break"
+      ) {
+        const msg =
+          info.kind === "conflict"
+            ? t("book.slotTaken")
+            : bookingErrorToast(err, t, t("book.failed"));
+        toast.error(msg);
         setTime(null);
         await bookingsQ.refetch().catch(() => {});
         // Step index for "Datum/tijd" depends on whether shop was preset.
