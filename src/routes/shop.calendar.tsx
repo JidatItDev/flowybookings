@@ -120,6 +120,11 @@ function CalendarPage() {
 
   const filtered = bookings.filter((b) => {
     if (filter !== "all" && b.status !== filter) return false;
+    if (staffFilter === "unassigned") {
+      if (b.staff_id) return false;
+    } else if (staffFilter !== "all") {
+      if (b.staff_id !== staffFilter) return false;
+    }
     if (dayOffset !== null) {
       const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0); dayStart.setUTCDate(dayStart.getUTCDate() + dayOffset);
       const dayEnd = new Date(dayStart); dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
