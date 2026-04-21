@@ -106,7 +106,8 @@ function StaffPage() {
           {staff.map((m) => {
             const hrs = (m.working_hours as { hours?: string })?.hours ?? "Not set";
             const svcs = serviceNamesFor(m.id);
-            const c = staffColor(m.id);
+            const c = colors.get(m.id);
+            const overrideKey = colors.overrideOf(m.id);
             return (
               <div key={m.id} className="rounded-2xl border border-border bg-card p-6 shadow-soft">
                 <div className="flex items-start gap-4">
@@ -128,6 +129,13 @@ function StaffPage() {
                     {m.email && <p className="truncate text-sm text-muted-foreground">{m.email}</p>}
                     <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarRange className="h-3.5 w-3.5" /> {hrs}</p>
                   </div>
+                  <StaffColorPicker
+                    staffId={m.id}
+                    shopId={shopId}
+                    currentKey={overrideKey}
+                    disabled={readOnly}
+                    readOnlyTitle={roTitle}
+                  />
                 </div>
                 <div className="mt-5">
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("staff.services", { count: svcs.length })}</p>
