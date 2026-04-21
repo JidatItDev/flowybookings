@@ -18,6 +18,7 @@ import { FeatureLock } from "@/components/FeatureLock";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { staffQuery, servicesQuery, shopKeys } from "@/lib/queries";
+import type { StaffWorkingHours, StaffDayHours } from "@/components/calendar/DayTimeGrid";
 import { supabase } from "@/integrations/supabase/client";
 import { initials } from "@/lib/format";
 import {
