@@ -554,7 +554,6 @@ export function DayTimeGrid({
                     start.getUTCHours() * 60 + start.getUTCMinutes() - START_HOUR * 60;
                   const durMin = Math.max(15, (end.getTime() - start.getTime()) / 60000);
                   const top = Math.max(0, startMin * PX_PER_MIN);
-                  const height = Math.max(24, durMin * PX_PER_MIN - 2);
                   const cust = customers.find((x) => x.id === b.customer_id);
                   const svc = services.find((x) => x.id === b.service_id);
                   const isCancelled = b.status === "cancelled" || b.status === "no_show";
