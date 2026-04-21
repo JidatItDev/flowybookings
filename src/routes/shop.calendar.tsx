@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Plus, Filter, CalendarDays, UserX, Check, ChevronsUpDown, UserPlus, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Filter, CalendarDays, UserX, Check, ChevronsUpDown, UserPlus, Search, List, LayoutGrid } from "lucide-react";
+import { DayTimeGrid } from "@/components/calendar/DayTimeGrid";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
