@@ -357,6 +357,10 @@ function CalendarPage() {
                     : row.window
                       ? `${row.window} · ${row.count} ${apptLabel}`
                       : `${row.count} ${apptLabel}`;
+                  const showRing = row.occ.availableMin > 0;
+                  const ringTitle = showRing
+                    ? t("calendar.occupancyStaff", { name: row.staff.full_name, pct: row.occ.pct })
+                    : t("calendar.occupancyNoData");
                   return (
                     <button
                       key={`today-${row.staff.id}`}
@@ -390,6 +394,15 @@ function CalendarPage() {
                           {subtitle}
                         </span>
                       </span>
+                      {showRing && !row.closed && (
+                        <OccupancyRing
+                          pct={row.occ.pct}
+                          size={20}
+                          tone={active ? "current" : "auto"}
+                          title={ringTitle}
+                          className="ml-0.5"
+                        />
+                      )}
                     </button>
                   );
                 })}
