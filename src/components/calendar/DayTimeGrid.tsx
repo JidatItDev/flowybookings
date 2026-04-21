@@ -159,6 +159,25 @@ export type DayTimeGridProps = {
    * `reason` is al gelokaliseerd via `dropInvalidLabels`.
    */
   onDropBlocked?: (reason: string) => void;
+  /**
+   * Empty-state CTA: aangeroepen wanneer de gebruiker op "Nieuwe boeking"
+   * klikt vanuit het lege rooster. Wanneer null/undefined wordt de knop verborgen.
+   */
+  onCreateBooking?: () => void;
+  /** Disable de empty-state CTA (bv. wanneer trial verlopen of read-only). */
+  createBookingDisabled?: boolean;
+  /** Tooltip voor de disabled empty-state CTA. */
+  createBookingTitle?: string;
+  /**
+   * Gelokaliseerde labels voor de empty-state. Wanneer ontbrekend wordt op de
+   * Nederlandse default-strings teruggevallen (backwards compatible).
+   */
+  emptyLabels?: {
+    title: string;
+    noStaffSelected: string;
+    noStaffActive: string;
+    cta: string;
+  };
 };
 
 type Column = {
