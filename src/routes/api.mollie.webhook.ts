@@ -174,19 +174,6 @@ export const Route = createFileRoute("/api/mollie/webhook")({
   },
 });
 
-          return ok();
-        } catch (err) {
-          console.error("[mollie/webhook] error:", err);
-          return new Response(JSON.stringify({ error: "internal_error" }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-      },
-    },
-  },
-});
-
 function ok() {
   return new Response(JSON.stringify({ ok: true }), {
     status: 200,
