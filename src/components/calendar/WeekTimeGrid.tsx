@@ -466,63 +466,147 @@ export function WeekTimeGrid({
                   const endMin = Math.min(winEnd, endMinRaw);
                   if (endMin <= startMin) return null;
                   const top = (startMin - winStart) * PX_PER_MIN;
-                  const height = Math.max(20, (endMin - startMin) * PX_PER_MIN - 2);
+                  const baseDurMin = endMin - startMin;
                   const stf = b.staff_id ? staffById.get(b.staff_id) : undefined;
                   const c = colors.get(b.staff_id);
                   const cancelled = b.status === "cancelled" || b.status === "no_show";
                   const draggable = !!onReschedule && !cancelled;
+                  const isResizingThis = resizing?.bookingId === b.id;
+                  const liveDurMin = isResizingThis ? resizing!.newDurMin : baseDurMin;
+                  const height = Math.max(20, liveDurMin * PX_PER_MIN - 2);
                   return (
-                    <button
+                    <div
                       key={b.id}
-                      type="button"
-                      onClick={() => onSelectBooking?.(b)}
-                      draggable={draggable}
-                      onDragStart={(e) => {
-                        if (!draggable) return;
-                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                        const grabOffsetPx = e.clientY - rect.top;
-                        const grabOffsetMin = grabOffsetPx / PX_PER_MIN;
-                        grabOffsetRef.current = grabOffsetMin;
-                        draggedIdRef.current = b.id;
-                        e.dataTransfer.effectAllowed = "move";
-                        e.dataTransfer.setData(
-                          DRAG_MIME,
-                          JSON.stringify({ id: b.id, grabOffsetMin }),
-                        );
-                      }}
-                      onDragEnd={() => {
-                        draggedIdRef.current = null;
-                        setDragPreview(null);
-                      }}
-                      className={cn(
-                        "group absolute left-1 right-1 z-[4] overflow-hidden rounded-md border px-1.5 py-1 text-left text-[11px] shadow-sm transition-all hover:z-[6] hover:shadow-md",
-                        draggable && "cursor-grab active:cursor-grabbing",
-                        cancelled
-                          ? "border-dashed border-border bg-muted/60 text-muted-foreground line-through"
-                          : `border-transparent ${c.bg} ${c.text}`,
-                      )}
+                      className="absolute left-1 right-1 z-[4]"
                       style={{ top, height }}
-                      title={`${formatTime(b.starts_at)} — ${stf?.full_name ?? "Niet toegewezen"}`}
                     >
-                      <div className="flex items-center gap-1">
-                        <span
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isResizingThis) return;
+                          onSelectBooking?.(b);
+                        }}
+                        draggable={draggable && !isResizingThis}
+                        onDragStart={(e) => {
+                          if (!draggable) return;
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          const grabOffsetPx = e.clientY - rect.top;
+                          const grabOffsetMin = grabOffsetPx / PX_PER_MIN;
+                          grabOffsetRef.current = grabOffsetMin;
+                          draggedIdRef.current = b.id;
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData(
+                            DRAG_MIME,
+                            JSON.stringify({ id: b.id, grabOffsetMin }),
+                          );
+                        }}
+                        onDragEnd={() => {
+                          draggedIdRef.current = null;
+                          setDragPreview(null);
+                        }}
+                        className={cn(
+                          "group block h-full w-full overflow-hidden rounded-md border px-1.5 py-1 text-left text-[11px] shadow-sm transition-all hover:z-[6] hover:shadow-md",
+                          draggable && !isResizingThis && "cursor-grab active:cursor-grabbing",
+                          cancelled
+                            ? "border-dashed border-border bg-muted/60 text-muted-foreground line-through"
+                            : `border-transparent ${c.bg} ${c.text}`,
+                          isResizingThis && "ring-2 ring-primary/60",
+                        )}
+                        title={`${formatTime(b.starts_at)} — ${stf?.full_name ?? "Niet toegewezen"}`}
+                      >
+                        <div className="flex items-center gap-1">
+                          <span
+                            className={cn(
+                              "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[8px] font-bold",
+                              cancelled ? "bg-muted-foreground/20 text-muted-foreground" : c.dot,
+                            )}
+                          >
+                            {stf ? staffInitials(stf.full_name) : "—"}
+                          </span>
+                          <span className="truncate text-[10px] font-semibold tabular-nums">
+                            {formatTime(b.starts_at)}
+                          </span>
+                        </div>
+                        {height > 32 && (
+                          <div className="mt-0.5 truncate text-[10px] opacity-90">
+                            {stf?.full_name ?? "Niet toegewezen"}
+                          </div>
+                        )}
+                      </button>
+                      {/* Resize-handle: alleen wanneer reschedule beschikbaar is en booking actief is.
+                          Snapt aan 15 min, hergebruikt reschedule-mutation met newEndsAt override. */}
+                      {draggable && (
+                        <div
+                          role="slider"
+                          aria-label={resizeHandleLabel ?? "Sleep om duur aan te passen"}
+                          aria-valuemin={SNAP_MINUTES}
+                          aria-valuenow={Math.round(liveDurMin)}
+                          tabIndex={-1}
+                          title={resizeHandleLabel ?? "Sleep om duur aan te passen"}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const startY = e.clientY;
+                            const fullDurMin = (endTs - startTs) / 60_000;
+                            const startDur = fullDurMin;
+                            // Maximale duur = tot einde van het week-venster op deze dag.
+                            const maxDur = Math.max(SNAP_MINUTES, winEnd - startMin);
+                            const onMove = (ev: MouseEvent) => {
+                              const dy = ev.clientY - startY;
+                              const rawDur = startDur + dy / PX_PER_MIN;
+                              const snapped = Math.round(rawDur / SNAP_MINUTES) * SNAP_MINUTES;
+                              const clamped = Math.max(SNAP_MINUTES, Math.min(maxDur, snapped));
+                              const endTotalMin = startMin + clamped;
+                              setResizing({
+                                bookingId: b.id,
+                                newDurMin: clamped,
+                                label: formatMinutesOfDay(endTotalMin),
+                              });
+                            };
+                            const onUp = () => {
+                              window.removeEventListener("mousemove", onMove);
+                              window.removeEventListener("mouseup", onUp);
+                              setResizing((cur) => {
+                                if (!cur || cur.bookingId !== b.id) return null;
+                                if (
+                                  Math.round(cur.newDurMin) !== Math.round(fullDurMin) &&
+                                  onReschedule
+                                ) {
+                                  const newEnds = new Date(start.getTime() + cur.newDurMin * 60_000);
+                                  onReschedule({
+                                    booking: b,
+                                    newStaffId: b.staff_id ?? null,
+                                    newStartsAt: start,
+                                    newEndsAt: newEnds,
+                                  });
+                                }
+                                return null;
+                              });
+                            };
+                            window.addEventListener("mousemove", onMove);
+                            window.addEventListener("mouseup", onUp);
+                            setResizing({
+                              bookingId: b.id,
+                              newDurMin: startDur,
+                              label: formatMinutesOfDay(startMin + startDur),
+                            });
+                          }}
                           className={cn(
-                            "flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full text-[8px] font-bold",
-                            cancelled ? "bg-muted-foreground/20 text-muted-foreground" : c.dot,
+                            "absolute inset-x-0 bottom-0 z-[6] flex h-2.5 cursor-ns-resize items-center justify-center rounded-b-md",
+                            "opacity-0 transition-opacity hover:opacity-100 group-hover:opacity-100",
+                            isResizingThis && "opacity-100",
                           )}
                         >
-                          {stf ? staffInitials(stf.full_name) : "—"}
-                        </span>
-                        <span className="truncate text-[10px] font-semibold tabular-nums">
-                          {formatTime(b.starts_at)}
-                        </span>
-                      </div>
-                      {height > 32 && (
-                        <div className="mt-0.5 truncate text-[10px] opacity-90">
-                          {stf?.full_name ?? "Niet toegewezen"}
+                          <span className="h-1 w-6 rounded-full bg-foreground/30" />
                         </div>
                       )}
-                    </button>
+                      {/* Live tijd-badge tijdens resize. */}
+                      {isResizingThis && (
+                        <span className="pointer-events-none absolute -bottom-2.5 right-1 z-[16] rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-primary-foreground shadow-soft">
+                          {resizing!.label}
+                        </span>
+                      )}
+                    </div>
                   );
                 })}
               </div>
