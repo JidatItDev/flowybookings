@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Plus, Filter, CalendarDays, UserX, Check, ChevronsUpDown, UserPlus, Search, List, LayoutGrid, AlertTriangle } from "lucide-react";
 import { DayTimeGrid } from "@/components/calendar/DayTimeGrid";
+import { WeekTimeGrid } from "@/components/calendar/WeekTimeGrid";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -89,6 +90,9 @@ function CalendarPage() {
   const [viewing, setViewing] = useState<BookingWithRelations | null>(null);
   const [dayOffset, setDayOffset] = useState<number | null>(0); // 0 = vandaag, null = alle
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
+  const [calendarMode, setCalendarMode] = useState<"day" | "week">("day");
+  // Aantal weken offset t.o.v. huidige week (0 = deze week, -1 = vorige, +1 = volgende)
+  const [weekOffset, setWeekOffset] = useState(0);
   const [slotPrefill, setSlotPrefill] = useState<{ staffId: string | null; startsAt: Date } | null>(null);
 
   const statusLabel: Record<string, string> = {
