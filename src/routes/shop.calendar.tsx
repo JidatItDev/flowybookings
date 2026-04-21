@@ -28,6 +28,7 @@ import { FeatureLock } from "@/components/FeatureLock";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { bookingErrorToast } from "@/lib/booking-errors";
 import { useActiveShopId } from "@/lib/shop-context";
+import { useBookingsRealtime } from "@/lib/use-bookings-realtime";
 import {
   bookingsQuery, customersQuery, servicesQuery, shopFullQuery, shopKeys, staffQuery,
   type BookingWithRelations,
