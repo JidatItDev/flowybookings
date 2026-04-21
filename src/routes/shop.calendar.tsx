@@ -28,6 +28,7 @@ import { FeatureLock } from "@/components/FeatureLock";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { bookingErrorToast } from "@/lib/booking-errors";
 import { useActiveShopId } from "@/lib/shop-context";
+import { useBookingsRealtime } from "@/lib/use-bookings-realtime";
 import {
   bookingsQuery, customersQuery, servicesQuery, shopFullQuery, shopKeys, staffQuery,
   type BookingWithRelations,
@@ -99,6 +100,9 @@ function CalendarPage() {
     | import("@/components/calendar/DayTimeGrid").BusinessHours
     | undefined;
   const colors = useStaffColors(shopId);
+
+  // Realtime: live-patch the bookings cache on INSERT/UPDATE/DELETE for this shop.
+  useBookingsRealtime(shopId);
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: BookingWithRelations["status"] }) => {
