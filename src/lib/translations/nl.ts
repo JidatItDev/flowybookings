@@ -398,6 +398,8 @@ export const nl: Record<string, string> = {
   "calendar.bookingUpdated": "Boeking bijgewerkt",
   "calendar.bookingDeleted": "Boeking verwijderd",
   "calendar.bookingCreated": "Boeking aangemaakt",
+  "calendar.conflictWith": "Conflict: {staff} heeft al een afspraak met {customer} ({service}) van {range}.",
+  "calendar.conflictGeneric": "Deze medewerker heeft al een overlappende afspraak in dit tijdslot. Kies een ander tijdstip of een andere medewerker.",
   "calendar.pickCustomer": "Kies klant",
   "calendar.pickService": "Kies dienst",
   "calendar.pickStaff": "Kies medewerker",
