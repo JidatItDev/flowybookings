@@ -258,6 +258,36 @@ export function WeekTimeGrid({
                 key={`col-${dayKey}`}
                 className="relative border-l border-border"
                 style={{ height: totalHeight }}
+                onDragOver={(e) => {
+                  if (!onReschedule) return;
+                  if (!Array.from(e.dataTransfer.types).includes(DRAG_MIME)) return;
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                }}
+                onDrop={(e) => {
+                  if (!onReschedule) return;
+                  const raw = e.dataTransfer.getData(DRAG_MIME);
+                  if (!raw) return;
+                  e.preventDefault();
+                  let payload: { id: string; grabOffsetMin: number };
+                  try {
+                    payload = JSON.parse(raw);
+                  } catch {
+                    return;
+                  }
+                  const src = bookingsById.get(payload.id);
+                  if (!src) return;
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const yPx = e.clientY - rect.top;
+                  const rawMin = yPx / PX_PER_MIN - (payload.grabOffsetMin ?? 0);
+                  const snapped = Math.round(rawMin / SNAP_MINUTES) * SNAP_MINUTES;
+                  const totalMinFromMidnight = winStart + snapped;
+                  const clamped = Math.max(0, Math.min(24 * 60 - SNAP_MINUTES, totalMinFromMidnight));
+                  const newStart = new Date(d);
+                  newStart.setUTCMinutes(clamped);
+                  if (newStart.getTime() === new Date(src.starts_at).getTime()) return;
+                  onReschedule({ booking: src, newStaffId: src.staff_id ?? null, newStartsAt: newStart });
+                }}
               >
                 {/* Hele dag gesloten */}
                 {fullClosed && (
