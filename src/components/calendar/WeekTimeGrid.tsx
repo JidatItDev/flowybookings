@@ -29,7 +29,9 @@ const MIN_HOUR = 6;
 const MAX_HOUR = 23;
 const PX_PER_HOUR = 56;
 const PX_PER_MIN = PX_PER_HOUR / 60;
+const SNAP_MINUTES = 15;
 const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+const DRAG_MIME = "application/x-flowy-booking";
 
 type StaffLite = {
   id: string;
