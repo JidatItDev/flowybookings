@@ -504,20 +504,33 @@ export function DayTimeGrid({
                   const svc = services.find((x) => x.id === b.service_id);
                   const isCancelled = b.status === "cancelled" || b.status === "no_show";
                   const tone = c.color;
+                  const draggable = !!onReschedule && !isCancelled;
                   return (
                     <button
                       key={b.id}
                       type="button"
+                      draggable={draggable}
+                      onDragStart={draggable ? (e) => {
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("application/x-booking-id", b.id);
+                        // Bewaar waar binnen het blok de gebruiker pakte (in min),
+                        // zodat de drop dat behoudt en het blok visueel "stil staat".
+                        const blockRect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                        const grabPx = e.clientY - blockRect.top;
+                        const grabMin = Math.max(0, grabPx / PX_PER_MIN);
+                        e.dataTransfer.setData("application/x-grab-offset-min", String(grabMin));
+                      } : undefined}
                       onClick={() => onSelectBooking?.(b)}
                       className={cn(
                         "absolute left-1 right-1 z-[5] overflow-hidden rounded-lg border px-2 py-1 text-left text-[11px] shadow-soft transition-transform hover:z-20 hover:scale-[1.01]",
+                        draggable && "cursor-grab active:cursor-grabbing active:opacity-70",
                         tone
                           ? `${tone.bg} ${tone.text} border-transparent`
                           : "border-border bg-muted text-foreground",
                         isCancelled && "opacity-60 line-through decoration-1",
                       )}
                       style={{ top, height }}
-                      title={`${cust?.full_name ?? "—"} · ${svc?.name ?? "—"} · ${formatTime(b.starts_at)}–${formatTime(b.ends_at)}`}
+                      title={`${cust?.full_name ?? "—"} · ${svc?.name ?? "—"} · ${formatTime(b.starts_at)}–${formatTime(b.ends_at)}${draggable ? " · Sleep om te verplaatsen" : ""}`}
                     >
                       <div className="flex items-center justify-between gap-1">
                         <span className="truncate font-semibold">
