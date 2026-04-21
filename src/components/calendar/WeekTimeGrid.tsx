@@ -6,8 +6,10 @@ import type { BookingWithRelations } from "@/lib/queries";
 import {
   formatMinutesOfDay,
   parseMinutes,
+  validateBookingSlot,
   type BusinessHours,
   type DayKey,
+  type StaffWorkingHours,
 } from "@/lib/staff-availability";
 
 /**
@@ -38,6 +40,8 @@ type StaffLite = {
   id: string;
   full_name: string;
   is_active: boolean;
+  /** Optioneel — gebruikt voor pre-validatie van de drop-positie tijdens drag. */
+  working_hours?: unknown;
 };
 
 type ColorResolver = {
@@ -64,6 +68,12 @@ export type WeekTimeGridProps = {
   onSelectDay?: (day: Date) => void;
   /** Drag & drop reschedule. Behoudt staff_id, wijzigt alleen datum/tijd. */
   onReschedule?: (params: WeekRescheduleParams) => void;
+  /** i18n-labels voor invalid drop-redenen (per-staff working-hours pre-validatie). */
+  dropInvalidLabels?: {
+    closedDay: string;
+    offHours: (range: string) => string;
+    duringBreak: (range: string) => string;
+  };
 };
 
 function parseHour(value: string | undefined, mode: "floor" | "ceil"): number | null {
@@ -127,6 +137,7 @@ export function WeekTimeGrid({
   onSelectBooking,
   onSelectDay,
   onReschedule,
+  dropInvalidLabels,
 }: WeekTimeGridProps) {
   const bookingsById = useMemo(() => {
     const m = new Map<string, BookingWithRelations>();
@@ -179,8 +190,11 @@ export function WeekTimeGrid({
 
   // Drag-preview: gesnapte drop-positie binnen één dag-kolom (tijdelijke UI-state).
   const grabOffsetRef = useRef<number>(0);
+  // Booking-id van het actief gesleepte blok (in dragover is dataTransfer.getData
+  // niet leesbaar — we cachen het hier vanuit onDragStart voor pre-validatie).
+  const draggedIdRef = useRef<string | null>(null);
   const [dragPreview, setDragPreview] = useState<
-    { dayKey: string; topPx: number; label: string } | null
+    { dayKey: string; topPx: number; label: string; invalid?: boolean; reason?: string } | null
   >(null);
 
   const now = new Date();
@@ -278,10 +292,45 @@ export function WeekTimeGrid({
                   const winSize = winEnd - winStart;
                   const clampedInWin = Math.max(0, Math.min(winSize - SNAP_MINUTES, snapped));
                   const totalMin = winStart + clampedInWin;
+
+                  // Pre-validatie tegen working_hours van de booking-eigenaar
+                  // (booking.staff_id wijzigt niet in week-view, alleen tijd/datum).
+                  let invalid = false;
+                  let reason: string | undefined;
+                  const draggedId = draggedIdRef.current;
+                  if (draggedId && dropInvalidLabels) {
+                    const src = bookingsById.get(draggedId);
+                    const stf = src?.staff_id ? staffById.get(src.staff_id) : undefined;
+                    const wh = stf?.working_hours as StaffWorkingHours | undefined;
+                    if (src && wh) {
+                      const durMs = +new Date(src.ends_at) - +new Date(src.starts_at);
+                      const slotStart = new Date(d);
+                      slotStart.setUTCMinutes(totalMin);
+                      const slotEnd = new Date(slotStart.getTime() + durMs);
+                      const v = validateBookingSlot(slotStart, slotEnd, wh);
+                      if (v.kind === "closed_day") {
+                        invalid = true;
+                        reason = dropInvalidLabels.closedDay;
+                      } else if (v.kind === "off_hours") {
+                        invalid = true;
+                        const w = v.window;
+                        reason = w
+                          ? dropInvalidLabels.offHours(`${formatMinutesOfDay(w.startMin)}–${formatMinutesOfDay(w.endMin)}`)
+                          : dropInvalidLabels.offHours("—");
+                      } else if (v.kind === "break") {
+                        invalid = true;
+                        const br = v.window;
+                        reason = dropInvalidLabels.duringBreak(`${formatMinutesOfDay(br.startMin)}–${formatMinutesOfDay(br.endMin)}`);
+                      }
+                    }
+                  }
+
                   setDragPreview({
                     dayKey,
                     topPx: clampedInWin * PX_PER_MIN,
                     label: formatMinutesOfDay(totalMin),
+                    invalid,
+                    reason,
                   });
                 }}
                 onDragLeave={(e) => {
@@ -302,6 +351,7 @@ export function WeekTimeGrid({
                   if (!raw) return;
                   e.preventDefault();
                   setDragPreview(null);
+                  draggedIdRef.current = null;
                   let payload: { id: string; grabOffsetMin: number };
                   try {
                     payload = JSON.parse(raw);
@@ -366,14 +416,27 @@ export function WeekTimeGrid({
                     <span className="h-px flex-1 bg-primary" />
                   </div>
                 )}
-                {/* Drop-indicator: gesnapte horizontale lijn met tijd-label tijdens drag. */}
+                {/* Drop-indicator: gesnapte horizontale lijn met tijd-label tijdens drag.
+                    Rood (destructive) wanneer de positie buiten werkuren of in pauze valt. */}
                 {dragPreview && dragPreview.dayKey === dayKey && (
                   <div
-                    className="pointer-events-none absolute left-0 right-0 z-[8] border-t-2 border-dashed border-primary"
+                    className={cn(
+                      "pointer-events-none absolute left-0 right-0 z-[8] border-t-2 border-dashed",
+                      dragPreview.invalid ? "border-destructive" : "border-primary",
+                    )}
                     style={{ top: dragPreview.topPx }}
+                    title={dragPreview.reason}
                   >
-                    <span className="absolute -top-2.5 left-1 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-primary-foreground shadow-soft">
+                    <span
+                      className={cn(
+                        "absolute -top-2.5 left-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shadow-soft",
+                        dragPreview.invalid
+                          ? "bg-destructive text-destructive-foreground"
+                          : "bg-primary text-primary-foreground",
+                      )}
+                    >
                       {dragPreview.label}
+                      {dragPreview.invalid && dragPreview.reason ? ` · ${dragPreview.reason}` : ""}
                     </span>
                   </div>
                 )}
@@ -410,11 +473,16 @@ export function WeekTimeGrid({
                         const grabOffsetPx = e.clientY - rect.top;
                         const grabOffsetMin = grabOffsetPx / PX_PER_MIN;
                         grabOffsetRef.current = grabOffsetMin;
+                        draggedIdRef.current = b.id;
                         e.dataTransfer.effectAllowed = "move";
                         e.dataTransfer.setData(
                           DRAG_MIME,
                           JSON.stringify({ id: b.id, grabOffsetMin }),
                         );
+                      }}
+                      onDragEnd={() => {
+                        draggedIdRef.current = null;
+                        setDragPreview(null);
                       }}
                       className={cn(
                         "group absolute left-1 right-1 z-[4] overflow-hidden rounded-md border px-1.5 py-1 text-left text-[11px] shadow-sm transition-all hover:z-[6] hover:shadow-md",

@@ -6,6 +6,7 @@ import type { BookingWithRelations } from "@/lib/queries";
 import {
   parseMinutes,
   resolveStaffAvailability as resolveStaffAvailabilityCore,
+  validateBookingSlot,
   type AvailabilityWindow,
   type BusinessHours as SharedBusinessHours,
   type DayKey,
@@ -143,6 +144,12 @@ export type DayTimeGridProps = {
   }) => void;
   /** i18n-label voor de resize-handle (tooltip + aria). */
   resizeHandleLabel?: string;
+  /** i18n-labels voor invalid drop-redenen (per-staff working-hours pre-validatie). */
+  dropInvalidLabels?: {
+    closedDay: string;
+    offHours: (range: string) => string;
+    duringBreak: (range: string) => string;
+  };
 };
 
 type Column = {
@@ -167,6 +174,7 @@ export function DayTimeGrid({
   onUnavailableSlot,
   onReschedule,
   resizeHandleLabel,
+  dropInvalidLabels,
 }: DayTimeGridProps) {
   const dayStart = useMemo(() => {
     const d = new Date(day);
@@ -224,7 +232,7 @@ export function DayTimeGrid({
   // Drag-preview: gesnapte drop-positie binnen één kolom (tijdelijke UI-state).
   const grabOffsetRef = useRef<number>(0);
   const [dragPreview, setDragPreview] = useState<
-    { colKey: string; topPx: number; label: string } | null
+    { colKey: string; topPx: number; label: string; invalid?: boolean; reason?: string } | null
   >(null);
 
   // Resize-state: actieve booking + live nieuwe duur in minuten (gesnapt).
@@ -360,10 +368,47 @@ export function DayTimeGrid({
                   const winMin = (END_HOUR - START_HOUR) * 60;
                   const clampedInWin = Math.max(0, Math.min(winMin - SNAP_MINUTES, snapped));
                   const totalMin = START_HOUR * 60 + clampedInWin;
+
+                  // Pre-validatie: zoek de gesleepte booking + valideer tegen
+                  // de doel-kolom (staff working_hours). Server blijft autoritair.
+                  let invalid = false;
+                  let reason: string | undefined;
+                  // Booking-id zit in dataTransfer maar is in dragover niet
+                  // leesbaar (browser-restrictie). We gebruiken ref-loze lookup
+                  // via de single-column working_hours: als de doel-staff niet
+                  // beschikbaar is op deze tijd → rood. Voor accurate duur
+                  // zoeken we de meest recent gesleepte booking via grabOffsetRef
+                  // is niet nodig; we valideren met een minimale 15-min slot.
+                  // Voor betere UX gebruiken we de gemiddelde duur uit
+                  // visibleBookings als de booking-id beschikbaar zou zijn.
+                  if (c.workingHours && dropInvalidLabels) {
+                    const slotStart = new Date(dayStart);
+                    slotStart.setUTCMinutes(totalMin);
+                    // Gebruik 15 min als minimale check-window (snap-resolutie).
+                    const slotEnd = new Date(slotStart.getTime() + SNAP_MINUTES * 60_000);
+                    const v = validateBookingSlot(slotStart, slotEnd, c.workingHours);
+                    if (v.kind === "closed_day") {
+                      invalid = true;
+                      reason = dropInvalidLabels.closedDay;
+                    } else if (v.kind === "off_hours") {
+                      invalid = true;
+                      const w = v.window;
+                      reason = w
+                        ? dropInvalidLabels.offHours(`${formatMinutes(w.startMin)}–${formatMinutes(w.endMin)}`)
+                        : dropInvalidLabels.offHours("—");
+                    } else if (v.kind === "break") {
+                      invalid = true;
+                      const br = v.window;
+                      reason = dropInvalidLabels.duringBreak(`${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`);
+                    }
+                  }
+
                   setDragPreview({
                     colKey: c.key,
                     topPx: clampedInWin * PX_PER_MIN,
                     label: formatMinutes(totalMin),
+                    invalid,
+                    reason,
                   });
                 }
               } : undefined}
@@ -532,14 +577,27 @@ export function DayTimeGrid({
                 </div>
               )}
 
-              {/* Drop-indicator: gesnapte horizontale lijn met tijd-label tijdens drag. */}
+              {/* Drop-indicator: gesnapte horizontale lijn met tijd-label tijdens drag.
+                  Rood (destructive) wanneer de positie buiten werkuren of in pauze valt. */}
               {dragPreview && dragPreview.colKey === c.key && (
                 <div
-                  className="pointer-events-none absolute left-0 right-0 z-[15] border-t-2 border-dashed border-primary"
+                  className={cn(
+                    "pointer-events-none absolute left-0 right-0 z-[15] border-t-2 border-dashed",
+                    dragPreview.invalid ? "border-destructive" : "border-primary",
+                  )}
                   style={{ top: dragPreview.topPx }}
+                  title={dragPreview.reason}
                 >
-                  <span className="absolute -top-2.5 left-1 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-primary-foreground shadow-soft">
+                  <span
+                    className={cn(
+                      "absolute -top-2.5 left-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shadow-soft",
+                      dragPreview.invalid
+                        ? "bg-destructive text-destructive-foreground"
+                        : "bg-primary text-primary-foreground",
+                    )}
+                  >
                     {dragPreview.label}
+                    {dragPreview.invalid && dragPreview.reason ? ` · ${dragPreview.reason}` : ""}
                   </span>
                 </div>
               )}
