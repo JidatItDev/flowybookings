@@ -144,6 +144,12 @@ export type DayTimeGridProps = {
   }) => void;
   /** i18n-label voor de resize-handle (tooltip + aria). */
   resizeHandleLabel?: string;
+  /** i18n-labels voor invalid drop-redenen (per-staff working-hours pre-validatie). */
+  dropInvalidLabels?: {
+    closedDay: string;
+    offHours: (range: string) => string;
+    duringBreak: (range: string) => string;
+  };
 };
 
 type Column = {
