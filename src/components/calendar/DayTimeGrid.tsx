@@ -48,6 +48,14 @@ function parseMinutes(value: string | undefined): number | null {
   return h * 60 + m;
 }
 
+/** Minuten sinds middernacht → "HH:MM". */
+function formatMinutes(mins: number): string {
+  const clamped = Math.max(0, Math.min(24 * 60, Math.round(mins)));
+  const h = Math.floor(clamped / 60);
+  const m = clamped % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
 /** "HH:MM" → uur (afgerond omlaag voor open, omhoog voor close). Returns null bij ongeldig. */
 function parseHour(value: string | undefined, mode: "floor" | "ceil"): number | null {
   const mins = parseMinutes(value);
@@ -365,7 +373,7 @@ export function DayTimeGrid({
                     backgroundImage:
                       "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground) / 0.08) 6px 7px)",
                   }}
-                  title="Niet beschikbaar — vrije dag"
+                  title={`Niet beschikbaar — ${c.label} werkt vandaag niet`}
                 />
               ) : (
                 // Render één off-hours-blok vóór de eerste working-window en één erna,
@@ -391,7 +399,7 @@ export function DayTimeGrid({
                         backgroundImage:
                           "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground) / 0.08) 6px 7px)",
                       }}
-                      title="Buiten werkuren"
+                      title={`Buiten werkuren ${formatMinutes(g.startMin)}–${formatMinutes(g.endMin)}`}
                     />
                   ));
                 })()
@@ -407,13 +415,33 @@ export function DayTimeGrid({
                     backgroundImage:
                       "repeating-linear-gradient(135deg, transparent 0 5px, hsl(var(--warning) / 0.18) 5px 6px)",
                   }}
-                  title="Pauze"
+                  title={`Pauze ${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`}
                 />
               ))}
               {/* Uur-grid-lijnen + klikbare slots */}
               {hours.slice(0, -1).map((h, i) => {
                 const reason = slotReason(c.key, h);
                 const unavailable = reason !== null;
+                let unavailableTitle: string | undefined;
+                if (unavailable) {
+                  if (reason === "closed") {
+                    unavailableTitle = `${c.label} werkt vandaag niet`;
+                  } else if (reason === "break" && av) {
+                    const slotStart = h * 60;
+                    const slotEnd = slotStart + 60;
+                    const br = av.breaks.find(
+                      (b) => slotStart < b.endMin && slotEnd > b.startMin,
+                    );
+                    unavailableTitle = br
+                      ? `Pauze ${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`
+                      : "Pauze";
+                  } else if (reason === "off_hours" && av) {
+                    const w = av.working[0];
+                    unavailableTitle = w
+                      ? `Buiten werkuren — ${c.label} werkt ${formatMinutes(w.startMin)}–${formatMinutes(w.endMin)}`
+                      : `Buiten werkuren`;
+                  }
+                }
                 return (
                   <button
                     key={`slot-${c.key}-${h}`}
@@ -433,9 +461,10 @@ export function DayTimeGrid({
                       unavailable ? "cursor-not-allowed hover:bg-destructive/5" : "hover:bg-primary/5",
                     )}
                     style={{ top: i * PX_PER_HOUR, height: PX_PER_HOUR }}
+                    title={unavailableTitle}
                     aria-label={
                       unavailable
-                        ? `Niet beschikbaar — ${c.label} ${String(h).padStart(2, "0")}:00`
+                        ? `Niet beschikbaar — ${c.label} ${String(h).padStart(2, "0")}:00${unavailableTitle ? ` (${unavailableTitle})` : ""}`
                         : `Nieuwe boeking ${c.label} ${String(h).padStart(2, "0")}:00`
                     }
                     aria-disabled={unavailable}
