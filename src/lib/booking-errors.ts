@@ -9,6 +9,7 @@ export type BookingErrorKind =
   | "conflict"
   | "outside_hours"
   | "during_break"
+  | "closed_day"
   | "unknown";
 
 export type BookingErrorInfo = {
@@ -22,7 +23,15 @@ export type BookingErrorInfo = {
 };
 
 export function classifyBookingError(err: unknown): BookingErrorInfo {
-  const raw = err instanceof Error ? err.message : String(err ?? "");
+  // PostgrestError exposes both `message` and `details`; combine for matching.
+  const e = err as { message?: unknown; details?: unknown; hint?: unknown } | null;
+  const parts = [
+    e && typeof e.message === "string" ? e.message : "",
+    e && typeof e.details === "string" ? e.details : "",
+    e && typeof e.hint === "string" ? e.hint : "",
+    err instanceof Error ? err.message : typeof err === "string" ? err : "",
+  ].filter(Boolean);
+  const raw = parts.join(" | ");
 
   if (/BOOKING_DURING_BREAK/i.test(raw)) {
     // bv. "BOOKING_DURING_BREAK: booking overlaps staff break (12:00-13:00)"
@@ -35,6 +44,16 @@ export function classifyBookingError(err: unknown): BookingErrorInfo {
   }
 
   if (/BOOKING_OUTSIDE_HOURS/i.test(raw)) {
+    // Closed-day variants raised by prevent_booking_outside_staff_hours:
+    //   "staff is off on …", "staff is not scheduled on …",
+    //   "staff has no working hours set for …"
+    if (
+      /\bstaff is off\b/i.test(raw) ||
+      /\bnot scheduled\b/i.test(raw) ||
+      /\bno working hours set\b/i.test(raw)
+    ) {
+      return { kind: "closed_day", raw };
+    }
     // bv. "BOOKING_OUTSIDE_HOURS: 18:30 is outside staff working hours (09:00-17:00)"
     const m = raw.match(/\((\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})\)/);
     return {
@@ -73,6 +92,8 @@ export function bookingErrorToast(
       return info.breakRange
         ? t("bookingError.duringBreakRange", { range: info.breakRange })
         : t("bookingError.duringBreak");
+    case "closed_day":
+      return t("bookingError.closedDay");
     default:
       return fallback;
   }

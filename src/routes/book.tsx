@@ -463,7 +463,8 @@ function BookingFlow() {
       if (
         info.kind === "conflict" ||
         info.kind === "outside_hours" ||
-        info.kind === "during_break"
+        info.kind === "during_break" ||
+        info.kind === "closed_day"
       ) {
         const msg =
           info.kind === "conflict"
