@@ -100,7 +100,21 @@ function AdminOverview() {
           <div className="flex items-center justify-between border-b border-border px-6 py-4"><h2 className="text-base font-semibold">{t("adminOverview.topShops")}</h2><TrendingUp className="h-4 w-4 text-muted-foreground" /></div>
           <div className="divide-y divide-border">
             {topShops.length === 0 && <p className="px-6 py-6 text-sm text-muted-foreground">{t("adminOverview.noShops")}</p>}
-            {topShops.map((s) => (<div key={s.id} className="flex items-center gap-3 px-6 py-3"><div className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-gradient-warm text-xs font-semibold text-pink-foreground">{s.name[0]}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{s.name}</p><p className="truncate text-xs text-muted-foreground">{s.plan} · {s.booking_count ?? 0} bookings</p></div><p className="flex-none text-sm font-semibold">{formatCents(s.revenue_cents ?? 0)}</p></div>))}
+            {topShops.map((s) => (
+              <Link
+                key={s.id}
+                to="/beheer/dashboard/shops/$shopId"
+                params={{ shopId: s.id }}
+                className="flex items-center gap-3 px-6 py-3 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
+              >
+                <div className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-gradient-warm text-xs font-semibold text-pink-foreground">{s.name[0]}</div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{s.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{s.plan} · {s.booking_count ?? 0} bookings</p>
+                </div>
+                <p className="flex-none text-sm font-semibold">{formatCents(s.revenue_cents ?? 0)}</p>
+              </Link>
+            ))}
           </div>
         </div>
         <div className="rounded-2xl border border-border bg-card shadow-soft">
@@ -146,7 +160,36 @@ function AdminOverview() {
           <div className="border-b border-border px-6 py-4"><h2 className="text-base font-semibold">{t("adminOverview.recentBookings")}</h2></div>
           <div className="divide-y divide-border">
             {recentBookings.length === 0 && <p className="px-6 py-6 text-sm text-muted-foreground">{t("adminOverview.noBookings")}</p>}
-            {recentBookings.map((b) => (<div key={b.id} className="flex items-center justify-between px-6 py-3"><div className="min-w-0"><p className="truncate text-sm font-medium">{b.customer_name ?? t("adminOverview.walkIn")} · {b.service_name ?? "—"}</p><p className="text-xs text-muted-foreground">{b.shop_name} · {relativeFromNow(b.starts_at)}</p></div><div className="flex items-center gap-2"><span className="text-sm font-medium">{formatCents(b.price_cents, b.currency)}</span><StatusBadge status={b.status} /></div></div>))}
+            {recentBookings.map((b) => (
+              b.shop_id ? (
+                <Link
+                  key={b.id}
+                  to="/beheer/dashboard/shops/$shopId"
+                  params={{ shopId: b.shop_id }}
+                  className="flex items-center justify-between px-6 py-3 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{b.customer_name ?? t("adminOverview.walkIn")} · {b.service_name ?? "—"}</p>
+                    <p className="truncate text-xs text-muted-foreground">{b.shop_name} · {relativeFromNow(b.starts_at)}</p>
+                  </div>
+                  <div className="flex flex-none items-center gap-2">
+                    <span className="text-sm font-medium">{formatCents(b.price_cents, b.currency)}</span>
+                    <StatusBadge status={b.status} />
+                  </div>
+                </Link>
+              ) : (
+                <div key={b.id} className="flex items-center justify-between px-6 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{b.customer_name ?? t("adminOverview.walkIn")} · {b.service_name ?? "—"}</p>
+                    <p className="truncate text-xs text-muted-foreground">{b.shop_name} · {relativeFromNow(b.starts_at)}</p>
+                  </div>
+                  <div className="flex flex-none items-center gap-2">
+                    <span className="text-sm font-medium">{formatCents(b.price_cents, b.currency)}</span>
+                    <StatusBadge status={b.status} />
+                  </div>
+                </div>
+              )
+            ))}
           </div>
         </div>
         <LiveEventFeed />
