@@ -78,14 +78,19 @@ export function TrialBanner() {
 
   // 5) Cancelled maar nog actief tot expiry
   if (state.subscriptionStatus === "cancelled" && state.expiresAt && state.expiresAt.getTime() > Date.now()) {
+    const planName = (activeShop?.plan ?? "trial").toString();
+    const planLabel = planName.charAt(0).toUpperCase() + planName.slice(1);
     return (
       <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-muted/40 p-4 shadow-soft">
         <Clock className="h-5 w-5 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">{t("billing.cancelledTitle")}</p>
-          <p className="text-xs text-muted-foreground">
-            {t("billing.cancelledSub", { date: state.expiresAt.toLocaleDateString("nl-NL") })}
+          <p className="text-sm font-semibold">
+            {t("billing.planActiveUntilTitle", {
+              plan: planLabel,
+              date: state.expiresAt.toLocaleDateString("nl-NL"),
+            })}
           </p>
+          <p className="text-xs text-muted-foreground">{t("billing.planActiveUntilSub")}</p>
         </div>
         <Link to="/shop/upgrade">
           <Button variant="outline" size="sm">{t("billing.reactivate")}</Button>

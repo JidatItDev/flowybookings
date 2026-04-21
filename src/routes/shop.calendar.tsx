@@ -457,6 +457,17 @@ function CalendarPage() {
                         />
                       </span>
                     )}
+                    {c.count > 0 && !showRing && (
+                      <span
+                        className={cn(
+                          "absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums leading-none ring-2 ring-background",
+                          active ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground",
+                        )}
+                        aria-label={`${c.count} ${c.count === 1 ? t("calendar.appointment") : t("calendar.appointments")}`}
+                      >
+                        {c.count}
+                      </span>
+                    )}
                     <div className="text-[10px] uppercase tracking-wider opacity-80">
                       {isToday ? t("calendar.today") : c.date.toLocaleDateString("nl-NL", { weekday: "short", timeZone: "UTC" })}
                     </div>
@@ -568,7 +579,23 @@ function CalendarPage() {
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span>
-                {filtered.length} {filtered.length === 1 ? t("calendar.appointment") : t("calendar.appointments")}
+                {(() => {
+                  const noun = filtered.length === 1 ? t("calendar.appointment") : t("calendar.appointments");
+                  if (dayOffset === null) {
+                    return `${filtered.length} ${noun} ${t("calendar.upcomingSuffix")}`;
+                  }
+                  if (dayOffset === 0) {
+                    return filtered.length === 0
+                      ? t("calendar.zeroToday")
+                      : `${filtered.length} ${noun} ${t("calendar.todaySuffix")}`;
+                  }
+                  // Specifieke andere dag
+                  const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() + dayOffset);
+                  const label = d.toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" });
+                  return filtered.length === 0
+                    ? t("calendar.zeroOnDay", { day: label })
+                    : `${filtered.length} ${noun} ${t("calendar.onDayPrefix")} ${label}`;
+                })()}
               </span>
               {viewMode === "grid" && (
                 <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 p-1 text-xs">
@@ -762,6 +789,19 @@ function CalendarPage() {
                 toast.warning(label, {
                   description: "Kies een tijdstip binnen de werkuren of wijzig het rooster van de medewerker.",
                 });
+              }}
+              onCreateBooking={() => {
+                if (newBookingDisabled) return;
+                setSlotPrefill(null);
+                setCreating(true);
+              }}
+              createBookingDisabled={newBookingDisabled}
+              createBookingTitle={newBookingTitle}
+              emptyLabels={{
+                title: t("calendar.emptyTitle"),
+                noStaffSelected: t("calendar.emptyNoStaffSelected"),
+                noStaffActive: t("calendar.emptyNoStaffActive"),
+                cta: t("calendar.newBooking"),
               }}
             />
           ) : (
