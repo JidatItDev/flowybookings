@@ -727,6 +727,16 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
             </Select>
           </div>
           <div><Label htmlFor="nt">{t("calendar.notes")}</Label><Input id="nt" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+          {slotWarning && (
+            <div
+              role="alert"
+              aria-live="polite"
+              className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300"
+            >
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>{slotWarning.message}</span>
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>{t("calendar.cancel")}</Button>
