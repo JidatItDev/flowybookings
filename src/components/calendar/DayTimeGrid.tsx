@@ -127,6 +127,17 @@ export type DayTimeGridProps = {
   onSelectSlot?: (params: { staffId: string | null; startsAt: Date }) => void;
   /** Klik op een onbeschikbare zone (closed/break/buiten werkuren) → UI hint. */
   onUnavailableSlot?: (params: { staffId: string | null; staffName: string; reason: "closed" | "break" | "off_hours" }) => void;
+  /**
+   * Drag-and-drop reschedule. Wordt aangeroepen wanneer een booking-block naar
+   * een nieuwe (staff, time) wordt gesleept. Snapt aan SNAP_MINUTES (15min).
+   * Server-trigger valideert working hours + conflicts; client doet alleen
+   * optimistic update via deze callback.
+   */
+  onReschedule?: (params: {
+    booking: BookingWithRelations;
+    newStaffId: string | null;
+    newStartsAt: Date;
+  }) => void;
 };
 
 type Column = {
