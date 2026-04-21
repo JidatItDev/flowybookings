@@ -262,7 +262,7 @@ function CalendarPage() {
                   </span>
                 </button>
                 {staff.filter((s) => s.is_active).map((s) => {
-                  const c = staffColor(s.id);
+                  const c = colors.get(s.id);
                   const active = staffFilter === s.id;
                   const count = staffCounts.map.get(s.id) ?? 0;
                   return (
