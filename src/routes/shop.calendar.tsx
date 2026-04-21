@@ -709,6 +709,11 @@ function CalendarPage() {
                   setCalendarMode("day");
                 }}
                 onReschedule={readOnly ? undefined : (params) => reschedule.mutate(params)}
+                dropInvalidLabels={{
+                  closedDay: t("calendar.dropInvalidClosed"),
+                  offHours: (range) => t("calendar.dropInvalidOffHours", { range }),
+                  duringBreak: (range) => t("calendar.dropInvalidBreak", { range }),
+                }}
               />
             );
           })() : viewMode === "grid" && dayOffset !== null ? (
