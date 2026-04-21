@@ -118,19 +118,31 @@ function CalendarPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const filtered = bookings.filter((b) => {
+  // Bookings filtered by status + day (without staff filter) — used for staff chip counts
+  const scopedBookings = bookings.filter((b) => {
     if (filter !== "all" && b.status !== filter) return false;
-    if (staffFilter === "unassigned") {
-      if (b.staff_id) return false;
-    } else if (staffFilter !== "all") {
-      if (b.staff_id !== staffFilter) return false;
-    }
     if (dayOffset !== null) {
       const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0); dayStart.setUTCDate(dayStart.getUTCDate() + dayOffset);
       const dayEnd = new Date(dayStart); dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
       const t = new Date(b.starts_at).getTime();
       if (t < dayStart.getTime() || t >= dayEnd.getTime()) return false;
     }
+    return true;
+  });
+
+  const staffCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    let unassigned = 0;
+    for (const b of scopedBookings) {
+      if (b.staff_id) map.set(b.staff_id, (map.get(b.staff_id) ?? 0) + 1);
+      else unassigned += 1;
+    }
+    return { map, unassigned, total: scopedBookings.length };
+  }, [scopedBookings]);
+
+  const filtered = scopedBookings.filter((b) => {
+    if (staffFilter === "unassigned") return !b.staff_id;
+    if (staffFilter !== "all" && b.staff_id !== staffFilter) return false;
     return true;
   });
 
