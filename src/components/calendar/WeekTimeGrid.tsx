@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/lib/format";
 import { staffInitials, type StaffColor } from "@/lib/staff-color";
@@ -596,6 +596,7 @@ export function WeekTimeGrid({
                     >
                       <button
                         type="button"
+                        data-booking-id={b.id}
                         onClick={() => {
                           if (isResizingThis) return;
                           if (touchDrag?.bookingId === b.id) return;

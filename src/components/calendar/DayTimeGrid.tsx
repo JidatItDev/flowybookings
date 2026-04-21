@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatCents, formatTime } from "@/lib/format";
 import { staffInitials, type StaffColor } from "@/lib/staff-color";
@@ -754,6 +754,7 @@ export function DayTimeGrid({
                     >
                       <button
                         type="button"
+                        data-booking-id={b.id}
                         draggable={draggable && !isResizingThis}
                         onDragStart={draggable ? (e) => {
                           e.dataTransfer.effectAllowed = "move";
