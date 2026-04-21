@@ -233,6 +233,11 @@ export function DayTimeGrid({
 
   // Drag-preview: gesnapte drop-positie binnen één kolom (tijdelijke UI-state).
   const grabOffsetRef = useRef<number>(0);
+  // Booking-id van het actief gesleepte blok — tijdens dragOver is
+  // dataTransfer.getData() niet leesbaar (browser-restrictie), dus we cachen
+  // hier de id zodat we tijdens dragOver de juiste duur + conflict-check
+  // kunnen uitvoeren tegen visibleBookings.
+  const draggedIdRef = useRef<string | null>(null);
   const [dragPreview, setDragPreview] = useState<
     { colKey: string; topPx: number; label: string; invalid?: boolean; reason?: string } | null
   >(null);
@@ -389,37 +394,63 @@ export function DayTimeGrid({
                   const clampedInWin = Math.max(0, Math.min(winMin - SNAP_MINUTES, snapped));
                   const totalMin = START_HOUR * 60 + clampedInWin;
 
-                  // Pre-validatie: zoek de gesleepte booking + valideer tegen
-                  // de doel-kolom (staff working_hours). Server blijft autoritair.
+                  // Pre-validatie: werkuren/pauze + conflict-overlap met andere
+                  // bookings van de doel-medewerker. Server blijft autoritair.
                   let invalid = false;
                   let reason: string | undefined;
-                  // Booking-id zit in dataTransfer maar is in dragover niet
-                  // leesbaar (browser-restrictie). We gebruiken ref-loze lookup
-                  // via de single-column working_hours: als de doel-staff niet
-                  // beschikbaar is op deze tijd → rood. Voor accurate duur
-                  // zoeken we de meest recent gesleepte booking via grabOffsetRef
-                  // is niet nodig; we valideren met een minimale 15-min slot.
-                  // Voor betere UX gebruiken we de gemiddelde duur uit
-                  // visibleBookings als de booking-id beschikbaar zou zijn.
-                  if (c.workingHours && dropInvalidLabels) {
-                    const slotStart = new Date(dayStart);
-                    slotStart.setUTCMinutes(totalMin);
-                    // Gebruik 15 min als minimale check-window (snap-resolutie).
-                    const slotEnd = new Date(slotStart.getTime() + SNAP_MINUTES * 60_000);
-                    const v = validateBookingSlot(slotStart, slotEnd, c.workingHours);
-                    if (v.kind === "closed_day") {
-                      invalid = true;
-                      reason = dropInvalidLabels.closedDay;
-                    } else if (v.kind === "off_hours") {
-                      invalid = true;
-                      const w = v.window;
-                      reason = w
-                        ? dropInvalidLabels.offHours(`${formatMinutes(w.startMin)}–${formatMinutes(w.endMin)}`)
-                        : dropInvalidLabels.offHours("—");
-                    } else if (v.kind === "break") {
-                      invalid = true;
-                      const br = v.window;
-                      reason = dropInvalidLabels.duringBreak(`${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`);
+                  // Bepaal duur van de gesleepte booking via gecachte id.
+                  const draggedId = draggedIdRef.current;
+                  const src = draggedId ? bookings.find((bk) => bk.id === draggedId) : null;
+                  const durMs = src
+                    ? +new Date(src.ends_at) - +new Date(src.starts_at)
+                    : SNAP_MINUTES * 60_000;
+                  const slotStart = new Date(dayStart);
+                  slotStart.setUTCMinutes(totalMin);
+                  const slotEnd = new Date(slotStart.getTime() + durMs);
+
+                  if (dropInvalidLabels) {
+                    // 1) Conflict-check tegen andere bookings van doel-medewerker.
+                    if (dropInvalidLabels.conflictWith && c.staffId != null && src) {
+                      const newStartTs = slotStart.getTime();
+                      const newEndTs = slotEnd.getTime();
+                      for (const other of visibleBookings) {
+                        if (other.id === src.id) continue;
+                        if ((other.staff_id ?? null) !== c.staffId) continue;
+                        if (other.status === "cancelled" || other.status === "no_show") continue;
+                        const oStart = new Date(other.starts_at).getTime();
+                        const oEnd = new Date(other.ends_at).getTime();
+                        if (newStartTs < oEnd && newEndTs > oStart) {
+                          const oStartDate = new Date(other.starts_at);
+                          const oEndDate = new Date(other.ends_at);
+                          const oStartMin =
+                            oStartDate.getUTCHours() * 60 + oStartDate.getUTCMinutes();
+                          const oEndMin =
+                            oEndDate.getUTCHours() * 60 + oEndDate.getUTCMinutes();
+                          invalid = true;
+                          reason = dropInvalidLabels.conflictWith(
+                            `${formatMinutes(oStartMin)}–${formatMinutes(oEndMin)}`,
+                          );
+                          break;
+                        }
+                      }
+                    }
+                    // 2) Werkuren/pauze van doel-medewerker (alleen als nog geen conflict).
+                    if (!invalid && c.workingHours) {
+                      const v = validateBookingSlot(slotStart, slotEnd, c.workingHours);
+                      if (v.kind === "closed_day") {
+                        invalid = true;
+                        reason = dropInvalidLabels.closedDay;
+                      } else if (v.kind === "off_hours") {
+                        invalid = true;
+                        const w = v.window;
+                        reason = w
+                          ? dropInvalidLabels.offHours(`${formatMinutes(w.startMin)}–${formatMinutes(w.endMin)}`)
+                          : dropInvalidLabels.offHours("—");
+                      } else if (v.kind === "break") {
+                        invalid = true;
+                        const br = v.window;
+                        reason = dropInvalidLabels.duringBreak(`${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`);
+                      }
                     }
                   }
 
@@ -450,6 +481,7 @@ export function DayTimeGrid({
                 if (!bookingId) return;
                 e.preventDefault();
                 setDragPreview(null);
+                draggedIdRef.current = null;
                 const grabOffsetMin = Number(e.dataTransfer.getData("application/x-grab-offset-min")) || 0;
                 const rect = e.currentTarget.getBoundingClientRect();
                 const yPx = e.clientY - rect.top;
@@ -469,6 +501,30 @@ export function DayTimeGrid({
                 const sameStaff = (booking.staff_id ?? null) === c.staffId;
                 const sameTime = new Date(booking.starts_at).getTime() === newStart.getTime();
                 if (sameStaff && sameTime) return;
+                // Pre-validatie commit-block: werkuren/pauze + conflict-overlap.
+                // Server blijft autoritair, maar we voorkomen onnodige roundtrips.
+                if (dropInvalidLabels) {
+                  const durMs = +new Date(booking.ends_at) - +new Date(booking.starts_at);
+                  const slotEnd = new Date(newStart.getTime() + durMs);
+                  // Conflict-check
+                  if (c.staffId != null) {
+                    const newStartTs = newStart.getTime();
+                    const newEndTs = slotEnd.getTime();
+                    for (const other of visibleBookings) {
+                      if (other.id === booking.id) continue;
+                      if ((other.staff_id ?? null) !== c.staffId) continue;
+                      if (other.status === "cancelled" || other.status === "no_show") continue;
+                      const oStart = new Date(other.starts_at).getTime();
+                      const oEnd = new Date(other.ends_at).getTime();
+                      if (newStartTs < oEnd && newEndTs > oStart) return;
+                    }
+                  }
+                  // Werkuren/pauze
+                  if (c.workingHours) {
+                    const v = validateBookingSlot(newStart, slotEnd, c.workingHours);
+                    if (v.kind === "closed_day" || v.kind === "off_hours" || v.kind === "break") return;
+                  }
+                }
                 onReschedule({ booking, newStaffId: c.staffId, newStartsAt: newStart });
               } : undefined}
             >
@@ -658,8 +714,15 @@ export function DayTimeGrid({
                           const grabPx = e.clientY - blockRect.top;
                           const grabMin = Math.max(0, grabPx / PX_PER_MIN);
                           grabOffsetRef.current = grabMin;
+                          // Cache booking-id voor pre-validatie tijdens dragOver
+                          // (waar dataTransfer.getData niet leesbaar is).
+                          draggedIdRef.current = b.id;
                           e.dataTransfer.setData("application/x-grab-offset-min", String(grabMin));
                         } : undefined}
+                        onDragEnd={() => {
+                          draggedIdRef.current = null;
+                          setDragPreview(null);
+                        }}
                         onTouchStart={draggable ? (e) => {
                           // Touch long-press → drag flow voor iPad/tablet in salons.
                           // Native HTML5 drag werkt niet op touch, dus we doen het zelf.
@@ -701,6 +764,66 @@ export function DayTimeGrid({
                             return { targetCol, clampedInWin, totalMin };
                           };
 
+                          // Gedeelde validatie: werkuren/pauze van doel-kolom +
+                          // conflict-overlap met andere bookings van doel-medewerker.
+                          const computeValidation = (
+                            targetCol: typeof columns[number],
+                            slotStart: Date,
+                            slotEnd: Date,
+                          ): { invalid: boolean; reason?: string } => {
+                            if (!dropInvalidLabels) return { invalid: false };
+                            // 1) Conflict-check
+                            if (dropInvalidLabels.conflictWith && targetCol.staffId != null) {
+                              const newStartTs = slotStart.getTime();
+                              const newEndTs = slotEnd.getTime();
+                              for (const other of visibleBookings) {
+                                if (other.id === b.id) continue;
+                                if ((other.staff_id ?? null) !== targetCol.staffId) continue;
+                                if (other.status === "cancelled" || other.status === "no_show") continue;
+                                const oStart = new Date(other.starts_at).getTime();
+                                const oEnd = new Date(other.ends_at).getTime();
+                                if (newStartTs < oEnd && newEndTs > oStart) {
+                                  const oStartDate = new Date(other.starts_at);
+                                  const oEndDate = new Date(other.ends_at);
+                                  const oStartMin =
+                                    oStartDate.getUTCHours() * 60 + oStartDate.getUTCMinutes();
+                                  const oEndMin =
+                                    oEndDate.getUTCHours() * 60 + oEndDate.getUTCMinutes();
+                                  return {
+                                    invalid: true,
+                                    reason: dropInvalidLabels.conflictWith(
+                                      `${formatMinutes(oStartMin)}–${formatMinutes(oEndMin)}`,
+                                    ),
+                                  };
+                                }
+                              }
+                            }
+                            // 2) Werkuren/pauze
+                            if (!targetCol.workingHours) return { invalid: false };
+                            const v = validateBookingSlot(slotStart, slotEnd, targetCol.workingHours);
+                            if (v.kind === "ok" || v.kind === "no_data") return { invalid: false };
+                            if (v.kind === "closed_day") {
+                              return { invalid: true, reason: dropInvalidLabels.closedDay };
+                            }
+                            if (v.kind === "off_hours") {
+                              const w = v.window;
+                              return {
+                                invalid: true,
+                                reason: w
+                                  ? dropInvalidLabels.offHours(`${formatMinutes(w.startMin)}–${formatMinutes(w.endMin)}`)
+                                  : dropInvalidLabels.offHours("—"),
+                              };
+                            }
+                            if (v.kind === "break") {
+                              const br = v.window;
+                              return {
+                                invalid: true,
+                                reason: dropInvalidLabels.duringBreak(`${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`),
+                              };
+                            }
+                            return { invalid: false };
+                          };
+
                           const updatePreview = (clientX: number, clientY: number) => {
                             const at = computeAt(clientX, clientY);
                             if (!at) {
@@ -708,35 +831,16 @@ export function DayTimeGrid({
                               return;
                             }
                             const { targetCol, clampedInWin, totalMin } = at;
-                            // Pre-validatie tegen working_hours van doel-kolom + duur van booking.
-                            let invalid = false;
-                            let reason: string | undefined;
-                            if (targetCol.workingHours && dropInvalidLabels) {
-                              const slotStart = new Date(dayStart);
-                              slotStart.setUTCMinutes(totalMin);
-                              const slotEnd = new Date(slotStart.getTime() + durMin * 60_000);
-                              const v = validateBookingSlot(slotStart, slotEnd, targetCol.workingHours);
-                              if (v.kind === "closed_day") {
-                                invalid = true;
-                                reason = dropInvalidLabels.closedDay;
-                              } else if (v.kind === "off_hours") {
-                                invalid = true;
-                                const w = v.window;
-                                reason = w
-                                  ? dropInvalidLabels.offHours(`${formatMinutes(w.startMin)}–${formatMinutes(w.endMin)}`)
-                                  : dropInvalidLabels.offHours("—");
-                              } else if (v.kind === "break") {
-                                invalid = true;
-                                const br = v.window;
-                                reason = dropInvalidLabels.duringBreak(`${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`);
-                              }
-                            }
+                            const slotStart = new Date(dayStart);
+                            slotStart.setUTCMinutes(totalMin);
+                            const slotEnd = new Date(slotStart.getTime() + durMin * 60_000);
+                            const v = computeValidation(targetCol, slotStart, slotEnd);
                             setDragPreview({
                               colKey: targetCol.key,
                               topPx: clampedInWin * PX_PER_MIN,
                               label: formatMinutes(totalMin),
-                              invalid,
-                              reason,
+                              invalid: v.invalid,
+                              reason: v.reason,
                             });
                           };
 
@@ -769,15 +873,11 @@ export function DayTimeGrid({
                             setDragPreview(null);
                             if (!at) return;
                             const { targetCol, totalMin } = at;
-                            if (targetCol.workingHours && dropInvalidLabels) {
-                              const slotStart = new Date(dayStart);
-                              slotStart.setUTCMinutes(totalMin);
-                              const slotEnd = new Date(slotStart.getTime() + durMin * 60_000);
-                              const v = validateBookingSlot(slotStart, slotEnd, targetCol.workingHours);
-                              if (v.kind === "closed_day" || v.kind === "off_hours" || v.kind === "break") {
-                                return;
-                              }
-                            }
+                            const slotStart = new Date(dayStart);
+                            slotStart.setUTCMinutes(totalMin);
+                            const slotEnd = new Date(slotStart.getTime() + durMin * 60_000);
+                            // Blokkeer commit bij invalid (werkuren/pauze/conflict).
+                            if (computeValidation(targetCol, slotStart, slotEnd).invalid) return;
                             const newStart = new Date(dayStart);
                             newStart.setUTCHours(0, 0, 0, 0);
                             newStart.setUTCMinutes(totalMin);
