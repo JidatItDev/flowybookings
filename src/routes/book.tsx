@@ -157,6 +157,32 @@ function BookingFlow() {
   const servicesQ = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
   const staffQ = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
 
+  // staff_services mapping for the selected service — drives "Eerste beschikbare" eligibility.
+  const staffServicesQ = useQuery({
+    queryKey: ["public", "staff-services", shopId, serviceId],
+    enabled: !!shopId && !!serviceId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("staff_services")
+        .select("staff_id")
+        .eq("service_id", serviceId!);
+      if (error) throw error;
+      return (data ?? []).map((r) => r.staff_id as string);
+    },
+  });
+
+  // Eligible staff for the selected service: staff that is active AND mapped via staff_services.
+  // Fallback: if no mappings exist for this service, treat ALL active staff as eligible
+  // (so shops that haven't configured staff_services don't end up with zero options).
+  const eligibleStaff = useMemo(() => {
+    const all = (staffQ.data ?? []).filter((s) => s.is_active);
+    const mapped = staffServicesQ.data ?? [];
+    if (!serviceId) return all;
+    if (mapped.length === 0) return all; // fallback
+    const set = new Set(mapped);
+    return all.filter((s) => set.has(s.id));
+  }, [staffQ.data, staffServicesQ.data, serviceId]);
+
   // Preset shop direct ophalen wanneer alleen via URL
   const presetShopQ = useQuery({
     queryKey: ["shop-preset", presetShopId],
@@ -229,18 +255,39 @@ function BookingFlow() {
         continue;
       }
 
-      // Conflict check: overlapt met bestaande booking voor dezelfde staff (of welke staff dan ook indien "any")
-      const conflict = allBookings.some((b) => {
-        if (realStaffId && b.staff_id !== realStaffId) return false;
-        const bStart = new Date(b.starts_at);
-        const bEnd = new Date(b.ends_at);
-        return bStart < slotEnd && bEnd > slotStart;
-      });
+      // Conflict check.
+      // - Specific staff selected: slot is taken iff that staff has an overlapping booking.
+      // - "Eerste beschikbare": slot is available if AT LEAST ONE eligible staff is free.
+      let conflict: boolean;
+      if (realStaffId) {
+        conflict = allBookings.some((b) => {
+          if (b.staff_id !== realStaffId) return false;
+          const bStart = new Date(b.starts_at);
+          const bEnd = new Date(b.ends_at);
+          return bStart < slotEnd && bEnd > slotStart;
+        });
+      } else {
+        const eligibleIds = eligibleStaff.map((s) => s.id);
+        if (eligibleIds.length === 0) {
+          conflict = true;
+        } else {
+          // free if any eligible staff has zero overlapping bookings
+          const someoneFree = eligibleIds.some((sid) => {
+            return !allBookings.some((b) => {
+              if (b.staff_id !== sid) return false;
+              const bStart = new Date(b.starts_at);
+              const bEnd = new Date(b.ends_at);
+              return bStart < slotEnd && bEnd > slotStart;
+            });
+          });
+          conflict = !someoneFree;
+        }
+      }
 
       list.push({ time: fromMin(m), available: !conflict });
     }
     return list;
-  }, [date, selectedShop, selectedService, staffId, bookingsQ.data]);
+  }, [date, selectedShop, selectedService, staffId, bookingsQ.data, eligibleStaff]);
 
   const logicalStep = presetShopId ? step + 1 : step;
   const detailsValid = name.trim().length >= 2 && phone.trim().length >= 6 && emailValid(email);
@@ -262,7 +309,35 @@ function BookingFlow() {
       const dateStr = format(date, "yyyy-MM-dd");
       const startsAt = new Date(`${dateStr}T${time}:00`);
       const endsAt = new Date(startsAt.getTime() + selectedService.duration_minutes * 60_000);
-      const realStaffId = staffId === "any" ? null : staffId;
+      // Auto-assign for "Eerste beschikbare": deterministically pick the first
+      // eligible+free staff member. Tie-break: order from staffQuery (created_at asc).
+      let realStaffId: string | null = staffId === "any" ? null : staffId;
+
+      if (staffId === "any") {
+        const eligibleIds = eligibleStaff.map((s) => s.id);
+        if (eligibleIds.length === 0) {
+          toast.error(t("book.slotTaken"));
+          setSubmitting(false);
+          return;
+        }
+        // Re-fetch overlapping bookings server-side to avoid race conditions.
+        const { data: overlaps, error: oErr } = await supabase
+          .from("bookings")
+          .select("staff_id")
+          .eq("shop_id", shopId)
+          .in("status", ["pending", "confirmed"])
+          .lt("starts_at", endsAt.toISOString())
+          .gt("ends_at", startsAt.toISOString());
+        if (oErr) throw oErr;
+        const busy = new Set((overlaps ?? []).map((b) => b.staff_id).filter(Boolean) as string[]);
+        const pick = eligibleStaff.find((s) => !busy.has(s.id));
+        if (!pick) {
+          toast.error(t("book.slotTaken"));
+          setSubmitting(false);
+          return;
+        }
+        realStaffId = pick.id;
+      }
 
       if (realStaffId) {
         const { data: conflicts, error: cErr } = await supabase
@@ -534,7 +609,7 @@ function BookingFlow() {
                 {servicesQ.isLoading ? <SkeletonGrid /> : (
                   <div className="space-y-2">
                     {(servicesQ.data ?? []).filter((s) => s.is_active).map((s) => (
-                      <button key={s.id} onClick={() => { setServiceId(s.id); setTime(null); }}
+                      <button key={s.id} onClick={() => { setServiceId(s.id); setStaffId(null); setTime(null); }}
                         className={cn("flex w-full items-center justify-between gap-3 rounded-2xl border p-4 text-left transition-all",
                           serviceId === s.id ? "border-primary bg-primary-soft/40" : "border-border hover:bg-muted/40")}>
                         <div className="min-w-0">
@@ -560,7 +635,7 @@ function BookingFlow() {
                     <p className="font-medium">{t("book.anyAvailable")}</p>
                     <p className="text-xs text-muted-foreground">{t("book.firstOpenSlot")}</p>
                   </button>
-                  {(staffQ.data ?? []).filter((s) => s.is_active).map((s) => (
+                  {eligibleStaff.map((s) => (
                     <button key={s.id} onClick={() => { setStaffId(s.id); setTime(null); }}
                       className={cn("rounded-2xl border p-4 text-left",
                         staffId === s.id ? "border-primary bg-primary-soft/40" : "border-border hover:bg-muted/40")}>
