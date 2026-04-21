@@ -236,8 +236,18 @@ export function DayTimeGrid({
   >(null);
 
   // Resize-state: actieve booking + live nieuwe duur in minuten (gesnapt).
+  // `invalid` + `reason` worden gezet wanneer de nieuwe ends_at in een pauze of
+  // buiten werkuren van de toegewezen medewerker valt (pre-validatie).
   const [resizing, setResizing] = useState<
-    { bookingId: string; colKey: string; startTopPx: number; newDurMin: number; label: string } | null
+    {
+      bookingId: string;
+      colKey: string;
+      startTopPx: number;
+      newDurMin: number;
+      label: string;
+      invalid?: boolean;
+      reason?: string;
+    } | null
   >(null);
 
   const hours = useMemo(() => {
