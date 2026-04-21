@@ -194,6 +194,8 @@ function CalendarPage() {
                 </span>
                 {staff.filter((s) => s.is_active).map((s) => {
                   const c = colors.get(s.id);
+                  const count = staffCounts.map.get(s.id) ?? 0;
+                  const active = staffFilter === s.id;
                   return (
                     <button
                       key={`legend-${s.id}`}
@@ -201,12 +203,20 @@ function CalendarPage() {
                       onClick={() => setStaffFilter((prev) => (prev === s.id ? "all" : s.id))}
                       className={cn(
                         "group inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
-                        staffFilter === s.id ? `${c.bg} ${c.text}` : "text-muted-foreground hover:bg-muted",
+                        active ? `${c.bg} ${c.text}` : "text-muted-foreground hover:bg-muted",
                       )}
-                      title={s.full_name}
+                      title={`${s.full_name} — ${count}`}
                     >
                       <span className={cn("h-2.5 w-2.5 rounded-full ring-1 ring-inset ring-foreground/10", c.swatch)} />
                       <span className="max-w-[110px] truncate">{s.full_name}</span>
+                      <span
+                        className={cn(
+                          "rounded-full px-1.5 py-px text-[10px] font-semibold tabular-nums",
+                          active ? "bg-background/30 text-current" : "bg-muted-foreground/15 text-muted-foreground",
+                        )}
+                      >
+                        {count}
+                      </span>
                     </button>
                   );
                 })}
