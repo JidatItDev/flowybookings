@@ -429,6 +429,17 @@ function CalendarPage() {
                 setSlotPrefill(slot);
                 setCreating(true);
               }}
+              onUnavailableSlot={({ staffName, reason }) => {
+                const label =
+                  reason === "closed"
+                    ? `${staffName} werkt niet op deze dag`
+                    : reason === "break"
+                      ? `${staffName} heeft pauze op dat tijdstip`
+                      : `Buiten werkuren van ${staffName}`;
+                toast.warning(label, {
+                  description: "Kies een tijdstip binnen de werkuren of wijzig het rooster van de medewerker.",
+                });
+              }}
             />
           ) : (
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">

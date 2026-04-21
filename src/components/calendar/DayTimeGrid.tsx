@@ -30,13 +30,30 @@ type DayKey = (typeof DAY_KEYS)[number];
 export type DayHours = { open?: string; close?: string; closed?: boolean };
 export type BusinessHours = Partial<Record<DayKey, DayHours>>;
 
-/** "HH:MM" → uur (afgerond omlaag voor open, omhoog voor close). Returns null bij ongeldig. */
-function parseHour(value: string | undefined, mode: "floor" | "ceil"): number | null {
+/** Per-medewerker werkuren-shape (zelfde dag-keys als BusinessHours, plus optionele breaks). */
+export type StaffDayHours = DayHours & { breaks?: Array<{ start?: string; end?: string }> };
+export type StaffWorkingHours = Partial<Record<DayKey, StaffDayHours>> & {
+  /** Legacy vrije-tekst veld — genegeerd door de visualisatie, blijft bestaan voor backward-compat. */
+  hours?: string;
+};
+
+/** "HH:MM" → minuten sinds middernacht. Returns null bij ongeldig. */
+function parseMinutes(value: string | undefined): number | null {
   if (!value) return null;
   const [hStr, mStr] = value.split(":");
   const h = Number(hStr);
   const m = Number(mStr ?? "0");
   if (!Number.isFinite(h) || h < 0 || h > 23) return null;
+  if (!Number.isFinite(m) || m < 0 || m > 59) return null;
+  return h * 60 + m;
+}
+
+/** "HH:MM" → uur (afgerond omlaag voor open, omhoog voor close). Returns null bij ongeldig. */
+function parseHour(value: string | undefined, mode: "floor" | "ceil"): number | null {
+  const mins = parseMinutes(value);
+  if (mins == null) return null;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
   if (mode === "floor") return h;
   return m > 0 ? Math.min(24, h + 1) : h;
 }
@@ -61,10 +78,63 @@ function resolveDayWindow(
   return { startHour: start, endHour: end, isClosed: false };
 }
 
+/**
+ * Bepaal beschikbaarheid voor één staff-kolom op een specifieke dag.
+ * - `working`: minuten-intervals waarbinnen de medewerker werkt (binnen het grid-venster).
+ * - `breaks`: minuten-intervals voor pauzes binnen working hours.
+ * - `dayClosed`: true als de medewerker deze dag niet werkt of geen gestructureerde data heeft.
+ *
+ * Alle waarden zijn minuten t.o.v. middernacht UTC, geclamped op [START_HOUR*60, END_HOUR*60].
+ */
+type AvailabilityWindow = { startMin: number; endMin: number };
+type StaffAvailability = {
+  working: AvailabilityWindow[];
+  breaks: AvailabilityWindow[];
+  dayClosed: boolean;
+  hasStructuredData: boolean;
+};
+
+function resolveStaffAvailability(
+  day: Date,
+  wh: StaffWorkingHours | undefined,
+  windowStartHour: number,
+  windowEndHour: number,
+): StaffAvailability {
+  const winStart = windowStartHour * 60;
+  const winEnd = windowEndHour * 60;
+  const empty: StaffAvailability = { working: [], breaks: [], dayClosed: false, hasStructuredData: false };
+  if (!wh) return empty;
+  const dayKey = DAY_KEYS[day.getUTCDay()];
+  const dh = wh[dayKey];
+  if (!dh) return empty; // geen per-dag data → geen overlay (legacy/vrije tekst)
+  if (dh.closed) {
+    return { working: [], breaks: [], dayClosed: true, hasStructuredData: true };
+  }
+  const open = parseMinutes(dh.open);
+  const close = parseMinutes(dh.close);
+  if (open == null || close == null || close <= open) {
+    return empty; // ongeldige data → geen overlay i.p.v. fout tonen
+  }
+  const ws = Math.max(winStart, open);
+  const we = Math.min(winEnd, close);
+  const working: AvailabilityWindow[] = we > ws ? [{ startMin: ws, endMin: we }] : [];
+  const breaks: AvailabilityWindow[] = [];
+  for (const br of dh.breaks ?? []) {
+    const bs = parseMinutes(br.start);
+    const be = parseMinutes(br.end);
+    if (bs == null || be == null || be <= bs) continue;
+    const cs = Math.max(ws, bs);
+    const ce = Math.min(we, be);
+    if (ce > cs) breaks.push({ startMin: cs, endMin: ce });
+  }
+  return { working, breaks, dayClosed: false, hasStructuredData: true };
+}
+
 type StaffLite = {
   id: string;
   full_name: string;
   is_active: boolean;
+  working_hours?: unknown;
 };
 
 type CustomerLite = { id: string; full_name: string };
@@ -90,6 +160,8 @@ export type DayTimeGridProps = {
   onSelectBooking?: (b: BookingWithRelations) => void;
   /** Klik op een lege cel → opent nieuwe boeking voor (staffId, time). */
   onSelectSlot?: (params: { staffId: string | null; startsAt: Date }) => void;
+  /** Klik op een onbeschikbare zone (closed/break/buiten werkuren) → UI hint. */
+  onUnavailableSlot?: (params: { staffId: string | null; staffName: string; reason: "closed" | "break" | "off_hours" }) => void;
 };
 
 type Column = {
@@ -97,6 +169,7 @@ type Column = {
   label: string;
   staffId: string | null; // null = unassigned
   color: StaffColor | null;
+  workingHours?: StaffWorkingHours;
 };
 
 export function DayTimeGrid({
@@ -110,6 +183,7 @@ export function DayTimeGrid({
   businessHours,
   onSelectBooking,
   onSelectSlot,
+  onUnavailableSlot,
 }: DayTimeGridProps) {
   const dayStart = useMemo(() => {
     const d = new Date(day);
@@ -130,6 +204,7 @@ export function DayTimeGrid({
       label: s.full_name,
       staffId: s.id,
       color: colors.get(s.id),
+      workingHours: (s.working_hours ?? undefined) as StaffWorkingHours | undefined,
     }));
     // Voeg "niet toegewezen" alleen toe als er bookings zonder staff zijn op deze dag.
     const hasUnassigned = bookings.some(
@@ -170,6 +245,32 @@ export function DayTimeGrid({
   }, [START_HOUR, END_HOUR]);
 
   const totalHeight = (END_HOUR - START_HOUR) * PX_PER_HOUR;
+
+  // Per kolom availability uitrekenen op basis van staff.working_hours.
+  const availabilityByColumn = useMemo(() => {
+    const map = new Map<string, StaffAvailability>();
+    for (const c of columns) {
+      if (c.staffId == null) continue; // unassigned: geen overlay
+      map.set(c.key, resolveStaffAvailability(dayStart, c.workingHours, START_HOUR, END_HOUR));
+    }
+    return map;
+  }, [columns, dayStart, START_HOUR, END_HOUR]);
+
+  /** Bepaal of een uur-slot binnen een unavailable zone valt voor een kolom. */
+  function slotReason(colKey: string, hour: number): "closed" | "break" | "off_hours" | null {
+    const av = availabilityByColumn.get(colKey);
+    if (!av || !av.hasStructuredData) return null;
+    if (av.dayClosed) return "closed";
+    const slotStart = hour * 60;
+    const slotEnd = slotStart + 60;
+    // In een break? (volledige overlap met break-interval volstaat voor blokkade)
+    for (const br of av.breaks) {
+      if (slotStart < br.endMin && slotEnd > br.startMin) return "break";
+    }
+    // Binnen working window?
+    const inside = av.working.some((w) => slotStart >= w.startMin && slotEnd <= w.endMin);
+    return inside ? null : "off_hours";
+  }
 
   // "Now"-lijn alleen tonen wanneer de kalenderdag === vandaag (UTC).
   const now = new Date();
@@ -244,28 +345,103 @@ export function DayTimeGrid({
             ))}
           </div>
 
-          {columns.map((c) => (
+          {columns.map((c) => {
+            const av = availabilityByColumn.get(c.key);
+            const showOverlay = !!av && av.hasStructuredData;
+            return (
             <div
               key={`col-${c.key}`}
               className="relative border-l border-border"
               style={{ height: totalHeight }}
             >
-              {/* Uur-grid-lijnen + klikbare slots */}
-              {hours.slice(0, -1).map((h, i) => (
-                <button
-                  key={`slot-${c.key}-${h}`}
-                  type="button"
-                  onClick={() => {
-                    if (!onSelectSlot) return;
-                    const startsAt = new Date(dayStart);
-                    startsAt.setUTCHours(h, 0, 0, 0);
-                    onSelectSlot({ staffId: c.staffId, startsAt });
+              {/* Unavailable-overlay: alles buiten working hours wordt grijs gestreept.
+                  Wanneer de hele dag gesloten is voor deze medewerker, vullen we de hele kolom. */}
+              {showOverlay && (av.dayClosed ? (
+                <div
+                  className="pointer-events-none absolute inset-x-0 z-[1] bg-muted/40"
+                  style={{
+                    top: 0,
+                    height: totalHeight,
+                    backgroundImage:
+                      "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground) / 0.08) 6px 7px)",
                   }}
-                  className="absolute left-0 right-0 border-t border-dashed border-border/60 transition-colors hover:bg-primary/5"
-                  style={{ top: i * PX_PER_HOUR, height: PX_PER_HOUR }}
-                  aria-label={`Nieuwe boeking ${c.label} ${String(h).padStart(2, "0")}:00`}
+                  title="Niet beschikbaar — vrije dag"
+                />
+              ) : (
+                // Render één off-hours-blok vóór de eerste working-window en één erna,
+                // plus eventuele gaten tussen working windows.
+                (() => {
+                  const winStart = START_HOUR * 60;
+                  const winEnd = END_HOUR * 60;
+                  const wins = av.working.length ? av.working : [{ startMin: winEnd, endMin: winEnd }];
+                  const gaps: AvailabilityWindow[] = [];
+                  let cursor = winStart;
+                  for (const w of wins) {
+                    if (w.startMin > cursor) gaps.push({ startMin: cursor, endMin: w.startMin });
+                    cursor = Math.max(cursor, w.endMin);
+                  }
+                  if (cursor < winEnd) gaps.push({ startMin: cursor, endMin: winEnd });
+                  return gaps.map((g, i) => (
+                    <div
+                      key={`off-${c.key}-${i}`}
+                      className="pointer-events-none absolute inset-x-0 z-[1] bg-muted/40"
+                      style={{
+                        top: (g.startMin - winStart) * PX_PER_MIN,
+                        height: (g.endMin - g.startMin) * PX_PER_MIN,
+                        backgroundImage:
+                          "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground) / 0.08) 6px 7px)",
+                      }}
+                      title="Buiten werkuren"
+                    />
+                  ));
+                })()
+              ))}
+              {/* Pauze-overlay: subtieler, met andere streep-kleur. */}
+              {showOverlay && av.breaks.map((br, i) => (
+                <div
+                  key={`break-${c.key}-${i}`}
+                  className="pointer-events-none absolute inset-x-0 z-[2] bg-warning/10"
+                  style={{
+                    top: (br.startMin - START_HOUR * 60) * PX_PER_MIN,
+                    height: (br.endMin - br.startMin) * PX_PER_MIN,
+                    backgroundImage:
+                      "repeating-linear-gradient(135deg, transparent 0 5px, hsl(var(--warning) / 0.18) 5px 6px)",
+                  }}
+                  title="Pauze"
                 />
               ))}
+              {/* Uur-grid-lijnen + klikbare slots */}
+              {hours.slice(0, -1).map((h, i) => {
+                const reason = slotReason(c.key, h);
+                const unavailable = reason !== null;
+                return (
+                  <button
+                    key={`slot-${c.key}-${h}`}
+                    type="button"
+                    onClick={() => {
+                      if (unavailable) {
+                        onUnavailableSlot?.({ staffId: c.staffId, staffName: c.label, reason: reason! });
+                        return;
+                      }
+                      if (!onSelectSlot) return;
+                      const startsAt = new Date(dayStart);
+                      startsAt.setUTCHours(h, 0, 0, 0);
+                      onSelectSlot({ staffId: c.staffId, startsAt });
+                    }}
+                    className={cn(
+                      "absolute left-0 right-0 z-[3] border-t border-dashed border-border/60 transition-colors",
+                      unavailable ? "cursor-not-allowed hover:bg-destructive/5" : "hover:bg-primary/5",
+                    )}
+                    style={{ top: i * PX_PER_HOUR, height: PX_PER_HOUR }}
+                    aria-label={
+                      unavailable
+                        ? `Niet beschikbaar — ${c.label} ${String(h).padStart(2, "0")}:00`
+                        : `Nieuwe boeking ${c.label} ${String(h).padStart(2, "0")}:00`
+                    }
+                    aria-disabled={unavailable}
+                  />
+                );
+              })}
               {/* Onderste lijn */}
               <div
                 className="absolute left-0 right-0 border-t border-dashed border-border/60"
@@ -332,7 +508,8 @@ export function DayTimeGrid({
                   );
                 })}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

@@ -18,6 +18,7 @@ import { FeatureLock } from "@/components/FeatureLock";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { staffQuery, servicesQuery, shopKeys } from "@/lib/queries";
+import type { StaffWorkingHours, StaffDayHours } from "@/components/calendar/DayTimeGrid";
 import { supabase } from "@/integrations/supabase/client";
 import { initials } from "@/lib/format";
 import {
@@ -105,7 +106,9 @@ function StaffPage() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {staff.map((m) => {
-            const hrs = (m.working_hours as { hours?: string })?.hours ?? "Not set";
+            const wh = (m.working_hours ?? {}) as StaffWorkingHours;
+            const summary = summariseSchedule(wh);
+            const hrsLine = summary ?? wh.hours ?? t("staff.notSet");
             const svcs = serviceNamesFor(m.id);
             const c = colors.get(m.id);
             const overrideKey = colors.overrideOf(m.id);
@@ -128,7 +131,7 @@ function StaffPage() {
                       <button onClick={() => toggleActive.mutate(m)} disabled={readOnly} title={roTitle} className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase transition disabled:cursor-not-allowed disabled:opacity-60", m.is_active ? "bg-mint text-mint-foreground" : "bg-muted text-muted-foreground")}>{m.is_active ? t("staff.active") : t("staff.off")}</button>
                     </div>
                     {m.email && <p className="truncate text-sm text-muted-foreground">{m.email}</p>}
-                    <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarRange className="h-3.5 w-3.5" /> {hrs}</p>
+                    <p className="mt-2 inline-flex items-start gap-1.5 text-xs text-muted-foreground"><CalendarRange className="mt-0.5 h-3.5 w-3.5 shrink-0" /> <span className="break-words">{hrsLine}</span></p>
                   </div>
                   <StaffColorPicker
                     staffId={m.id}
@@ -179,10 +182,13 @@ type LinkRow = { staff_id: string; service_id: string };
 function StaffFormDialog({ open, onClose, member, shopId, services, links }: { open: boolean; onClose: () => void; member: StaffRow | null; shopId: string | null; services: ServiceRow[]; links: LinkRow[] }) {
   const qc = useQueryClient(); const { t } = useT();
   const [form, setForm] = useState({ full_name: "", email: "", phone: "", hours: "", is_active: true });
+  const [schedule, setSchedule] = useState<Partial<Record<DayKey, StaffDayHours>>>({});
   const [selectedServiceIds, setSelectedServiceIds] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (!open) return;
-    setForm({ full_name: member?.full_name ?? "", email: member?.email ?? "", phone: member?.phone ?? "", hours: (member?.working_hours as { hours?: string })?.hours ?? "", is_active: member?.is_active ?? true });
+    const wh = (member?.working_hours ?? {}) as StaffWorkingHours;
+    setForm({ full_name: member?.full_name ?? "", email: member?.email ?? "", phone: member?.phone ?? "", hours: wh.hours ?? "", is_active: member?.is_active ?? true });
+    setSchedule(extractScheduleFromWorkingHours(wh));
     setSelectedServiceIds(new Set(member ? links.filter((l) => l.staff_id === member.id).map((l) => l.service_id) : []));
   }, [open, member?.id, links]);
 
@@ -192,7 +198,11 @@ function StaffFormDialog({ open, onClose, member, shopId, services, links }: { o
     mutationFn: async () => {
       assertNotImpersonating();
       if (!shopId) throw new Error(t("errors.noActiveShop"));
-      const payload = { shop_id: shopId, full_name: form.full_name.trim(), email: form.email.trim() || null, phone: form.phone.trim() || null, is_active: form.is_active, working_hours: form.hours.trim() ? { hours: form.hours.trim() } : {} };
+      // Combineer gestructureerd schema (per-dag + breaks) met optionele vrije-tekst fallback.
+      const cleaned = cleanSchedule(schedule);
+      const wh: StaffWorkingHours = { ...cleaned };
+      if (form.hours.trim()) wh.hours = form.hours.trim();
+      const payload = { shop_id: shopId, full_name: form.full_name.trim(), email: form.email.trim() || null, phone: form.phone.trim() || null, is_active: form.is_active, working_hours: wh as never };
       let staffId = member?.id;
       if (member) {
         const { error } = await supabase.from("staff").update(payload).eq("id", member.id); if (error) throw error;
@@ -231,7 +241,12 @@ function StaffFormDialog({ open, onClose, member, shopId, services, links }: { o
           <div><Label htmlFor="fn">{t("staff.fullName")}</Label><Input id="fn" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
           <div><Label htmlFor="em">{t("staff.email")}</Label><Input id="em" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
           <div><Label htmlFor="ph">{t("staff.phone")}</Label><Input id="ph" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-          <div><Label htmlFor="hr">{t("staff.workingHours")}</Label><Input id="hr" value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })} placeholder={t("staff.workingHoursPlaceholder")} /></div>
+          <WeeklyHoursEditor schedule={schedule} onChange={setSchedule} />
+          <div>
+            <Label htmlFor="hr" className="text-xs text-muted-foreground">Vrije-tekst notitie (optioneel)</Label>
+            <Input id="hr" value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })} placeholder={t("staff.workingHoursPlaceholder")} />
+            <p className="mt-1 text-[11px] text-muted-foreground">Wordt alleen op de overzichtskaart getoond als er geen weekrooster is ingesteld.</p>
+          </div>
           <div>
             <div className="flex items-center justify-between">
               <Label>{t("staff.assignServices")}</Label>
@@ -416,3 +431,121 @@ function StaffColorPicker({
   );
 }
 
+
+// ─── Working-hours helpers (gedeelde shape met DayTimeGrid) ───────────────────
+
+const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
+type DayKey = (typeof DAY_KEYS)[number];
+const DAY_LABELS: Record<DayKey, string> = {
+  mon: "Ma", tue: "Di", wed: "Wo", thu: "Do", fri: "Vr", sat: "Za", sun: "Zo",
+};
+
+/** Lees alleen geldige per-dag entries uit working_hours (negeer 'hours' free-text). */
+function extractScheduleFromWorkingHours(wh: StaffWorkingHours): Partial<Record<DayKey, StaffDayHours>> {
+  const out: Partial<Record<DayKey, StaffDayHours>> = {};
+  for (const k of DAY_KEYS) {
+    const dh = wh[k];
+    if (dh && typeof dh === "object") out[k] = dh;
+  }
+  return out;
+}
+
+/** Verwijder dagen met geen zinnige data. */
+function cleanSchedule(schedule: Partial<Record<DayKey, StaffDayHours>>): Partial<Record<DayKey, StaffDayHours>> {
+  const out: Partial<Record<DayKey, StaffDayHours>> = {};
+  for (const k of DAY_KEYS) {
+    const dh = schedule[k];
+    if (!dh) continue;
+    if (dh.closed) { out[k] = { closed: true }; continue; }
+    if (dh.open && dh.close) {
+      const breaks = (dh.breaks ?? []).filter((b) => b.start && b.end);
+      out[k] = breaks.length ? { open: dh.open, close: dh.close, closed: false, breaks } : { open: dh.open, close: dh.close, closed: false };
+    }
+  }
+  return out;
+}
+
+/** Korte samenvatting voor de overzichtskaart, bv "Ma–Vr 09:00–18:00 · Za 10:00–14:00". */
+function summariseSchedule(wh: StaffWorkingHours): string | null {
+  const sched = extractScheduleFromWorkingHours(wh);
+  const entries = DAY_KEYS.map((k) => ({ k, dh: sched[k] })).filter((e) => e.dh) as { k: DayKey; dh: StaffDayHours }[];
+  if (entries.length === 0) return null;
+  const parts: string[] = [];
+  let i = 0;
+  while (i < entries.length) {
+    const start = entries[i];
+    if (start.dh.closed) { parts.push(`${DAY_LABELS[start.k]} gesloten`); i += 1; continue; }
+    const sig = `${start.dh.open}-${start.dh.close}`;
+    let j = i;
+    while (
+      j + 1 < entries.length &&
+      DAY_KEYS.indexOf(entries[j + 1].k) === DAY_KEYS.indexOf(entries[j].k) + 1 &&
+      !entries[j + 1].dh.closed &&
+      `${entries[j + 1].dh.open}-${entries[j + 1].dh.close}` === sig
+    ) j += 1;
+    parts.push(j > i
+      ? `${DAY_LABELS[start.k]}–${DAY_LABELS[entries[j].k]} ${start.dh.open}–${start.dh.close}`
+      : `${DAY_LABELS[start.k]} ${start.dh.open}–${start.dh.close}`);
+    i = j + 1;
+  }
+  return parts.join(" · ");
+}
+
+function WeeklyHoursEditor({
+  schedule,
+  onChange,
+}: {
+  schedule: Partial<Record<DayKey, StaffDayHours>>;
+  onChange: (s: Partial<Record<DayKey, StaffDayHours>>) => void;
+}) {
+  const update = (k: DayKey, patch: Partial<StaffDayHours> | null) => {
+    const next = { ...schedule };
+    if (patch === null) delete next[k]; else next[k] = { ...next[k], ...patch };
+    onChange(next);
+  };
+  return (
+    <div className="rounded-xl border border-border p-3">
+      <Label className="text-sm">Weekrooster</Label>
+      <p className="mt-0.5 text-[11px] text-muted-foreground">Werktijden + optionele pauze per dag. Wordt gebruikt door de dag-kalender.</p>
+      <div className="mt-3 grid gap-2">
+        {DAY_KEYS.map((k) => {
+          const dh = schedule[k];
+          const enabled = !!dh && !dh.closed;
+          const closed = !!dh?.closed;
+          const br = dh?.breaks?.[0];
+          return (
+            <div key={k} className="grid grid-cols-[40px_auto_1fr] items-center gap-2 text-xs">
+              <span className="font-semibold uppercase text-muted-foreground">{DAY_LABELS[k]}</span>
+              <Switch
+                checked={enabled}
+                onCheckedChange={(v) => update(k, v ? { open: dh?.open ?? "09:00", close: dh?.close ?? "17:00", closed: false } : (dh ? { closed: true, open: undefined, close: undefined, breaks: undefined } : null))}
+              />
+              {closed ? (
+                <span className="text-muted-foreground">Vrij</span>
+              ) : enabled ? (
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Input type="time" className="h-7 w-[88px]" value={dh?.open ?? ""} onChange={(e) => update(k, { open: e.target.value })} />
+                  <span className="text-muted-foreground">–</span>
+                  <Input type="time" className="h-7 w-[88px]" value={dh?.close ?? ""} onChange={(e) => update(k, { close: e.target.value })} />
+                  {br ? (
+                    <span className="ml-1 inline-flex items-center gap-1 rounded-full bg-warning/10 px-1.5 py-0.5">
+                      <span className="text-[10px] text-muted-foreground">Pauze</span>
+                      <Input type="time" className="h-6 w-[80px]" value={br.start ?? ""} onChange={(e) => update(k, { breaks: [{ start: e.target.value, end: br.end }] })} />
+                      <span className="text-muted-foreground">–</span>
+                      <Input type="time" className="h-6 w-[80px]" value={br.end ?? ""} onChange={(e) => update(k, { breaks: [{ start: br.start, end: e.target.value }] })} />
+                      <button type="button" className="text-muted-foreground hover:text-destructive" onClick={() => update(k, { breaks: [] })} aria-label="Pauze verwijderen">×</button>
+                    </span>
+                  ) : (
+                    <button type="button" className="ml-1 text-[11px] text-primary hover:underline" onClick={() => update(k, { breaks: [{ start: "12:00", end: "13:00" }] })}>+ Pauze</button>
+                  )}
+                </div>
+              ) : (
+                <span className="text-muted-foreground">Niet ingesteld</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
