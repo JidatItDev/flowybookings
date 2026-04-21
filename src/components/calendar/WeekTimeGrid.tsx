@@ -137,6 +137,7 @@ export function WeekTimeGrid({
   onSelectBooking,
   onSelectDay,
   onReschedule,
+  dropInvalidLabels,
 }: WeekTimeGridProps) {
   const bookingsById = useMemo(() => {
     const m = new Map<string, BookingWithRelations>();
