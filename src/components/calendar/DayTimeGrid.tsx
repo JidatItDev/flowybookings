@@ -6,6 +6,7 @@ import type { BookingWithRelations } from "@/lib/queries";
 import {
   parseMinutes,
   resolveStaffAvailability as resolveStaffAvailabilityCore,
+  type AvailabilityWindow,
   type BusinessHours as SharedBusinessHours,
   type DayKey,
   type StaffAvailability,
