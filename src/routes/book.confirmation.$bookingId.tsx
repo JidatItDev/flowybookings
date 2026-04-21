@@ -2,7 +2,7 @@
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Calendar, MapPin, ArrowRight, Loader2, LayoutDashboard, Sparkles, CalendarPlus } from "lucide-react";
+import { CheckCircle2, Calendar, MapPin, ArrowRight, Loader2, LayoutDashboard, Sparkles, CalendarPlus, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
@@ -70,18 +70,21 @@ function ConfirmationPage() {
     queryFn: async () => {
       const { data: booking, error: bErr } = await supabase
         .from("bookings")
-        .select("id, starts_at, ends_at, status, price_cents, deposit_cents, currency, shop_id, service_id")
+        .select("id, starts_at, ends_at, status, price_cents, deposit_cents, currency, shop_id, service_id, staff_id")
         .eq("id", bookingId).maybeSingle();
       if (bErr) throw bErr;
       if (!booking) return null;
 
-      const [{ data: shop }, { data: service }] = await Promise.all([
+      const [{ data: shop }, { data: service }, { data: staff }] = await Promise.all([
         supabase.from("shops").select("name, address, is_demo").eq("id", booking.shop_id).maybeSingle(),
         booking.service_id
           ? supabase.from("services").select("name").eq("id", booking.service_id).maybeSingle()
           : Promise.resolve({ data: null }),
+        booking.staff_id
+          ? supabase.from("staff").select("full_name").eq("id", booking.staff_id).maybeSingle()
+          : Promise.resolve({ data: null as { full_name: string } | null }),
       ]);
-      return { booking, shop, service };
+      return { booking, shop, service, staff };
     },
   });
 
@@ -107,11 +110,12 @@ function ConfirmationPage() {
     );
   }
 
-  const { booking, shop, service } = data;
+  const { booking, shop, service, staff } = data;
   const startsAt = new Date(booking.starts_at);
   const endsAt = new Date(booking.ends_at);
   const dateLabel = startsAt.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
   const timeLabel = `${startsAt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })} — ${endsAt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}`;
+  const staffLabel = staff?.full_name ?? "Wordt toegewezen door de salon";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background bg-gradient-hero px-4 py-16">
@@ -128,6 +132,13 @@ function ConfirmationPage() {
             <div>
               <p className="font-medium">{service?.name ?? t("book.service")}</p>
               <p className="text-xs text-muted-foreground">{dateLabel} · {timeLabel}</p>
+            </div>
+          </div>
+          <div className="mt-3 flex items-center gap-3">
+            <User className="h-4 w-4 text-primary" />
+            <div>
+              <p className="font-medium">{staffLabel}</p>
+              <p className="text-xs text-muted-foreground">{staff ? "Je medewerker" : "De salon wijst zo snel mogelijk een medewerker toe"}</p>
             </div>
           </div>
           {shop && (
