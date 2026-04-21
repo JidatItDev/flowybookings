@@ -270,12 +270,38 @@ export function WeekTimeGrid({
                   if (!Array.from(e.dataTransfer.types).includes(DRAG_MIME)) return;
                   e.preventDefault();
                   e.dataTransfer.dropEffect = "move";
+                  // Bereken gesnapte positie + tijd-label voor de drop-indicator.
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const yPx = e.clientY - rect.top;
+                  const rawMin = yPx / PX_PER_MIN - grabOffsetRef.current;
+                  const snapped = Math.round(rawMin / SNAP_MINUTES) * SNAP_MINUTES;
+                  const winSize = winEnd - winStart;
+                  const clampedInWin = Math.max(0, Math.min(winSize - SNAP_MINUTES, snapped));
+                  const totalMin = winStart + clampedInWin;
+                  setDragPreview({
+                    dayKey,
+                    topPx: clampedInWin * PX_PER_MIN,
+                    label: formatMinutesOfDay(totalMin),
+                  });
+                }}
+                onDragLeave={(e) => {
+                  if (!onReschedule) return;
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  if (
+                    e.clientX < rect.left ||
+                    e.clientX > rect.right ||
+                    e.clientY < rect.top ||
+                    e.clientY > rect.bottom
+                  ) {
+                    setDragPreview((prev) => (prev?.dayKey === dayKey ? null : prev));
+                  }
                 }}
                 onDrop={(e) => {
                   if (!onReschedule) return;
                   const raw = e.dataTransfer.getData(DRAG_MIME);
                   if (!raw) return;
                   e.preventDefault();
+                  setDragPreview(null);
                   let payload: { id: string; grabOffsetMin: number };
                   try {
                     payload = JSON.parse(raw);
