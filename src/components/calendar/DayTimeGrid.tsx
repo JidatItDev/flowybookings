@@ -48,6 +48,14 @@ function parseMinutes(value: string | undefined): number | null {
   return h * 60 + m;
 }
 
+/** Minuten sinds middernacht → "HH:MM". */
+function formatMinutes(mins: number): string {
+  const clamped = Math.max(0, Math.min(24 * 60, Math.round(mins)));
+  const h = Math.floor(clamped / 60);
+  const m = clamped % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
 /** "HH:MM" → uur (afgerond omlaag voor open, omhoog voor close). Returns null bij ongeldig. */
 function parseHour(value: string | undefined, mode: "floor" | "ceil"): number | null {
   const mins = parseMinutes(value);
