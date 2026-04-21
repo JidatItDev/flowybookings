@@ -425,15 +425,33 @@ function CalendarPage() {
               {dayChips.map((c) => {
                 const isToday = c.offset === 0;
                 const active = dayOffset === c.offset;
+                const showRing = c.occ.availableMin > 0;
+                const ringTitle = showRing
+                  ? t("calendar.occupancyDay", {
+                      pct: c.occ.pct,
+                      booked: `${(c.occ.bookedMin / 60).toFixed(1)}h`,
+                      available: `${(c.occ.availableMin / 60).toFixed(1)}h`,
+                    })
+                  : t("calendar.occupancyNoData");
                 return (
                   <button
                     key={c.offset}
                     onClick={() => setDayOffset(c.offset)}
                     className={cn(
-                      "shrink-0 rounded-xl border px-3 py-2 text-center transition-colors",
+                      "relative shrink-0 rounded-xl border px-3 py-2 text-center transition-colors",
                       active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted",
                     )}
                   >
+                    {showRing && (
+                      <span className="absolute right-1 top-1">
+                        <OccupancyRing
+                          pct={c.occ.pct}
+                          size={14}
+                          tone={active ? "current" : "auto"}
+                          title={ringTitle}
+                        />
+                      </span>
+                    )}
                     <div className="text-[10px] uppercase tracking-wider opacity-80">
                       {isToday ? t("calendar.today") : c.date.toLocaleDateString("nl-NL", { weekday: "short", timeZone: "UTC" })}
                     </div>
