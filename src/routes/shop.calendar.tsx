@@ -140,11 +140,13 @@ function CalendarPage() {
       booking: BookingWithRelations;
       newStaffId: string | null;
       newStartsAt: Date;
+      /** Optioneel — wanneer gezet, gebruiken we deze einde i.p.v. afgeleide duur. */
+      newEndsAt?: Date;
     }) => {
       assertNotImpersonating();
-      const { booking, newStaffId, newStartsAt } = params;
+      const { booking, newStaffId, newStartsAt, newEndsAt } = params;
       const durMs = +new Date(booking.ends_at) - +new Date(booking.starts_at);
-      const newEnds = new Date(newStartsAt.getTime() + durMs);
+      const newEnds = newEndsAt ?? new Date(newStartsAt.getTime() + durMs);
       const { error } = await supabase
         .from("bookings")
         .update({
@@ -161,7 +163,7 @@ function CalendarPage() {
       await qc.cancelQueries({ queryKey: key });
       const prev = qc.getQueryData<BookingWithRelations[]>(key);
       const durMs = +new Date(params.booking.ends_at) - +new Date(params.booking.starts_at);
-      const newEnds = new Date(params.newStartsAt.getTime() + durMs);
+      const newEnds = params.newEndsAt ?? new Date(params.newStartsAt.getTime() + durMs);
       qc.setQueryData<BookingWithRelations[]>(key, (old) =>
         (old ?? []).map((b) =>
           b.id === params.booking.id
@@ -731,6 +733,7 @@ function CalendarPage() {
                 setCreating(true);
               }}
               onReschedule={readOnly ? undefined : (params) => reschedule.mutate(params)}
+              resizeHandleLabel={t("calendar.resizeHandle")}
               onUnavailableSlot={({ staffName, reason }) => {
                 const label =
                   reason === "closed"

@@ -138,7 +138,11 @@ export type DayTimeGridProps = {
     booking: BookingWithRelations;
     newStaffId: string | null;
     newStartsAt: Date;
+    /** Optioneel — wanneer gezet, override van de afgeleide einde (voor resize-flow). */
+    newEndsAt?: Date;
   }) => void;
+  /** i18n-label voor de resize-handle (tooltip + aria). */
+  resizeHandleLabel?: string;
 };
 
 type Column = {
@@ -162,6 +166,7 @@ export function DayTimeGrid({
   onSelectSlot,
   onUnavailableSlot,
   onReschedule,
+  resizeHandleLabel,
 }: DayTimeGridProps) {
   const dayStart = useMemo(() => {
     const d = new Date(day);
@@ -220,6 +225,11 @@ export function DayTimeGrid({
   const grabOffsetRef = useRef<number>(0);
   const [dragPreview, setDragPreview] = useState<
     { colKey: string; topPx: number; label: string } | null
+  >(null);
+
+  // Resize-state: actieve booking + live nieuwe duur in minuten (gesnapt).
+  const [resizing, setResizing] = useState<
+    { bookingId: string; colKey: string; startTopPx: number; newDurMin: number; label: string } | null
   >(null);
 
   const hours = useMemo(() => {
@@ -544,57 +554,142 @@ export function DayTimeGrid({
                     start.getUTCHours() * 60 + start.getUTCMinutes() - START_HOUR * 60;
                   const durMin = Math.max(15, (end.getTime() - start.getTime()) / 60000);
                   const top = Math.max(0, startMin * PX_PER_MIN);
-                  const height = Math.max(24, durMin * PX_PER_MIN - 2);
                   const cust = customers.find((x) => x.id === b.customer_id);
                   const svc = services.find((x) => x.id === b.service_id);
                   const isCancelled = b.status === "cancelled" || b.status === "no_show";
                   const tone = c.color;
                   const draggable = !!onReschedule && !isCancelled;
+                  const isResizingThis = resizing?.bookingId === b.id;
+                  const liveDurMin = isResizingThis ? resizing!.newDurMin : durMin;
+                  const liveHeight = Math.max(24, liveDurMin * PX_PER_MIN - 2);
                   return (
-                    <button
+                    <div
                       key={b.id}
-                      type="button"
-                      draggable={draggable}
-                      onDragStart={draggable ? (e) => {
-                        e.dataTransfer.effectAllowed = "move";
-                        e.dataTransfer.setData("application/x-booking-id", b.id);
-                        // Bewaar waar binnen het blok de gebruiker pakte (in min),
-                        // zodat de drop dat behoudt en het blok visueel "stil staat".
-                        const blockRect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
-                        const grabPx = e.clientY - blockRect.top;
-                        const grabMin = Math.max(0, grabPx / PX_PER_MIN);
-                        grabOffsetRef.current = grabMin;
-                        e.dataTransfer.setData("application/x-grab-offset-min", String(grabMin));
-                      } : undefined}
-                      onClick={() => onSelectBooking?.(b)}
-                      className={cn(
-                        "absolute left-1 right-1 z-[5] overflow-hidden rounded-lg border px-2 py-1 text-left text-[11px] shadow-soft transition-transform hover:z-20 hover:scale-[1.01]",
-                        draggable && "cursor-grab active:cursor-grabbing active:opacity-70",
-                        tone
-                          ? `${tone.bg} ${tone.text} border-transparent`
-                          : "border-border bg-muted text-foreground",
-                        isCancelled && "opacity-60 line-through decoration-1",
-                      )}
-                      style={{ top, height }}
-                      title={`${cust?.full_name ?? "—"} · ${svc?.name ?? "—"} · ${formatTime(b.starts_at)}–${formatTime(b.ends_at)}${draggable ? " · Sleep om te verplaatsen" : ""}`}
+                      className="absolute left-1 right-1 z-[5]"
+                      style={{ top, height: liveHeight }}
                     >
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="truncate font-semibold">
-                          {formatTime(b.starts_at)}
-                        </span>
-                        <span className="shrink-0 text-[10px] font-medium tabular-nums opacity-90">
-                          {formatCents(b.price_cents)}
-                        </span>
-                      </div>
-                      <div className="truncate font-medium">
-                        {cust?.full_name ?? "—"}
-                      </div>
-                      {height > 44 && (
-                        <div className="truncate text-[10px] opacity-90">
-                          {svc?.name ?? "—"}
+                      <button
+                        type="button"
+                        draggable={draggable && !isResizingThis}
+                        onDragStart={draggable ? (e) => {
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData("application/x-booking-id", b.id);
+                          // Bewaar waar binnen het blok de gebruiker pakte (in min),
+                          // zodat de drop dat behoudt en het blok visueel "stil staat".
+                          const blockRect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                          const grabPx = e.clientY - blockRect.top;
+                          const grabMin = Math.max(0, grabPx / PX_PER_MIN);
+                          grabOffsetRef.current = grabMin;
+                          e.dataTransfer.setData("application/x-grab-offset-min", String(grabMin));
+                        } : undefined}
+                        onClick={() => {
+                          if (isResizingThis) return;
+                          onSelectBooking?.(b);
+                        }}
+                        className={cn(
+                          "block h-full w-full overflow-hidden rounded-lg border px-2 py-1 text-left text-[11px] shadow-soft transition-transform hover:z-20 hover:scale-[1.01]",
+                          draggable && !isResizingThis && "cursor-grab active:cursor-grabbing active:opacity-70",
+                          tone
+                            ? `${tone.bg} ${tone.text} border-transparent`
+                            : "border-border bg-muted text-foreground",
+                          isCancelled && "opacity-60 line-through decoration-1",
+                          isResizingThis && "ring-2 ring-primary/60",
+                        )}
+                        title={`${cust?.full_name ?? "—"} · ${svc?.name ?? "—"} · ${formatTime(b.starts_at)}–${formatTime(b.ends_at)}${draggable ? " · Sleep om te verplaatsen" : ""}`}
+                      >
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="truncate font-semibold">
+                            {formatTime(b.starts_at)}
+                          </span>
+                          <span className="shrink-0 text-[10px] font-medium tabular-nums opacity-90">
+                            {formatCents(b.price_cents)}
+                          </span>
+                        </div>
+                        <div className="truncate font-medium">
+                          {cust?.full_name ?? "—"}
+                        </div>
+                        {liveHeight > 44 && (
+                          <div className="truncate text-[10px] opacity-90">
+                            {svc?.name ?? "—"}
+                          </div>
+                        )}
+                      </button>
+                      {/* Resize-handle: alleen wanneer reschedule beschikbaar is en booking actief is. */}
+                      {draggable && (
+                        <div
+                          role="slider"
+                          aria-label={resizeHandleLabel ?? "Sleep om duur aan te passen"}
+                          aria-valuemin={15}
+                          aria-valuenow={Math.round(liveDurMin)}
+                          tabIndex={-1}
+                          title={resizeHandleLabel ?? "Sleep om duur aan te passen"}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const startTopPx = top;
+                            const startY = e.clientY;
+                            const startDur = durMin;
+                            const winMin = (END_HOUR - START_HOUR) * 60;
+                            const startMinAbs = startMin; // relatief t.o.v. window-start
+                            const maxDur = Math.max(SNAP_MINUTES, winMin - startMinAbs);
+                            const onMove = (ev: MouseEvent) => {
+                              const dy = ev.clientY - startY;
+                              const rawDur = startDur + dy / PX_PER_MIN;
+                              const snapped = Math.round(rawDur / SNAP_MINUTES) * SNAP_MINUTES;
+                              const clamped = Math.max(SNAP_MINUTES, Math.min(maxDur, snapped));
+                              const endTotalMin = START_HOUR * 60 + startMinAbs + clamped;
+                              setResizing({
+                                bookingId: b.id,
+                                colKey: c.key,
+                                startTopPx,
+                                newDurMin: clamped,
+                                label: formatMinutes(endTotalMin),
+                              });
+                            };
+                            const onUp = () => {
+                              window.removeEventListener("mousemove", onMove);
+                              window.removeEventListener("mouseup", onUp);
+                              setResizing((cur) => {
+                                if (!cur || cur.bookingId !== b.id) return null;
+                                // Commit alleen wanneer duur daadwerkelijk veranderd is.
+                                if (Math.round(cur.newDurMin) !== Math.round(durMin) && onReschedule) {
+                                  const newEnds = new Date(start.getTime() + cur.newDurMin * 60_000);
+                                  onReschedule({
+                                    booking: b,
+                                    newStaffId: c.staffId,
+                                    newStartsAt: start,
+                                    newEndsAt: newEnds,
+                                  });
+                                }
+                                return null;
+                              });
+                            };
+                            window.addEventListener("mousemove", onMove);
+                            window.addEventListener("mouseup", onUp);
+                            setResizing({
+                              bookingId: b.id,
+                              colKey: c.key,
+                              startTopPx,
+                              newDurMin: startDur,
+                              label: formatMinutes(START_HOUR * 60 + startMinAbs + startDur),
+                            });
+                          }}
+                          className={cn(
+                            "absolute inset-x-0 bottom-0 z-[6] flex h-2.5 cursor-ns-resize items-center justify-center rounded-b-lg",
+                            "opacity-0 transition-opacity hover:opacity-100",
+                            isResizingThis && "opacity-100",
+                          )}
+                        >
+                          <span className="h-1 w-8 rounded-full bg-foreground/30" />
                         </div>
                       )}
-                    </button>
+                      {/* Live tijd-badge tijdens resize. */}
+                      {isResizingThis && (
+                        <span className="pointer-events-none absolute -bottom-2.5 right-1 z-[16] rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-primary-foreground shadow-soft">
+                          {resizing!.label}
+                        </span>
+                      )}
+                    </div>
                   );
                 })}
             </div>
