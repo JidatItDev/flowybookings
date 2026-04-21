@@ -481,6 +481,7 @@ export function DayTimeGrid({
                 if (!bookingId) return;
                 e.preventDefault();
                 setDragPreview(null);
+                draggedIdRef.current = null;
                 const grabOffsetMin = Number(e.dataTransfer.getData("application/x-grab-offset-min")) || 0;
                 const rect = e.currentTarget.getBoundingClientRect();
                 const yPx = e.clientY - rect.top;
@@ -500,6 +501,30 @@ export function DayTimeGrid({
                 const sameStaff = (booking.staff_id ?? null) === c.staffId;
                 const sameTime = new Date(booking.starts_at).getTime() === newStart.getTime();
                 if (sameStaff && sameTime) return;
+                // Pre-validatie commit-block: werkuren/pauze + conflict-overlap.
+                // Server blijft autoritair, maar we voorkomen onnodige roundtrips.
+                if (dropInvalidLabels) {
+                  const durMs = +new Date(booking.ends_at) - +new Date(booking.starts_at);
+                  const slotEnd = new Date(newStart.getTime() + durMs);
+                  // Conflict-check
+                  if (c.staffId != null) {
+                    const newStartTs = newStart.getTime();
+                    const newEndTs = slotEnd.getTime();
+                    for (const other of visibleBookings) {
+                      if (other.id === booking.id) continue;
+                      if ((other.staff_id ?? null) !== c.staffId) continue;
+                      if (other.status === "cancelled" || other.status === "no_show") continue;
+                      const oStart = new Date(other.starts_at).getTime();
+                      const oEnd = new Date(other.ends_at).getTime();
+                      if (newStartTs < oEnd && newEndTs > oStart) return;
+                    }
+                  }
+                  // Werkuren/pauze
+                  if (c.workingHours) {
+                    const v = validateBookingSlot(newStart, slotEnd, c.workingHours);
+                    if (v.kind === "closed_day" || v.kind === "off_hours" || v.kind === "break") return;
+                  }
+                }
                 onReschedule({ booking, newStaffId: c.staffId, newStartsAt: newStart });
               } : undefined}
             >
