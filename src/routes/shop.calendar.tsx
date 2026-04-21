@@ -37,6 +37,7 @@ import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { getTrialState } from "@/lib/trial";
 import { useFeatureAccess, usagePercentage } from "@/lib/use-feature-access";
+import { staffColor, staffInitials } from "@/lib/staff-color";
 
 export const Route = createFileRoute("/shop/calendar")({
   head: () => ({ meta: [{ title: "Calendar — FlowyBookings" }] }),
@@ -263,14 +264,17 @@ function CalendarPage() {
                         <td className="hidden px-4 py-3 sm:table-cell">{cust?.full_name ?? "—"}</td>
                         <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">{svc?.name ?? "—"}</td>
                         <td className="px-4 py-3">
-                          {stf ? (
-                            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-semibold">
-                                {stf.full_name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
+                          {stf ? (() => {
+                            const c = staffColor(stf.id);
+                            return (
+                              <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${c.bg} ${c.text}`}>
+                                <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold ${c.dot}`}>
+                                  {staffInitials(stf.full_name)}
+                                </span>
+                                <span className="max-w-[120px] truncate">{stf.full_name}</span>
                               </span>
-                              <span className="max-w-[120px] truncate">{stf.full_name}</span>
-                            </span>
-                          ) : (
+                            );
+                          })() : (
                             <span className="text-xs text-muted-foreground italic">{t("calendar.unassigned") ?? "Niet toegewezen"}</span>
                           )}
                         </td>
