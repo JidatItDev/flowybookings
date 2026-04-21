@@ -204,6 +204,10 @@ export function DayTimeGrid({
   resizeHandleLabel,
   dropInvalidLabels,
   onDropBlocked,
+  onCreateBooking,
+  createBookingDisabled,
+  createBookingTitle,
+  emptyLabels,
 }: DayTimeGridProps) {
   const dayStart = useMemo(() => {
     const d = new Date(day);
