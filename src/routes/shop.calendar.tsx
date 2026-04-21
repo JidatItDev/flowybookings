@@ -709,6 +709,7 @@ function CalendarPage() {
                   setCalendarMode("day");
                 }}
                 onReschedule={readOnly ? undefined : (params) => reschedule.mutate(params)}
+                resizeHandleLabel={t("calendar.resizeHandle")}
                 dropInvalidLabels={{
                   closedDay: t("calendar.dropInvalidClosed"),
                   offHours: (range) => t("calendar.dropInvalidOffHours", { range }),
