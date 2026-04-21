@@ -106,7 +106,9 @@ function StaffPage() {
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {staff.map((m) => {
-            const hrs = (m.working_hours as { hours?: string })?.hours ?? "Not set";
+            const wh = (m.working_hours ?? {}) as StaffWorkingHours;
+            const summary = summariseSchedule(wh);
+            const hrsLine = summary ?? wh.hours ?? t("staff.notSet");
             const svcs = serviceNamesFor(m.id);
             const c = colors.get(m.id);
             const overrideKey = colors.overrideOf(m.id);
@@ -129,7 +131,7 @@ function StaffPage() {
                       <button onClick={() => toggleActive.mutate(m)} disabled={readOnly} title={roTitle} className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase transition disabled:cursor-not-allowed disabled:opacity-60", m.is_active ? "bg-mint text-mint-foreground" : "bg-muted text-muted-foreground")}>{m.is_active ? t("staff.active") : t("staff.off")}</button>
                     </div>
                     {m.email && <p className="truncate text-sm text-muted-foreground">{m.email}</p>}
-                    <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarRange className="h-3.5 w-3.5" /> {hrs}</p>
+                    <p className="mt-2 inline-flex items-start gap-1.5 text-xs text-muted-foreground"><CalendarRange className="mt-0.5 h-3.5 w-3.5 shrink-0" /> <span className="break-words">{hrsLine}</span></p>
                   </div>
                   <StaffColorPicker
                     staffId={m.id}
