@@ -628,9 +628,11 @@ function CalendarPage() {
                   <button
                     type="button"
                     onClick={() => setCalendarMode("week")}
+                    disabled={isMobile}
+                    title={isMobile ? "Week-weergave alleen op tablet/desktop" : "Week"}
                     className={cn(
-                      "rounded-full px-3 py-1 font-medium transition-colors",
-                      calendarMode === "week"
+                      "rounded-full px-3 py-1 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                      calendarMode === "week" && !isMobile
                         ? "bg-card text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground",
                     )}
