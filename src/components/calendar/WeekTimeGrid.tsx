@@ -601,6 +601,111 @@ export function WeekTimeGrid({
                           if (touchDrag?.bookingId === b.id) return;
                           onSelectBooking?.(b);
                         }}
+                        onKeyDown={draggable ? (e) => {
+                          // Keyboard reschedule (a11y): ±15 min Up/Down, ±1 dag Left/Right.
+                          // Hergebruikt zelfde pre-validatie + visuele feedback (dragPreview).
+                          const key = e.key;
+                          if (key !== "ArrowUp" && key !== "ArrowDown" && key !== "ArrowLeft" && key !== "ArrowRight") return;
+                          if (e.altKey || e.ctrlKey || e.metaKey) return;
+                          e.preventDefault();
+                          e.stopPropagation();
+
+                          const durMs = endTs - startTs;
+                          let newStart = new Date(b.starts_at);
+
+                          if (key === "ArrowUp" || key === "ArrowDown") {
+                            const delta = key === "ArrowUp" ? -SNAP_MINUTES : SNAP_MINUTES;
+                            newStart = new Date(newStart.getTime() + delta * 60_000);
+                          } else {
+                            const dayIdx = dayList.findIndex(
+                              (d) => d.getUTCFullYear() === newStart.getUTCFullYear() &&
+                                     d.getUTCMonth() === newStart.getUTCMonth() &&
+                                     d.getUTCDate() === newStart.getUTCDate(),
+                            );
+                            const dir = key === "ArrowLeft" ? -1 : 1;
+                            const nextIdx = dayIdx + dir;
+                            if (nextIdx < 0 || nextIdx >= dayList.length) return;
+                            const targetDay = dayList[nextIdx];
+                            const tod = newStart.getUTCHours() * 60 + newStart.getUTCMinutes();
+                            newStart = new Date(targetDay);
+                            newStart.setUTCMinutes(tod);
+                          }
+
+                          // Clamp binnen het week-venster (zelfde regels als drag).
+                          const startMinAbs = newStart.getUTCHours() * 60 + newStart.getUTCMinutes();
+                          const newDurMin = durMs / 60_000;
+                          if (startMinAbs < winStart || startMinAbs + newDurMin > winEnd) {
+                            return;
+                          }
+
+                          const slotEnd = new Date(newStart.getTime() + durMs);
+
+                          // Hergebruikt validatie-patroon: conflict + werkuren/pauze.
+                          let invalid = false;
+                          let reason: string | undefined;
+                          if (dropInvalidLabels) {
+                            if (dropInvalidLabels.conflictWith && b.staff_id != null) {
+                              const newStartTs = newStart.getTime();
+                              const newEndTs = slotEnd.getTime();
+                              for (const other of bookings) {
+                                if (other.id === b.id) continue;
+                                if ((other.staff_id ?? null) !== (b.staff_id ?? null)) continue;
+                                if (other.status === "cancelled" || other.status === "no_show") continue;
+                                const oStart = new Date(other.starts_at).getTime();
+                                const oEnd = new Date(other.ends_at).getTime();
+                                if (newStartTs < oEnd && newEndTs > oStart) {
+                                  const oS = new Date(other.starts_at);
+                                  const oE = new Date(other.ends_at);
+                                  const oSm = oS.getUTCHours() * 60 + oS.getUTCMinutes();
+                                  const oEm = oE.getUTCHours() * 60 + oE.getUTCMinutes();
+                                  invalid = true;
+                                  reason = dropInvalidLabels.conflictWith(`${formatMinutesOfDay(oSm)}–${formatMinutesOfDay(oEm)}`);
+                                  break;
+                                }
+                              }
+                            }
+                            const wh = stf?.working_hours as StaffWorkingHours | undefined;
+                            if (!invalid && wh) {
+                              const v = validateBookingSlot(newStart, slotEnd, wh);
+                              if (v.kind === "closed_day") { invalid = true; reason = dropInvalidLabels.closedDay; }
+                              else if (v.kind === "off_hours") {
+                                invalid = true;
+                                reason = v.window
+                                  ? dropInvalidLabels.offHours(`${formatMinutesOfDay(v.window.startMin)}–${formatMinutesOfDay(v.window.endMin)}`)
+                                  : dropInvalidLabels.offHours("—");
+                              }
+                              else if (v.kind === "break") {
+                                invalid = true;
+                                reason = dropInvalidLabels.duringBreak(`${formatMinutesOfDay(v.window.startMin)}–${formatMinutesOfDay(v.window.endMin)}`);
+                              }
+                            }
+                          }
+
+                          // Visuele feedback via bestaande dragPreview-state.
+                          const targetDayKey = `${newStart.getUTCFullYear()}-${newStart.getUTCMonth()}-${newStart.getUTCDate()}`;
+                          const previewTopPx = (startMinAbs - winStart) * PX_PER_MIN;
+                          const previewLabel = formatMinutesOfDay(startMinAbs);
+                          setDragPreview({
+                            dayKey: targetDayKey,
+                            topPx: previewTopPx,
+                            label: previewLabel,
+                            invalid,
+                            reason,
+                          });
+                          window.setTimeout(() => {
+                            setDragPreview((prev) => (prev && prev.dayKey === targetDayKey && prev.label === previewLabel ? null : prev));
+                          }, 800);
+
+                          if (invalid) {
+                            if (reason) onDropBlocked?.(reason);
+                            return;
+                          }
+                          onReschedule?.({
+                            booking: b,
+                            newStaffId: b.staff_id ?? null,
+                            newStartsAt: newStart,
+                          });
+                        } : undefined}
                         draggable={draggable && !isResizingThis}
                         onDragStart={(e) => {
                           if (!draggable) return;
@@ -820,7 +925,7 @@ export function WeekTimeGrid({
                           window.addEventListener("touchcancel", onCancel);
                         } : undefined}
                         className={cn(
-                          "group block h-full w-full overflow-hidden rounded-md border px-1.5 py-1 text-left text-[11px] shadow-sm transition-all hover:z-[6] hover:shadow-md",
+                          "group block h-full w-full overflow-hidden rounded-md border px-1.5 py-1 text-left text-[11px] shadow-sm transition-all hover:z-[6] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
                           draggable && !isResizingThis && "cursor-grab active:cursor-grabbing",
                           cancelled
                             ? "border-dashed border-border bg-muted/60 text-muted-foreground line-through"
@@ -829,7 +934,8 @@ export function WeekTimeGrid({
                           touchDrag?.bookingId === b.id && "scale-[1.03] opacity-70 ring-2 ring-primary/70",
                         )}
                         style={touchDrag?.bookingId === b.id ? { touchAction: "none" } : undefined}
-                        title={`${formatTime(b.starts_at)} — ${stf?.full_name ?? "Niet toegewezen"}`}
+                        title={`${formatTime(b.starts_at)} — ${stf?.full_name ?? "Niet toegewezen"}${draggable ? " · Pijltjes om te verplaatsen" : ""}`}
+                        aria-label={draggable ? `${stf?.full_name ?? "Niet toegewezen"} · ${formatTime(b.starts_at)} · Pijltjes: ±15 min of ±1 dag` : undefined}
                       >
                         <div className="flex items-center gap-1">
                           <span
