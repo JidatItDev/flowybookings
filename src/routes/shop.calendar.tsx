@@ -876,7 +876,7 @@ function BookingActionDialog({
   onClose: () => void;
   onEdit: (b: BookingWithRelations) => void;
   onAction: (id: string, status: BookingWithRelations["status"]) => void;
-  customers: Array<{ id: string; full_name: string; email: string | null; phone: string | null; preferences?: { allergies?: string | null } | null }>;
+  customers: Array<{ id: string; full_name: string; email: string | null; phone: string | null; preferences?: unknown }>;
   services: Array<{ id: string; name: string }>;
   staff: Array<{ id: string; full_name: string }>;
 }) {
@@ -886,7 +886,10 @@ function BookingActionDialog({
   const cust = customers.find((c) => c.id === booking.customer_id);
   const svc = services.find((s) => s.id === booking.service_id);
   const stf = staff.find((s) => s.id === booking.staff_id);
-  const allergyRaw = cust?.preferences?.allergies;
+  const prefs = cust?.preferences;
+  const allergyRaw = prefs && typeof prefs === "object" && !Array.isArray(prefs)
+    ? (prefs as Record<string, unknown>).allergies
+    : null;
   const allergy = typeof allergyRaw === "string" && allergyRaw.trim().length > 0 ? allergyRaw.trim() : null;
   return (
     <Dialog open={!!booking} onOpenChange={(o) => !o && onClose()}>

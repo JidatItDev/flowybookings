@@ -26,10 +26,12 @@ export const Route = createFileRoute("/shop/customers")({
   component: CustomersPage,
 });
 
-type CustomerRow = { id: string; full_name: string; email: string | null; phone: string | null; notes: string | null; total_spent_cents: number; last_visit_at: string | null; no_show_count?: number; requires_deposit?: boolean; tags?: string[] | null; preferences?: { allergies?: string | null } | null };
+type CustomerRow = { id: string; full_name: string; email: string | null; phone: string | null; notes: string | null; total_spent_cents: number; last_visit_at: string | null; no_show_count?: number; requires_deposit?: boolean; tags?: string[] | null; preferences?: unknown };
 
-function getAllergyText(c: { preferences?: { allergies?: string | null } | null }): string | null {
-  const a = c.preferences?.allergies;
+function getAllergyText(c: { preferences?: unknown }): string | null {
+  const p = c.preferences;
+  if (!p || typeof p !== "object" || Array.isArray(p)) return null;
+  const a = (p as Record<string, unknown>).allergies;
   if (typeof a !== "string") return null;
   const trimmed = a.trim();
   return trimmed.length > 0 ? trimmed : null;
