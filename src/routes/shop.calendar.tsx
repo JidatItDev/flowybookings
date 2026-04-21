@@ -49,6 +49,8 @@ import {
   validateBookingSlot,
   type StaffWorkingHours,
 } from "@/lib/staff-availability";
+import { shopDayOccupancy, staffDayOccupancy } from "@/lib/occupancy";
+import { OccupancyRing } from "@/components/calendar/OccupancyRing";
 
 export const Route = createFileRoute("/shop/calendar")({
   head: () => ({ meta: [{ title: "Calendar — FlowyBookings" }] }),
@@ -238,7 +240,8 @@ function CalendarPage() {
       const next = new Date(d); next.setUTCDate(next.getUTCDate() + 1);
       return t >= d.getTime() && t < next.getTime();
     }).length;
-    return { offset: i, date: d, count };
+    const occ = shopDayOccupancy(d, staff, bookings);
+    return { offset: i, date: d, count, occ };
   });
 
   /**
@@ -262,7 +265,8 @@ function CalendarPage() {
         const lastW = av?.working[(av?.working.length ?? 1) - 1];
         const window = firstW && lastW ? `${formatMinutesOfDay(firstW.startMin)}–${formatMinutesOfDay(lastW.endMin)}` : null;
         const closed = !!av?.dayClosed;
-        return { staff: s, count, window, closed, hasData: !!av?.hasStructuredData };
+        const occ = staffDayOccupancy(today, s, bookings);
+        return { staff: s, count, window, closed, hasData: !!av?.hasStructuredData, occ };
       })
       .filter((row) => row.window || row.closed || row.count > 0);
   }, [staff, bookings]);
@@ -353,6 +357,10 @@ function CalendarPage() {
                     : row.window
                       ? `${row.window} · ${row.count} ${apptLabel}`
                       : `${row.count} ${apptLabel}`;
+                  const showRing = row.occ.availableMin > 0;
+                  const ringTitle = showRing
+                    ? t("calendar.occupancyStaff", { name: row.staff.full_name, pct: row.occ.pct })
+                    : t("calendar.occupancyNoData");
                   return (
                     <button
                       key={`today-${row.staff.id}`}
@@ -386,6 +394,15 @@ function CalendarPage() {
                           {subtitle}
                         </span>
                       </span>
+                      {showRing && !row.closed && (
+                        <OccupancyRing
+                          pct={row.occ.pct}
+                          size={20}
+                          tone={active ? "current" : "auto"}
+                          title={ringTitle}
+                          className="ml-0.5"
+                        />
+                      )}
                     </button>
                   );
                 })}
@@ -408,15 +425,33 @@ function CalendarPage() {
               {dayChips.map((c) => {
                 const isToday = c.offset === 0;
                 const active = dayOffset === c.offset;
+                const showRing = c.occ.availableMin > 0;
+                const ringTitle = showRing
+                  ? t("calendar.occupancyDay", {
+                      pct: c.occ.pct,
+                      booked: `${(c.occ.bookedMin / 60).toFixed(1)}h`,
+                      available: `${(c.occ.availableMin / 60).toFixed(1)}h`,
+                    })
+                  : t("calendar.occupancyNoData");
                 return (
                   <button
                     key={c.offset}
                     onClick={() => setDayOffset(c.offset)}
                     className={cn(
-                      "shrink-0 rounded-xl border px-3 py-2 text-center transition-colors",
+                      "relative shrink-0 rounded-xl border px-3 py-2 text-center transition-colors",
                       active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted",
                     )}
                   >
+                    {showRing && (
+                      <span className="absolute right-1 top-1">
+                        <OccupancyRing
+                          pct={c.occ.pct}
+                          size={14}
+                          tone={active ? "current" : "auto"}
+                          title={ringTitle}
+                        />
+                      </span>
+                    )}
                     <div className="text-[10px] uppercase tracking-wider opacity-80">
                       {isToday ? t("calendar.today") : c.date.toLocaleDateString("nl-NL", { weekday: "short", timeZone: "UTC" })}
                     </div>

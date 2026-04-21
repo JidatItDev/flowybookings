@@ -331,6 +331,9 @@ export const nl: Record<string, string> = {
   "dashboard.occupancyBooked": "Geboekt: {hours}",
   "dashboard.occupancyAvailable": "Beschikbaar: {hours}",
   "dashboard.occupancyNoHours": "Stel werkuren in om de bezetting te zien.",
+  "calendar.occupancyDay": "Bezetting {pct}% — {booked} van {available}",
+  "calendar.occupancyStaff": "{name}: {pct}% bezet",
+  "calendar.occupancyNoData": "Geen werkuren ingesteld",
 
   // ── Onboarding checklist ──
   "checklist.badge": "Aan de slag",
