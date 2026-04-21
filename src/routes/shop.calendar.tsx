@@ -1171,7 +1171,7 @@ function CustomerCombobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="z-[60] w-[--radix-popover-trigger-width] p-0"
+        className="z-[60] w-[--radix-popover-trigger-width] min-w-[16rem] max-w-[calc(100vw-2rem)] p-0"
         align="start"
         sideOffset={4}
       >
