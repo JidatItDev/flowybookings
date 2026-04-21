@@ -74,6 +74,7 @@ function CalendarPage() {
             })
           : undefined;
   const [filter, setFilter] = useState<(typeof statuses)[number]>("all");
+  const [staffFilter, setStaffFilter] = useState<string | "all" | "unassigned">("all");
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<BookingWithRelations | null>(null);
   const [deleting, setDeleting] = useState<BookingWithRelations | null>(null);
