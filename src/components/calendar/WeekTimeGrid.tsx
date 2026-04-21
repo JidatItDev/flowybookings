@@ -473,11 +473,16 @@ export function WeekTimeGrid({
                         const grabOffsetPx = e.clientY - rect.top;
                         const grabOffsetMin = grabOffsetPx / PX_PER_MIN;
                         grabOffsetRef.current = grabOffsetMin;
+                        draggedIdRef.current = b.id;
                         e.dataTransfer.effectAllowed = "move";
                         e.dataTransfer.setData(
                           DRAG_MIME,
                           JSON.stringify({ id: b.id, grabOffsetMin }),
                         );
+                      }}
+                      onDragEnd={() => {
+                        draggedIdRef.current = null;
+                        setDragPreview(null);
                       }}
                       className={cn(
                         "group absolute left-1 right-1 z-[4] overflow-hidden rounded-md border px-1.5 py-1 text-left text-[11px] shadow-sm transition-all hover:z-[6] hover:shadow-md",
