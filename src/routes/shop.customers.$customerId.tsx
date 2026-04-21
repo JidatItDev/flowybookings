@@ -610,6 +610,108 @@ function CustomerProfilePage() {
               </Button>
             </div>
           </div>
+
+          {/* Preferences editor */}
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+            <div className="mb-1 flex items-center gap-2">
+              <Heart className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold">{t("customers.preferences")}</h3>
+            </div>
+            <p className="mb-4 text-xs text-muted-foreground">{t("customers.preferencesHint")}</p>
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">
+                  {t("customers.favoriteStaff")}
+                </Label>
+                <Select value={favStaff} onValueChange={setFavStaff} disabled={readOnly}>
+                  <SelectTrigger title={roTitle}>
+                    <SelectValue placeholder={t("customers.favoriteStaffNone")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t("customers.favoriteStaffNone")}</SelectItem>
+                    {staffList
+                      .filter((s) => s.is_active)
+                      .map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.full_name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">
+                  {t("customers.favoriteService")}
+                </Label>
+                <Select value={favService} onValueChange={setFavService} disabled={readOnly}>
+                  <SelectTrigger title={roTitle}>
+                    <SelectValue placeholder={t("customers.favoriteServiceNone")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t("customers.favoriteServiceNone")}</SelectItem>
+                    {services
+                      .filter((s) => s.is_active)
+                      .map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="allergies" className="text-xs font-medium text-muted-foreground">
+                  {t("customers.allergies")}
+                </Label>
+                <Textarea
+                  id="allergies"
+                  value={allergies}
+                  onChange={(e) => setAllergies(e.target.value)}
+                  rows={3}
+                  placeholder={t("customers.allergiesPlaceholder")}
+                  disabled={readOnly}
+                  title={roTitle}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">
+                  {t("customers.communication")}
+                </Label>
+                <Select
+                  value={communication}
+                  onValueChange={(v) => setCommunication(v as typeof communication)}
+                  disabled={readOnly}
+                >
+                  <SelectTrigger title={roTitle}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="email">{t("customers.commEmail")}</SelectItem>
+                    <SelectItem value="sms">{t("customers.commSms")}</SelectItem>
+                    <SelectItem value="any">{t("customers.commAny")}</SelectItem>
+                    <SelectItem value="none">{t("customers.commNone")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <Button
+                  size="sm"
+                  variant="hero"
+                  onClick={savePreferences}
+                  disabled={update.isPending || readOnly}
+                  title={roTitle}
+                >
+                  <Save className="h-4 w-4" />{" "}
+                  {update.isPending ? t("customers.saving") : t("customers.savePreferences")}
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </ShopLayout>
