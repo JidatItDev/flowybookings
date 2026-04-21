@@ -417,6 +417,7 @@ export const nl: Record<string, string> = {
   "calendar.cancel": "Annuleren",
   "calendar.delete": "Verwijderen",
   "calendar.bookingUpdated": "Boeking bijgewerkt",
+  "calendar.resizeHandle": "Sleep om duur aan te passen",
   "calendar.bookingDeleted": "Boeking verwijderd",
   "calendar.bookingCreated": "Boeking aangemaakt",
   "calendar.conflictWith": "Conflict: {staff} heeft al een afspraak met {customer} ({service}) van {range}.",
