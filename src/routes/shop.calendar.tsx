@@ -102,7 +102,7 @@ function CalendarPage() {
   const colors = useStaffColors(shopId);
 
   // Realtime: live-patch the bookings cache on INSERT/UPDATE/DELETE for this shop.
-  useBookingsRealtime(shopId);
+  const realtimeStatus = useBookingsRealtime(shopId);
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: BookingWithRelations["status"] }) => {
@@ -176,14 +176,17 @@ function CalendarPage() {
         title={t("calendar.title")}
         description={t("calendar.description")}
         actions={
-          <Button
-            variant="hero"
-            onClick={() => setCreating(true)}
-            disabled={newBookingDisabled}
-            title={newBookingTitle}
-          >
-            <Plus className="h-4 w-4" /> {t("calendar.newBooking")}
-          </Button>
+          <>
+            <LiveIndicator status={realtimeStatus} />
+            <Button
+              variant="hero"
+              onClick={() => setCreating(true)}
+              disabled={newBookingDisabled}
+              title={newBookingTitle}
+            >
+              <Plus className="h-4 w-4" /> {t("calendar.newBooking")}
+            </Button>
+          </>
         }
       />
 
@@ -913,5 +916,64 @@ function ActionRow({ label, value, sub }: { label: string; value: string; sub?: 
         {sub && <span className="block text-xs text-muted-foreground">{sub}</span>}
       </span>
     </div>
+  );
+}
+
+/**
+ * Subtle "Live" indicator wired to the Realtime channel state.
+ * Green dot = live, amber = reconnecting/error, muted = offline.
+ */
+function LiveIndicator({ status }: { status: import("@/lib/use-bookings-realtime").RealtimeStatus }) {
+  const { t } = useT();
+
+  // Map status → label, tooltip, and dot color (semantic tokens).
+  const view =
+    status === "live"
+      ? {
+          label: t("calendar.live"),
+          tooltip: t("calendar.liveTooltip"),
+          dot: "bg-emerald-500 shadow-[0_0_0_3px_hsl(var(--background))] before:bg-emerald-400",
+          text: "text-emerald-600 dark:text-emerald-400",
+          pulse: true,
+        }
+      : status === "connecting" || status === "idle"
+        ? {
+            label: t("calendar.liveConnecting"),
+            tooltip: t("calendar.liveConnectingTooltip"),
+            dot: "bg-amber-500 before:bg-amber-400",
+            text: "text-amber-600 dark:text-amber-400",
+            pulse: true,
+          }
+        : {
+            label: t("calendar.liveOffline"),
+            tooltip: t("calendar.liveOfflineTooltip"),
+            dot: "bg-amber-500 before:bg-amber-400",
+            text: "text-amber-600 dark:text-amber-400",
+            pulse: false,
+          };
+
+  return (
+    <span
+      className={cn(
+        "hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/40 px-2.5 py-1 text-xs font-medium",
+        view.text,
+      )}
+      title={view.tooltip}
+      role="status"
+      aria-live="polite"
+    >
+      <span className="relative inline-flex h-2 w-2">
+        {view.pulse && (
+          <span
+            className={cn(
+              "absolute inline-flex h-full w-full animate-ping rounded-full opacity-60",
+              view.dot.includes("emerald") ? "bg-emerald-400" : "bg-amber-400",
+            )}
+          />
+        )}
+        <span className={cn("relative inline-flex h-2 w-2 rounded-full", view.dot.split(" ")[0])} />
+      </span>
+      <span>{view.label}</span>
+    </span>
   );
 }
