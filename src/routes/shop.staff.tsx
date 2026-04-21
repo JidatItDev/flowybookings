@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, CalendarRange, Pencil, Trash2, UserCog, Check } from "lucide-react";
+import { Plus, CalendarRange, Pencil, Trash2, UserCog, Check, Palette, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { EmptyState, LoadingGrid, NoShopState } from "@/components/EmptyState";
 import { UpgradeNudge } from "@/components/UpgradeNudge";
 import { FeatureLock } from "@/components/FeatureLock";
@@ -19,7 +20,13 @@ import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { staffQuery, servicesQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { initials } from "@/lib/format";
-import { staffColor } from "@/lib/staff-color";
+import {
+  staffColor,
+  PALETTE_LIST,
+  shopBrandingKeys,
+  useStaffColors,
+  type PaletteKey,
+} from "@/lib/staff-color";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { useFeatureAccess } from "@/lib/use-feature-access";
