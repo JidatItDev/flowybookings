@@ -1,9 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatTime } from "@/lib/format";
 import { staffInitials, type StaffColor } from "@/lib/staff-color";
 import type { BookingWithRelations } from "@/lib/queries";
 import {
+  formatMinutesOfDay,
   parseMinutes,
   type BusinessHours,
   type DayKey,
@@ -176,6 +177,12 @@ export function WeekTimeGrid({
     return m;
   }, [staff]);
 
+  // Drag-preview: gesnapte drop-positie binnen één dag-kolom (tijdelijke UI-state).
+  const grabOffsetRef = useRef<number>(0);
+  const [dragPreview, setDragPreview] = useState<
+    { dayKey: string; topPx: number; label: string } | null
+  >(null);
+
   const now = new Date();
   const todayKey = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}`;
   const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes() - winStart;
@@ -263,12 +270,38 @@ export function WeekTimeGrid({
                   if (!Array.from(e.dataTransfer.types).includes(DRAG_MIME)) return;
                   e.preventDefault();
                   e.dataTransfer.dropEffect = "move";
+                  // Bereken gesnapte positie + tijd-label voor de drop-indicator.
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const yPx = e.clientY - rect.top;
+                  const rawMin = yPx / PX_PER_MIN - grabOffsetRef.current;
+                  const snapped = Math.round(rawMin / SNAP_MINUTES) * SNAP_MINUTES;
+                  const winSize = winEnd - winStart;
+                  const clampedInWin = Math.max(0, Math.min(winSize - SNAP_MINUTES, snapped));
+                  const totalMin = winStart + clampedInWin;
+                  setDragPreview({
+                    dayKey,
+                    topPx: clampedInWin * PX_PER_MIN,
+                    label: formatMinutesOfDay(totalMin),
+                  });
+                }}
+                onDragLeave={(e) => {
+                  if (!onReschedule) return;
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  if (
+                    e.clientX < rect.left ||
+                    e.clientX > rect.right ||
+                    e.clientY < rect.top ||
+                    e.clientY > rect.bottom
+                  ) {
+                    setDragPreview((prev) => (prev?.dayKey === dayKey ? null : prev));
+                  }
                 }}
                 onDrop={(e) => {
                   if (!onReschedule) return;
                   const raw = e.dataTransfer.getData(DRAG_MIME);
                   if (!raw) return;
                   e.preventDefault();
+                  setDragPreview(null);
                   let payload: { id: string; grabOffsetMin: number };
                   try {
                     payload = JSON.parse(raw);
@@ -333,6 +366,17 @@ export function WeekTimeGrid({
                     <span className="h-px flex-1 bg-primary" />
                   </div>
                 )}
+                {/* Drop-indicator: gesnapte horizontale lijn met tijd-label tijdens drag. */}
+                {dragPreview && dragPreview.dayKey === dayKey && (
+                  <div
+                    className="pointer-events-none absolute left-0 right-0 z-[8] border-t-2 border-dashed border-primary"
+                    style={{ top: dragPreview.topPx }}
+                  >
+                    <span className="absolute -top-2.5 left-1 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-primary-foreground shadow-soft">
+                      {dragPreview.label}
+                    </span>
+                  </div>
+                )}
                 {/* Bookings */}
                 {dayBookings.map((b) => {
                   const start = new Date(b.starts_at);
@@ -365,6 +409,7 @@ export function WeekTimeGrid({
                         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                         const grabOffsetPx = e.clientY - rect.top;
                         const grabOffsetMin = grabOffsetPx / PX_PER_MIN;
+                        grabOffsetRef.current = grabOffsetMin;
                         e.dataTransfer.effectAllowed = "move";
                         e.dataTransfer.setData(
                           DRAG_MIME,

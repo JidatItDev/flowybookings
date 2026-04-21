@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatCents, formatTime } from "@/lib/format";
 import { staffInitials, type StaffColor } from "@/lib/staff-color";
@@ -216,6 +216,12 @@ export function DayTimeGrid({
     [dayStart, businessHours],
   );
 
+  // Drag-preview: gesnapte drop-positie binnen één kolom (tijdelijke UI-state).
+  const grabOffsetRef = useRef<number>(0);
+  const [dragPreview, setDragPreview] = useState<
+    { colKey: string; topPx: number; label: string } | null
+  >(null);
+
   const hours = useMemo(() => {
     const arr: number[] = [];
     for (let h = START_HOUR; h <= END_HOUR; h += 1) arr.push(h);
@@ -336,12 +342,39 @@ export function DayTimeGrid({
                 if (Array.from(e.dataTransfer.types).includes("application/x-booking-id")) {
                   e.preventDefault();
                   e.dataTransfer.dropEffect = "move";
+                  // Bereken gesnapte positie + tijd-label voor de drop-indicator.
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const yPx = e.clientY - rect.top;
+                  const rawMin = yPx / PX_PER_MIN - grabOffsetRef.current;
+                  const snapped = Math.round(rawMin / SNAP_MINUTES) * SNAP_MINUTES;
+                  const winMin = (END_HOUR - START_HOUR) * 60;
+                  const clampedInWin = Math.max(0, Math.min(winMin - SNAP_MINUTES, snapped));
+                  const totalMin = START_HOUR * 60 + clampedInWin;
+                  setDragPreview({
+                    colKey: c.key,
+                    topPx: clampedInWin * PX_PER_MIN,
+                    label: formatMinutes(totalMin),
+                  });
+                }
+              } : undefined}
+              onDragLeave={onReschedule ? (e) => {
+                // Alleen resetten wanneer de cursor de kolom-bounds echt verlaat
+                // (anders flikkert het tijdens move-events binnen child-elementen).
+                const rect = e.currentTarget.getBoundingClientRect();
+                if (
+                  e.clientX < rect.left ||
+                  e.clientX > rect.right ||
+                  e.clientY < rect.top ||
+                  e.clientY > rect.bottom
+                ) {
+                  setDragPreview((prev) => (prev?.colKey === c.key ? null : prev));
                 }
               } : undefined}
               onDrop={onReschedule ? (e) => {
                 const bookingId = e.dataTransfer.getData("application/x-booking-id");
                 if (!bookingId) return;
                 e.preventDefault();
+                setDragPreview(null);
                 const grabOffsetMin = Number(e.dataTransfer.getData("application/x-grab-offset-min")) || 0;
                 const rect = e.currentTarget.getBoundingClientRect();
                 const yPx = e.clientY - rect.top;
@@ -489,6 +522,18 @@ export function DayTimeGrid({
                 </div>
               )}
 
+              {/* Drop-indicator: gesnapte horizontale lijn met tijd-label tijdens drag. */}
+              {dragPreview && dragPreview.colKey === c.key && (
+                <div
+                  className="pointer-events-none absolute left-0 right-0 z-[15] border-t-2 border-dashed border-primary"
+                  style={{ top: dragPreview.topPx }}
+                >
+                  <span className="absolute -top-2.5 left-1 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-primary-foreground shadow-soft">
+                    {dragPreview.label}
+                  </span>
+                </div>
+              )}
+
               {/* Bookings in deze kolom */}
               {visibleBookings
                 .filter((b) => (b.staff_id ?? null) === c.staffId)
@@ -518,6 +563,7 @@ export function DayTimeGrid({
                         const blockRect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
                         const grabPx = e.clientY - blockRect.top;
                         const grabMin = Math.max(0, grabPx / PX_PER_MIN);
+                        grabOffsetRef.current = grabMin;
                         e.dataTransfer.setData("application/x-grab-offset-min", String(grabMin));
                       } : undefined}
                       onClick={() => onSelectBooking?.(b)}
