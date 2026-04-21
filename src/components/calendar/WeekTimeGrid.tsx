@@ -202,6 +202,11 @@ export function WeekTimeGrid({
     { dayKey: string; topPx: number; label: string; invalid?: boolean; reason?: string } | null
   >(null);
 
+  // Resize-state: actieve booking + live nieuwe duur in minuten (gesnapt).
+  const [resizing, setResizing] = useState<
+    { bookingId: string; newDurMin: number; label: string } | null
+  >(null);
+
   const now = new Date();
   const todayKey = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}`;
   const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes() - winStart;
