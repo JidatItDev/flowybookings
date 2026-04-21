@@ -118,19 +118,31 @@ function CalendarPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const filtered = bookings.filter((b) => {
+  // Bookings filtered by status + day (without staff filter) — used for staff chip counts
+  const scopedBookings = bookings.filter((b) => {
     if (filter !== "all" && b.status !== filter) return false;
-    if (staffFilter === "unassigned") {
-      if (b.staff_id) return false;
-    } else if (staffFilter !== "all") {
-      if (b.staff_id !== staffFilter) return false;
-    }
     if (dayOffset !== null) {
       const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0); dayStart.setUTCDate(dayStart.getUTCDate() + dayOffset);
       const dayEnd = new Date(dayStart); dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
       const t = new Date(b.starts_at).getTime();
       if (t < dayStart.getTime() || t >= dayEnd.getTime()) return false;
     }
+    return true;
+  });
+
+  const staffCounts = useMemo(() => {
+    const map = new Map<string, number>();
+    let unassigned = 0;
+    for (const b of scopedBookings) {
+      if (b.staff_id) map.set(b.staff_id, (map.get(b.staff_id) ?? 0) + 1);
+      else unassigned += 1;
+    }
+    return { map, unassigned, total: scopedBookings.length };
+  }, [scopedBookings]);
+
+  const filtered = scopedBookings.filter((b) => {
+    if (staffFilter === "unassigned") return !b.staff_id;
+    if (staffFilter !== "all" && b.staff_id !== staffFilter) return false;
     return true;
   });
 
@@ -236,15 +248,22 @@ function CalendarPage() {
                 <button
                   onClick={() => setStaffFilter("all")}
                   className={cn(
-                    "shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                    "shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors",
                     staffFilter === "all" ? "bg-foreground text-background" : "bg-card text-muted-foreground hover:bg-muted",
                   )}
                 >
                   {t("calendar.filterAll")}
+                  <span className={cn(
+                    "rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
+                    staffFilter === "all" ? "bg-background/20 text-background" : "bg-muted-foreground/15 text-muted-foreground",
+                  )}>
+                    {staffCounts.total}
+                  </span>
                 </button>
                 {staff.filter((s) => s.is_active).map((s) => {
                   const c = staffColor(s.id);
                   const active = staffFilter === s.id;
+                  const count = staffCounts.map.get(s.id) ?? 0;
                   return (
                     <button
                       key={s.id}
@@ -256,7 +275,7 @@ function CalendarPage() {
                           : "border-border bg-card text-muted-foreground hover:bg-muted",
                       )}
                       style={active ? { boxShadow: "0 0 0 1px currentColor inset" } : undefined}
-                      title={s.full_name}
+                      title={`${s.full_name} — ${count}`}
                     >
                       <span className={cn(
                         "flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-semibold",
@@ -265,20 +284,33 @@ function CalendarPage() {
                         {staffInitials(s.full_name)}
                       </span>
                       <span className="max-w-[100px] truncate">{s.full_name}</span>
+                      <span className={cn(
+                        "rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
+                        active ? "bg-background/25 text-current" : "bg-muted-foreground/15 text-muted-foreground",
+                      )}>
+                        {count}
+                      </span>
                     </button>
                   );
                 })}
                 <button
                   onClick={() => setStaffFilter("unassigned")}
                   className={cn(
-                    "shrink-0 rounded-full border px-3 py-1 text-xs font-medium italic transition-colors",
+                    "shrink-0 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium italic transition-colors",
                     staffFilter === "unassigned"
                       ? "border-dashed border-foreground bg-muted text-foreground"
                       : "border-dashed border-border bg-card text-muted-foreground hover:bg-muted",
                   )}
                 >
                   Niet toegewezen
+                  <span className={cn(
+                    "rounded-full px-1.5 py-0.5 text-[10px] font-semibold not-italic tabular-nums",
+                    staffFilter === "unassigned" ? "bg-foreground/15 text-foreground" : "bg-muted-foreground/15 text-muted-foreground",
+                  )}>
+                    {staffCounts.unassigned}
+                  </span>
                 </button>
+
               </div>
             </div>
           )}
