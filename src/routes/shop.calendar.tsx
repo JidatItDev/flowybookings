@@ -457,6 +457,17 @@ function CalendarPage() {
                         />
                       </span>
                     )}
+                    {c.count > 0 && !showRing && (
+                      <span
+                        className={cn(
+                          "absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums leading-none ring-2 ring-background",
+                          active ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground",
+                        )}
+                        aria-label={`${c.count} ${c.count === 1 ? t("calendar.appointment") : t("calendar.appointments")}`}
+                      >
+                        {c.count}
+                      </span>
+                    )}
                     <div className="text-[10px] uppercase tracking-wider opacity-80">
                       {isToday ? t("calendar.today") : c.date.toLocaleDateString("nl-NL", { weekday: "short", timeZone: "UTC" })}
                     </div>
