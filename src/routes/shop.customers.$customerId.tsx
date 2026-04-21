@@ -16,6 +16,7 @@ import {
   Sparkle,
   CreditCard,
   Undo2,
+  Heart,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
@@ -24,11 +25,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { StatusBadge } from "@/components/StatusBadge";
 import { NoShopState } from "@/components/EmptyState";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { useActiveShopId } from "@/lib/shop-context";
-import { bookingsQuery, servicesQuery, shopKeys } from "@/lib/queries";
+import { bookingsQuery, servicesQuery, staffQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCents, formatDateTime, initials, relativeFromNow } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -93,6 +101,7 @@ function CustomerProfilePage() {
 
   const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
+  const { data: staffList = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
 
   const customerBookings = useMemo(
     () =>
@@ -156,16 +165,32 @@ function CustomerProfilePage() {
   const [tagInput, setTagInput] = useState("");
   const [requiresDeposit, setRequiresDeposit] = useState(false);
 
+  // Preferences (editor-card state)
+  const [favStaff, setFavStaff] = useState<string>("none");
+  const [favService, setFavService] = useState<string>("none");
+  const [allergies, setAllergies] = useState("");
+  const [communication, setCommunication] = useState<"email" | "sms" | "any" | "none">("any");
+
   useEffect(() => {
     if (customer) {
       setNotes(customer.notes ?? "");
       setTags(customer.tags ?? []);
       setRequiresDeposit(customer.requires_deposit);
+      const p = customer.preferences ?? {};
+      setFavStaff(p.favorite_staff_id ?? "none");
+      setFavService(p.favorite_service_id ?? "none");
+      setAllergies(p.allergies ?? "");
+      setCommunication(p.communication ?? "any");
     }
   }, [customer?.id]);
 
   const update = useMutation({
-    mutationFn: async (patch: { notes?: string | null; tags?: string[]; requires_deposit?: boolean }) => {
+    mutationFn: async (patch: {
+      notes?: string | null;
+      tags?: string[];
+      requires_deposit?: boolean;
+      preferences?: CustomerPreferences;
+    }) => {
       assertNotImpersonating();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await supabase.from("customers").update(patch as any).eq("id", customerId);
@@ -178,6 +203,20 @@ function CustomerProfilePage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const savePreferences = () => {
+    const next: CustomerPreferences = {
+      ...(customer?.preferences ?? {}),
+      favorite_staff_id: favStaff === "none" ? null : favStaff,
+      favorite_service_id: favService === "none" ? null : favService,
+      allergies: allergies.trim() || undefined,
+      communication,
+    };
+    update.mutate(
+      { preferences: next },
+      { onSuccess: () => toast.success(t("customers.preferencesSaved")) },
+    );
+  };
 
   const addTag = (raw: string) => {
     const v = raw.trim();
@@ -569,6 +608,108 @@ function CustomerProfilePage() {
               >
                 <Save className="h-4 w-4" /> {update.isPending ? t("customers.saving") : t("customers.saveNotes")}
               </Button>
+            </div>
+          </div>
+
+          {/* Preferences editor */}
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+            <div className="mb-1 flex items-center gap-2">
+              <Heart className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold">{t("customers.preferences")}</h3>
+            </div>
+            <p className="mb-4 text-xs text-muted-foreground">{t("customers.preferencesHint")}</p>
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">
+                  {t("customers.favoriteStaff")}
+                </Label>
+                <Select value={favStaff} onValueChange={setFavStaff} disabled={readOnly}>
+                  <SelectTrigger title={roTitle}>
+                    <SelectValue placeholder={t("customers.favoriteStaffNone")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t("customers.favoriteStaffNone")}</SelectItem>
+                    {staffList
+                      .filter((s) => s.is_active)
+                      .map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.full_name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">
+                  {t("customers.favoriteService")}
+                </Label>
+                <Select value={favService} onValueChange={setFavService} disabled={readOnly}>
+                  <SelectTrigger title={roTitle}>
+                    <SelectValue placeholder={t("customers.favoriteServiceNone")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t("customers.favoriteServiceNone")}</SelectItem>
+                    {services
+                      .filter((s) => s.is_active)
+                      .map((s) => (
+                        <SelectItem key={s.id} value={s.id}>
+                          {s.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="allergies" className="text-xs font-medium text-muted-foreground">
+                  {t("customers.allergies")}
+                </Label>
+                <Textarea
+                  id="allergies"
+                  value={allergies}
+                  onChange={(e) => setAllergies(e.target.value)}
+                  rows={3}
+                  placeholder={t("customers.allergiesPlaceholder")}
+                  disabled={readOnly}
+                  title={roTitle}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-muted-foreground">
+                  {t("customers.communication")}
+                </Label>
+                <Select
+                  value={communication}
+                  onValueChange={(v) => setCommunication(v as typeof communication)}
+                  disabled={readOnly}
+                >
+                  <SelectTrigger title={roTitle}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="email">{t("customers.commEmail")}</SelectItem>
+                    <SelectItem value="sms">{t("customers.commSms")}</SelectItem>
+                    <SelectItem value="any">{t("customers.commAny")}</SelectItem>
+                    <SelectItem value="none">{t("customers.commNone")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <Button
+                  size="sm"
+                  variant="hero"
+                  onClick={savePreferences}
+                  disabled={update.isPending || readOnly}
+                  title={roTitle}
+                >
+                  <Save className="h-4 w-4" />{" "}
+                  {update.isPending ? t("customers.saving") : t("customers.savePreferences")}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
