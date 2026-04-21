@@ -365,7 +365,7 @@ export function DayTimeGrid({
                     backgroundImage:
                       "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground) / 0.08) 6px 7px)",
                   }}
-                  title="Niet beschikbaar — vrije dag"
+                  title={`Niet beschikbaar — ${c.label} werkt vandaag niet`}
                 />
               ) : (
                 // Render één off-hours-blok vóór de eerste working-window en één erna,
