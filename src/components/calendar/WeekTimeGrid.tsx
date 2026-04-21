@@ -151,6 +151,8 @@ export function WeekTimeGrid({
   days = 7,
   bookings,
   staff,
+  customers,
+  services,
   colors,
   businessHours,
   onSelectBooking,
