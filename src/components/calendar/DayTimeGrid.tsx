@@ -30,6 +30,11 @@ type StaffLite = {
 type CustomerLite = { id: string; full_name: string };
 type ServiceLite = { id: string; name: string };
 
+/** Resolver-shape die useStaffColors() teruggeeft. */
+type ColorResolver = {
+  get: (staffId: string | null | undefined) => StaffColor;
+};
+
 export type DayTimeGridProps = {
   /** Lokale dag (UTC midnight) waarvoor het rooster wordt getoond. */
   day: Date;
@@ -37,7 +42,7 @@ export type DayTimeGridProps = {
   staff: StaffLite[];
   customers: CustomerLite[];
   services: ServiceLite[];
-  colors: Map<string, StaffColor>;
+  colors: ColorResolver;
   /** Filter op één staff_id, "all", of "unassigned". */
   staffFilter: string | "all" | "unassigned";
   onSelectBooking?: (b: BookingWithRelations) => void;
