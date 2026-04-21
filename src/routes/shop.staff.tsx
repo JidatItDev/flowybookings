@@ -202,7 +202,7 @@ function StaffFormDialog({ open, onClose, member, shopId, services, links }: { o
       const cleaned = cleanSchedule(schedule);
       const wh: StaffWorkingHours = { ...cleaned };
       if (form.hours.trim()) wh.hours = form.hours.trim();
-      const payload = { shop_id: shopId, full_name: form.full_name.trim(), email: form.email.trim() || null, phone: form.phone.trim() || null, is_active: form.is_active, working_hours: wh as unknown as Record<string, unknown> };
+      const payload = { shop_id: shopId, full_name: form.full_name.trim(), email: form.email.trim() || null, phone: form.phone.trim() || null, is_active: form.is_active, working_hours: wh as never };
       let staffId = member?.id;
       if (member) {
         const { error } = await supabase.from("staff").update(payload).eq("id", member.id); if (error) throw error;
