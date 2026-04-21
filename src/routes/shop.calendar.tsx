@@ -926,6 +926,20 @@ function CalendarPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Mobile floating action button — opens dezelfde nieuwe-boeking dialog. */}
+      {isMobile && shopId && (
+        <button
+          type="button"
+          onClick={() => { if (!newBookingDisabled) { setSlotPrefill(null); setCreating(true); } }}
+          disabled={newBookingDisabled}
+          title={newBookingTitle ?? t("calendar.newBooking")}
+          aria-label={t("calendar.newBooking")}
+          className="fixed bottom-[calc(env(safe-area-inset-bottom,0px)+16px)] right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 ring-4 ring-background transition-transform hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 sm:hidden"
+        >
+          <Plus className="h-6 w-6" />
+        </button>
+      )}
     </ShopLayout>
   );
 }
