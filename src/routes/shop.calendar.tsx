@@ -241,7 +241,7 @@ function CalendarPage() {
                     <th className="px-4 py-3 text-left">{t("calendar.when")}</th>
                     <th className="hidden px-4 py-3 text-left sm:table-cell">{t("calendar.customer")}</th>
                     <th className="hidden px-4 py-3 text-left md:table-cell">{t("calendar.service")}</th>
-                    <th className="hidden px-4 py-3 text-left lg:table-cell">{t("calendar.staffCol")}</th>
+                    <th className="px-4 py-3 text-left">{t("calendar.staffCol")}</th>
                     <th className="px-4 py-3 text-right">{t("calendar.amount")}</th>
                     <th className="px-4 py-3 text-left">{t("calendar.status")}</th>
                     <th className="px-4 py-3" />
