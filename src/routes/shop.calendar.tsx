@@ -126,6 +126,66 @@ function CalendarPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  /**
+   * Drag-and-drop reschedule. Werkt optimistisch via setQueryData zodat het
+   * blok meteen op zijn nieuwe plek staat. Server-trigger valideert working
+   * hours + conflicts en geeft een mapped foutmelding terug bij rollback.
+   */
+  const reschedule = useMutation({
+    mutationFn: async (params: {
+      booking: BookingWithRelations;
+      newStaffId: string | null;
+      newStartsAt: Date;
+    }) => {
+      assertNotImpersonating();
+      const { booking, newStaffId, newStartsAt } = params;
+      const durMs = +new Date(booking.ends_at) - +new Date(booking.starts_at);
+      const newEnds = new Date(newStartsAt.getTime() + durMs);
+      const { error } = await supabase
+        .from("bookings")
+        .update({
+          starts_at: newStartsAt.toISOString(),
+          ends_at: newEnds.toISOString(),
+          staff_id: newStaffId,
+        })
+        .eq("id", booking.id);
+      if (error) throw error;
+    },
+    onMutate: async (params) => {
+      if (!shopId) return;
+      const key = shopKeys.bookings(shopId);
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<BookingWithRelations[]>(key);
+      const durMs = +new Date(params.booking.ends_at) - +new Date(params.booking.starts_at);
+      const newEnds = new Date(params.newStartsAt.getTime() + durMs);
+      qc.setQueryData<BookingWithRelations[]>(key, (old) =>
+        (old ?? []).map((b) =>
+          b.id === params.booking.id
+            ? {
+                ...b,
+                starts_at: params.newStartsAt.toISOString(),
+                ends_at: newEnds.toISOString(),
+                staff_id: params.newStaffId,
+              }
+            : b,
+        ),
+      );
+      return { prev };
+    },
+    onError: (e: Error, _params, context) => {
+      if (shopId && context?.prev) {
+        qc.setQueryData(shopKeys.bookings(shopId), context.prev);
+      }
+      toast.error(bookingErrorToast(e, t, e.message));
+    },
+    onSuccess: () => {
+      toast.success(t("calendar.bookingUpdated"));
+    },
+    onSettled: () => {
+      if (shopId) qc.invalidateQueries({ queryKey: shopKeys.bookings(shopId) });
+    },
+  });
+
   const remove = useMutation({
     mutationFn: async (id: string) => {
       assertNotImpersonating();
