@@ -1087,6 +1087,8 @@ export function DayTimeGrid({
                             if (reason) onDropBlocked?.(reason);
                             return;
                           }
+                          // Mark this booking-id voor focus-restore na re-render.
+                          restoreFocusIdRef.current = b.id;
                           onReschedule?.({
                             booking: b,
                             newStaffId: targetCol.staffId,

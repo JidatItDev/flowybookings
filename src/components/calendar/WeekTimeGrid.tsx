@@ -714,6 +714,8 @@ export function WeekTimeGrid({
                             if (reason) onDropBlocked?.(reason);
                             return;
                           }
+                          // Mark this booking-id voor focus-restore na re-render.
+                          restoreFocusIdRef.current = b.id;
                           onReschedule?.({
                             booking: b,
                             newStaffId: b.staff_id ?? null,
