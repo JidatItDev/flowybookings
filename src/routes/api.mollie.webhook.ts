@@ -156,9 +156,23 @@ export const Route = createFileRoute("/api/mollie/webhook")({
                 shopId: payment.shop_id,
                 metadata: meta,
                 effectiveStatus,
+                rawMollieStatus: mollie?.status ?? null,
               });
             }
           }
+
+          return ok();
+        } catch (err) {
+          console.error("[mollie/webhook] error:", err);
+          return new Response(JSON.stringify({ error: "internal_error" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+      },
+    },
+  },
+});
 
           return ok();
         } catch (err) {
