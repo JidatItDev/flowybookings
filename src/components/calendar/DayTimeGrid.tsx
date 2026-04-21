@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { formatCents, formatTime } from "@/lib/format";
 import { staffInitials, type StaffColor } from "@/lib/staff-color";
