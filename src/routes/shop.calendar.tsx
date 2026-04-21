@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Plus, Filter, CalendarDays, UserX, Check, ChevronsUpDown, UserPlus, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Filter, CalendarDays, UserX, Check, ChevronsUpDown, UserPlus, Search, List, LayoutGrid } from "lucide-react";
+import { DayTimeGrid } from "@/components/calendar/DayTimeGrid";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -80,6 +81,8 @@ function CalendarPage() {
   const [deleting, setDeleting] = useState<BookingWithRelations | null>(null);
   const [viewing, setViewing] = useState<BookingWithRelations | null>(null);
   const [dayOffset, setDayOffset] = useState<number | null>(0); // 0 = vandaag, null = alle
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
+  const [slotPrefill, setSlotPrefill] = useState<{ staffId: string | null; startsAt: Date } | null>(null);
 
   const statusLabel: Record<string, string> = {
     all: t("calendar.filterAll"), pending: t("calendar.pending"), confirmed: t("calendar.confirmed"),
@@ -355,7 +358,42 @@ function CalendarPage() {
             </div>
           )}
 
-          {filtered.length === 0 ? (
+          {/* View toggle: lijst of tijdgrid. Grid alleen zinvol als 1 dag is gekozen. */}
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="text-xs text-muted-foreground">
+              {filtered.length} {filtered.length === 1 ? t("calendar.appointment") : t("calendar.appointments")}
+            </div>
+            <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 p-1 text-xs">
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                disabled={dayOffset === null}
+                title={dayOffset === null ? "Kies een dag om het rooster te tonen" : "Rooster"}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full px-3 py-1 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                  viewMode === "grid" && dayOffset !== null
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" /> Rooster
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-full px-3 py-1 font-medium transition-colors",
+                  viewMode === "list" || dayOffset === null
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <List className="h-3.5 w-3.5" /> Lijst
+              </button>
+            </div>
+          </div>
+
+          {filtered.length === 0 && viewMode === "list" ? (
             <EmptyState
               icon={CalendarDays}
               title={filter === "all" ? t("calendar.noBookings") : t("calendar.noMatch")}
@@ -365,6 +403,27 @@ function CalendarPage() {
                   <Plus className="h-4 w-4" /> {t("calendar.newBooking")}
                 </Button>
               )}
+            />
+          ) : viewMode === "grid" && dayOffset !== null ? (
+            <DayTimeGrid
+              day={(() => {
+                const d = new Date();
+                d.setUTCHours(0, 0, 0, 0);
+                d.setUTCDate(d.getUTCDate() + dayOffset);
+                return d;
+              })()}
+              bookings={filtered}
+              staff={staff}
+              customers={customers}
+              services={services}
+              colors={colors}
+              staffFilter={staffFilter}
+              onSelectBooking={(b) => setViewing(b)}
+              onSelectSlot={(slot) => {
+                if (newBookingDisabled) return;
+                setSlotPrefill(slot);
+                setCreating(true);
+              }}
             />
           ) : (
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
@@ -438,7 +497,13 @@ function CalendarPage() {
         </>
       )}
 
-      <BookingFormDialog open={creating || !!editing} onClose={() => { setCreating(false); setEditing(null); }} booking={editing} shopId={shopId} />
+      <BookingFormDialog
+        open={creating || !!editing}
+        onClose={() => { setCreating(false); setEditing(null); setSlotPrefill(null); }}
+        booking={editing}
+        shopId={shopId}
+        prefill={!editing ? slotPrefill : null}
+      />
 
       <BookingActionDialog
         booking={viewing}
@@ -475,7 +540,7 @@ function toLocalInput(iso: string | null): string {
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
 
-function BookingFormDialog({ open, onClose, booking, shopId }: { open: boolean; onClose: () => void; booking: BookingWithRelations | null; shopId: string | null }) {
+function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: boolean; onClose: () => void; booking: BookingWithRelations | null; shopId: string | null; prefill?: { staffId: string | null; startsAt: Date } | null }) {
   const qc = useQueryClient();
   const { t } = useT();
   const { data: customers = [] } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId && open });
@@ -498,13 +563,13 @@ function BookingFormDialog({ open, onClose, booking, shopId }: { open: boolean; 
     setForm({
       customer_id: booking?.customer_id ?? "",
       service_id: booking?.service_id ?? "",
-      staff_id: booking?.staff_id ?? "",
-      starts_at: toLocalInput(booking?.starts_at ?? null),
+      staff_id: booking?.staff_id ?? prefill?.staffId ?? "",
+      starts_at: toLocalInput(booking?.starts_at ?? prefill?.startsAt?.toISOString() ?? null),
       duration: dur,
       status: booking?.status ?? "pending",
       notes: booking?.notes ?? "",
     });
-  }, [open, booking?.id]);
+  }, [open, booking?.id, prefill?.staffId, prefill?.startsAt?.getTime()]);
 
   const save = useMutation({
     mutationFn: async () => {

@@ -39,6 +39,15 @@ export const Route = createFileRoute("/shop/customers/$customerId")({
   component: CustomerProfilePage,
 });
 
+type CustomerPreferences = {
+  favorite_staff_id?: string | null;
+  favorite_service_id?: string | null;
+  allergies?: string;
+  communication?: "email" | "sms" | "any" | "none";
+  language?: "nl" | "en" | "any";
+  notes?: string;
+};
+
 type CustomerRow = {
   id: string;
   shop_id: string;
@@ -51,6 +60,7 @@ type CustomerRow = {
   no_show_count: number;
   requires_deposit: boolean;
   tags: string[] | null;
+  preferences: CustomerPreferences | null;
   created_at: string;
   import_source: string | null;
   imported_at: string | null;
