@@ -241,6 +241,33 @@ function CalendarPage() {
     return { offset: i, date: d, count };
   });
 
+  /**
+   * "Vandaag aan het werk" — afgeleid van staff.working_hours + bookings van vandaag.
+   * Toont alleen actieve staff met een werkblok of afspraken vandaag.
+   */
+  const workingToday = useMemo(() => {
+    const today = new Date(); today.setUTCHours(0, 0, 0, 0);
+    const tomorrow = new Date(today); tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    const todaysBookings = bookings.filter((b) => {
+      const t = new Date(b.starts_at).getTime();
+      return t >= today.getTime() && t < tomorrow.getTime() && b.status !== "cancelled" && b.status !== "no_show";
+    });
+    return staff
+      .filter((s) => s.is_active)
+      .map((s) => {
+        const wh = (s.working_hours ?? undefined) as StaffWorkingHours | undefined;
+        const av = wh ? resolveStaffAvailability(today, wh) : null;
+        const count = todaysBookings.filter((b) => b.staff_id === s.id).length;
+        const firstW = av?.working[0];
+        const lastW = av?.working[(av?.working.length ?? 1) - 1];
+        const window = firstW && lastW ? `${formatMinutesOfDay(firstW.startMin)}–${formatMinutesOfDay(lastW.endMin)}` : null;
+        const closed = !!av?.dayClosed;
+        return { staff: s, count, window, closed, hasData: !!av?.hasStructuredData };
+      })
+      .filter((row) => row.window || row.closed || row.count > 0);
+  }, [staff, bookings]);
+
+
   return (
     <ShopLayout>
       <PageHeader
