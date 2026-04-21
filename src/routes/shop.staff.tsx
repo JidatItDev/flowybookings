@@ -99,10 +99,20 @@ function StaffPage() {
           {staff.map((m) => {
             const hrs = (m.working_hours as { hours?: string })?.hours ?? "Not set";
             const svcs = serviceNamesFor(m.id);
+            const c = staffColor(m.id);
             return (
               <div key={m.id} className="rounded-2xl border border-border bg-card p-6 shadow-soft">
                 <div className="flex items-start gap-4">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-brand text-base font-semibold text-primary-foreground">{initials(m.full_name)}</div>
+                  <div
+                    className={cn(
+                      "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-base font-semibold ring-2 ring-inset ring-current/10",
+                      c.bg,
+                      c.text,
+                    )}
+                    title={m.full_name}
+                  >
+                    {initials(m.full_name)}
+                  </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <h3 className="truncate text-base font-semibold">{m.full_name}</h3>
