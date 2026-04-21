@@ -34,6 +34,7 @@ const MIN_HOUR = 6;
 const MAX_HOUR = 23;
 const MIN_WINDOW_HOURS = 4;
 const SLOT_MINUTES = 60;
+const SNAP_MINUTES = 15; // Drag-and-drop snap-raster (15 min)
 const PX_PER_HOUR = 64; // 64px per uur → 1 min ≈ 1.07px
 const PX_PER_MIN = PX_PER_HOUR / 60;
 
@@ -127,6 +128,17 @@ export type DayTimeGridProps = {
   onSelectSlot?: (params: { staffId: string | null; startsAt: Date }) => void;
   /** Klik op een onbeschikbare zone (closed/break/buiten werkuren) → UI hint. */
   onUnavailableSlot?: (params: { staffId: string | null; staffName: string; reason: "closed" | "break" | "off_hours" }) => void;
+  /**
+   * Drag-and-drop reschedule. Wordt aangeroepen wanneer een booking-block naar
+   * een nieuwe (staff, time) wordt gesleept. Snapt aan SNAP_MINUTES (15min).
+   * Server-trigger valideert working hours + conflicts; client doet alleen
+   * optimistic update via deze callback.
+   */
+  onReschedule?: (params: {
+    booking: BookingWithRelations;
+    newStaffId: string | null;
+    newStartsAt: Date;
+  }) => void;
 };
 
 type Column = {
@@ -149,6 +161,7 @@ export function DayTimeGrid({
   onSelectBooking,
   onSelectSlot,
   onUnavailableSlot,
+  onReschedule,
 }: DayTimeGridProps) {
   const dayStart = useMemo(() => {
     const d = new Date(day);
@@ -318,6 +331,38 @@ export function DayTimeGrid({
               key={`col-${c.key}`}
               className="relative border-l border-border"
               style={{ height: totalHeight }}
+              onDragOver={onReschedule ? (e) => {
+                // Sta drop alleen toe als er een booking-id meegegeven is.
+                if (Array.from(e.dataTransfer.types).includes("application/x-booking-id")) {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                }
+              } : undefined}
+              onDrop={onReschedule ? (e) => {
+                const bookingId = e.dataTransfer.getData("application/x-booking-id");
+                if (!bookingId) return;
+                e.preventDefault();
+                const grabOffsetMin = Number(e.dataTransfer.getData("application/x-grab-offset-min")) || 0;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const yPx = e.clientY - rect.top;
+                // Pixel → minuten t.o.v. START_HOUR; trek pak-offset af zodat het
+                // blok op de exact-zelfde relatieve positie blijft als waar de
+                // gebruiker het oppakte.
+                const rawMin = yPx / PX_PER_MIN - grabOffsetMin;
+                const snapped = Math.round(rawMin / SNAP_MINUTES) * SNAP_MINUTES;
+                const totalMinFromMidnight = START_HOUR * 60 + snapped;
+                const clamped = Math.max(0, Math.min(24 * 60 - SNAP_MINUTES, totalMinFromMidnight));
+                const newStart = new Date(dayStart);
+                newStart.setUTCHours(0, 0, 0, 0);
+                newStart.setUTCMinutes(clamped);
+                const booking = bookings.find((b) => b.id === bookingId);
+                if (!booking) return;
+                // No-op detectie: zelfde staff en zelfde tijd → niets doen.
+                const sameStaff = (booking.staff_id ?? null) === c.staffId;
+                const sameTime = new Date(booking.starts_at).getTime() === newStart.getTime();
+                if (sameStaff && sameTime) return;
+                onReschedule({ booking, newStaffId: c.staffId, newStartsAt: newStart });
+              } : undefined}
             >
               {/* Unavailable-overlay: alles buiten working hours wordt grijs gestreept.
                   Wanneer de hele dag gesloten is voor deze medewerker, vullen we de hele kolom. */}
@@ -459,20 +504,33 @@ export function DayTimeGrid({
                   const svc = services.find((x) => x.id === b.service_id);
                   const isCancelled = b.status === "cancelled" || b.status === "no_show";
                   const tone = c.color;
+                  const draggable = !!onReschedule && !isCancelled;
                   return (
                     <button
                       key={b.id}
                       type="button"
+                      draggable={draggable}
+                      onDragStart={draggable ? (e) => {
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("application/x-booking-id", b.id);
+                        // Bewaar waar binnen het blok de gebruiker pakte (in min),
+                        // zodat de drop dat behoudt en het blok visueel "stil staat".
+                        const blockRect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                        const grabPx = e.clientY - blockRect.top;
+                        const grabMin = Math.max(0, grabPx / PX_PER_MIN);
+                        e.dataTransfer.setData("application/x-grab-offset-min", String(grabMin));
+                      } : undefined}
                       onClick={() => onSelectBooking?.(b)}
                       className={cn(
                         "absolute left-1 right-1 z-[5] overflow-hidden rounded-lg border px-2 py-1 text-left text-[11px] shadow-soft transition-transform hover:z-20 hover:scale-[1.01]",
+                        draggable && "cursor-grab active:cursor-grabbing active:opacity-70",
                         tone
                           ? `${tone.bg} ${tone.text} border-transparent`
                           : "border-border bg-muted text-foreground",
                         isCancelled && "opacity-60 line-through decoration-1",
                       )}
                       style={{ top, height }}
-                      title={`${cust?.full_name ?? "—"} · ${svc?.name ?? "—"} · ${formatTime(b.starts_at)}–${formatTime(b.ends_at)}`}
+                      title={`${cust?.full_name ?? "—"} · ${svc?.name ?? "—"} · ${formatTime(b.starts_at)}–${formatTime(b.ends_at)}${draggable ? " · Sleep om te verplaatsen" : ""}`}
                     >
                       <div className="flex items-center justify-between gap-1">
                         <span className="truncate font-semibold">
