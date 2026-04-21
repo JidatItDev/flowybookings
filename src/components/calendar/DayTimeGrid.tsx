@@ -149,6 +149,8 @@ export type DayTimeGridProps = {
     closedDay: string;
     offHours: (range: string) => string;
     duringBreak: (range: string) => string;
+    /** Resize-flow: nieuwe ends_at overlapt met andere booking van dezelfde medewerker. */
+    conflictWith?: (range: string) => string;
   };
 };
 
@@ -695,8 +697,37 @@ export function DayTimeGrid({
                         const computeValidation = (
                           newDurMin: number,
                         ): { invalid: boolean; reason?: string } => {
-                          if (!wh || !dropInvalidLabels) return { invalid: false };
+                          if (!dropInvalidLabels) return { invalid: false };
                           const slotEnd = new Date(start.getTime() + newDurMin * 60_000);
+                          // Conflict-check: overlap met andere booking van dezelfde medewerker.
+                          // Server blijft autoritair — dit is alleen UX-feedback. We negeren
+                          // cancelled/no_show en de booking zelf. Half-open interval [start, end).
+                          if (dropInvalidLabels.conflictWith && c.staffId != null) {
+                            const newStartTs = start.getTime();
+                            const newEndTs = slotEnd.getTime();
+                            for (const other of visibleBookings) {
+                              if (other.id === b.id) continue;
+                              if ((other.staff_id ?? null) !== c.staffId) continue;
+                              if (other.status === "cancelled" || other.status === "no_show") continue;
+                              const oStart = new Date(other.starts_at).getTime();
+                              const oEnd = new Date(other.ends_at).getTime();
+                              if (newStartTs < oEnd && newEndTs > oStart) {
+                                const oStartMin =
+                                  new Date(other.starts_at).getUTCHours() * 60 +
+                                  new Date(other.starts_at).getUTCMinutes();
+                                const oEndMin =
+                                  new Date(other.ends_at).getUTCHours() * 60 +
+                                  new Date(other.ends_at).getUTCMinutes();
+                                return {
+                                  invalid: true,
+                                  reason: dropInvalidLabels.conflictWith(
+                                    `${formatMinutes(oStartMin)}–${formatMinutes(oEndMin)}`,
+                                  ),
+                                };
+                              }
+                            }
+                          }
+                          if (!wh) return { invalid: false };
                           const v = validateBookingSlot(start, slotEnd, wh);
                           if (v.kind === "ok" || v.kind === "no_data") return { invalid: false };
                           if (v.kind === "closed_day") {
