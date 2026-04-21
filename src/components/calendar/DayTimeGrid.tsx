@@ -711,7 +711,7 @@ export function DayTimeGrid({
                               if (!wh || !dropInvalidLabels) return { invalid: false };
                               const slotEnd = new Date(start.getTime() + newDurMin * 60_000);
                               const v = validateBookingSlot(start, slotEnd, wh);
-                              if (v.kind === "available") return { invalid: false };
+                              if (v.kind === "ok" || v.kind === "no_data") return { invalid: false };
                               if (v.kind === "closed_day") {
                                 return { invalid: true, reason: dropInvalidLabels.closedDay };
                               }
