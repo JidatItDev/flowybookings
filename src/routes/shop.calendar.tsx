@@ -81,6 +81,8 @@ function CalendarPage() {
   const [deleting, setDeleting] = useState<BookingWithRelations | null>(null);
   const [viewing, setViewing] = useState<BookingWithRelations | null>(null);
   const [dayOffset, setDayOffset] = useState<number | null>(0); // 0 = vandaag, null = alle
+  const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
+  const [slotPrefill, setSlotPrefill] = useState<{ staffId: string | null; startsAt: Date } | null>(null);
 
   const statusLabel: Record<string, string> = {
     all: t("calendar.filterAll"), pending: t("calendar.pending"), confirmed: t("calendar.confirmed"),
