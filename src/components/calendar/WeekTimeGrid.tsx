@@ -43,6 +43,12 @@ type ColorResolver = {
   get: (staffId: string | null | undefined) => StaffColor;
 };
 
+export type WeekRescheduleParams = {
+  booking: BookingWithRelations;
+  newStaffId: string | null;
+  newStartsAt: Date;
+};
+
 export type WeekTimeGridProps = {
   /** Startdag van de week (UTC midnight). Doorgaans maandag. */
   weekStart: Date;
@@ -55,6 +61,8 @@ export type WeekTimeGridProps = {
   onSelectBooking?: (b: BookingWithRelations) => void;
   /** Klik op een dag-header → spring naar die dag in de dag-weergave. */
   onSelectDay?: (day: Date) => void;
+  /** Drag & drop reschedule. Behoudt staff_id, wijzigt alleen datum/tijd. */
+  onReschedule?: (params: WeekRescheduleParams) => void;
 };
 
 function parseHour(value: string | undefined, mode: "floor" | "ceil"): number | null {
