@@ -19,6 +19,7 @@ import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { staffQuery, servicesQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { initials } from "@/lib/format";
+import { staffColor } from "@/lib/staff-color";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { useFeatureAccess } from "@/lib/use-feature-access";
