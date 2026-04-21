@@ -77,6 +77,8 @@ export type WeekTimeGridProps = {
     closedDay: string;
     offHours: (range: string) => string;
     duringBreak: (range: string) => string;
+    /** Resize-flow: nieuwe ends_at overlapt met andere booking van dezelfde medewerker. */
+    conflictWith?: (range: string) => string;
   };
 };
 
@@ -204,7 +206,7 @@ export function WeekTimeGrid({
 
   // Resize-state: actieve booking + live nieuwe duur in minuten (gesnapt).
   const [resizing, setResizing] = useState<
-    { bookingId: string; newDurMin: number; label: string } | null
+    { bookingId: string; newDurMin: number; label: string; invalid?: boolean; reason?: string } | null
   >(null);
 
   // Touch drag-and-drop: long-press → move → drop voor iPad/tablet in salons.
@@ -704,22 +706,85 @@ export function WeekTimeGrid({
                         const fullDurMin = (endTs - startTs) / 60_000;
                         const startDurInit = fullDurMin;
                         const maxDur = Math.max(SNAP_MINUTES, winEnd - startMin);
+                        const wh = stf?.working_hours as StaffWorkingHours | undefined;
+                        // Pre-validatie: werkuren/pauze + conflict-overlap met andere
+                        // bookings van dezelfde medewerker. Server blijft autoritair.
+                        const computeValidation = (
+                          newDurMin: number,
+                        ): { invalid: boolean; reason?: string } => {
+                          if (!dropInvalidLabels) return { invalid: false };
+                          const newEnd = new Date(start.getTime() + newDurMin * 60_000);
+                          // Conflict-check: overlap met andere booking van dezelfde
+                          // medewerker (negeer cancelled/no_show + booking zelf).
+                          if (dropInvalidLabels.conflictWith && b.staff_id != null) {
+                            const newStartTs = start.getTime();
+                            const newEndTs = newEnd.getTime();
+                            for (const other of bookings) {
+                              if (other.id === b.id) continue;
+                              if ((other.staff_id ?? null) !== (b.staff_id ?? null)) continue;
+                              if (other.status === "cancelled" || other.status === "no_show") continue;
+                              const oStart = new Date(other.starts_at).getTime();
+                              const oEnd = new Date(other.ends_at).getTime();
+                              if (newStartTs < oEnd && newEndTs > oStart) {
+                                const oStartDate = new Date(other.starts_at);
+                                const oEndDate = new Date(other.ends_at);
+                                const oStartMin =
+                                  oStartDate.getUTCHours() * 60 + oStartDate.getUTCMinutes();
+                                const oEndMin =
+                                  oEndDate.getUTCHours() * 60 + oEndDate.getUTCMinutes();
+                                return {
+                                  invalid: true,
+                                  reason: dropInvalidLabels.conflictWith(
+                                    `${formatMinutesOfDay(oStartMin)}–${formatMinutesOfDay(oEndMin)}`,
+                                  ),
+                                };
+                              }
+                            }
+                          }
+                          if (!wh) return { invalid: false };
+                          const v = validateBookingSlot(start, newEnd, wh);
+                          if (v.kind === "ok" || v.kind === "no_data") return { invalid: false };
+                          if (v.kind === "closed_day") {
+                            return { invalid: true, reason: dropInvalidLabels.closedDay };
+                          }
+                          if (v.kind === "off_hours") {
+                            const w = v.window;
+                            return {
+                              invalid: true,
+                              reason: w
+                                ? dropInvalidLabels.offHours(`${formatMinutesOfDay(w.startMin)}–${formatMinutesOfDay(w.endMin)}`)
+                                : dropInvalidLabels.offHours("—"),
+                            };
+                          }
+                          if (v.kind === "break") {
+                            const br = v.window;
+                            return {
+                              invalid: true,
+                              reason: dropInvalidLabels.duringBreak(`${formatMinutesOfDay(br.startMin)}–${formatMinutesOfDay(br.endMin)}`),
+                            };
+                          }
+                          return { invalid: false };
+                        };
                         const updateFromY = (clientY: number, startY: number) => {
                           const dy = clientY - startY;
                           const rawDur = startDurInit + dy / PX_PER_MIN;
                           const snapped = Math.round(rawDur / SNAP_MINUTES) * SNAP_MINUTES;
                           const clamped = Math.max(SNAP_MINUTES, Math.min(maxDur, snapped));
                           const endTotalMin = startMin + clamped;
+                          const v = computeValidation(clamped);
                           setResizing({
                             bookingId: b.id,
                             newDurMin: clamped,
                             label: formatMinutesOfDay(endTotalMin),
+                            invalid: v.invalid,
+                            reason: v.reason,
                           });
                         };
                         const commit = () => {
                           setResizing((cur) => {
                             if (!cur || cur.bookingId !== b.id) return null;
                             if (
+                              !cur.invalid &&
                               Math.round(cur.newDurMin) !== Math.round(fullDurMin) &&
                               onReschedule
                             ) {
@@ -735,10 +800,13 @@ export function WeekTimeGrid({
                           });
                         };
                         const seedInitial = () => {
+                          const initial = computeValidation(startDurInit);
                           setResizing({
                             bookingId: b.id,
                             newDurMin: startDurInit,
                             label: formatMinutesOfDay(startMin + startDurInit),
+                            invalid: initial.invalid,
+                            reason: initial.reason,
                           });
                         };
                         return (
@@ -797,10 +865,20 @@ export function WeekTimeGrid({
                           </div>
                         );
                       })()}
-                      {/* Live tijd-badge tijdens resize. */}
+                      {/* Live tijd-badge tijdens resize. Rood (destructive) bij invalid
+                          (werkuren/pauze/conflict). */}
                       {isResizingThis && (
-                        <span className="pointer-events-none absolute -bottom-2.5 right-1 z-[16] rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-primary-foreground shadow-soft">
+                        <span
+                          className={cn(
+                            "pointer-events-none absolute -bottom-2.5 right-1 z-[16] rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shadow-soft",
+                            resizing!.invalid
+                              ? "bg-destructive text-destructive-foreground"
+                              : "bg-primary text-primary-foreground",
+                          )}
+                          title={resizing!.reason}
+                        >
                           {resizing!.label}
+                          {resizing!.invalid && resizing!.reason ? ` · ${resizing!.reason}` : ""}
                         </span>
                       )}
                     </div>
