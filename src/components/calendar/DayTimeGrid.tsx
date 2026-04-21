@@ -399,7 +399,7 @@ export function DayTimeGrid({
                         backgroundImage:
                           "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground) / 0.08) 6px 7px)",
                       }}
-                      title="Buiten werkuren"
+                      title={`Buiten werkuren ${formatMinutes(g.startMin)}–${formatMinutes(g.endMin)}`}
                     />
                   ));
                 })()
@@ -415,7 +415,7 @@ export function DayTimeGrid({
                     backgroundImage:
                       "repeating-linear-gradient(135deg, transparent 0 5px, hsl(var(--warning) / 0.18) 5px 6px)",
                   }}
-                  title="Pauze"
+                  title={`Pauze ${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`}
                 />
               ))}
               {/* Uur-grid-lijnen + klikbare slots */}
