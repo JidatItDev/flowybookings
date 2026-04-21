@@ -28,7 +28,7 @@ import { FeatureLock } from "@/components/FeatureLock";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { useActiveShopId } from "@/lib/shop-context";
 import {
-  bookingsQuery, customersQuery, servicesQuery, shopKeys, staffQuery,
+  bookingsQuery, customersQuery, servicesQuery, shopFullQuery, shopKeys, staffQuery,
   type BookingWithRelations,
 } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
