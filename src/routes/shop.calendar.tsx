@@ -49,6 +49,8 @@ import {
   validateBookingSlot,
   type StaffWorkingHours,
 } from "@/lib/staff-availability";
+import { shopDayOccupancy, staffDayOccupancy } from "@/lib/occupancy";
+import { OccupancyRing } from "@/components/calendar/OccupancyRing";
 
 export const Route = createFileRoute("/shop/calendar")({
   head: () => ({ meta: [{ title: "Calendar — FlowyBookings" }] }),
@@ -238,7 +240,8 @@ function CalendarPage() {
       const next = new Date(d); next.setUTCDate(next.getUTCDate() + 1);
       return t >= d.getTime() && t < next.getTime();
     }).length;
-    return { offset: i, date: d, count };
+    const occ = shopDayOccupancy(d, staff, bookings);
+    return { offset: i, date: d, count, occ };
   });
 
   /**
@@ -262,7 +265,8 @@ function CalendarPage() {
         const lastW = av?.working[(av?.working.length ?? 1) - 1];
         const window = firstW && lastW ? `${formatMinutesOfDay(firstW.startMin)}–${formatMinutesOfDay(lastW.endMin)}` : null;
         const closed = !!av?.dayClosed;
-        return { staff: s, count, window, closed, hasData: !!av?.hasStructuredData };
+        const occ = staffDayOccupancy(today, s, bookings);
+        return { staff: s, count, window, closed, hasData: !!av?.hasStructuredData, occ };
       })
       .filter((row) => row.window || row.closed || row.count > 0);
   }, [staff, bookings]);
