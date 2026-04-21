@@ -522,6 +522,18 @@ export function DayTimeGrid({
                 </div>
               )}
 
+              {/* Drop-indicator: gesnapte horizontale lijn met tijd-label tijdens drag. */}
+              {dragPreview && dragPreview.colKey === c.key && (
+                <div
+                  className="pointer-events-none absolute left-0 right-0 z-[15] border-t-2 border-dashed border-primary"
+                  style={{ top: dragPreview.topPx }}
+                >
+                  <span className="absolute -top-2.5 left-1 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-primary-foreground shadow-soft">
+                    {dragPreview.label}
+                  </span>
+                </div>
+              )}
+
               {/* Bookings in deze kolom */}
               {visibleBookings
                 .filter((b) => (b.staff_id ?? null) === c.staffId)
