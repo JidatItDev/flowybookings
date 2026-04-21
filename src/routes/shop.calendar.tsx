@@ -733,6 +733,7 @@ function CalendarPage() {
                 setCreating(true);
               }}
               onReschedule={readOnly ? undefined : (params) => reschedule.mutate(params)}
+              resizeHandleLabel={t("calendar.resizeHandle")}
               onUnavailableSlot={({ staffName, reason }) => {
                 const label =
                   reason === "closed"
