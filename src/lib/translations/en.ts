@@ -422,6 +422,7 @@ export const en: Record<string, string> = {
   "calendar.dropInvalidOffHours": "Outside working hours ({range})",
   "calendar.dropInvalidBreak": "Break {range}",
   "calendar.dropInvalidConflict": "Conflict with {range}",
+  "calendar.dropBlocked": "Move blocked: {reason}",
   "calendar.bookingDeleted": "Booking deleted",
   "calendar.bookingCreated": "Booking created",
   "calendar.conflictWith": "Conflict: {staff} already has a booking with {customer} ({service}) from {range}.",
