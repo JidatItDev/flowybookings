@@ -102,7 +102,7 @@ function CalendarPage() {
   const colors = useStaffColors(shopId);
 
   // Realtime: live-patch the bookings cache on INSERT/UPDATE/DELETE for this shop.
-  useBookingsRealtime(shopId);
+  const realtimeStatus = useBookingsRealtime(shopId);
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: BookingWithRelations["status"] }) => {
@@ -176,14 +176,17 @@ function CalendarPage() {
         title={t("calendar.title")}
         description={t("calendar.description")}
         actions={
-          <Button
-            variant="hero"
-            onClick={() => setCreating(true)}
-            disabled={newBookingDisabled}
-            title={newBookingTitle}
-          >
-            <Plus className="h-4 w-4" /> {t("calendar.newBooking")}
-          </Button>
+          <>
+            <LiveIndicator status={realtimeStatus} />
+            <Button
+              variant="hero"
+              onClick={() => setCreating(true)}
+              disabled={newBookingDisabled}
+              title={newBookingTitle}
+            >
+              <Plus className="h-4 w-4" /> {t("calendar.newBooking")}
+            </Button>
+          </>
         }
       />
 
