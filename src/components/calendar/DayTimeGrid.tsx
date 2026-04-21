@@ -15,11 +15,51 @@ import type { BookingWithRelations } from "@/lib/queries";
  * Pure presentatie — alle data komt van buitenaf, geen mutaties.
  */
 
-const START_HOUR = 8; // 08:00
-const END_HOUR = 21; // 21:00 (laatste rij toont 20:00–21:00)
+const DEFAULT_START_HOUR = 8; // fallback wanneer er geen business_hours zijn
+const DEFAULT_END_HOUR = 21;
+const MIN_HOUR = 6;
+const MAX_HOUR = 23;
+const MIN_WINDOW_HOURS = 4;
 const SLOT_MINUTES = 60;
 const PX_PER_HOUR = 64; // 64px per uur → 1 min ≈ 1.07px
 const PX_PER_MIN = PX_PER_HOUR / 60;
+
+const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+type DayKey = (typeof DAY_KEYS)[number];
+
+export type DayHours = { open?: string; close?: string; closed?: boolean };
+export type BusinessHours = Partial<Record<DayKey, DayHours>>;
+
+/** "HH:MM" → uur (afgerond omlaag voor open, omhoog voor close). Returns null bij ongeldig. */
+function parseHour(value: string | undefined, mode: "floor" | "ceil"): number | null {
+  if (!value) return null;
+  const [hStr, mStr] = value.split(":");
+  const h = Number(hStr);
+  const m = Number(mStr ?? "0");
+  if (!Number.isFinite(h) || h < 0 || h > 23) return null;
+  if (mode === "floor") return h;
+  return m > 0 ? Math.min(24, h + 1) : h;
+}
+
+/** Bereken weergave-venster voor een dag op basis van business_hours. */
+function resolveDayWindow(
+  day: Date,
+  businessHours: BusinessHours | undefined,
+): { startHour: number; endHour: number; isClosed: boolean } {
+  const fallback = { startHour: DEFAULT_START_HOUR, endHour: DEFAULT_END_HOUR, isClosed: false };
+  if (!businessHours) return fallback;
+  const key = DAY_KEYS[day.getUTCDay()];
+  const dh = businessHours[key];
+  if (!dh) return fallback;
+  if (dh.closed) return { ...fallback, isClosed: true };
+  const open = parseHour(dh.open, "floor");
+  const close = parseHour(dh.close, "ceil");
+  if (open == null || close == null || close <= open) return fallback;
+  let start = Math.max(MIN_HOUR, Math.min(MAX_HOUR - MIN_WINDOW_HOURS, open));
+  let end = Math.min(MAX_HOUR, Math.max(start + MIN_WINDOW_HOURS, close));
+  if (end - start < MIN_WINDOW_HOURS) end = Math.min(MAX_HOUR, start + MIN_WINDOW_HOURS);
+  return { startHour: start, endHour: end, isClosed: false };
+}
 
 type StaffLite = {
   id: string;
