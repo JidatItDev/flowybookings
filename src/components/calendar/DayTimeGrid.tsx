@@ -356,9 +356,60 @@ export function DayTimeGrid({
     : null;
 
   if (columns.length === 0) {
+    const hasActiveStaff = staff.some((s) => s.is_active);
+    const labels = emptyLabels ?? {
+      title: "Geen afspraken zichtbaar",
+      noStaffSelected: "Selecteer een medewerker om afspraken te bekijken.",
+      noStaffActive: "Voeg een actieve medewerker toe om je rooster te starten.",
+      cta: "Nieuwe boeking",
+    };
+    const subtitle = hasActiveStaff ? labels.noStaffSelected : labels.noStaffActive;
     return (
-      <div className="rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-        Geen actieve medewerker geselecteerd voor deze dag.
+      <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-card/60 p-10 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-soft text-primary">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-7 w-7"
+            aria-hidden
+          >
+            <rect x="3" y="4" width="18" height="18" rx="3" />
+            <path d="M16 2v4M8 2v4M3 10h18" />
+          </svg>
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-base font-semibold">{labels.title}</h3>
+          <p className="max-w-sm text-sm text-muted-foreground">{subtitle}</p>
+        </div>
+        {onCreateBooking && (
+          <button
+            type="button"
+            onClick={onCreateBooking}
+            disabled={createBookingDisabled}
+            title={createBookingDisabled ? createBookingTitle : undefined}
+            className="mt-1 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4"
+              aria-hidden
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            {labels.cta}
+          </button>
+        )}
       </div>
     );
   }
