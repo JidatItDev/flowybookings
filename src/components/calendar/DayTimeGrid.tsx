@@ -153,6 +153,12 @@ export type DayTimeGridProps = {
     /** Resize-flow: nieuwe ends_at overlapt met andere booking van dezelfde medewerker. */
     conflictWith?: (range: string) => string;
   };
+  /**
+   * Aangeroepen wanneer een drop/resize fysiek geblokkeerd is door pre-validatie
+   * (werkuren/pauze/conflict). De parent kan hierop bv. een toast tonen — de
+   * `reason` is al gelokaliseerd via `dropInvalidLabels`.
+   */
+  onDropBlocked?: (reason: string) => void;
 };
 
 type Column = {
@@ -178,6 +184,7 @@ export function DayTimeGrid({
   onReschedule,
   resizeHandleLabel,
   dropInvalidLabels,
+  onDropBlocked,
 }: DayTimeGridProps) {
   const dayStart = useMemo(() => {
     const d = new Date(day);
