@@ -182,10 +182,13 @@ type LinkRow = { staff_id: string; service_id: string };
 function StaffFormDialog({ open, onClose, member, shopId, services, links }: { open: boolean; onClose: () => void; member: StaffRow | null; shopId: string | null; services: ServiceRow[]; links: LinkRow[] }) {
   const qc = useQueryClient(); const { t } = useT();
   const [form, setForm] = useState({ full_name: "", email: "", phone: "", hours: "", is_active: true });
+  const [schedule, setSchedule] = useState<Partial<Record<DayKey, StaffDayHours>>>({});
   const [selectedServiceIds, setSelectedServiceIds] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (!open) return;
-    setForm({ full_name: member?.full_name ?? "", email: member?.email ?? "", phone: member?.phone ?? "", hours: (member?.working_hours as { hours?: string })?.hours ?? "", is_active: member?.is_active ?? true });
+    const wh = (member?.working_hours ?? {}) as StaffWorkingHours;
+    setForm({ full_name: member?.full_name ?? "", email: member?.email ?? "", phone: member?.phone ?? "", hours: wh.hours ?? "", is_active: member?.is_active ?? true });
+    setSchedule(extractScheduleFromWorkingHours(wh));
     setSelectedServiceIds(new Set(member ? links.filter((l) => l.staff_id === member.id).map((l) => l.service_id) : []));
   }, [open, member?.id, links]);
 
@@ -195,7 +198,11 @@ function StaffFormDialog({ open, onClose, member, shopId, services, links }: { o
     mutationFn: async () => {
       assertNotImpersonating();
       if (!shopId) throw new Error(t("errors.noActiveShop"));
-      const payload = { shop_id: shopId, full_name: form.full_name.trim(), email: form.email.trim() || null, phone: form.phone.trim() || null, is_active: form.is_active, working_hours: form.hours.trim() ? { hours: form.hours.trim() } : {} };
+      // Combineer gestructureerd schema (per-dag + breaks) met optionele vrije-tekst fallback.
+      const cleaned = cleanSchedule(schedule);
+      const wh: StaffWorkingHours = { ...cleaned };
+      if (form.hours.trim()) wh.hours = form.hours.trim();
+      const payload = { shop_id: shopId, full_name: form.full_name.trim(), email: form.email.trim() || null, phone: form.phone.trim() || null, is_active: form.is_active, working_hours: wh as unknown as Record<string, unknown> };
       let staffId = member?.id;
       if (member) {
         const { error } = await supabase.from("staff").update(payload).eq("id", member.id); if (error) throw error;
