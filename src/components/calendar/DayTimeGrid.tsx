@@ -30,13 +30,30 @@ type DayKey = (typeof DAY_KEYS)[number];
 export type DayHours = { open?: string; close?: string; closed?: boolean };
 export type BusinessHours = Partial<Record<DayKey, DayHours>>;
 
-/** "HH:MM" → uur (afgerond omlaag voor open, omhoog voor close). Returns null bij ongeldig. */
-function parseHour(value: string | undefined, mode: "floor" | "ceil"): number | null {
+/** Per-medewerker werkuren-shape (zelfde dag-keys als BusinessHours, plus optionele breaks). */
+export type StaffDayHours = DayHours & { breaks?: Array<{ start?: string; end?: string }> };
+export type StaffWorkingHours = Partial<Record<DayKey, StaffDayHours>> & {
+  /** Legacy vrije-tekst veld — genegeerd door de visualisatie, blijft bestaan voor backward-compat. */
+  hours?: string;
+};
+
+/** "HH:MM" → minuten sinds middernacht. Returns null bij ongeldig. */
+function parseMinutes(value: string | undefined): number | null {
   if (!value) return null;
   const [hStr, mStr] = value.split(":");
   const h = Number(hStr);
   const m = Number(mStr ?? "0");
   if (!Number.isFinite(h) || h < 0 || h > 23) return null;
+  if (!Number.isFinite(m) || m < 0 || m > 59) return null;
+  return h * 60 + m;
+}
+
+/** "HH:MM" → uur (afgerond omlaag voor open, omhoog voor close). Returns null bij ongeldig. */
+function parseHour(value: string | undefined, mode: "floor" | "ceil"): number | null {
+  const mins = parseMinutes(value);
+  if (mins == null) return null;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
   if (mode === "floor") return h;
   return m > 0 ? Math.min(24, h + 1) : h;
 }
@@ -61,10 +78,63 @@ function resolveDayWindow(
   return { startHour: start, endHour: end, isClosed: false };
 }
 
+/**
+ * Bepaal beschikbaarheid voor één staff-kolom op een specifieke dag.
+ * - `working`: minuten-intervals waarbinnen de medewerker werkt (binnen het grid-venster).
+ * - `breaks`: minuten-intervals voor pauzes binnen working hours.
+ * - `dayClosed`: true als de medewerker deze dag niet werkt of geen gestructureerde data heeft.
+ *
+ * Alle waarden zijn minuten t.o.v. middernacht UTC, geclamped op [START_HOUR*60, END_HOUR*60].
+ */
+type AvailabilityWindow = { startMin: number; endMin: number };
+type StaffAvailability = {
+  working: AvailabilityWindow[];
+  breaks: AvailabilityWindow[];
+  dayClosed: boolean;
+  hasStructuredData: boolean;
+};
+
+function resolveStaffAvailability(
+  day: Date,
+  wh: StaffWorkingHours | undefined,
+  windowStartHour: number,
+  windowEndHour: number,
+): StaffAvailability {
+  const winStart = windowStartHour * 60;
+  const winEnd = windowEndHour * 60;
+  const empty: StaffAvailability = { working: [], breaks: [], dayClosed: false, hasStructuredData: false };
+  if (!wh) return empty;
+  const dayKey = DAY_KEYS[day.getUTCDay()];
+  const dh = wh[dayKey];
+  if (!dh) return empty; // geen per-dag data → geen overlay (legacy/vrije tekst)
+  if (dh.closed) {
+    return { working: [], breaks: [], dayClosed: true, hasStructuredData: true };
+  }
+  const open = parseMinutes(dh.open);
+  const close = parseMinutes(dh.close);
+  if (open == null || close == null || close <= open) {
+    return empty; // ongeldige data → geen overlay i.p.v. fout tonen
+  }
+  const ws = Math.max(winStart, open);
+  const we = Math.min(winEnd, close);
+  const working: AvailabilityWindow[] = we > ws ? [{ startMin: ws, endMin: we }] : [];
+  const breaks: AvailabilityWindow[] = [];
+  for (const br of dh.breaks ?? []) {
+    const bs = parseMinutes(br.start);
+    const be = parseMinutes(br.end);
+    if (bs == null || be == null || be <= bs) continue;
+    const cs = Math.max(ws, bs);
+    const ce = Math.min(we, be);
+    if (ce > cs) breaks.push({ startMin: cs, endMin: ce });
+  }
+  return { working, breaks, dayClosed: false, hasStructuredData: true };
+}
+
 type StaffLite = {
   id: string;
   full_name: string;
   is_active: boolean;
+  working_hours?: unknown;
 };
 
 type CustomerLite = { id: string; full_name: string };
