@@ -366,6 +366,17 @@ export function WeekTimeGrid({
                     <span className="h-px flex-1 bg-primary" />
                   </div>
                 )}
+                {/* Drop-indicator: gesnapte horizontale lijn met tijd-label tijdens drag. */}
+                {dragPreview && dragPreview.dayKey === dayKey && (
+                  <div
+                    className="pointer-events-none absolute left-0 right-0 z-[8] border-t-2 border-dashed border-primary"
+                    style={{ top: dragPreview.topPx }}
+                  >
+                    <span className="absolute -top-2.5 left-1 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-primary-foreground shadow-soft">
+                      {dragPreview.label}
+                    </span>
+                  </div>
+                )}
                 {/* Bookings */}
                 {dayBookings.map((b) => {
                   const start = new Date(b.starts_at);
@@ -398,6 +409,7 @@ export function WeekTimeGrid({
                         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                         const grabOffsetPx = e.clientY - rect.top;
                         const grabOffsetMin = grabOffsetPx / PX_PER_MIN;
+                        grabOffsetRef.current = grabOffsetMin;
                         e.dataTransfer.effectAllowed = "move";
                         e.dataTransfer.setData(
                           DRAG_MIME,
