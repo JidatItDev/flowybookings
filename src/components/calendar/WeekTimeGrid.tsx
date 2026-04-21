@@ -207,6 +207,11 @@ export function WeekTimeGrid({
     { bookingId: string; newDurMin: number; label: string } | null
   >(null);
 
+  // Touch drag-and-drop: long-press → move → drop voor iPad/tablet in salons.
+  // Native HTML5 drag werkt niet op touch — we doen het zelf met dezelfde
+  // snap- en pre-validatie-logica als de mouse drag-flow.
+  const [touchDrag, setTouchDrag] = useState<{ bookingId: string } | null>(null);
+
   const now = new Date();
   const todayKey = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}`;
   const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes() - winStart;
