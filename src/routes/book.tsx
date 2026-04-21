@@ -561,7 +561,7 @@ function BookingFlow() {
             <div className="mt-3 space-y-2 text-sm">
               <SummaryRow label={t("book.shop")} value={selectedShop?.name ?? "—"} />
               <SummaryRow label={t("book.service")} value={selectedService?.name ?? "—"} />
-              <SummaryRow label={t("book.with")} value={staffId === "any" ? t("book.anyAvailable") : selectedStaff?.full_name ?? "—"} />
+              <SummaryRow label={t("book.with")} value={staffId === "any" ? `${t("book.anyAvailable")} · wordt toegewezen` : selectedStaff?.full_name ?? "—"} />
               <SummaryRow label={t("book.date")} value={date ? format(date, "EEE d MMM", { locale: nlLocale }) : "—"} />
               <SummaryRow label={t("book.time")} value={time ?? "—"} />
             </div>
@@ -775,7 +775,7 @@ function BookingFlow() {
                 <dl className="space-y-3 text-sm">
                   <Row label={t("book.shop")} value={selectedShop?.name ?? "—"} />
                   <Row label={t("book.service")} value={selectedService?.name ?? "—"} />
-                  <Row label={t("book.with")} value={staffId === "any" ? t("book.anyAvailable") : selectedStaff?.full_name ?? "—"} />
+                  <Row label={t("book.with")} value={staffId === "any" ? `${t("book.anyAvailable")} · wordt automatisch toegewezen` : selectedStaff?.full_name ?? "—"} />
                   <Row label={t("book.when")} value={date ? `${format(date, "EEEE d MMMM", { locale: nlLocale })} · ${time ?? "—"}` : "—"} />
                   <Row label={t("book.customerLabel")} value={`${name} · ${phone}`} />
                   {selectedService && (

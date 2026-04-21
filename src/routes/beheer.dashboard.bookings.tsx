@@ -80,7 +80,7 @@ function AdminBookings() {
               {list.length === 0 && <tr><td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">{t("adminBookings.noBookings")}</td></tr>}
               {list.map((b) => (
                 <tr key={b.id} className="hover:bg-muted/30">
-                  <td className="px-6 py-4"><p className="font-medium">{b.customer_name ?? t("adminBookings.walkIn")}</p><p className="text-xs text-muted-foreground">{b.service_name ?? "—"}{b.staff_name ? ` · ${b.staff_name}` : ""}</p></td>
+                  <td className="px-6 py-4"><p className="font-medium">{b.customer_name ?? t("adminBookings.walkIn")}</p><p className="text-xs text-muted-foreground">{b.service_name ?? "—"} · {b.staff_name ?? "Geen medewerker toegewezen"}</p></td>
                   <td className="hidden px-6 py-4 text-muted-foreground md:table-cell">{b.shop_name ?? "—"}</td>
                   <td className="hidden px-6 py-4 text-muted-foreground lg:table-cell">{formatDateTime(b.starts_at)}</td>
                   <td className="px-6 py-4"><StatusBadge status={b.status} /></td>
