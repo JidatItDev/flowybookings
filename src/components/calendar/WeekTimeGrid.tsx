@@ -67,6 +67,10 @@ export type WeekTimeGridProps = {
   days?: number;
   bookings: BookingWithRelations[];
   staff: StaffLite[];
+  /** Optioneel — wanneer aanwezig tonen we klantnaam in elk booking-blok. */
+  customers?: CustomerLite[];
+  /** Optioneel — wanneer aanwezig tonen we de dienstnaam in elk booking-blok. */
+  services?: ServiceLite[];
   colors: ColorResolver;
   businessHours?: BusinessHours;
   onSelectBooking?: (b: BookingWithRelations) => void;
