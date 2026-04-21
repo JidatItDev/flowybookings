@@ -227,6 +227,11 @@ export function DayTimeGrid({
     { colKey: string; topPx: number; label: string } | null
   >(null);
 
+  // Resize-state: actieve booking + live nieuwe duur in minuten (gesnapt).
+  const [resizing, setResizing] = useState<
+    { bookingId: string; colKey: string; startTopPx: number; newDurMin: number; label: string } | null
+  >(null);
+
   const hours = useMemo(() => {
     const arr: number[] = [];
     for (let h = START_HOUR; h <= END_HOUR; h += 1) arr.push(h);
