@@ -319,6 +319,18 @@ export const nl: Record<string, string> = {
   "dashboard.totalCustomers": "Totaal klanten",
   "dashboard.noShowRate30d": "No-show rate (30d)",
   "dashboard.monthRevenue": "Omzet deze maand",
+  "dashboard.weekRevenue": "Omzet deze week",
+  "dashboard.upcoming": "Aankomende boekingen",
+  "dashboard.upcomingHint": "Komende 7 dagen",
+  "dashboard.cancellations30d": "Annuleringen (30d)",
+  "dashboard.bookingsCount": "{n} boekingen",
+  "dashboard.staffPerformance": "Prestaties medewerkers",
+  "dashboard.staffPerformanceHint": "Boekingen & omzet per medewerker (laatste 30 dagen)",
+  "dashboard.occupancy": "Bezetting",
+  "dashboard.occupancyHint": "Geboekt vs. beschikbaar, laatste 7 dagen",
+  "dashboard.occupancyBooked": "Geboekt: {hours}",
+  "dashboard.occupancyAvailable": "Beschikbaar: {hours}",
+  "dashboard.occupancyNoHours": "Stel werkuren in om de bezetting te zien.",
 
   // ── Onboarding checklist ──
   "checklist.badge": "Aan de slag",

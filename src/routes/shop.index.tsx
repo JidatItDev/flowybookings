@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarCheck, Clock, CircleDollarSign, AlertCircle, Plus, Users, TrendingDown } from "lucide-react";
+import { CalendarCheck, Clock, CircleDollarSign, AlertCircle, Plus, Users, TrendingDown, CalendarClock, XCircle } from "lucide-react";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -8,6 +8,8 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { NoShopState } from "@/components/EmptyState";
 import { DashboardInsights } from "@/components/DashboardInsights";
+import { StaffPerformanceCard } from "@/components/StaffPerformanceCard";
+import { OccupancyCard } from "@/components/OccupancyCard";
 import { UpgradeNudge } from "@/components/UpgradeNudge";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import { BookingLinkCard } from "@/components/BookingLinkCard";
@@ -51,6 +53,17 @@ function ShopDashboard() {
   // Revenue this month
   const monthStart = new Date(); monthStart.setUTCDate(1); monthStart.setUTCHours(0, 0, 0, 0);
   const monthRevenue = bookings.filter((b) => new Date(b.starts_at) >= monthStart && b.status !== "cancelled" && b.status !== "no_show").reduce((s, b) => s + b.price_cents, 0);
+
+  // Revenue this week (last 7 days, including today)
+  const weekStart = new Date(dayStart); weekStart.setUTCDate(weekStart.getUTCDate() - 6);
+  const weekRevenue = bookings.filter((b) => { const d = new Date(b.starts_at); return d >= weekStart && d < dayEnd && b.status !== "cancelled" && b.status !== "no_show"; }).reduce((s, b) => s + b.price_cents, 0);
+
+  // Upcoming bookings: next 7 days, not cancelled / no_show
+  const weekAhead = new Date(dayStart); weekAhead.setUTCDate(weekAhead.getUTCDate() + 7);
+  const upcomingCount = bookings.filter((b) => { const d = new Date(b.starts_at); return d >= dayStart && d < weekAhead && b.status !== "cancelled" && b.status !== "no_show"; }).length;
+
+  // Cancellations in last 30 days
+  const cancellations30 = last30.filter((b) => b.status === "cancelled").length;
 
   // Real weekly revenue (last 7 days)
   const weekly = Array.from({ length: 7 }, (_, i) => {
@@ -98,7 +111,12 @@ function ShopDashboard() {
             <StatCard label={t("dashboard.noShowRate30d")} value={`${noShowRate30}%`} delta={`${noShows30} no-shows`} trend={noShowRate30 > 10 ? "down" : "neutral"} icon={TrendingDown} accent="pink" />
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+            <StatCard label={t("dashboard.weekRevenue")} value={formatCents(weekRevenue)} icon={CircleDollarSign} accent="primary" />
             <StatCard label={t("dashboard.monthRevenue")} value={formatCents(monthRevenue)} icon={CircleDollarSign} accent="mint" />
+            <StatCard label={t("dashboard.upcoming")} value={String(upcomingCount)} delta={t("dashboard.upcomingHint")} trend="neutral" icon={CalendarClock} accent="peach" />
+            <StatCard label={t("dashboard.cancellations30d")} value={String(cancellations30)} delta={`${noShows30} no-shows`} trend={cancellations30 > 0 ? "down" : "neutral"} icon={XCircle} accent="pink" />
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
             <StatCard label={t("dashboard.pending")} value={String(pendingCount)} delta={t("dashboard.needsReview")} trend="neutral" icon={Clock} accent="peach" />
             <StatCard label={t("dashboard.noShows7d")} value={String(noShows7d)} icon={AlertCircle} accent="pink" />
           </div>
@@ -130,6 +148,10 @@ function ShopDashboard() {
                 <Stat label={t("dashboard.totalBookings")} value={bookings.length} />
               </div>
             </div>
+          </div>
+          <div className="mt-6 grid gap-4 sm:gap-6 lg:grid-cols-2">
+            <StaffPerformanceCard shopId={shopId} bookings={bookings} staff={staff} />
+            <OccupancyCard bookings={bookings} staff={staff} />
           </div>
           <DashboardInsights bookings={bookings} customers={customers} services={services} />
           <div className="mt-6 rounded-2xl border border-border bg-card shadow-soft">
