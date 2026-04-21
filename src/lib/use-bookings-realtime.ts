@@ -1,7 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { shopKeys, type BookingWithRelations } from "@/lib/queries";
+
+export type RealtimeStatus = "idle" | "connecting" | "live" | "error" | "closed";
 
 /**
  * Subscribes to Postgres changes on `public.bookings` for the active shop
@@ -11,15 +13,22 @@ import { shopKeys, type BookingWithRelations } from "@/lib/queries";
  * - UPDATE → replace matching row
  * - DELETE → remove matching row
  *
- * No extra refetches; we reuse the same cache key (`shopKeys.bookings`) that
- * the calendar, customers and analytics pages already read from.
+ * Returns a status reflecting the underlying Realtime channel state so the UI
+ * can show a live/offline indicator.
  */
-export function useBookingsRealtime(shopId: string | null | undefined) {
+export function useBookingsRealtime(
+  shopId: string | null | undefined,
+): RealtimeStatus {
   const qc = useQueryClient();
+  const [status, setStatus] = useState<RealtimeStatus>("idle");
 
   useEffect(() => {
-    if (!shopId) return;
+    if (!shopId) {
+      setStatus("idle");
+      return;
+    }
 
+    setStatus("connecting");
     const key = shopKeys.bookings(shopId);
 
     const applyUpsert = (row: BookingWithRelations) => {
@@ -27,7 +36,6 @@ export function useBookingsRealtime(shopId: string | null | undefined) {
         const list = prev ?? [];
         const idx = list.findIndex((b) => b.id === row.id);
         if (idx === -1) {
-          // Insert sorted by starts_at ascending to match initial query order.
           const next = [...list, row];
           next.sort(
             (a, b) =>
@@ -81,7 +89,6 @@ export function useBookingsRealtime(shopId: string | null | undefined) {
           event: "DELETE",
           schema: "public",
           table: "bookings",
-          // Note: DELETE filter requires REPLICA IDENTITY FULL on the table.
           filter: `shop_id=eq.${shopId}`,
         },
         (payload) => {
@@ -89,10 +96,18 @@ export function useBookingsRealtime(shopId: string | null | undefined) {
           if (row?.id) applyDelete(row.id);
         },
       )
-      .subscribe();
+      .subscribe((s) => {
+        // Map Supabase channel states to a small UI-friendly enum.
+        if (s === "SUBSCRIBED") setStatus("live");
+        else if (s === "CHANNEL_ERROR" || s === "TIMED_OUT") setStatus("error");
+        else if (s === "CLOSED") setStatus("closed");
+      });
 
     return () => {
       supabase.removeChannel(channel);
+      setStatus("idle");
     };
   }, [qc, shopId]);
+
+  return status;
 }
