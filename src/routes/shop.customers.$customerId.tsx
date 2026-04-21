@@ -101,6 +101,7 @@ function CustomerProfilePage() {
 
   const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
+  const { data: staffList = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
 
   const customerBookings = useMemo(
     () =>
@@ -164,11 +165,22 @@ function CustomerProfilePage() {
   const [tagInput, setTagInput] = useState("");
   const [requiresDeposit, setRequiresDeposit] = useState(false);
 
+  // Preferences (editor-card state)
+  const [favStaff, setFavStaff] = useState<string>("none");
+  const [favService, setFavService] = useState<string>("none");
+  const [allergies, setAllergies] = useState("");
+  const [communication, setCommunication] = useState<"email" | "sms" | "any" | "none">("any");
+
   useEffect(() => {
     if (customer) {
       setNotes(customer.notes ?? "");
       setTags(customer.tags ?? []);
       setRequiresDeposit(customer.requires_deposit);
+      const p = customer.preferences ?? {};
+      setFavStaff(p.favorite_staff_id ?? "none");
+      setFavService(p.favorite_service_id ?? "none");
+      setAllergies(p.allergies ?? "");
+      setCommunication(p.communication ?? "any");
     }
   }, [customer?.id]);
 
