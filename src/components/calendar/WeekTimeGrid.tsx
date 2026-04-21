@@ -40,6 +40,8 @@ type StaffLite = {
   id: string;
   full_name: string;
   is_active: boolean;
+  /** Optioneel — gebruikt voor pre-validatie van de drop-positie tijdens drag. */
+  working_hours?: unknown;
 };
 
 type ColorResolver = {
