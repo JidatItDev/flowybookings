@@ -111,7 +111,12 @@ function ShopDashboard() {
             <StatCard label={t("dashboard.noShowRate30d")} value={`${noShowRate30}%`} delta={`${noShows30} no-shows`} trend={noShowRate30 > 10 ? "down" : "neutral"} icon={TrendingDown} accent="pink" />
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+            <StatCard label={t("dashboard.weekRevenue")} value={formatCents(weekRevenue)} icon={CircleDollarSign} accent="primary" />
             <StatCard label={t("dashboard.monthRevenue")} value={formatCents(monthRevenue)} icon={CircleDollarSign} accent="mint" />
+            <StatCard label={t("dashboard.upcoming")} value={String(upcomingCount)} delta={t("dashboard.upcomingHint")} trend="neutral" icon={CalendarClock} accent="peach" />
+            <StatCard label={t("dashboard.cancellations30d")} value={String(cancellations30)} delta={`${noShows30} no-shows`} trend={cancellations30 > 0 ? "down" : "neutral"} icon={XCircle} accent="pink" />
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
             <StatCard label={t("dashboard.pending")} value={String(pendingCount)} delta={t("dashboard.needsReview")} trend="neutral" icon={Clock} accent="peach" />
             <StatCard label={t("dashboard.noShows7d")} value={String(noShows7d)} icon={AlertCircle} accent="pink" />
           </div>
@@ -143,6 +148,10 @@ function ShopDashboard() {
                 <Stat label={t("dashboard.totalBookings")} value={bookings.length} />
               </div>
             </div>
+          </div>
+          <div className="mt-6 grid gap-4 sm:gap-6 lg:grid-cols-2">
+            <StaffPerformanceCard shopId={shopId} bookings={bookings} staff={staff} />
+            <OccupancyCard bookings={bookings} staff={staff} />
           </div>
           <DashboardInsights bookings={bookings} customers={customers} services={services} />
           <div className="mt-6 rounded-2xl border border-border bg-card shadow-soft">
