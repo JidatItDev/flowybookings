@@ -609,7 +609,7 @@ function BookingFlow() {
                 {servicesQ.isLoading ? <SkeletonGrid /> : (
                   <div className="space-y-2">
                     {(servicesQ.data ?? []).filter((s) => s.is_active).map((s) => (
-                      <button key={s.id} onClick={() => { setServiceId(s.id); setTime(null); }}
+                      <button key={s.id} onClick={() => { setServiceId(s.id); setStaffId(null); setTime(null); }}
                         className={cn("flex w-full items-center justify-between gap-3 rounded-2xl border p-4 text-left transition-all",
                           serviceId === s.id ? "border-primary bg-primary-soft/40" : "border-border hover:bg-muted/40")}>
                         <div className="min-w-0">
@@ -635,7 +635,7 @@ function BookingFlow() {
                     <p className="font-medium">{t("book.anyAvailable")}</p>
                     <p className="text-xs text-muted-foreground">{t("book.firstOpenSlot")}</p>
                   </button>
-                  {(staffQ.data ?? []).filter((s) => s.is_active).map((s) => (
+                  {eligibleStaff.map((s) => (
                     <button key={s.id} onClick={() => { setStaffId(s.id); setTime(null); }}
                       className={cn("rounded-2xl border p-4 text-left",
                         staffId === s.id ? "border-primary bg-primary-soft/40" : "border-border hover:bg-muted/40")}>
