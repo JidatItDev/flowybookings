@@ -276,23 +276,26 @@ function CalendarPage() {
 
   return (
     <ShopLayout>
-      <PageHeader
-        title={t("calendar.title")}
-        description={t("calendar.description")}
-        actions={
-          <>
-            <LiveIndicator status={realtimeStatus} />
-            <Button
-              variant="hero"
-              onClick={() => setCreating(true)}
-              disabled={newBookingDisabled}
-              title={newBookingTitle}
-            >
-              <Plus className="h-4 w-4" /> {t("calendar.newBooking")}
-            </Button>
-          </>
-        }
-      />
+      <div className="sticky top-0 z-30 -mx-4 mb-4 border-b border-border/60 bg-background/95 px-4 pb-3 pt-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+        <PageHeader
+          title={t("calendar.title")}
+          description={t("calendar.description")}
+          actions={
+            <>
+              <LiveIndicator status={realtimeStatus} />
+              <Button
+                variant="hero"
+                onClick={() => setCreating(true)}
+                disabled={newBookingDisabled}
+                title={newBookingTitle}
+                className="h-10 px-4 sm:h-9 sm:px-3"
+              >
+                <Plus className="h-4 w-4" /> {t("calendar.newBooking")}
+              </Button>
+            </>
+          }
+        />
+      </div>
 
       {bookingsAccess.data && (bookingsWarn || bookingsBlocked) && (
         <div className="mb-4">
