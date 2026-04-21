@@ -233,6 +233,11 @@ export function DayTimeGrid({
 
   // Drag-preview: gesnapte drop-positie binnen één kolom (tijdelijke UI-state).
   const grabOffsetRef = useRef<number>(0);
+  // Booking-id van het actief gesleepte blok — tijdens dragOver is
+  // dataTransfer.getData() niet leesbaar (browser-restrictie), dus we cachen
+  // hier de id zodat we tijdens dragOver de juiste duur + conflict-check
+  // kunnen uitvoeren tegen visibleBookings.
+  const draggedIdRef = useRef<string | null>(null);
   const [dragPreview, setDragPreview] = useState<
     { colKey: string; topPx: number; label: string; invalid?: boolean; reason?: string } | null
   >(null);
