@@ -216,6 +216,12 @@ export function DayTimeGrid({
     [dayStart, businessHours],
   );
 
+  // Drag-preview: gesnapte drop-positie binnen één kolom (tijdelijke UI-state).
+  const grabOffsetRef = useRef<number>(0);
+  const [dragPreview, setDragPreview] = useState<
+    { colKey: string; topPx: number; label: string } | null
+  >(null);
+
   const hours = useMemo(() => {
     const arr: number[] = [];
     for (let h = START_HOUR; h <= END_HOUR; h += 1) arr.push(h);
