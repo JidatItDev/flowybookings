@@ -577,14 +577,27 @@ export function DayTimeGrid({
                 </div>
               )}
 
-              {/* Drop-indicator: gesnapte horizontale lijn met tijd-label tijdens drag. */}
+              {/* Drop-indicator: gesnapte horizontale lijn met tijd-label tijdens drag.
+                  Rood (destructive) wanneer de positie buiten werkuren of in pauze valt. */}
               {dragPreview && dragPreview.colKey === c.key && (
                 <div
-                  className="pointer-events-none absolute left-0 right-0 z-[15] border-t-2 border-dashed border-primary"
+                  className={cn(
+                    "pointer-events-none absolute left-0 right-0 z-[15] border-t-2 border-dashed",
+                    dragPreview.invalid ? "border-destructive" : "border-primary",
+                  )}
                   style={{ top: dragPreview.topPx }}
+                  title={dragPreview.reason}
                 >
-                  <span className="absolute -top-2.5 left-1 rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-primary-foreground shadow-soft">
+                  <span
+                    className={cn(
+                      "absolute -top-2.5 left-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shadow-soft",
+                      dragPreview.invalid
+                        ? "bg-destructive text-destructive-foreground"
+                        : "bg-primary text-primary-foreground",
+                    )}
+                  >
                     {dragPreview.label}
+                    {dragPreview.invalid && dragPreview.reason ? ` · ${dragPreview.reason}` : ""}
                   </span>
                 </div>
               )}
