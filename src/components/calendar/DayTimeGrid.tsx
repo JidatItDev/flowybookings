@@ -232,7 +232,7 @@ export function DayTimeGrid({
   // Drag-preview: gesnapte drop-positie binnen één kolom (tijdelijke UI-state).
   const grabOffsetRef = useRef<number>(0);
   const [dragPreview, setDragPreview] = useState<
-    { colKey: string; topPx: number; label: string } | null
+    { colKey: string; topPx: number; label: string; invalid?: boolean; reason?: string } | null
   >(null);
 
   // Resize-state: actieve booking + live nieuwe duur in minuten (gesnapt).
