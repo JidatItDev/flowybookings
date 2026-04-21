@@ -422,6 +422,26 @@ export function DayTimeGrid({
               {hours.slice(0, -1).map((h, i) => {
                 const reason = slotReason(c.key, h);
                 const unavailable = reason !== null;
+                let unavailableTitle: string | undefined;
+                if (unavailable) {
+                  if (reason === "closed") {
+                    unavailableTitle = `${c.label} werkt vandaag niet`;
+                  } else if (reason === "break" && av) {
+                    const slotStart = h * 60;
+                    const slotEnd = slotStart + 60;
+                    const br = av.breaks.find(
+                      (b) => slotStart < b.endMin && slotEnd > b.startMin,
+                    );
+                    unavailableTitle = br
+                      ? `Pauze ${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`
+                      : "Pauze";
+                  } else if (reason === "off_hours" && av) {
+                    const w = av.working[0];
+                    unavailableTitle = w
+                      ? `Buiten werkuren — ${c.label} werkt ${formatMinutes(w.startMin)}–${formatMinutes(w.endMin)}`
+                      : `Buiten werkuren`;
+                  }
+                }
                 return (
                   <button
                     key={`slot-${c.key}-${h}`}
@@ -441,9 +461,10 @@ export function DayTimeGrid({
                       unavailable ? "cursor-not-allowed hover:bg-destructive/5" : "hover:bg-primary/5",
                     )}
                     style={{ top: i * PX_PER_HOUR, height: PX_PER_HOUR }}
+                    title={unavailableTitle}
                     aria-label={
                       unavailable
-                        ? `Niet beschikbaar — ${c.label} ${String(h).padStart(2, "0")}:00`
+                        ? `Niet beschikbaar — ${c.label} ${String(h).padStart(2, "0")}:00${unavailableTitle ? ` (${unavailableTitle})` : ""}`
                         : `Nieuwe boeking ${c.label} ${String(h).padStart(2, "0")}:00`
                     }
                     aria-disabled={unavailable}
