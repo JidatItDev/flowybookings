@@ -720,7 +720,7 @@ function CalendarPage() {
                 </Button>
               )}
             />
-          ) : viewMode === "grid" && calendarMode === "week" ? (() => {
+          ) : viewMode === "grid" && calendarMode === "week" && !isMobile ? (() => {
             const today = new Date(); today.setUTCHours(0, 0, 0, 0);
             const dow = today.getUTCDay();
             const mondayOffset = dow === 0 ? -6 : 1 - dow;
