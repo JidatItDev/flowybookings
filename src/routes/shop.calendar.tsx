@@ -185,6 +185,35 @@ function CalendarPage() {
         <NoShopState />
       ) : (
         <>
+          {/* Sticky kleurensleutel: toont alle actieve medewerkers met hun kleur */}
+          {staff.filter((s) => s.is_active).length > 0 && (
+            <div className="sticky top-0 z-20 -mx-4 mb-3 border-b border-border/60 bg-background/85 px-4 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:mx-0 sm:rounded-lg sm:border sm:px-3">
+              <div className="flex items-center gap-2 overflow-x-auto">
+                <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  {t("calendar.staffCol")}
+                </span>
+                {staff.filter((s) => s.is_active).map((s) => {
+                  const c = colors.get(s.id);
+                  return (
+                    <button
+                      key={`legend-${s.id}`}
+                      type="button"
+                      onClick={() => setStaffFilter((prev) => (prev === s.id ? "all" : s.id))}
+                      className={cn(
+                        "group inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors",
+                        staffFilter === s.id ? `${c.bg} ${c.text}` : "text-muted-foreground hover:bg-muted",
+                      )}
+                      title={s.full_name}
+                    >
+                      <span className={cn("h-2.5 w-2.5 rounded-full ring-1 ring-inset ring-foreground/10", c.swatch)} />
+                      <span className="max-w-[110px] truncate">{s.full_name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Dag-selector: horizontaal scrollbaar */}
           <div className="mb-3 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
             <div className="flex items-center gap-2 pb-2">
