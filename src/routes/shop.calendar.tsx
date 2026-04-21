@@ -497,7 +497,13 @@ function CalendarPage() {
         </>
       )}
 
-      <BookingFormDialog open={creating || !!editing} onClose={() => { setCreating(false); setEditing(null); }} booking={editing} shopId={shopId} />
+      <BookingFormDialog
+        open={creating || !!editing}
+        onClose={() => { setCreating(false); setEditing(null); setSlotPrefill(null); }}
+        booking={editing}
+        shopId={shopId}
+        prefill={!editing ? slotPrefill : null}
+      />
 
       <BookingActionDialog
         booking={viewing}
@@ -534,7 +540,7 @@ function toLocalInput(iso: string | null): string {
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
 }
 
-function BookingFormDialog({ open, onClose, booking, shopId }: { open: boolean; onClose: () => void; booking: BookingWithRelations | null; shopId: string | null }) {
+function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: boolean; onClose: () => void; booking: BookingWithRelations | null; shopId: string | null; prefill?: { staffId: string | null; startsAt: Date } | null }) {
   const qc = useQueryClient();
   const { t } = useT();
   const { data: customers = [] } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId && open });
@@ -557,13 +563,13 @@ function BookingFormDialog({ open, onClose, booking, shopId }: { open: boolean; 
     setForm({
       customer_id: booking?.customer_id ?? "",
       service_id: booking?.service_id ?? "",
-      staff_id: booking?.staff_id ?? "",
-      starts_at: toLocalInput(booking?.starts_at ?? null),
+      staff_id: booking?.staff_id ?? prefill?.staffId ?? "",
+      starts_at: toLocalInput(booking?.starts_at ?? prefill?.startsAt?.toISOString() ?? null),
       duration: dur,
       status: booking?.status ?? "pending",
       notes: booking?.notes ?? "",
     });
-  }, [open, booking?.id]);
+  }, [open, booking?.id, prefill?.staffId, prefill?.startsAt?.getTime()]);
 
   const save = useMutation({
     mutationFn: async () => {
