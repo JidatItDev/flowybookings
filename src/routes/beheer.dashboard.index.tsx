@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Store, Users, CalendarRange, CircleDollarSign, TrendingUp, AlertTriangle, TrendingDown } from "lucide-react";
+import { Store, Users, CalendarRange, CircleDollarSign, TrendingUp, AlertTriangle, TrendingDown, Activity } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { AdminLayout } from "@/components/AdminLayout";
@@ -24,6 +24,17 @@ function AdminOverview() {
   const { data: extras, isLoading: extrasLoading } = useQuery(adminDashboardExtrasQuery());
   const topShops = [...(shops ?? [])].sort((a, b) => (b.revenue_cents ?? 0) - (a.revenue_cents ?? 0)).slice(0, 5);
   const recentBookings = (bookings ?? []).slice(0, 5);
+  // Most active shops in last 30 days — aggregated from existing adminBookingsQuery (no new endpoint)
+  const cutoff30d = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const activityMap = new Map<string, { shop_id: string; shop_name: string; count: number }>();
+  for (const b of bookings ?? []) {
+    if (!b.shop_id || !b.starts_at) continue;
+    if (new Date(b.starts_at).getTime() < cutoff30d) continue;
+    const existing = activityMap.get(b.shop_id);
+    if (existing) existing.count += 1;
+    else activityMap.set(b.shop_id, { shop_id: b.shop_id, shop_name: b.shop_name ?? "—", count: 1 });
+  }
+  const mostActiveShops = [...activityMap.values()].sort((a, b) => b.count - a.count).slice(0, 5);
   const mrrSeries = (extras?.mrr_series ?? []).map((m) => ({ label: m.label, MRR: m.mrr_cents / 100 }));
   const currentMrr = mrrSeries[mrrSeries.length - 1]?.MRR ?? 0;
   const previousMrr = mrrSeries[mrrSeries.length - 2]?.MRR ?? 0;
