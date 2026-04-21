@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarCheck, Clock, CircleDollarSign, AlertCircle, Plus, Users, TrendingDown } from "lucide-react";
+import { CalendarCheck, Clock, CircleDollarSign, AlertCircle, Plus, Users, TrendingDown, CalendarClock, XCircle } from "lucide-react";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -8,6 +8,8 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { NoShopState } from "@/components/EmptyState";
 import { DashboardInsights } from "@/components/DashboardInsights";
+import { StaffPerformanceCard } from "@/components/StaffPerformanceCard";
+import { OccupancyCard } from "@/components/OccupancyCard";
 import { UpgradeNudge } from "@/components/UpgradeNudge";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import { BookingLinkCard } from "@/components/BookingLinkCard";
