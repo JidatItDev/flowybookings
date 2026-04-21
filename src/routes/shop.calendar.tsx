@@ -695,7 +695,7 @@ function BookingActionDialog({
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
               <span className="text-xs uppercase tracking-wider text-muted-foreground">Medewerker</span>
               {stf ? (() => {
-                const c = staffColor(stf.id);
+                const c = colors.get(stf.id);
                 return (
                   <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium", c.bg, c.text)}>
                     <span className={cn("flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold", c.dot)}>
