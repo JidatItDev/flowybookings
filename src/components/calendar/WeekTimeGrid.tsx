@@ -287,6 +287,7 @@ export function WeekTimeGrid({
             return (
               <div
                 key={`col-${dayKey}`}
+                data-day-key={dayKey}
                 className="relative border-l border-border"
                 style={{ height: totalHeight }}
                 onDragOver={(e) => {
