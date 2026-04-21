@@ -1001,18 +1001,21 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
         className={cn(
-          // Mobile: bottom-sheet feel — full width, anchored bottom, rounded top, capped height with internal scroll.
-          "flex max-h-[92dvh] w-full flex-col gap-0 overflow-hidden p-0",
-          "left-1/2 top-auto bottom-0 translate-x-[-50%] translate-y-0 rounded-t-2xl rounded-b-none",
-          // Tablet+: classic centered modal.
-          "sm:top-1/2 sm:bottom-auto sm:translate-y-[-50%] sm:max-w-lg sm:rounded-2xl",
+          // Mobile (<sm): true full-screen sheet — edge-to-edge, no rounded
+          // corners, no max-width. Body scroll is locked by Radix; only the
+          // inner content area scrolls. Sticky header + footer stay pinned
+          // while the keyboard is open thanks to dvh sizing.
+          "flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col gap-0 overflow-hidden rounded-none border-0 p-0",
+          "left-0 top-0 translate-x-0 translate-y-0",
+          // Tablet+ (≥sm): classic centered modal with comfortable max-width.
+          "sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[92dvh] sm:w-full sm:max-w-lg sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl sm:border",
         )}
       >
-        <DialogHeader className="sticky top-0 z-10 border-b border-border/60 bg-background/95 px-5 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <DialogHeader className="sticky top-0 z-10 border-b border-border/60 bg-background/95 px-5 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 [padding-top:max(1rem,env(safe-area-inset-top))] sm:[padding-top:1rem]">
           <DialogTitle>{booking ? t("calendar.editBooking") : t("calendar.newBookingTitle")}</DialogTitle>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4">
-          <div className="grid gap-4">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:py-4">
+          <div className="grid gap-5 sm:gap-4">
             <div>
               <Label>{t("calendar.customer")}</Label>
               <CustomerCombobox
