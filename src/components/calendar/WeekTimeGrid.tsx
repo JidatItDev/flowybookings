@@ -4,6 +4,7 @@ import { formatTime } from "@/lib/format";
 import { staffInitials, type StaffColor } from "@/lib/staff-color";
 import type { BookingWithRelations } from "@/lib/queries";
 import {
+  formatMinutesOfDay,
   parseMinutes,
   type BusinessHours,
   type DayKey,
