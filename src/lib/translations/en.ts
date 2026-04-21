@@ -331,6 +331,9 @@ export const en: Record<string, string> = {
   "dashboard.occupancyBooked": "Booked: {hours}",
   "dashboard.occupancyAvailable": "Available: {hours}",
   "dashboard.occupancyNoHours": "Set staff working hours to see occupancy.",
+  "calendar.occupancyDay": "Occupancy {pct}% — {booked} of {available}",
+  "calendar.occupancyStaff": "{name}: {pct}% booked",
+  "calendar.occupancyNoData": "No working hours set",
 
   // ── Onboarding checklist ──
   "checklist.badge": "Get started",
