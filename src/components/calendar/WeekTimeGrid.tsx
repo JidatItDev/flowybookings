@@ -68,6 +68,12 @@ export type WeekTimeGridProps = {
   onSelectDay?: (day: Date) => void;
   /** Drag & drop reschedule. Behoudt staff_id, wijzigt alleen datum/tijd. */
   onReschedule?: (params: WeekRescheduleParams) => void;
+  /** i18n-labels voor invalid drop-redenen (per-staff working-hours pre-validatie). */
+  dropInvalidLabels?: {
+    closedDay: string;
+    offHours: (range: string) => string;
+    duringBreak: (range: string) => string;
+  };
 };
 
 function parseHour(value: string | undefined, mode: "floor" | "ceil"): number | null {
