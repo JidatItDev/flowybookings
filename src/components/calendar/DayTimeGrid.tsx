@@ -157,11 +157,17 @@ export function DayTimeGrid({
     });
   }, [bookings, columns, dayStart, dayEnd]);
 
+  // Dynamisch venster op basis van business_hours per weekdag.
+  const { startHour: START_HOUR, endHour: END_HOUR, isClosed } = useMemo(
+    () => resolveDayWindow(dayStart, businessHours),
+    [dayStart, businessHours],
+  );
+
   const hours = useMemo(() => {
     const arr: number[] = [];
     for (let h = START_HOUR; h <= END_HOUR; h += 1) arr.push(h);
     return arr;
-  }, []);
+  }, [START_HOUR, END_HOUR]);
 
   const totalHeight = (END_HOUR - START_HOUR) * PX_PER_HOUR;
 
