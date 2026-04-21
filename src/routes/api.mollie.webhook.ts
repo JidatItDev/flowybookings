@@ -105,7 +105,12 @@ export const Route = createFileRoute("/api/mollie/webhook")({
           });
 
           // If we don't know this payment locally, just acknowledge.
-          if (!payment) return ok();
+          if (!payment) {
+            return new Response(JSON.stringify({ ok: true }), {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            });
+          }
 
           // Map Mollie status → local payment status
           const newStatus = mapStatus(mollie?.status);
