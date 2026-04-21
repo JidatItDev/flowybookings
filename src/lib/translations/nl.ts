@@ -405,6 +405,7 @@ export const nl: Record<string, string> = {
   "bookingError.outsideHoursRange": "Buiten werkuren ({range}). Kies een tijdstip binnen het rooster.",
   "bookingError.duringBreak": "Conflict met pauze van deze medewerker.",
   "bookingError.duringBreakRange": "Conflict met pauze ({range}). Kies een ander tijdstip.",
+  "bookingError.closedDay": "Deze medewerker werkt niet op de gekozen dag. Kies een andere dag of medewerker.",
   "calendar.pickCustomer": "Kies klant",
   "calendar.pickService": "Kies dienst",
   "calendar.pickStaff": "Kies medewerker",

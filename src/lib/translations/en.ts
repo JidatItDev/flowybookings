@@ -405,6 +405,7 @@ export const en: Record<string, string> = {
   "bookingError.outsideHoursRange": "Outside working hours ({range}). Pick a time within the schedule.",
   "bookingError.duringBreak": "Conflicts with this staff member's break.",
   "bookingError.duringBreakRange": "Conflicts with break ({range}). Pick another time.",
+  "bookingError.closedDay": "Staff is not available on the selected day. Pick another day or staff member.",
   "calendar.pickCustomer": "Pick customer",
   "calendar.pickService": "Pick service",
   "calendar.pickStaff": "Pick staff",
