@@ -385,6 +385,8 @@ export function DayTimeGrid({
                 // Sta drop alleen toe als er een booking-id meegegeven is.
                 if (Array.from(e.dataTransfer.types).includes("application/x-booking-id")) {
                   e.preventDefault();
+                  // dropEffect wordt verderop op "none" gezet bij invalid, zodat
+                  // de browser de "verboden"-cursor toont en de drop blokkeert.
                   e.dataTransfer.dropEffect = "move";
                   // Bereken gesnapte positie + tijd-label voor de drop-indicator.
                   const rect = e.currentTarget.getBoundingClientRect();
@@ -453,6 +455,11 @@ export function DayTimeGrid({
                         reason = dropInvalidLabels.duringBreak(`${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`);
                       }
                     }
+                  }
+
+                  // Browser-niveau drop-block: cursor toont "verboden", onDrop vuurt niet.
+                  if (invalid) {
+                    e.dataTransfer.dropEffect = "none";
                   }
 
                   setDragPreview({
