@@ -252,6 +252,12 @@ export function DayTimeGrid({
     } | null
   >(null);
 
+  // Touch drag-and-drop: native HTML5 drag werkt niet op touch (iPad/tablet).
+  // We implementeren een long-press → move → drop flow met dezelfde snap- en
+  // pre-validatie-logica als de mouse drag-flow. State houdt de actief
+  // "opgepakte" booking + grab-offset bij; visuele feedback via dragPreview.
+  const [touchDrag, setTouchDrag] = useState<{ bookingId: string } | null>(null);
+
   const hours = useMemo(() => {
     const arr: number[] = [];
     for (let h = START_HOUR; h <= END_HOUR; h += 1) arr.push(h);
