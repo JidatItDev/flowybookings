@@ -568,7 +568,23 @@ function CalendarPage() {
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span>
-                {filtered.length} {filtered.length === 1 ? t("calendar.appointment") : t("calendar.appointments")}
+                {(() => {
+                  const noun = filtered.length === 1 ? t("calendar.appointment") : t("calendar.appointments");
+                  if (dayOffset === null) {
+                    return `${filtered.length} ${noun} ${t("calendar.upcomingSuffix")}`;
+                  }
+                  if (dayOffset === 0) {
+                    return filtered.length === 0
+                      ? t("calendar.zeroToday")
+                      : `${filtered.length} ${noun} ${t("calendar.todaySuffix")}`;
+                  }
+                  // Specifieke andere dag
+                  const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() + dayOffset);
+                  const label = d.toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" });
+                  return filtered.length === 0
+                    ? t("calendar.zeroOnDay", { day: label })
+                    : `${filtered.length} ${noun} ${t("calendar.onDayPrefix")} ${label}`;
+                })()}
               </span>
               {viewMode === "grid" && (
                 <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/40 p-1 text-xs">
