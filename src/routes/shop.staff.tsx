@@ -136,6 +136,15 @@ function StaffPage() {
                     currentKey={overrideKey}
                     disabled={readOnly}
                     readOnlyTitle={roTitle}
+                    usageByOthers={(() => {
+                      const map: Partial<Record<PaletteKey, string[]>> = {};
+                      for (const other of staff) {
+                        if (other.id === m.id || !other.is_active) continue;
+                        const k = colors.get(other.id).key;
+                        (map[k] ||= []).push(other.full_name);
+                      }
+                      return map;
+                    })()}
                   />
                 </div>
                 <div className="mt-5">
