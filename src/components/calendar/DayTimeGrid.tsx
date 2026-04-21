@@ -246,6 +246,32 @@ export function DayTimeGrid({
 
   const totalHeight = (END_HOUR - START_HOUR) * PX_PER_HOUR;
 
+  // Per kolom availability uitrekenen op basis van staff.working_hours.
+  const availabilityByColumn = useMemo(() => {
+    const map = new Map<string, StaffAvailability>();
+    for (const c of columns) {
+      if (c.staffId == null) continue; // unassigned: geen overlay
+      map.set(c.key, resolveStaffAvailability(dayStart, c.workingHours, START_HOUR, END_HOUR));
+    }
+    return map;
+  }, [columns, dayStart, START_HOUR, END_HOUR]);
+
+  /** Bepaal of een uur-slot binnen een unavailable zone valt voor een kolom. */
+  function slotReason(colKey: string, hour: number): "closed" | "break" | "off_hours" | null {
+    const av = availabilityByColumn.get(colKey);
+    if (!av || !av.hasStructuredData) return null;
+    if (av.dayClosed) return "closed";
+    const slotStart = hour * 60;
+    const slotEnd = slotStart + 60;
+    // In een break? (volledige overlap met break-interval volstaat voor blokkade)
+    for (const br of av.breaks) {
+      if (slotStart < br.endMin && slotEnd > br.startMin) return "break";
+    }
+    // Binnen working window?
+    const inside = av.working.some((w) => slotStart >= w.startMin && slotEnd <= w.endMin);
+    return inside ? null : "off_hours";
+  }
+
   // "Now"-lijn alleen tonen wanneer de kalenderdag === vandaag (UTC).
   const now = new Date();
   const todayKey = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}`;
