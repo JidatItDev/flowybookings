@@ -534,72 +534,105 @@ export function WeekTimeGrid({
                         )}
                       </button>
                       {/* Resize-handle: alleen wanneer reschedule beschikbaar is en booking actief is.
-                          Snapt aan 15 min, hergebruikt reschedule-mutation met newEndsAt override. */}
-                      {draggable && (
-                        <div
-                          role="slider"
-                          aria-label={resizeHandleLabel ?? "Sleep om duur aan te passen"}
-                          aria-valuemin={SNAP_MINUTES}
-                          aria-valuenow={Math.round(liveDurMin)}
-                          tabIndex={-1}
-                          title={resizeHandleLabel ?? "Sleep om duur aan te passen"}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            const startY = e.clientY;
-                            const fullDurMin = (endTs - startTs) / 60_000;
-                            const startDur = fullDurMin;
-                            // Maximale duur = tot einde van het week-venster op deze dag.
-                            const maxDur = Math.max(SNAP_MINUTES, winEnd - startMin);
-                            const onMove = (ev: MouseEvent) => {
-                              const dy = ev.clientY - startY;
-                              const rawDur = startDur + dy / PX_PER_MIN;
-                              const snapped = Math.round(rawDur / SNAP_MINUTES) * SNAP_MINUTES;
-                              const clamped = Math.max(SNAP_MINUTES, Math.min(maxDur, snapped));
-                              const endTotalMin = startMin + clamped;
-                              setResizing({
-                                bookingId: b.id,
-                                newDurMin: clamped,
-                                label: formatMinutesOfDay(endTotalMin),
+                          Snapt aan 15 min, hergebruikt reschedule-mutation met newEndsAt override.
+                          Ondersteunt mouse + touch (tablet/iPad) met vergrote hit-area op coarse pointer. */}
+                      {draggable && (() => {
+                        const fullDurMin = (endTs - startTs) / 60_000;
+                        const startDurInit = fullDurMin;
+                        const maxDur = Math.max(SNAP_MINUTES, winEnd - startMin);
+                        const updateFromY = (clientY: number, startY: number) => {
+                          const dy = clientY - startY;
+                          const rawDur = startDurInit + dy / PX_PER_MIN;
+                          const snapped = Math.round(rawDur / SNAP_MINUTES) * SNAP_MINUTES;
+                          const clamped = Math.max(SNAP_MINUTES, Math.min(maxDur, snapped));
+                          const endTotalMin = startMin + clamped;
+                          setResizing({
+                            bookingId: b.id,
+                            newDurMin: clamped,
+                            label: formatMinutesOfDay(endTotalMin),
+                          });
+                        };
+                        const commit = () => {
+                          setResizing((cur) => {
+                            if (!cur || cur.bookingId !== b.id) return null;
+                            if (
+                              Math.round(cur.newDurMin) !== Math.round(fullDurMin) &&
+                              onReschedule
+                            ) {
+                              const newEnds = new Date(start.getTime() + cur.newDurMin * 60_000);
+                              onReschedule({
+                                booking: b,
+                                newStaffId: b.staff_id ?? null,
+                                newStartsAt: start,
+                                newEndsAt: newEnds,
                               });
-                            };
-                            const onUp = () => {
-                              window.removeEventListener("mousemove", onMove);
-                              window.removeEventListener("mouseup", onUp);
-                              setResizing((cur) => {
-                                if (!cur || cur.bookingId !== b.id) return null;
-                                if (
-                                  Math.round(cur.newDurMin) !== Math.round(fullDurMin) &&
-                                  onReschedule
-                                ) {
-                                  const newEnds = new Date(start.getTime() + cur.newDurMin * 60_000);
-                                  onReschedule({
-                                    booking: b,
-                                    newStaffId: b.staff_id ?? null,
-                                    newStartsAt: start,
-                                    newEndsAt: newEnds,
-                                  });
-                                }
-                                return null;
-                              });
-                            };
-                            window.addEventListener("mousemove", onMove);
-                            window.addEventListener("mouseup", onUp);
-                            setResizing({
-                              bookingId: b.id,
-                              newDurMin: startDur,
-                              label: formatMinutesOfDay(startMin + startDur),
-                            });
-                          }}
-                          className={cn(
-                            "absolute inset-x-0 bottom-0 z-[6] flex h-2.5 cursor-ns-resize items-center justify-center rounded-b-md",
-                            "opacity-0 transition-opacity hover:opacity-100 group-hover:opacity-100",
-                            isResizingThis && "opacity-100",
-                          )}
-                        >
-                          <span className="h-1 w-6 rounded-full bg-foreground/30" />
-                        </div>
-                      )}
+                            }
+                            return null;
+                          });
+                        };
+                        const seedInitial = () => {
+                          setResizing({
+                            bookingId: b.id,
+                            newDurMin: startDurInit,
+                            label: formatMinutesOfDay(startMin + startDurInit),
+                          });
+                        };
+                        return (
+                          <div
+                            role="slider"
+                            aria-label={resizeHandleLabel ?? "Sleep om duur aan te passen"}
+                            aria-valuemin={SNAP_MINUTES}
+                            aria-valuenow={Math.round(liveDurMin)}
+                            tabIndex={-1}
+                            title={resizeHandleLabel ?? "Sleep om duur aan te passen"}
+                            style={{ touchAction: "none" }}
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const startY = e.clientY;
+                              const onMove = (ev: MouseEvent) => updateFromY(ev.clientY, startY);
+                              const onUp = () => {
+                                window.removeEventListener("mousemove", onMove);
+                                window.removeEventListener("mouseup", onUp);
+                                commit();
+                              };
+                              window.addEventListener("mousemove", onMove);
+                              window.addEventListener("mouseup", onUp);
+                              seedInitial();
+                            }}
+                            onTouchStart={(e) => {
+                              if (e.touches.length !== 1) return;
+                              e.stopPropagation();
+                              const startY = e.touches[0].clientY;
+                              const onMove = (ev: TouchEvent) => {
+                                if (ev.touches.length !== 1) return;
+                                ev.preventDefault();
+                                updateFromY(ev.touches[0].clientY, startY);
+                              };
+                              const onEnd = () => {
+                                window.removeEventListener("touchmove", onMove);
+                                window.removeEventListener("touchend", onEnd);
+                                window.removeEventListener("touchcancel", onEnd);
+                                commit();
+                              };
+                              window.addEventListener("touchmove", onMove, { passive: false });
+                              window.addEventListener("touchend", onEnd);
+                              window.addEventListener("touchcancel", onEnd);
+                              seedInitial();
+                            }}
+                            className={cn(
+                              "absolute inset-x-0 bottom-0 z-[6] flex h-2.5 cursor-ns-resize items-center justify-center rounded-b-md",
+                              // Vergrote hit-area + altijd zichtbaar op coarse-pointer (touch).
+                              "[@media(pointer:coarse)]:h-6",
+                              "opacity-0 transition-opacity hover:opacity-100 group-hover:opacity-100",
+                              "[@media(pointer:coarse)]:opacity-100",
+                              isResizingThis && "opacity-100",
+                            )}
+                          >
+                            <span className="h-1 w-6 rounded-full bg-foreground/30 [@media(pointer:coarse)]:h-1.5 [@media(pointer:coarse)]:w-10" />
+                          </div>
+                        );
+                      })()}
                       {/* Live tijd-badge tijdens resize. */}
                       {isResizingThis && (
                         <span className="pointer-events-none absolute -bottom-2.5 right-1 z-[16] rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-primary-foreground shadow-soft">
