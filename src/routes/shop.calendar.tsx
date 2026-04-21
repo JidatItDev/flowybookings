@@ -37,6 +37,7 @@ import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { getTrialState } from "@/lib/trial";
 import { useFeatureAccess, usagePercentage } from "@/lib/use-feature-access";
+import { staffColor, staffInitials } from "@/lib/staff-color";
 
 export const Route = createFileRoute("/shop/calendar")({
   head: () => ({ meta: [{ title: "Calendar — FlowyBookings" }] }),
