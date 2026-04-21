@@ -398,6 +398,8 @@ export const en: Record<string, string> = {
   "calendar.bookingUpdated": "Booking updated",
   "calendar.bookingDeleted": "Booking deleted",
   "calendar.bookingCreated": "Booking created",
+  "calendar.conflictWith": "Conflict: {staff} already has a booking with {customer} ({service}) from {range}.",
+  "calendar.conflictGeneric": "This staff member already has an overlapping booking in this time slot. Pick another time or staff member.",
   "calendar.pickCustomer": "Pick customer",
   "calendar.pickService": "Pick service",
   "calendar.pickStaff": "Pick staff",
