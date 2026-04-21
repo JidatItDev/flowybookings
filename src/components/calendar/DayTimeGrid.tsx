@@ -236,8 +236,18 @@ export function DayTimeGrid({
   >(null);
 
   // Resize-state: actieve booking + live nieuwe duur in minuten (gesnapt).
+  // `invalid` + `reason` worden gezet wanneer de nieuwe ends_at in een pauze of
+  // buiten werkuren van de toegewezen medewerker valt (pre-validatie).
   const [resizing, setResizing] = useState<
-    { bookingId: string; colKey: string; startTopPx: number; newDurMin: number; label: string } | null
+    {
+      bookingId: string;
+      colKey: string;
+      startTopPx: number;
+      newDurMin: number;
+      label: string;
+      invalid?: boolean;
+      reason?: string;
+    } | null
   >(null);
 
   const hours = useMemo(() => {
@@ -690,18 +700,54 @@ export function DayTimeGrid({
                             const winMin = (END_HOUR - START_HOUR) * 60;
                             const startMinAbs = startMin; // relatief t.o.v. window-start
                             const maxDur = Math.max(SNAP_MINUTES, winMin - startMinAbs);
+                            // Pre-validatie: alleen ends_at wijzigt — starts_at blijft gelijk.
+                            // Hergebruikt validateBookingSlot tegen de werkuren van de
+                            // toegewezen medewerker (c.workingHours). Onassigned kolom →
+                            // geen validatie (geen werkuren beschikbaar).
+                            const wh = c.workingHours;
+                            const computeValidation = (
+                              newDurMin: number,
+                            ): { invalid: boolean; reason?: string } => {
+                              if (!wh || !dropInvalidLabels) return { invalid: false };
+                              const slotEnd = new Date(start.getTime() + newDurMin * 60_000);
+                              const v = validateBookingSlot(start, slotEnd, wh);
+                              if (v.kind === "ok" || v.kind === "no_data") return { invalid: false };
+                              if (v.kind === "closed_day") {
+                                return { invalid: true, reason: dropInvalidLabels.closedDay };
+                              }
+                              if (v.kind === "off_hours") {
+                                const w = v.window;
+                                return {
+                                  invalid: true,
+                                  reason: w
+                                    ? dropInvalidLabels.offHours(`${formatMinutes(w.startMin)}–${formatMinutes(w.endMin)}`)
+                                    : dropInvalidLabels.offHours("—"),
+                                };
+                              }
+                              if (v.kind === "break") {
+                                const br = v.window;
+                                return {
+                                  invalid: true,
+                                  reason: dropInvalidLabels.duringBreak(`${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`),
+                                };
+                              }
+                              return { invalid: false };
+                            };
                             const onMove = (ev: MouseEvent) => {
                               const dy = ev.clientY - startY;
                               const rawDur = startDur + dy / PX_PER_MIN;
                               const snapped = Math.round(rawDur / SNAP_MINUTES) * SNAP_MINUTES;
                               const clamped = Math.max(SNAP_MINUTES, Math.min(maxDur, snapped));
                               const endTotalMin = START_HOUR * 60 + startMinAbs + clamped;
+                              const v = computeValidation(clamped);
                               setResizing({
                                 bookingId: b.id,
                                 colKey: c.key,
                                 startTopPx,
                                 newDurMin: clamped,
                                 label: formatMinutes(endTotalMin),
+                                invalid: v.invalid,
+                                reason: v.reason,
                               });
                             };
                             const onUp = () => {
@@ -709,8 +755,13 @@ export function DayTimeGrid({
                               window.removeEventListener("mouseup", onUp);
                               setResizing((cur) => {
                                 if (!cur || cur.bookingId !== b.id) return null;
-                                // Commit alleen wanneer duur daadwerkelijk veranderd is.
-                                if (Math.round(cur.newDurMin) !== Math.round(durMin) && onReschedule) {
+                                // Commit alleen wanneer duur veranderd is én geldig is.
+                                // Bij invalid: rollback (geen mutation), blok springt terug.
+                                if (
+                                  !cur.invalid &&
+                                  Math.round(cur.newDurMin) !== Math.round(durMin) &&
+                                  onReschedule
+                                ) {
                                   const newEnds = new Date(start.getTime() + cur.newDurMin * 60_000);
                                   onReschedule({
                                     booking: b,
@@ -724,12 +775,15 @@ export function DayTimeGrid({
                             };
                             window.addEventListener("mousemove", onMove);
                             window.addEventListener("mouseup", onUp);
+                            const initial = computeValidation(startDur);
                             setResizing({
                               bookingId: b.id,
                               colKey: c.key,
                               startTopPx,
                               newDurMin: startDur,
                               label: formatMinutes(START_HOUR * 60 + startMinAbs + startDur),
+                              invalid: initial.invalid,
+                              reason: initial.reason,
                             });
                           }}
                           className={cn(
@@ -741,10 +795,20 @@ export function DayTimeGrid({
                           <span className="h-1 w-8 rounded-full bg-foreground/30" />
                         </div>
                       )}
-                      {/* Live tijd-badge tijdens resize. */}
+                      {/* Live tijd-badge tijdens resize. Rood (destructive) wanneer de
+                          nieuwe eindtijd buiten werkuren of in een pauze valt. */}
                       {isResizingThis && (
-                        <span className="pointer-events-none absolute -bottom-2.5 right-1 z-[16] rounded-md bg-primary px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-primary-foreground shadow-soft">
+                        <span
+                          className={cn(
+                            "pointer-events-none absolute -bottom-2.5 right-1 z-[16] rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shadow-soft",
+                            resizing!.invalid
+                              ? "bg-destructive text-destructive-foreground"
+                              : "bg-primary text-primary-foreground",
+                          )}
+                          title={resizing!.reason}
+                        >
                           {resizing!.label}
+                          {resizing!.invalid && resizing!.reason ? ` · ${resizing!.reason}` : ""}
                         </span>
                       )}
                     </div>
