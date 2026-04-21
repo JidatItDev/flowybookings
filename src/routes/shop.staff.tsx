@@ -364,16 +364,27 @@ function StaffColorPicker({
             </button>
           )}
         </div>
+        {conflictNames.length > 0 && (
+          <div className="mb-2 flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-[11px] text-amber-700 dark:text-amber-300">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>
+              Deze kleur is al in gebruik door{" "}
+              <span className="font-semibold">{conflictNames.join(", ")}</span>. Kies een andere kleur voor betere herkenning.
+            </span>
+          </div>
+        )}
         <div className="grid grid-cols-5 gap-2">
           {PALETTE_LIST.map((p) => {
             const selected = p.key === activeKey;
+            const usedBy = usage[p.key] ?? [];
+            const isConflict = usedBy.length > 0;
             return (
               <button
                 key={p.key}
                 type="button"
                 disabled={save.isPending}
                 onClick={() => save.mutate(p.key)}
-                title={p.label}
+                title={isConflict ? `${p.label} — al in gebruik door ${usedBy.join(", ")}` : p.label}
                 aria-label={p.label}
                 aria-pressed={selected}
                 className={cn(
@@ -383,11 +394,19 @@ function StaffColorPicker({
                 )}
               >
                 {selected && <Check className="h-4 w-4 text-white drop-shadow" />}
+                {isConflict && !selected && (
+                  <span
+                    className="absolute -right-0.5 -top-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-amber-500 text-[8px] font-bold text-white ring-1 ring-background"
+                    aria-hidden
+                  >
+                    !
+                  </span>
+                )}
               </button>
             );
           })}
         </div>
-        {!currentKey && (
+        {!currentKey && conflictNames.length === 0 && (
           <p className="mt-3 text-[11px] text-muted-foreground">
             Auto-kleur (op basis van medewerker-id). Kies een kleur om te overrulen.
           </p>
