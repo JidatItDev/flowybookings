@@ -345,28 +345,103 @@ export function DayTimeGrid({
             ))}
           </div>
 
-          {columns.map((c) => (
+          {columns.map((c) => {
+            const av = availabilityByColumn.get(c.key);
+            const showOverlay = !!av && av.hasStructuredData;
+            return (
             <div
               key={`col-${c.key}`}
               className="relative border-l border-border"
               style={{ height: totalHeight }}
             >
-              {/* Uur-grid-lijnen + klikbare slots */}
-              {hours.slice(0, -1).map((h, i) => (
-                <button
-                  key={`slot-${c.key}-${h}`}
-                  type="button"
-                  onClick={() => {
-                    if (!onSelectSlot) return;
-                    const startsAt = new Date(dayStart);
-                    startsAt.setUTCHours(h, 0, 0, 0);
-                    onSelectSlot({ staffId: c.staffId, startsAt });
+              {/* Unavailable-overlay: alles buiten working hours wordt grijs gestreept.
+                  Wanneer de hele dag gesloten is voor deze medewerker, vullen we de hele kolom. */}
+              {showOverlay && (av.dayClosed ? (
+                <div
+                  className="pointer-events-none absolute inset-x-0 z-[1] bg-muted/40"
+                  style={{
+                    top: 0,
+                    height: totalHeight,
+                    backgroundImage:
+                      "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground) / 0.08) 6px 7px)",
                   }}
-                  className="absolute left-0 right-0 border-t border-dashed border-border/60 transition-colors hover:bg-primary/5"
-                  style={{ top: i * PX_PER_HOUR, height: PX_PER_HOUR }}
-                  aria-label={`Nieuwe boeking ${c.label} ${String(h).padStart(2, "0")}:00`}
+                  title="Niet beschikbaar — vrije dag"
+                />
+              ) : (
+                // Render één off-hours-blok vóór de eerste working-window en één erna,
+                // plus eventuele gaten tussen working windows.
+                (() => {
+                  const winStart = START_HOUR * 60;
+                  const winEnd = END_HOUR * 60;
+                  const wins = av.working.length ? av.working : [{ startMin: winEnd, endMin: winEnd }];
+                  const gaps: AvailabilityWindow[] = [];
+                  let cursor = winStart;
+                  for (const w of wins) {
+                    if (w.startMin > cursor) gaps.push({ startMin: cursor, endMin: w.startMin });
+                    cursor = Math.max(cursor, w.endMin);
+                  }
+                  if (cursor < winEnd) gaps.push({ startMin: cursor, endMin: winEnd });
+                  return gaps.map((g, i) => (
+                    <div
+                      key={`off-${c.key}-${i}`}
+                      className="pointer-events-none absolute inset-x-0 z-[1] bg-muted/40"
+                      style={{
+                        top: (g.startMin - winStart) * PX_PER_MIN,
+                        height: (g.endMin - g.startMin) * PX_PER_MIN,
+                        backgroundImage:
+                          "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground) / 0.08) 6px 7px)",
+                      }}
+                      title="Buiten werkuren"
+                    />
+                  ));
+                })()
+              ))}
+              {/* Pauze-overlay: subtieler, met andere streep-kleur. */}
+              {showOverlay && av.breaks.map((br, i) => (
+                <div
+                  key={`break-${c.key}-${i}`}
+                  className="pointer-events-none absolute inset-x-0 z-[2] bg-warning/10"
+                  style={{
+                    top: (br.startMin - START_HOUR * 60) * PX_PER_MIN,
+                    height: (br.endMin - br.startMin) * PX_PER_MIN,
+                    backgroundImage:
+                      "repeating-linear-gradient(135deg, transparent 0 5px, hsl(var(--warning) / 0.18) 5px 6px)",
+                  }}
+                  title="Pauze"
                 />
               ))}
+              {/* Uur-grid-lijnen + klikbare slots */}
+              {hours.slice(0, -1).map((h, i) => {
+                const reason = slotReason(c.key, h);
+                const unavailable = reason !== null;
+                return (
+                  <button
+                    key={`slot-${c.key}-${h}`}
+                    type="button"
+                    onClick={() => {
+                      if (unavailable) {
+                        onUnavailableSlot?.({ staffId: c.staffId, staffName: c.label, reason: reason! });
+                        return;
+                      }
+                      if (!onSelectSlot) return;
+                      const startsAt = new Date(dayStart);
+                      startsAt.setUTCHours(h, 0, 0, 0);
+                      onSelectSlot({ staffId: c.staffId, startsAt });
+                    }}
+                    className={cn(
+                      "absolute left-0 right-0 z-[3] border-t border-dashed border-border/60 transition-colors",
+                      unavailable ? "cursor-not-allowed hover:bg-destructive/5" : "hover:bg-primary/5",
+                    )}
+                    style={{ top: i * PX_PER_HOUR, height: PX_PER_HOUR }}
+                    aria-label={
+                      unavailable
+                        ? `Niet beschikbaar — ${c.label} ${String(h).padStart(2, "0")}:00`
+                        : `Nieuwe boeking ${c.label} ${String(h).padStart(2, "0")}:00`
+                    }
+                    aria-disabled={unavailable}
+                  />
+                );
+              })}
               {/* Onderste lijn */}
               <div
                 className="absolute left-0 right-0 border-t border-dashed border-border/60"
