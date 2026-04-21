@@ -668,6 +668,8 @@ function BookingActionDialog({
   services: Array<{ id: string; name: string }>;
   staff: Array<{ id: string; full_name: string }>;
 }) {
+  const shopId = useActiveShopId();
+  const colors = useStaffColors(shopId);
   if (!booking) return null;
   const cust = customers.find((c) => c.id === booking.customer_id);
   const svc = services.find((s) => s.id === booking.service_id);
