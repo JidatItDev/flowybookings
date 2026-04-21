@@ -81,6 +81,16 @@ export const Route = createFileRoute("/api/mollie/webhook")({
           }
 
           // Always record the ping for audit.
+          const mappedLocalStatus = mapStatus(mollie?.status);
+          console.log("[mollie/webhook] received", {
+            mollie_id: mollieId,
+            mollie_status: mollie?.status ?? null,
+            mapped_local_status: mappedLocalStatus,
+            previous_local_status: payment?.status ?? null,
+            provider: payment?.provider ?? null,
+            shop_id: payment?.shop_id ?? null,
+            kind: (payment?.metadata as Record<string, unknown> | null)?.kind ?? null,
+          });
           await supabaseAdmin.from("activity_log").insert({
             entity: "mollie_webhook",
             action: "received",
@@ -88,6 +98,7 @@ export const Route = createFileRoute("/api/mollie/webhook")({
             metadata: {
               mollie_id: mollieId,
               mollie_status: mollie?.status ?? null,
+              mapped_local_status: mappedLocalStatus,
               local_status: payment?.status ?? null,
               provider: payment?.provider ?? null,
             },
