@@ -262,7 +262,18 @@ function CalendarPage() {
                         </td>
                         <td className="hidden px-4 py-3 sm:table-cell">{cust?.full_name ?? "—"}</td>
                         <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">{svc?.name ?? "—"}</td>
-                        <td className="hidden px-4 py-3 text-muted-foreground lg:table-cell">{stf?.full_name ?? "—"}</td>
+                        <td className="px-4 py-3">
+                          {stf ? (
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[10px] font-semibold">
+                                {stf.full_name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
+                              </span>
+                              <span className="max-w-[120px] truncate">{stf.full_name}</span>
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">{t("calendar.unassigned") ?? "Niet toegewezen"}</span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-right font-medium tabular-nums">{formatCents(b.price_cents)}</td>
                         <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                           <Select value={b.status} disabled={readOnly} onValueChange={(v) => updateStatus.mutate({ id: b.id, status: v as BookingWithRelations["status"] })}>
