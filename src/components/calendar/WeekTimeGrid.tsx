@@ -29,7 +29,9 @@ const MIN_HOUR = 6;
 const MAX_HOUR = 23;
 const PX_PER_HOUR = 56;
 const PX_PER_MIN = PX_PER_HOUR / 60;
+const SNAP_MINUTES = 15;
 const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+const DRAG_MIME = "application/x-flowy-booking";
 
 type StaffLite = {
   id: string;
@@ -39,6 +41,12 @@ type StaffLite = {
 
 type ColorResolver = {
   get: (staffId: string | null | undefined) => StaffColor;
+};
+
+export type WeekRescheduleParams = {
+  booking: BookingWithRelations;
+  newStaffId: string | null;
+  newStartsAt: Date;
 };
 
 export type WeekTimeGridProps = {
@@ -53,6 +61,8 @@ export type WeekTimeGridProps = {
   onSelectBooking?: (b: BookingWithRelations) => void;
   /** Klik op een dag-header → spring naar die dag in de dag-weergave. */
   onSelectDay?: (day: Date) => void;
+  /** Drag & drop reschedule. Behoudt staff_id, wijzigt alleen datum/tijd. */
+  onReschedule?: (params: WeekRescheduleParams) => void;
 };
 
 function parseHour(value: string | undefined, mode: "floor" | "ceil"): number | null {
@@ -115,7 +125,13 @@ export function WeekTimeGrid({
   businessHours,
   onSelectBooking,
   onSelectDay,
+  onReschedule,
 }: WeekTimeGridProps) {
+  const bookingsById = useMemo(() => {
+    const m = new Map<string, BookingWithRelations>();
+    for (const b of bookings) m.set(b.id, b);
+    return m;
+  }, [bookings]);
   const dayList = useMemo(() => {
     const start = new Date(weekStart);
     start.setUTCHours(0, 0, 0, 0);
@@ -242,6 +258,36 @@ export function WeekTimeGrid({
                 key={`col-${dayKey}`}
                 className="relative border-l border-border"
                 style={{ height: totalHeight }}
+                onDragOver={(e) => {
+                  if (!onReschedule) return;
+                  if (!Array.from(e.dataTransfer.types).includes(DRAG_MIME)) return;
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = "move";
+                }}
+                onDrop={(e) => {
+                  if (!onReschedule) return;
+                  const raw = e.dataTransfer.getData(DRAG_MIME);
+                  if (!raw) return;
+                  e.preventDefault();
+                  let payload: { id: string; grabOffsetMin: number };
+                  try {
+                    payload = JSON.parse(raw);
+                  } catch {
+                    return;
+                  }
+                  const src = bookingsById.get(payload.id);
+                  if (!src) return;
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const yPx = e.clientY - rect.top;
+                  const rawMin = yPx / PX_PER_MIN - (payload.grabOffsetMin ?? 0);
+                  const snapped = Math.round(rawMin / SNAP_MINUTES) * SNAP_MINUTES;
+                  const totalMinFromMidnight = winStart + snapped;
+                  const clamped = Math.max(0, Math.min(24 * 60 - SNAP_MINUTES, totalMinFromMidnight));
+                  const newStart = new Date(d);
+                  newStart.setUTCMinutes(clamped);
+                  if (newStart.getTime() === new Date(src.starts_at).getTime()) return;
+                  onReschedule({ booking: src, newStaffId: src.staff_id ?? null, newStartsAt: newStart });
+                }}
               >
                 {/* Hele dag gesloten */}
                 {fullClosed && (
@@ -307,13 +353,27 @@ export function WeekTimeGrid({
                   const stf = b.staff_id ? staffById.get(b.staff_id) : undefined;
                   const c = colors.get(b.staff_id);
                   const cancelled = b.status === "cancelled" || b.status === "no_show";
+                  const draggable = !!onReschedule && !cancelled;
                   return (
                     <button
                       key={b.id}
                       type="button"
                       onClick={() => onSelectBooking?.(b)}
+                      draggable={draggable}
+                      onDragStart={(e) => {
+                        if (!draggable) return;
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        const grabOffsetPx = e.clientY - rect.top;
+                        const grabOffsetMin = grabOffsetPx / PX_PER_MIN;
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData(
+                          DRAG_MIME,
+                          JSON.stringify({ id: b.id, grabOffsetMin }),
+                        );
+                      }}
                       className={cn(
                         "group absolute left-1 right-1 z-[4] overflow-hidden rounded-md border px-1.5 py-1 text-left text-[11px] shadow-sm transition-all hover:z-[6] hover:shadow-md",
+                        draggable && "cursor-grab active:cursor-grabbing",
                         cancelled
                           ? "border-dashed border-border bg-muted/60 text-muted-foreground line-through"
                           : `border-transparent ${c.bg} ${c.text}`,

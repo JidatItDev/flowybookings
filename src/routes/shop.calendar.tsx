@@ -586,6 +586,7 @@ function CalendarPage() {
                   setDayOffset(offset);
                   setCalendarMode("day");
                 }}
+                onReschedule={readOnly ? undefined : (params) => reschedule.mutate(params)}
               />
             );
           })() : viewMode === "grid" && dayOffset !== null ? (
