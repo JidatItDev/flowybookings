@@ -138,7 +138,11 @@ export type DayTimeGridProps = {
     booking: BookingWithRelations;
     newStaffId: string | null;
     newStartsAt: Date;
+    /** Optioneel — wanneer gezet, override van de afgeleide einde (voor resize-flow). */
+    newEndsAt?: Date;
   }) => void;
+  /** i18n-label voor de resize-handle (tooltip + aria). */
+  resizeHandleLabel?: string;
 };
 
 type Column = {
