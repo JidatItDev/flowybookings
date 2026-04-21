@@ -157,6 +157,32 @@ function BookingFlow() {
   const servicesQ = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
   const staffQ = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
 
+  // staff_services mapping for the selected service — drives "Eerste beschikbare" eligibility.
+  const staffServicesQ = useQuery({
+    queryKey: ["public", "staff-services", shopId, serviceId],
+    enabled: !!shopId && !!serviceId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("staff_services")
+        .select("staff_id")
+        .eq("service_id", serviceId!);
+      if (error) throw error;
+      return (data ?? []).map((r) => r.staff_id as string);
+    },
+  });
+
+  // Eligible staff for the selected service: staff that is active AND mapped via staff_services.
+  // Fallback: if no mappings exist for this service, treat ALL active staff as eligible
+  // (so shops that haven't configured staff_services don't end up with zero options).
+  const eligibleStaff = useMemo(() => {
+    const all = (staffQ.data ?? []).filter((s) => s.is_active);
+    const mapped = staffServicesQ.data ?? [];
+    if (!serviceId) return all;
+    if (mapped.length === 0) return all; // fallback
+    const set = new Set(mapped);
+    return all.filter((s) => set.has(s.id));
+  }, [staffQ.data, staffServicesQ.data, serviceId]);
+
   // Preset shop direct ophalen wanneer alleen via URL
   const presetShopQ = useQuery({
     queryKey: ["shop-preset", presetShopId],
