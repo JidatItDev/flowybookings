@@ -96,11 +96,33 @@ function AdminOverview() {
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-card shadow-soft lg:col-span-2">
+        <div className="rounded-2xl border border-border bg-card shadow-soft">
           <div className="flex items-center justify-between border-b border-border px-6 py-4"><h2 className="text-base font-semibold">{t("adminOverview.topShops")}</h2><TrendingUp className="h-4 w-4 text-muted-foreground" /></div>
           <div className="divide-y divide-border">
             {topShops.length === 0 && <p className="px-6 py-6 text-sm text-muted-foreground">{t("adminOverview.noShops")}</p>}
-            {topShops.map((s) => (<div key={s.id} className="flex items-center gap-3 px-6 py-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-warm text-xs font-semibold text-pink-foreground">{s.name[0]}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{s.name}</p><p className="text-xs text-muted-foreground">{s.plan} · {s.booking_count ?? 0} bookings</p></div><p className="text-sm font-semibold">{formatCents(s.revenue_cents ?? 0)}</p></div>))}
+            {topShops.map((s) => (<div key={s.id} className="flex items-center gap-3 px-6 py-3"><div className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-gradient-warm text-xs font-semibold text-pink-foreground">{s.name[0]}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{s.name}</p><p className="truncate text-xs text-muted-foreground">{s.plan} · {s.booking_count ?? 0} bookings</p></div><p className="flex-none text-sm font-semibold">{formatCents(s.revenue_cents ?? 0)}</p></div>))}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-border bg-card shadow-soft">
+          <div className="flex items-center justify-between border-b border-border px-6 py-4">
+            <div>
+              <h2 className="text-base font-semibold">{t("adminOverview.mostActiveShops")}</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">{t("adminOverview.mostActiveShopsSub")}</p>
+            </div>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <div className="divide-y divide-border">
+            {mostActiveShops.length === 0 && <p className="px-6 py-6 text-sm text-muted-foreground">{t("adminOverview.noActiveShops")}</p>}
+            {mostActiveShops.map((s, i) => (
+              <div key={s.shop_id} className="flex items-center gap-3 px-6 py-3">
+                <div className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-mint text-xs font-semibold text-mint-foreground">{i + 1}</div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{s.shop_name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{t("adminOverview.bookingsCount", { n: s.count })}</p>
+                </div>
+                <p className="flex-none text-sm font-semibold">{s.count}</p>
+              </div>
+            ))}
           </div>
         </div>
         <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6 shadow-soft">
