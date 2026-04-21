@@ -15,7 +15,7 @@ import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { bookingsQuery, customersQuery, servicesQuery, staffQuery } from "@/lib/queries";
 import { formatCents, formatTime, initials } from "@/lib/format";
 import { useT } from "@/lib/i18n";
-import { staffColor, staffInitials } from "@/lib/staff-color";
+import { staffInitials, useStaffColors } from "@/lib/staff-color";
 import { getTrialState } from "@/lib/trial";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
@@ -33,6 +33,7 @@ function ShopDashboard() {
   const { data: customers = [] } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
   const { data: staff = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
+  const colors = useStaffColors(shopId);
 
   const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0);
   const dayEnd = new Date(dayStart); dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
@@ -152,7 +153,7 @@ function ShopDashboard() {
                       <p className="truncate text-xs text-muted-foreground"><span className="sm:hidden">{formatTime(b.starts_at)} · </span>{svc?.name ?? "—"}</p>
                       <p className="mt-1 truncate text-xs">
                         {stf ? (() => {
-                          const c = staffColor(stf.id);
+                          const c = colors.get(stf.id);
                           return (
                             <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium ${c.bg} ${c.text}`}>
                               <span className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-semibold ${c.dot}`}>

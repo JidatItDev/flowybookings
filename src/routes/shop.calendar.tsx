@@ -37,7 +37,7 @@ import { useT } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth-context";
 import { getTrialState } from "@/lib/trial";
 import { useFeatureAccess, usagePercentage } from "@/lib/use-feature-access";
-import { staffColor, staffInitials } from "@/lib/staff-color";
+import { staffColor, staffInitials, useStaffColors } from "@/lib/staff-color";
 
 export const Route = createFileRoute("/shop/calendar")({
   head: () => ({ meta: [{ title: "Calendar — FlowyBookings" }] }),
@@ -90,6 +90,7 @@ function CalendarPage() {
   const { data: customers = [] } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
   const { data: staff = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
+  const colors = useStaffColors(shopId);
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: BookingWithRelations["status"] }) => {
@@ -261,7 +262,7 @@ function CalendarPage() {
                   </span>
                 </button>
                 {staff.filter((s) => s.is_active).map((s) => {
-                  const c = staffColor(s.id);
+                  const c = colors.get(s.id);
                   const active = staffFilter === s.id;
                   const count = staffCounts.map.get(s.id) ?? 0;
                   return (
@@ -357,7 +358,7 @@ function CalendarPage() {
                         <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">{svc?.name ?? "—"}</td>
                         <td className="px-4 py-3">
                           {stf ? (() => {
-                            const c = staffColor(stf.id);
+                            const c = colors.get(stf.id);
                             return (
                               <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${c.bg} ${c.text}`}>
                                 <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold ${c.dot}`}>
@@ -667,6 +668,8 @@ function BookingActionDialog({
   services: Array<{ id: string; name: string }>;
   staff: Array<{ id: string; full_name: string }>;
 }) {
+  const shopId = useActiveShopId();
+  const colors = useStaffColors(shopId);
   if (!booking) return null;
   const cust = customers.find((c) => c.id === booking.customer_id);
   const svc = services.find((s) => s.id === booking.service_id);
@@ -692,7 +695,7 @@ function BookingActionDialog({
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
               <span className="text-xs uppercase tracking-wider text-muted-foreground">Medewerker</span>
               {stf ? (() => {
-                const c = staffColor(stf.id);
+                const c = colors.get(stf.id);
                 return (
                   <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium", c.bg, c.text)}>
                     <span className={cn("flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold", c.dot)}>

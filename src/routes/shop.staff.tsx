@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, CalendarRange, Pencil, Trash2, UserCog, Check } from "lucide-react";
+import { Plus, CalendarRange, Pencil, Trash2, UserCog, Check, Palette, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { EmptyState, LoadingGrid, NoShopState } from "@/components/EmptyState";
 import { UpgradeNudge } from "@/components/UpgradeNudge";
 import { FeatureLock } from "@/components/FeatureLock";
@@ -19,7 +20,13 @@ import { useActiveShopId, useShopContext } from "@/lib/shop-context";
 import { staffQuery, servicesQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { initials } from "@/lib/format";
-import { staffColor } from "@/lib/staff-color";
+import {
+  staffColor,
+  PALETTE_LIST,
+  shopBrandingKeys,
+  useStaffColors,
+  type PaletteKey,
+} from "@/lib/staff-color";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
 import { useFeatureAccess } from "@/lib/use-feature-access";
@@ -48,6 +55,7 @@ function StaffPage() {
   const { data: staff = [], isLoading } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
   const { data: links = [] } = useQuery({ queryKey: ["staff_services", shopId], queryFn: async () => { const { data, error } = await supabase.from("staff_services").select("*"); if (error) throw error; return data ?? []; }, enabled: !!shopId });
+  const colors = useStaffColors(shopId);
   const atOrOverLimit = staffAccess.data ? !staffAccess.data.allowed : (Number.isFinite(planLimit) && staff.length >= planLimit);
 
   const toggleActive = useMutation({
@@ -99,7 +107,8 @@ function StaffPage() {
           {staff.map((m) => {
             const hrs = (m.working_hours as { hours?: string })?.hours ?? "Not set";
             const svcs = serviceNamesFor(m.id);
-            const c = staffColor(m.id);
+            const c = colors.get(m.id);
+            const overrideKey = colors.overrideOf(m.id);
             return (
               <div key={m.id} className="rounded-2xl border border-border bg-card p-6 shadow-soft">
                 <div className="flex items-start gap-4">
@@ -121,6 +130,13 @@ function StaffPage() {
                     {m.email && <p className="truncate text-sm text-muted-foreground">{m.email}</p>}
                     <p className="mt-2 inline-flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarRange className="h-3.5 w-3.5" /> {hrs}</p>
                   </div>
+                  <StaffColorPicker
+                    staffId={m.id}
+                    shopId={shopId}
+                    currentKey={overrideKey}
+                    disabled={readOnly}
+                    readOnlyTitle={roTitle}
+                  />
                 </div>
                 <div className="mt-5">
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("staff.services", { count: svcs.length })}</p>
@@ -256,3 +272,115 @@ function StaffFormDialog({ open, onClose, member, shopId, services, links }: { o
     </Dialog>
   );
 }
+
+function StaffColorPicker({
+  staffId,
+  shopId,
+  currentKey,
+  disabled,
+  readOnlyTitle,
+}: {
+  staffId: string;
+  shopId: string | null;
+  currentKey: PaletteKey | null;
+  disabled?: boolean;
+  readOnlyTitle?: string;
+}) {
+  const qc = useQueryClient();
+  const { t } = useT();
+  const [open, setOpen] = useState(false);
+  const autoColor = staffColor(staffId);
+  const activeKey = currentKey ?? autoColor.key;
+
+  const save = useMutation({
+    mutationFn: async (nextKey: PaletteKey | null) => {
+      assertNotImpersonating();
+      if (!shopId) throw new Error(t("errors.noActiveShop"));
+      // Read current branding then merge to avoid clobbering other keys.
+      const { data, error } = await supabase
+        .from("shops")
+        .select("branding")
+        .eq("id", shopId)
+        .maybeSingle<{ branding: Record<string, unknown> | null }>();
+      if (error) throw error;
+      const branding = (data?.branding ?? {}) as Record<string, unknown>;
+      const staffColors = { ...((branding.staff_colors as Record<string, PaletteKey>) ?? {}) };
+      if (nextKey) staffColors[staffId] = nextKey;
+      else delete staffColors[staffId];
+      const nextBranding = { ...branding, staff_colors: staffColors };
+      const { error: upErr } = await supabase
+        .from("shops")
+        .update({ branding: nextBranding })
+        .eq("id", shopId);
+      if (upErr) throw upErr;
+    },
+    onSuccess: (_d, nextKey) => {
+      toast.success(nextKey ? "Kleur bijgewerkt" : "Kleur teruggezet op standaard");
+      if (shopId) qc.invalidateQueries({ queryKey: shopBrandingKeys.branding(shopId) });
+      setOpen(false);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Popover open={open} onOpenChange={(o) => !disabled && setOpen(o)}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          disabled={disabled || save.isPending}
+          title={readOnlyTitle ?? "Kleur aanpassen"}
+          aria-label="Kleur aanpassen"
+          className={cn(
+            "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60",
+          )}
+        >
+          <Palette className="h-4 w-4" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-64 p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Kleur</p>
+          {currentKey && (
+            <button
+              type="button"
+              onClick={() => save.mutate(null)}
+              disabled={save.isPending}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground"
+            >
+              <RotateCcw className="h-3 w-3" /> Standaard
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-5 gap-2">
+          {PALETTE_LIST.map((p) => {
+            const selected = p.key === activeKey;
+            return (
+              <button
+                key={p.key}
+                type="button"
+                disabled={save.isPending}
+                onClick={() => save.mutate(p.key)}
+                title={p.label}
+                aria-label={p.label}
+                aria-pressed={selected}
+                className={cn(
+                  "relative flex h-8 w-8 items-center justify-center rounded-full transition",
+                  p.swatch,
+                  selected ? "ring-2 ring-offset-2 ring-offset-background ring-foreground" : "hover:scale-110",
+                )}
+              >
+                {selected && <Check className="h-4 w-4 text-white drop-shadow" />}
+              </button>
+            );
+          })}
+        </div>
+        {!currentKey && (
+          <p className="mt-3 text-[11px] text-muted-foreground">
+            Auto-kleur (op basis van medewerker-id). Kies een kleur om te overrulen.
+          </p>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
