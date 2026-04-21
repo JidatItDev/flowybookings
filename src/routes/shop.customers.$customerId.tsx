@@ -16,6 +16,7 @@ import {
   Sparkle,
   CreditCard,
   Undo2,
+  Heart,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
@@ -24,11 +25,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { StatusBadge } from "@/components/StatusBadge";
 import { NoShopState } from "@/components/EmptyState";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { useActiveShopId } from "@/lib/shop-context";
-import { bookingsQuery, servicesQuery, shopKeys } from "@/lib/queries";
+import { bookingsQuery, servicesQuery, staffQuery, shopKeys } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCents, formatDateTime, initials, relativeFromNow } from "@/lib/format";
 import { cn } from "@/lib/utils";
