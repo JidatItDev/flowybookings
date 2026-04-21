@@ -26,6 +26,7 @@ import {
 import { EmptyState, NoShopState } from "@/components/EmptyState";
 import { FeatureLock } from "@/components/FeatureLock";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
+import { bookingErrorToast } from "@/lib/booking-errors";
 import { useActiveShopId } from "@/lib/shop-context";
 import {
   bookingsQuery, customersQuery, servicesQuery, shopFullQuery, shopKeys, staffQuery,
