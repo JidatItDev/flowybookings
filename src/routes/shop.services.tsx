@@ -296,6 +296,19 @@ function ServicesPage() {
 function ServiceFormDialog({ open, onClose, service, duplicateOf, shopId }: { open: boolean; onClose: () => void; service: ServiceRow | null; duplicateOf?: ServiceRow | null; shopId: string | null }) {
   const qc = useQueryClient(); const { t } = useT();
   const [form, setForm] = useState({ name: "", category: "", duration_minutes: 30, price: 0, deposit: 0, is_active: true, description: "" });
+  // Reuse the shared staff + staff_services caches — no new queries.
+  const { data: allStaff = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId && open });
+  const { data: allLinks = [] } = useQuery<StaffServiceLink[]>({
+    queryKey: ["staff_services", shopId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("staff_services").select("staff_id,service_id");
+      if (error) throw error;
+      return (data ?? []) as StaffServiceLink[];
+    },
+    enabled: !!shopId && open,
+  });
+  const [staffIds, setStaffIds] = useState<string[]>([]);
+  const [pickStaffOpen, setPickStaffOpen] = useState(false);
   useEffect(() => {
     if (!open) return;
     const seed = service ?? duplicateOf;
@@ -308,8 +321,11 @@ function ServiceFormDialog({ open, onClose, service, duplicateOf, shopId }: { op
       is_active: seed?.is_active ?? true,
       description: seed?.description ?? "",
     });
+    // Seed staff selection from the source service (edit OR duplicate).
+    const srcId = seed?.id;
+    setStaffIds(srcId ? allLinks.filter((l) => l.service_id === srcId).map((l) => l.staff_id) : []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, service?.id, duplicateOf?.id]);
+  }, [open, service?.id, duplicateOf?.id, allLinks.length]);
 
   // Validation: deposit must be ≥ 0 and ≤ price; price must be ≥ 0.
   const priceNum = Number(form.price) || 0;
