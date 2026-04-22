@@ -868,20 +868,21 @@ function CalendarPage() {
             />
           ) : (
             <>
-              {/* Mobile card list — full client + service + amount + status visible. */}
-              <ul className="space-y-2.5 sm:hidden">
+              {/* Mobile card list — premium, app-like layout. Tap opens quick-action sheet. */}
+              <ul className="space-y-3 sm:hidden">
                 {filtered.map((b, idx) => {
                   const cust = customers.find((c) => c.id === b.customer_id);
                   const svc = services.find((s) => s.id === b.service_id);
                   const stf = staff.find((s) => s.id === b.staff_id);
                   const c = stf ? colors.get(stf.id) : null;
                   const isCancelled = b.status === "cancelled" || b.status === "no_show";
-                  const statusTone: Record<string, string> = {
-                    pending: "bg-warning/15 text-warning-foreground",
-                    confirmed: "bg-info/15 text-info-foreground",
-                    completed: "bg-mint text-mint-foreground",
-                    cancelled: "bg-muted text-muted-foreground",
-                    no_show: "bg-destructive/15 text-destructive",
+                  // Minimal status indicator: a small colored dot (green/yellow/red/grey).
+                  const statusDot: Record<string, string> = {
+                    pending: "bg-warning",
+                    confirmed: "bg-info",
+                    completed: "bg-emerald-500",
+                    cancelled: "bg-muted-foreground/40",
+                    no_show: "bg-destructive",
                   };
                   return (
                     <li
@@ -892,12 +893,13 @@ function CalendarPage() {
                       <button
                         type="button"
                         onClick={() => setViewing(b)}
+                        aria-label={`${cust?.full_name ?? ""} — ${svc?.name ?? ""} — ${formatTime(b.starts_at)}`}
                         className={cn(
-                          "relative flex w-full overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition-colors active:bg-muted/40",
-                          isCancelled && "opacity-70",
+                          "relative flex w-full overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm transition-all active:scale-[0.99] active:bg-muted/40",
+                          isCancelled && "opacity-60",
                         )}
                       >
-                        {/* Left accent bar in staff color */}
+                        {/* 4px left accent in staff color (or muted when unassigned). */}
                         <span
                           className={cn(
                             "w-1 shrink-0",
@@ -906,51 +908,53 @@ function CalendarPage() {
                           aria-hidden="true"
                         />
                         <div className="flex-1 px-4 py-3.5">
-                          <div className="flex items-start justify-between gap-2">
-                            <span className="text-sm font-semibold tabular-nums text-foreground">
-                              {formatTime(b.starts_at)} – {formatTime(b.ends_at)}
-                            </span>
-                            <span
-                              className={cn(
-                                "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize",
-                                statusTone[b.status] ?? "bg-muted text-muted-foreground",
-                              )}
-                            >
-                              {statusLabel[b.status]}
-                            </span>
-                          </div>
-                          <div className="mt-1.5 truncate text-base font-semibold text-foreground">
-                            {cust?.full_name ?? "—"}
-                          </div>
-                          <div className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <span className="truncate">{svc?.name ?? "—"}</span>
-                            <span aria-hidden="true">·</span>
-                            <span className="shrink-0 font-medium text-foreground tabular-nums">
+                          {/* Row 1: Client (primary) + Price right-aligned + Status dot */}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span
+                                className={cn(
+                                  "h-2 w-2 shrink-0 rounded-full",
+                                  statusDot[b.status] ?? "bg-muted-foreground/40",
+                                )}
+                                aria-label={statusLabel[b.status]}
+                                title={statusLabel[b.status]}
+                              />
+                              <span
+                                className={cn(
+                                  "truncate text-base font-semibold text-foreground",
+                                  isCancelled && "line-through",
+                                )}
+                              >
+                                {cust?.full_name ?? "—"}
+                              </span>
+                            </div>
+                            <span className="shrink-0 text-base font-semibold tabular-nums text-foreground">
                               {formatCents(b.price_cents)}
                             </span>
                           </div>
-                          {stf && c && (
-                            <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <span aria-hidden="true">→</span>
-                              <span
-                                className={cn(
-                                  "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium",
-                                  c.bg,
-                                  c.text,
-                                )}
-                              >
-                                <span className={cn("flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-semibold", c.dot)}>
-                                  {staffInitials(stf.full_name)}
-                                </span>
+
+                          {/* Row 2: Service (secondary) */}
+                          <div className="mt-1 truncate text-sm text-muted-foreground">
+                            {svc?.name ?? "—"}
+                          </div>
+
+                          {/* Row 3: Time range (smaller) + staff dot/name */}
+                          <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                            <span className="tabular-nums">
+                              {formatTime(b.starts_at)} – {formatTime(b.ends_at)}
+                            </span>
+                            {stf && c ? (
+                              <span className="inline-flex min-w-0 items-center gap-1.5">
+                                <span
+                                  className={cn("h-2 w-2 shrink-0 rounded-full", c.swatch)}
+                                  aria-hidden="true"
+                                />
                                 <span className="max-w-[140px] truncate">{stf.full_name}</span>
                               </span>
-                            </div>
-                          )}
-                          {!stf && (
-                            <div className="mt-2 text-xs italic text-muted-foreground">
-                              {t("calendar.unassignedShort")}
-                            </div>
-                          )}
+                            ) : (
+                              <span className="italic">{t("calendar.unassignedShort")}</span>
+                            )}
+                          </div>
                         </div>
                       </button>
                     </li>
