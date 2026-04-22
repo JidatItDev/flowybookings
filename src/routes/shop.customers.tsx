@@ -51,6 +51,17 @@ function CustomersPage() {
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<CustomerRow | null>(null);
   const [importing, setImporting] = useState(false);
+  const [sheetFor, setSheetFor] = useState<CustomerRow | null>(null);
+
+  const sheetActions = useStandardRowActions({
+    onView: sheetFor
+      ? () => navigate({ to: "/shop/customers/$customerId", params: { customerId: sheetFor.id } })
+      : null,
+    onEdit: sheetFor ? () => setEditing(sheetFor) : null,
+    onDelete: sheetFor ? () => setDeleting(sheetFor) : null,
+    disabled: readOnly,
+    disabledTitle: roTitle,
+  });
 
   const { data: customers = [], isLoading } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
   const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
