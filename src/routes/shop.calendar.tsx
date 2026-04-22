@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Plus, Filter, CalendarDays, UserX, Check, ChevronsUpDown, UserPlus, Search, List, LayoutGrid, AlertTriangle } from "lucide-react";
 import { DayTimeGrid } from "@/components/calendar/DayTimeGrid";
 import { WeekTimeGrid } from "@/components/calendar/WeekTimeGrid";
+import { BookingCard } from "@/components/calendar/BookingCard";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
