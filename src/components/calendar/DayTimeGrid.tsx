@@ -797,29 +797,56 @@ export function DayTimeGrid({
               )}
 
               {/* Drop-indicator: gesnapte horizontale lijn met tijd-label tijdens drag.
+                  Toont ook klant + dienst zodat je niet hoeft terug te scrollen.
                   Rood (destructive) wanneer de positie buiten werkuren of in pauze valt. */}
-              {dragPreview && dragPreview.colKey === c.key && (
-                <div
-                  className={cn(
-                    "pointer-events-none absolute left-0 right-0 z-[15] border-t-2 border-dashed",
-                    dragPreview.invalid ? "border-destructive" : "border-primary",
-                  )}
-                  style={{ top: dragPreview.topPx }}
-                  title={dragPreview.reason}
-                >
-                  <span
+              {dragPreview && dragPreview.colKey === c.key && (() => {
+                const draggedId = mouseDrag?.bookingId ?? touchDrag?.bookingId ?? draggedIdRef.current;
+                const draggedBk = draggedId ? bookings.find((bk) => bk.id === draggedId) : null;
+                const draggedCust = draggedBk?.customer_id
+                  ? customers.find((x) => x.id === draggedBk.customer_id)
+                  : null;
+                const draggedSvc = draggedBk?.service_id
+                  ? services.find((x) => x.id === draggedBk.service_id)
+                  : null;
+                return (
+                  <div
                     className={cn(
-                      "absolute -top-2.5 left-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shadow-soft",
-                      dragPreview.invalid
-                        ? "bg-destructive text-destructive-foreground"
-                        : "bg-primary text-primary-foreground",
+                      "pointer-events-none absolute left-0 right-0 z-[15] border-t-2 border-dashed",
+                      dragPreview.invalid ? "border-destructive" : "border-primary",
                     )}
+                    style={{ top: dragPreview.topPx }}
+                    title={dragPreview.reason}
                   >
-                    {dragPreview.label}
-                    {dragPreview.invalid && dragPreview.reason ? ` · ${dragPreview.reason}` : ""}
-                  </span>
-                </div>
-              )}
+                    <div
+                      className={cn(
+                        "absolute -top-2 left-1 max-w-[calc(100%-0.5rem)] rounded-md px-1.5 py-1 text-[10px] font-semibold tabular-nums shadow-soft",
+                        dragPreview.invalid
+                          ? "bg-destructive text-destructive-foreground"
+                          : "bg-primary text-primary-foreground",
+                      )}
+                    >
+                      <div className="flex items-center gap-1">
+                        <span>{dragPreview.label}</span>
+                        {draggedCust && (
+                          <span className="truncate font-medium opacity-90">
+                            · {draggedCust.full_name}
+                          </span>
+                        )}
+                      </div>
+                      {draggedSvc && !dragPreview.invalid && (
+                        <div className="truncate text-[9px] font-normal opacity-80">
+                          {draggedSvc.name}
+                        </div>
+                      )}
+                      {dragPreview.invalid && dragPreview.reason && (
+                        <div className="truncate text-[9px] font-normal opacity-90">
+                          {dragPreview.reason}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Bookings in deze kolom */}
               {visibleBookings
