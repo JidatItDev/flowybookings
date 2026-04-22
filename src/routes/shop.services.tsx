@@ -271,6 +271,16 @@ function ServicesPage() {
         actions={sheetActions}
       />
 
+      <ServiceViewSheet
+        service={viewing}
+        onClose={() => setViewing(null)}
+        staffNames={viewing ? (stats.staffByService.get(viewing.id) ?? []).map((s) => s.name) : []}
+        bookingsCount={viewing ? stats.bookingsByService.get(viewing.id) ?? 0 : 0}
+        onEdit={() => { if (viewing) { setEditing(viewing); setViewing(null); } }}
+        readOnly={readOnly}
+        roTitle={roTitle}
+      />
+
       {shopId && (
         <FloatingActionButton
           onClick={() => setCreating(true)}
