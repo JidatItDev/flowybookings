@@ -859,73 +859,166 @@ function CalendarPage() {
               }}
             />
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-3 text-left">{t("calendar.when")}</th>
-                    <th className="hidden px-4 py-3 text-left sm:table-cell">{t("calendar.customer")}</th>
-                    <th className="hidden px-4 py-3 text-left md:table-cell">{t("calendar.service")}</th>
-                    <th className="px-4 py-3 text-left">{t("calendar.staffCol")}</th>
-                    <th className="px-4 py-3 text-right">{t("calendar.amount")}</th>
-                    <th className="px-4 py-3 text-left">{t("calendar.status")}</th>
-                    <th className="px-4 py-3" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {filtered.map((b) => {
-                    const cust = customers.find((c) => c.id === b.customer_id);
-                    const svc = services.find((s) => s.id === b.service_id);
-                    const stf = staff.find((s) => s.id === b.staff_id);
-                    return (
-                      <tr key={b.id} onClick={() => setViewing(b)} className="cursor-pointer hover:bg-muted/30">
-                        <td className="px-4 py-3">
-                          <p className="font-medium">{formatTime(b.starts_at)}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(b.starts_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", timeZone: "UTC" })}
-                          </p>
-                        </td>
-                        <td className="hidden px-4 py-3 sm:table-cell">{cust?.full_name ?? "—"}</td>
-                        <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">{svc?.name ?? "—"}</td>
-                        <td className="px-4 py-3">
-                          {stf ? (() => {
-                            const c = colors.get(stf.id);
-                            return (
-                              <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${c.bg} ${c.text}`}>
-                                <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold ${c.dot}`}>
+            <>
+              {/* Mobile card list — full client + service + amount + status visible. */}
+              <ul className="space-y-2.5 sm:hidden">
+                {filtered.map((b, idx) => {
+                  const cust = customers.find((c) => c.id === b.customer_id);
+                  const svc = services.find((s) => s.id === b.service_id);
+                  const stf = staff.find((s) => s.id === b.staff_id);
+                  const c = stf ? colors.get(stf.id) : null;
+                  const isCancelled = b.status === "cancelled" || b.status === "no_show";
+                  const statusTone: Record<string, string> = {
+                    pending: "bg-warning/15 text-warning-foreground",
+                    confirmed: "bg-info/15 text-info-foreground",
+                    completed: "bg-mint text-mint-foreground",
+                    cancelled: "bg-muted text-muted-foreground",
+                    no_show: "bg-destructive/15 text-destructive",
+                  };
+                  return (
+                    <li
+                      key={b.id}
+                      style={{ animationDelay: `${Math.min(idx, 8) * 30}ms` }}
+                      className="animate-fade-in"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setViewing(b)}
+                        className={cn(
+                          "relative flex w-full overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition-colors active:bg-muted/40",
+                          isCancelled && "opacity-70",
+                        )}
+                      >
+                        {/* Left accent bar in staff color */}
+                        <span
+                          className={cn(
+                            "w-1 shrink-0",
+                            c ? c.swatch : "bg-muted-foreground/40",
+                          )}
+                          aria-hidden="true"
+                        />
+                        <div className="flex-1 px-4 py-3.5">
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-sm font-semibold tabular-nums text-foreground">
+                              {formatTime(b.starts_at)} – {formatTime(b.ends_at)}
+                            </span>
+                            <span
+                              className={cn(
+                                "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize",
+                                statusTone[b.status] ?? "bg-muted text-muted-foreground",
+                              )}
+                            >
+                              {statusLabel[b.status]}
+                            </span>
+                          </div>
+                          <div className="mt-1.5 truncate text-base font-semibold text-foreground">
+                            {cust?.full_name ?? "—"}
+                          </div>
+                          <div className="mt-0.5 flex items-center gap-1.5 text-sm text-muted-foreground">
+                            <span className="truncate">{svc?.name ?? "—"}</span>
+                            <span aria-hidden="true">·</span>
+                            <span className="shrink-0 font-medium text-foreground tabular-nums">
+                              {formatCents(b.price_cents)}
+                            </span>
+                          </div>
+                          {stf && c && (
+                            <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <span aria-hidden="true">→</span>
+                              <span
+                                className={cn(
+                                  "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                                  c.bg,
+                                  c.text,
+                                )}
+                              >
+                                <span className={cn("flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-semibold", c.dot)}>
                                   {staffInitials(stf.full_name)}
                                 </span>
-                                <span className="max-w-[120px] truncate">{stf.full_name}</span>
+                                <span className="max-w-[140px] truncate">{stf.full_name}</span>
                               </span>
-                            );
-                          })() : (
-                            <span className="text-xs text-muted-foreground italic">{t("calendar.unassigned") ?? "Niet toegewezen"}</span>
+                            </div>
                           )}
-                        </td>
-                        <td className="px-4 py-3 text-right font-medium tabular-nums">{formatCents(b.price_cents)}</td>
-                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                          <Select value={b.status} disabled={readOnly} onValueChange={(v) => updateStatus.mutate({ id: b.id, status: v as BookingWithRelations["status"] })}>
-                            <SelectTrigger
-                              className="h-8 w-[120px] text-xs"
-                              title={readOnly ? t("impersonate.readOnlyTooltip") : undefined}
-                            ><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {statuses.filter((s) => s !== "all").map((s) => (
-                                <SelectItem key={s} value={s}>{statusLabel[s]}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="sm" disabled={readOnly} title={readOnly ? t("impersonate.readOnlyTooltip") : undefined} onClick={() => setEditing(b)}>{t("calendar.edit")}</Button>
-                          <Button variant="ghost" size="sm" disabled={readOnly} title={readOnly ? t("impersonate.readOnlyTooltip") : undefined} onClick={() => setDeleting(b)}>{t("calendar.delete")}</Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          {!stf && (
+                            <div className="mt-2 text-xs italic text-muted-foreground">
+                              {t("calendar.unassignedShort")}
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {/* Desktop/tablet table view */}
+              <div className="hidden overflow-hidden rounded-2xl border border-border bg-card shadow-soft sm:block">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                    <tr>
+                      <th className="px-4 py-3 text-left">{t("calendar.when")}</th>
+                      <th className="hidden px-4 py-3 text-left sm:table-cell">{t("calendar.customer")}</th>
+                      <th className="hidden px-4 py-3 text-left md:table-cell">{t("calendar.service")}</th>
+                      <th className="px-4 py-3 text-left">{t("calendar.staffCol")}</th>
+                      <th className="px-4 py-3 text-right">{t("calendar.amount")}</th>
+                      <th className="px-4 py-3 text-left">{t("calendar.status")}</th>
+                      <th className="px-4 py-3" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {filtered.map((b) => {
+                      const cust = customers.find((c) => c.id === b.customer_id);
+                      const svc = services.find((s) => s.id === b.service_id);
+                      const stf = staff.find((s) => s.id === b.staff_id);
+                      return (
+                        <tr key={b.id} onClick={() => setViewing(b)} className="cursor-pointer hover:bg-muted/30">
+                          <td className="px-4 py-3">
+                            <p className="font-medium">{formatTime(b.starts_at)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(b.starts_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", timeZone: "UTC" })}
+                            </p>
+                          </td>
+                          <td className="hidden px-4 py-3 sm:table-cell">{cust?.full_name ?? "—"}</td>
+                          <td className="hidden px-4 py-3 text-muted-foreground md:table-cell">{svc?.name ?? "—"}</td>
+                          <td className="px-4 py-3">
+                            {stf ? (() => {
+                              const c = colors.get(stf.id);
+                              return (
+                                <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${c.bg} ${c.text}`}>
+                                  <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold ${c.dot}`}>
+                                    {staffInitials(stf.full_name)}
+                                  </span>
+                                  <span className="max-w-[120px] truncate">{stf.full_name}</span>
+                                </span>
+                              );
+                            })() : (
+                              <span className="text-xs text-muted-foreground italic">{t("calendar.unassigned") ?? "Niet toegewezen"}</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-right font-medium tabular-nums">{formatCents(b.price_cents)}</td>
+                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                            <Select value={b.status} disabled={readOnly} onValueChange={(v) => updateStatus.mutate({ id: b.id, status: v as BookingWithRelations["status"] })}>
+                              <SelectTrigger
+                                className="h-8 w-[120px] text-xs"
+                                title={readOnly ? t("impersonate.readOnlyTooltip") : undefined}
+                              ><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                {statuses.filter((s) => s !== "all").map((s) => (
+                                  <SelectItem key={s} value={s}>{statusLabel[s]}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="sm" disabled={readOnly} title={readOnly ? t("impersonate.readOnlyTooltip") : undefined} onClick={() => setEditing(b)}>{t("calendar.edit")}</Button>
+                            <Button variant="ghost" size="sm" disabled={readOnly} title={readOnly ? t("impersonate.readOnlyTooltip") : undefined} onClick={() => setDeleting(b)}>{t("calendar.delete")}</Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </>
       )}
