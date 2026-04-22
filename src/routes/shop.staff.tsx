@@ -424,66 +424,71 @@ function StaffFormDialog({ open, onClose, member, shopId, services, links }: { o
   });
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>{member ? t("staff.editStaff") : t("staff.addStaffTitle")}</DialogTitle></DialogHeader>
-        <div className="grid gap-4 py-2">
-          <div><Label htmlFor="fn">{t("staff.fullName")}</Label><Input id="fn" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
-          <div><Label htmlFor="em">{t("staff.email")}</Label><Input id="em" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-          <div><Label htmlFor="ph">{t("staff.phone")}</Label><Input id="ph" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-          <WeeklyHoursEditor schedule={schedule} onChange={setSchedule} />
-          <div>
-            <Label htmlFor="hr" className="text-xs text-muted-foreground">Vrije-tekst notitie (optioneel)</Label>
-            <Input id="hr" value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })} placeholder={t("staff.workingHoursPlaceholder")} />
-            <p className="mt-1 text-[11px] text-muted-foreground">Wordt alleen op de overzichtskaart getoond als er geen weekrooster is ingesteld.</p>
-          </div>
-          <div>
-            <div className="flex items-center justify-between">
-              <Label>{t("staff.assignServices")}</Label>
-              <span className="text-xs text-muted-foreground">{t("staff.selectedCount", { count: selectedServiceIds.size })}</span>
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">{t("staff.assignServicesHint")}</p>
-            <div className="mt-2 max-h-48 overflow-y-auto rounded-xl border border-border p-2">
-              {services.length === 0 ? (
-                <p className="px-2 py-3 text-xs text-muted-foreground">{t("staff.noServicesYet")}</p>
-              ) : (
-                <ul className="grid gap-1">
-                  {services.map((s) => {
-                    const checked = selectedServiceIds.has(s.id);
-                    return (
-                      <li key={s.id}>
-                        <button
-                          type="button"
-                          onClick={() => toggleService(s.id)}
-                          className={cn(
-                            "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-sm transition",
-                            checked ? "bg-primary/10 text-foreground" : "hover:bg-muted",
-                          )}
-                          aria-pressed={checked}
-                        >
-                          <span className="flex min-w-0 flex-1 items-center gap-2">
-                            <span className={cn("flex h-4 w-4 shrink-0 items-center justify-center rounded border", checked ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background")}>
-                              {checked && <Check className="h-3 w-3" />}
-                            </span>
-                            <span className="truncate">{s.name}</span>
-                          </span>
-                          <span className="shrink-0 text-xs text-muted-foreground">{s.duration_minutes}m</span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center justify-between rounded-xl border border-border p-3"><div><p className="text-sm font-medium">{t("staff.activeLabel")}</p><p className="text-xs text-muted-foreground">{t("staff.availableForBookings")}</p></div><Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} /></div>
+    <MobileFormDialog
+      open={open}
+      onClose={onClose}
+      title={member ? t("staff.editStaff") : t("staff.addStaffTitle")}
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose} className="h-11 w-full sm:h-9 sm:w-auto">{t("staff.cancel")}</Button>
+          <Button variant="hero" onClick={() => save.mutate()} disabled={!form.full_name.trim() || save.isPending} className="h-11 w-full sm:h-9 sm:w-auto">
+            {save.isPending ? t("staff.saving") : member ? t("staff.saveChanges") : t("staff.addStaff")}
+          </Button>
+        </>
+      }
+    >
+      <div className="grid gap-4">
+        <div><Label htmlFor="fn">{t("staff.fullName")}</Label><Input id="fn" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="h-11 text-base sm:h-9 sm:text-sm" /></div>
+        <div><Label htmlFor="em">{t("staff.email")}</Label><Input id="em" type="email" inputMode="email" autoComplete="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="h-11 text-base sm:h-9 sm:text-sm" /></div>
+        <div><Label htmlFor="ph">{t("staff.phone")}</Label><Input id="ph" type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="h-11 text-base sm:h-9 sm:text-sm" /></div>
+        <WeeklyHoursEditor schedule={schedule} onChange={setSchedule} />
+        <div>
+          <Label htmlFor="hr" className="text-xs text-muted-foreground">Vrije-tekst notitie (optioneel)</Label>
+          <Input id="hr" value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })} placeholder={t("staff.workingHoursPlaceholder")} className="h-11 text-base sm:h-9 sm:text-sm" />
+          <p className="mt-1 text-[11px] text-muted-foreground">Wordt alleen op de overzichtskaart getoond als er geen weekrooster is ingesteld.</p>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>{t("staff.cancel")}</Button>
-          <Button variant="hero" onClick={() => save.mutate()} disabled={!form.full_name.trim() || save.isPending}>{save.isPending ? t("staff.saving") : member ? t("staff.saveChanges") : t("staff.addStaff")}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <div>
+          <div className="flex items-center justify-between">
+            <Label>{t("staff.assignServices")}</Label>
+            <span className="text-xs text-muted-foreground">{t("staff.selectedCount", { count: selectedServiceIds.size })}</span>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">{t("staff.assignServicesHint")}</p>
+          <div className="mt-2 max-h-64 overflow-y-auto rounded-xl border border-border p-2">
+            {services.length === 0 ? (
+              <p className="px-2 py-3 text-xs text-muted-foreground">{t("staff.noServicesYet")}</p>
+            ) : (
+              <ul className="grid gap-1">
+                {services.map((s) => {
+                  const checked = selectedServiceIds.has(s.id);
+                  return (
+                    <li key={s.id}>
+                      <button
+                        type="button"
+                        onClick={() => toggleService(s.id)}
+                        className={cn(
+                          "flex w-full items-center justify-between gap-3 rounded-lg px-3 py-3 text-left text-sm transition sm:py-2",
+                          checked ? "bg-primary/10 text-foreground" : "hover:bg-muted",
+                        )}
+                        aria-pressed={checked}
+                      >
+                        <span className="flex min-w-0 flex-1 items-center gap-2">
+                          <span className={cn("flex h-5 w-5 shrink-0 items-center justify-center rounded border sm:h-4 sm:w-4", checked ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background")}>
+                            {checked && <Check className="h-3 w-3" />}
+                          </span>
+                          <span className="truncate">{s.name}</span>
+                        </span>
+                        <span className="shrink-0 text-xs text-muted-foreground">{s.duration_minutes}m</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center justify-between rounded-xl border border-border p-3"><div><p className="text-sm font-medium">{t("staff.activeLabel")}</p><p className="text-xs text-muted-foreground">{t("staff.availableForBookings")}</p></div><Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} /></div>
+      </div>
+    </MobileFormDialog>
   );
 }
 
