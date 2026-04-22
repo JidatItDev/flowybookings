@@ -654,11 +654,21 @@ export function WeekTimeGrid({
                   const isResizingThis = resizing?.bookingId === b.id;
                   const liveDurMin = isResizingThis ? resizing!.newDurMin : baseDurMin;
                   const height = Math.max(20, liveDurMin * PX_PER_MIN - 2);
+                  // Lane-layout: bij overlap krijgt elk blok een eigen kolom
+                  // binnen de dag. Lane 0..lanes-1 → percentage-breedte.
+                  // We laten een 2px gutter rechts (via calc) voor ademruimte.
+                  const widthPct = 100 / lanes;
+                  const leftPct = lane * widthPct;
                   return (
                     <div
                       key={b.id}
-                      className="absolute left-1 right-1 z-[4]"
-                      style={{ top, height }}
+                      className="absolute z-[4]"
+                      style={{
+                        top,
+                        height,
+                        left: `calc(${leftPct}% + 2px)`,
+                        width: `calc(${widthPct}% - 4px)`,
+                      }}
                     >
                       <button
                         type="button"
