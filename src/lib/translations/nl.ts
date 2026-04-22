@@ -1824,6 +1824,7 @@ export const nl: Record<string, string> = {
   "impersonate.readOnlyTooltip": "Alleen-lezen tijdens impersonate",
   "mobileSheet.view": "Bekijken",
   "mobileSheet.edit": "Bewerken",
+  "mobileSheet.duplicate": "Dupliceren",
   "mobileSheet.delete": "Verwijderen",
   "mobileSheet.actions": "Acties",
   "common.filter": "Filter",
