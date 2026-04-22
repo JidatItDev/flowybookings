@@ -311,7 +311,7 @@ function CalendarPage() {
         <>
           {/* Sticky kleurensleutel: toont alle actieve medewerkers met hun kleur */}
           {staff.filter((s) => s.is_active).length > 0 && (
-            <div className="sticky top-0 z-20 -mx-4 mb-3 border-b border-border/60 bg-background/85 px-4 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:mx-0 sm:rounded-lg sm:border sm:px-3">
+            <div className="sticky top-0 z-20 -mx-4 mb-3 hidden border-b border-border/60 bg-background/85 px-4 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:mx-0 sm:block sm:rounded-lg sm:border sm:px-3">
               <div className="flex items-center gap-2 overflow-x-auto">
                 <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {t("calendar.staffCol")}
@@ -350,7 +350,7 @@ function CalendarPage() {
 
           {/* Vandaag aan het werk: compacte avatar-strip met werkuren + bookings vandaag */}
           {workingToday.length > 0 && (
-            <div className="mb-3 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            <div className="mb-3 -mx-4 hidden overflow-x-auto px-4 sm:mx-0 sm:block sm:px-0">
               <div className="flex items-center gap-2 pb-1">
                 <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   {t("calendar.workingToday")}
