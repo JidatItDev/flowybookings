@@ -442,6 +442,37 @@ function ServiceFormDialog({ open, onClose, service, duplicateOf, shopId }: { op
           <Label htmlFor="desc">{t("services.descriptionLabel")}</Label>
           <Textarea id="desc" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="text-base sm:text-sm" />
         </div>
+
+        {/* Staff multi-select — large touch target on mobile, opens a bottom sheet
+            (no cramped popover dropdown). Reuses staffQuery + staff_services cache. */}
+        <div>
+          <Label>{t("services.staff")}</Label>
+          <button
+            type="button"
+            onClick={() => setPickStaffOpen(true)}
+            className="mt-1 flex w-full items-center justify-between gap-2 rounded-xl border border-border bg-background px-3 py-3 text-left text-sm transition hover:bg-muted/50 sm:py-2"
+          >
+            <span className="flex min-w-0 items-center gap-2">
+              <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="truncate">
+                {staffIds.length === 0
+                  ? t("services.staffNone")
+                  : staffIds.length === allStaff.length && allStaff.length > 0
+                    ? t("services.staffAll")
+                    : allStaff
+                        .filter((s) => staffIds.includes(s.id))
+                        .map((s) => s.full_name)
+                        .slice(0, 2)
+                        .join(", ") + (staffIds.length > 2 ? ` +${staffIds.length - 2}` : "")}
+              </span>
+            </span>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {staffIds.length > 0 ? t("services.staffSelected", { n: staffIds.length }) : ""}
+            </span>
+          </button>
+          <p className="mt-1 text-xs text-muted-foreground">{t("services.staffHint")}</p>
+        </div>
+
         <div className="flex items-center justify-between rounded-xl border border-border p-3">
           <div>
             <p className="text-sm font-medium">{t("services.activeLabel")}</p>
@@ -450,6 +481,164 @@ function ServiceFormDialog({ open, onClose, service, duplicateOf, shopId }: { op
           <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
         </div>
       </div>
+
+      <StaffPickerSheet
+        open={pickStaffOpen}
+        onClose={() => setPickStaffOpen(false)}
+        staff={allStaff.map((s) => ({ id: s.id, name: s.full_name }))}
+        selected={staffIds}
+        onChange={setStaffIds}
+      />
     </MobileFormDialog>
+  );
+}
+
+/** Full-screen mobile bottom sheet for picking team members for a service.
+ *  Replaces the cramped multi-select dropdown with a large-touch-target list. */
+function StaffPickerSheet({
+  open,
+  onClose,
+  staff,
+  selected,
+  onChange,
+}: {
+  open: boolean;
+  onClose: () => void;
+  staff: { id: string; name: string }[];
+  selected: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const { t } = useT();
+  const allSelected = staff.length > 0 && selected.length === staff.length;
+  return (
+    <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent
+        side="bottom"
+        className="flex max-h-[85dvh] flex-col rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom,0px)]"
+      >
+        <div className="mx-auto mt-2 mb-1 h-1.5 w-10 rounded-full bg-muted" aria-hidden="true" />
+        <SheetHeader className="px-5 pb-2 pt-1 text-left">
+          <SheetTitle>{t("services.staffPickTitle")}</SheetTitle>
+          <p className="text-xs text-muted-foreground">{t("services.staffPickDesc")}</p>
+        </SheetHeader>
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-2">
+          {staff.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">{t("services.staffNone")}</p>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => onChange(allSelected ? [] : staff.map((s) => s.id))}
+                className="flex w-full items-center justify-between rounded-xl border border-border px-3 py-3 text-sm font-medium hover:bg-muted/50"
+              >
+                <span>{t("services.staffAll")}</span>
+                <Checkbox checked={allSelected} aria-hidden="true" />
+              </button>
+              <div className="mt-2 space-y-1">
+                {staff.map((s) => {
+                  const checked = selected.includes(s.id);
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => onChange(checked ? selected.filter((id) => id !== s.id) : [...selected, s.id])}
+                      className="flex w-full items-center justify-between rounded-xl px-3 py-3 text-left text-sm hover:bg-muted/50"
+                    >
+                      <span className="truncate">{s.name}</span>
+                      <Checkbox checked={checked} aria-hidden="true" />
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+        <div className="sticky bottom-0 border-t border-border bg-background/95 px-5 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/85">
+          <Button variant="hero" onClick={onClose} className="h-11 w-full">{t("services.done")}</Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+/** Read-only summary opened from the row action sheet's "Bekijken" item.
+ *  Bottom sheet on mobile / desktop alike — keeps interaction consistent and
+ *  avoids dropping users straight into edit mode. */
+function ServiceViewSheet({
+  service,
+  onClose,
+  staffNames,
+  bookingsCount,
+  onEdit,
+  readOnly,
+  roTitle,
+}: {
+  service: ServiceRow | null;
+  onClose: () => void;
+  staffNames: string[];
+  bookingsCount: number;
+  onEdit: () => void;
+  readOnly: boolean;
+  roTitle?: string;
+}) {
+  const { t } = useT();
+  return (
+    <Sheet open={!!service} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent
+        side="bottom"
+        className="flex max-h-[85dvh] flex-col rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom,0px)]"
+      >
+        <div className="mx-auto mt-2 mb-1 h-1.5 w-10 rounded-full bg-muted" aria-hidden="true" />
+        <SheetHeader className="px-5 pb-2 pt-1 text-left">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {service?.category && (
+              <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase", categoryColors[service.category] ?? "bg-muted text-muted-foreground")}>
+                {service.category}
+              </span>
+            )}
+            <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase", service?.is_active ? "bg-mint text-mint-foreground" : "bg-muted text-muted-foreground")}>
+              {service?.is_active ? t("services.active") : t("services.inactive")}
+            </span>
+          </div>
+          <SheetTitle className="mt-1">{service?.name ?? ""}</SheetTitle>
+        </SheetHeader>
+        <div className="flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-border p-3">
+              <p className="text-[10px] font-semibold uppercase text-muted-foreground">{t("services.priceLabel")}</p>
+              <p className="mt-1 text-xl font-semibold tracking-tight">{service ? formatCents(service.price_cents, service.currency) : ""}</p>
+              {service && service.deposit_cents > 0 && (
+                <p className="mt-0.5 text-xs text-muted-foreground">{t("services.deposit", { amount: formatCents(service.deposit_cents, service.currency) })}</p>
+              )}
+            </div>
+            <div className="rounded-xl border border-border p-3">
+              <p className="text-[10px] font-semibold uppercase text-muted-foreground">{t("services.durationLabel")}</p>
+              <p className="mt-1 flex items-center gap-1 text-xl font-semibold tracking-tight">
+                <Clock className="h-4 w-4 text-muted-foreground" /> {service ? t("services.min", { n: service.duration_minutes }) : ""}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">{bookingsCount === 0 ? t("services.noBookings") : t("services.bookingsCount", { n: bookingsCount })}</p>
+            </div>
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold uppercase text-muted-foreground">{t("services.staff")}</p>
+            <p className="mt-1 text-sm">
+              {staffNames.length === 0 ? <span className="text-muted-foreground">{t("services.staffNone")}</span> : staffNames.join(", ")}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold uppercase text-muted-foreground">{t("services.descriptionLabel")}</p>
+            <p className="mt-1 whitespace-pre-wrap text-sm">
+              {service?.description?.trim() ? service.description : <span className="text-muted-foreground">{t("services.descriptionEmpty")}</span>}
+            </p>
+          </div>
+        </div>
+        <div className="sticky bottom-0 flex gap-2 border-t border-border bg-background/95 px-5 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/85">
+          <Button variant="outline" onClick={onClose} className="h-11 flex-1">{t("services.close")}</Button>
+          <Button variant="hero" onClick={onEdit} disabled={readOnly} title={roTitle} className="h-11 flex-1">
+            <Pencil className="h-4 w-4" /> {t("mobileSheet.edit")}
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
