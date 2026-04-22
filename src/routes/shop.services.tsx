@@ -188,12 +188,18 @@ function ServicesPage() {
                 role="button"
                 tabIndex={0}
                 onClick={(e) => {
-                  if (window.matchMedia("(min-width: 640px)").matches) return;
+                  // Mobile-only tap-to-open. Use the same `sm` (640px) boundary
+                  // as the inline edit/delete buttons below (`hidden sm:flex`)
+                  // so there's exactly one interaction model per breakpoint and
+                  // no dead zone where neither tap nor inline buttons work.
+                  if (typeof window !== "undefined" && window.matchMedia("(min-width: 640px)").matches) return;
+                  // Ignore taps that originated on the active/inactive toggle
+                  // pill (the only interactive child visible on mobile).
                   if ((e.target as HTMLElement).closest("button")) return;
                   setSheetFor(s);
                 }}
                 onKeyDown={(e) => {
-                  if ((e.key === "Enter" || e.key === " ") && window.innerWidth < 640) {
+                  if ((e.key === "Enter" || e.key === " ") && typeof window !== "undefined" && !window.matchMedia("(min-width: 640px)").matches) {
                     e.preventDefault();
                     setSheetFor(s);
                   }
