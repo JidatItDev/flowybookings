@@ -502,6 +502,18 @@ export const nl: Record<string, string> = {
   "customers.depositRequired": "Aanbetaling vereist",
   "customers.requireDeposit": "Altijd aanbetaling vereisen voor deze klant",
   "customers.requireDepositHint": "Aanbevolen voor klanten met 2 of meer no-shows.",
+  "customers.filterLabel": "Filter",
+  "customers.filterAll": "Alle klanten",
+  "customers.filterNew": "Nieuwe klanten",
+  "customers.filterTop": "Top klanten",
+  "customers.filterRisk": "No-show risico",
+  "customers.filterRecent": "Recent bezoek",
+  "customers.badgeNew": "Nieuw",
+  "customers.badgeVip": "VIP",
+  "customers.badgeNoShow": "No-show",
+  "customers.visitsOne": "bezoek",
+  "customers.visitsMany": "bezoeken",
+  "customers.resultsCount": "{count} klanten",
 
   // ── Gedeelde foutmeldingen ──
   "errors.notSignedIn": "Je moet ingelogd zijn om dit te doen.",
