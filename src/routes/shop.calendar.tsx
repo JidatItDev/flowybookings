@@ -509,7 +509,33 @@ function CalendarPage() {
             </div>
           </div>
 
-          <div className="mb-4 flex flex-wrap items-center gap-2">
+          {/* Mobile-only compact filter row: count + status dropdown. */}
+          <div className="mb-3 flex items-center justify-between gap-2 sm:hidden">
+            <span className="text-sm font-medium text-muted-foreground">
+              {(() => {
+                const noun = filtered.length === 1 ? t("calendar.appointment") : t("calendar.appointments");
+                if (dayOffset === null) return `${filtered.length} ${noun} ${t("calendar.upcomingSuffix")}`;
+                if (dayOffset === 0) return filtered.length === 0 ? t("calendar.zeroToday") : `${filtered.length} ${noun} ${t("calendar.todaySuffix")}`;
+                const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() + dayOffset);
+                const label = d.toLocaleDateString("nl-NL", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+                return filtered.length === 0 ? t("calendar.zeroOnDay", { day: label }) : `${filtered.length} ${noun}`;
+              })()}
+            </span>
+            <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+              <SelectTrigger className="h-9 w-auto min-w-[130px] gap-1.5 rounded-full border-border bg-card text-xs">
+                <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end">
+                {statuses.map((s) => (
+                  <SelectItem key={s} value={s} className="capitalize">{statusLabel[s]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Desktop status pills */}
+          <div className="mb-4 hidden flex-wrap items-center gap-2 sm:flex">
             <Filter className="h-4 w-4 text-muted-foreground" />
             {statuses.map((s) => (
               <button
