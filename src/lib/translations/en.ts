@@ -1792,5 +1792,11 @@ export const en: Record<string, string> = {
   "billing.activating": "activating…",
   "billing.activatingShort": "ACTIVATING…",
   "impersonate.readOnlyTooltip": "Read-only while impersonating",
+  "mobileSheet.view": "View",
+  "mobileSheet.edit": "Edit",
+  "mobileSheet.delete": "Delete",
+  "mobileSheet.actions": "Actions",
+  "common.filter": "Filter",
+  "common.all": "All",
 };
 
