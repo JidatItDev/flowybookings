@@ -286,6 +286,9 @@ export function WeekTimeGrid({
   // Native HTML5 drag werkt niet op touch — we doen het zelf met dezelfde
   // snap- en pre-validatie-logica als de mouse drag-flow.
   const [touchDrag, setTouchDrag] = useState<{ bookingId: string } | null>(null);
+  // Desktop HTML5-drag tracking — gebruikt voor visuele feedback (oorspronkelijk
+  // blok dimt + scaled tijdens slepen). Geen invloed op data of mutaties.
+  const [mouseDrag, setMouseDrag] = useState<{ bookingId: string } | null>(null);
 
   const now = new Date();
   const todayKey = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}`;
@@ -607,29 +610,56 @@ export function WeekTimeGrid({
                   </div>
                 )}
                 {/* Drop-indicator: gesnapte horizontale lijn met tijd-label tijdens drag.
+                    Toont ook klant + dienst zodat je niet hoeft terug te scrollen.
                     Rood (destructive) wanneer de positie buiten werkuren of in pauze valt. */}
-                {dragPreview && dragPreview.dayKey === dayKey && (
-                  <div
-                    className={cn(
-                      "pointer-events-none absolute left-0 right-0 z-[8] border-t-2 border-dashed",
-                      dragPreview.invalid ? "border-destructive" : "border-primary",
-                    )}
-                    style={{ top: dragPreview.topPx }}
-                    title={dragPreview.reason}
-                  >
-                    <span
+                {dragPreview && dragPreview.dayKey === dayKey && (() => {
+                  const draggedId = mouseDrag?.bookingId ?? touchDrag?.bookingId ?? draggedIdRef.current;
+                  const draggedBk = draggedId ? bookingsById.get(draggedId) : null;
+                  const draggedCust = draggedBk?.customer_id
+                    ? customerById.get(draggedBk.customer_id)
+                    : null;
+                  const draggedSvc = draggedBk?.service_id
+                    ? serviceById.get(draggedBk.service_id)
+                    : null;
+                  return (
+                    <div
                       className={cn(
-                        "absolute -top-2.5 left-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shadow-soft",
-                        dragPreview.invalid
-                          ? "bg-destructive text-destructive-foreground"
-                          : "bg-primary text-primary-foreground",
+                        "pointer-events-none absolute left-0 right-0 z-[8] border-t-2 border-dashed",
+                        dragPreview.invalid ? "border-destructive" : "border-primary",
                       )}
+                      style={{ top: dragPreview.topPx }}
+                      title={dragPreview.reason}
                     >
-                      {dragPreview.label}
-                      {dragPreview.invalid && dragPreview.reason ? ` · ${dragPreview.reason}` : ""}
-                    </span>
-                  </div>
-                )}
+                      <div
+                        className={cn(
+                          "absolute -top-2 left-1 max-w-[calc(100%-0.5rem)] rounded-md px-1.5 py-1 text-[10px] font-semibold tabular-nums shadow-soft",
+                          dragPreview.invalid
+                            ? "bg-destructive text-destructive-foreground"
+                            : "bg-primary text-primary-foreground",
+                        )}
+                      >
+                        <div className="flex items-center gap-1">
+                          <span>{dragPreview.label}</span>
+                          {draggedCust && (
+                            <span className="truncate font-medium opacity-90">
+                              · {draggedCust.full_name}
+                            </span>
+                          )}
+                        </div>
+                        {draggedSvc && !dragPreview.invalid && (
+                          <div className="truncate text-[9px] font-normal opacity-80">
+                            {draggedSvc.name}
+                          </div>
+                        )}
+                        {dragPreview.invalid && dragPreview.reason && (
+                          <div className="truncate text-[9px] font-normal opacity-90">
+                            {dragPreview.reason}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
                 {/* Bookings */}
                 {dayBookings.map(({ booking: b, lane, lanes }) => {
                   const start = new Date(b.starts_at);
