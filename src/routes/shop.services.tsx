@@ -36,7 +36,15 @@ function ServicesPage() {
   const [editing, setEditing] = useState<ServiceRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<ServiceRow | null>(null);
+  const [sheetFor, setSheetFor] = useState<ServiceRow | null>(null);
   const { data: services = [], isLoading } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
+
+  const sheetActions = useStandardRowActions({
+    onEdit: sheetFor ? () => setEditing(sheetFor) : null,
+    onDelete: sheetFor ? () => setDeleting(sheetFor) : null,
+    disabled: readOnly,
+    disabledTitle: roTitle,
+  });
 
   const toggleActive = useMutation({
     mutationFn: async (s: ServiceRow) => { assertNotImpersonating(); const { error } = await supabase.from("services").update({ is_active: !s.is_active }).eq("id", s.id); if (error) throw error; },
