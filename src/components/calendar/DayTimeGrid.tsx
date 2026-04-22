@@ -309,6 +309,9 @@ export function DayTimeGrid({
   // pre-validatie-logica als de mouse drag-flow. State houdt de actief
   // "opgepakte" booking + grab-offset bij; visuele feedback via dragPreview.
   const [touchDrag, setTouchDrag] = useState<{ bookingId: string } | null>(null);
+  // Desktop HTML5-drag tracking — gebruikt voor visuele feedback (oorspronkelijk
+  // blok dimt + scaled tijdens slepen). Geen invloed op data of mutaties.
+  const [mouseDrag, setMouseDrag] = useState<{ bookingId: string } | null>(null);
 
   const hours = useMemo(() => {
     const arr: number[] = [];
