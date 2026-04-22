@@ -119,8 +119,23 @@ function PaymentsPage() {
           {/* Incoming Mollie Connect payments with refund action */}
           <MollieConnectPayments shopId={shopId} />
 
-          {/* Status filter pills */}
-          <div className="mt-6 flex flex-wrap items-center gap-2">
+          {/* Mobile: compact filter dropdown saves vertical space. */}
+          <div className="mt-6 sm:hidden">
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+              <SelectTrigger className="h-11 w-full text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("payments.filterAll")}</SelectItem>
+                <SelectItem value="paid">{t("payments.filterPaid")}</SelectItem>
+                <SelectItem value="pending">{t("payments.filterPending")}</SelectItem>
+                <SelectItem value="failed">{t("payments.filterFailed")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Tablet/Desktop: horizontal pill row (unchanged). */}
+          <div className="mt-6 hidden flex-wrap items-center gap-2 sm:flex">
             {([
               { k: "all", label: t("payments.filterAll") },
               { k: "paid", label: t("payments.filterPaid") },
