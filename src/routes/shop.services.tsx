@@ -43,6 +43,7 @@ function ServicesPage() {
   const [deleting, setDeleting] = useState<ServiceRow | null>(null);
   const [sheetFor, setSheetFor] = useState<ServiceRow | null>(null);
   const [duplicateSeed, setDuplicateSeed] = useState<ServiceRow | null>(null);
+  const [viewing, setViewing] = useState<ServiceRow | null>(null);
 
   // ── Search & filter (UI-only) ──
   const [q, setQ] = useState("");
@@ -109,6 +110,7 @@ function ServicesPage() {
   }, [services, q, cat, sort, stats]);
 
   const sheetActions = useStandardRowActions({
+    onView: sheetFor ? () => setViewing(sheetFor) : null,
     onEdit: sheetFor ? () => setEditing(sheetFor) : null,
     onDuplicate: sheetFor ? () => setDuplicateSeed(sheetFor) : null,
     onDelete: sheetFor ? () => setDeleting(sheetFor) : null,
