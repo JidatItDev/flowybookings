@@ -862,10 +862,13 @@ export function DayTimeGrid({
                           // (waar dataTransfer.getData niet leesbaar is).
                           draggedIdRef.current = b.id;
                           e.dataTransfer.setData("application/x-grab-offset-min", String(grabMin));
+                          // Visuele feedback: bron-blok dimt + krimpt subtiel.
+                          setMouseDrag({ bookingId: b.id });
                         } : undefined}
                         onDragEnd={() => {
                           draggedIdRef.current = null;
                           setDragPreview(null);
+                          setMouseDrag(null);
                         }}
                         onTouchStart={draggable ? (e) => {
                           // Touch long-press → drag flow voor iPad/tablet in salons.
@@ -1173,14 +1176,16 @@ export function DayTimeGrid({
                           });
                         } : undefined}
                         className={cn(
-                          "block h-full w-full overflow-hidden rounded-lg border px-2 py-1 text-left text-[11px] shadow-soft transition-transform hover:z-20 hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-                          draggable && !isResizingThis && "cursor-grab active:cursor-grabbing active:opacity-70",
+                          "block h-full w-full overflow-hidden rounded-lg border px-2 py-1 text-left text-[11px] shadow-soft transition-all duration-150 hover:z-20 hover:scale-[1.01] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+                          draggable && !isResizingThis && "cursor-grab active:cursor-grabbing",
                           tone
                             ? `${tone.bg} ${tone.text} border-transparent`
                             : "border-border bg-muted text-foreground",
                           isCancelled && "opacity-60 line-through decoration-1",
                           isResizingThis && "ring-2 ring-primary/60",
-                          touchDrag?.bookingId === b.id && "scale-[1.02] opacity-70 ring-2 ring-primary/70",
+                          // Lifted state — desktop drag (mouseDrag) + touch drag.
+                          mouseDrag?.bookingId === b.id && "scale-[0.98] opacity-40 ring-2 ring-primary/40",
+                          touchDrag?.bookingId === b.id && "scale-[1.02] opacity-70 ring-2 ring-primary/70 shadow-lg",
                         )}
                         style={touchDrag?.bookingId === b.id ? { touchAction: "none" } : undefined}
                         title={`${cust?.full_name ?? "—"} · ${svc?.name ?? "—"} · ${formatTime(b.starts_at)}–${formatTime(b.ends_at)}${draggable ? " · Sleep of gebruik pijltjestoetsen om te verplaatsen" : ""}`}
