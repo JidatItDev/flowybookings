@@ -17,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MobileFormDialog } from "@/components/MobileFormDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState, NoShopState } from "@/components/EmptyState";
@@ -144,9 +143,11 @@ function CustomersPage() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" onClick={() => setImporting(true)} disabled={!shopId || readOnly} title={roTitle}>
-              <Upload className="h-4 w-4" /> {t("customerImport.cta")}
+              <Upload className="h-4 w-4" /> <span className="hidden sm:inline">{t("customerImport.cta")}</span>
             </Button>
-            <Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId || readOnly} title={roTitle}>
+            {/* Mobile uses the FloatingActionButton as the single primary create
+                CTA — hide this duplicate to clean the visual hierarchy. */}
+            <Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId || readOnly} title={roTitle} className="hidden sm:inline-flex">
               <Plus className="h-4 w-4" /> {t("customers.newCustomer")}
             </Button>
           </div>
@@ -157,13 +158,13 @@ function CustomersPage() {
           {/* Sticky search + filter bar */}
           <div className="sticky top-0 z-10 -mx-4 mb-4 border-b border-border bg-background/85 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none">
             <div className="flex items-center gap-2">
-              <div className="flex flex-1 items-center gap-2 rounded-xl border border-border bg-card px-3 shadow-xs sm:max-w-md">
-                <Search className="h-4 w-4 text-muted-foreground" />
+              <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-card px-3 shadow-xs sm:max-w-md">
+                <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <input
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder={t("customers.searchPlaceholder")}
-                  className="h-11 flex-1 bg-transparent text-base outline-none sm:h-10 sm:text-sm"
+                  className="h-11 w-full min-w-0 flex-1 bg-transparent text-base outline-none sm:h-10 sm:text-sm"
                   inputMode="search"
                   autoComplete="off"
                 />
@@ -171,7 +172,13 @@ function CustomersPage() {
               <Select value={filter} onValueChange={(v) => setFilter(v as FilterKey)}>
                 <SelectTrigger
                   aria-label={t("customers.filterLabel")}
-                  className="h-11 w-11 shrink-0 justify-center rounded-xl border-border bg-card p-0 sm:h-10 sm:w-auto sm:gap-2 sm:px-3 [&>svg:last-child]:hidden sm:[&>svg:last-child]:inline"
+                  className={cn(
+                    // Mobile: clean 44×44 square icon button — no chevron, no label.
+                    "h-11 w-11 shrink-0 justify-center rounded-xl border-border bg-card p-0",
+                    "[&>svg:last-child]:hidden",
+                    // Tablet+: standard select with label + chevron.
+                    "sm:h-10 sm:w-auto sm:gap-2 sm:px-3 sm:[&>svg:last-child]:inline-block",
+                  )}
                 >
                   <SlidersHorizontal className="h-4 w-4" />
                   <span className="hidden sm:inline">
@@ -209,7 +216,20 @@ function CustomersPage() {
               </div>
             </div>
           ) : list.length === 0 ? (
-            <EmptyState icon={Users} title={q || filter !== "all" ? t("customers.noMatches") : t("customers.noCustomers")} description={q || filter !== "all" ? t("customers.noMatchDesc") : t("customers.noCustomersDesc")} action={!q && filter === "all" && <Button variant="hero" onClick={() => setCreating(true)} disabled={readOnly} title={roTitle}><Plus className="h-4 w-4" /> {t("customers.addCustomer")}</Button>} />
+            <EmptyState
+              icon={Users}
+              title={q || filter !== "all" ? t("customers.noMatches") : t("customers.noCustomers")}
+              description={q || filter !== "all" ? t("customers.noMatchDesc") : t("customers.noCustomersDesc")}
+              action={
+                !q && filter === "all" ? (
+                  // On mobile the FloatingActionButton is the canonical create CTA
+                  // — hide this duplicate button so the empty state stays uncluttered.
+                  <Button variant="hero" onClick={() => setCreating(true)} disabled={readOnly} title={roTitle} className="hidden sm:inline-flex">
+                    <Plus className="h-4 w-4" /> {t("customers.addCustomer")}
+                  </Button>
+                ) : undefined
+              }
+            />
           ) : (
             <>
               {/* Mobile card list — tap opens MobileActionSheet (View/Edit/Delete). */}
