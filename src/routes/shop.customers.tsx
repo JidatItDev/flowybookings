@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Mail, Phone, Pencil, Trash2, Users, AlertTriangle, ShieldAlert, Upload } from "lucide-react";
+import { Plus, Search, Mail, Phone, Pencil, Trash2, Users, AlertTriangle, ShieldAlert, Upload, SlidersHorizontal, Sparkles, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -9,6 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState, NoShopState } from "@/components/EmptyState";
@@ -22,6 +30,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatCents, initials, relativeFromNow } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+
+type FilterKey = "all" | "new" | "top" | "risk" | "recent";
+const NEW_CUSTOMER_DAYS = 30;
+const RECENT_VISIT_DAYS = 30;
+const TOP_SPENT_THRESHOLD_CENTS = 20000; // €200+
+
 
 export const Route = createFileRoute("/shop/customers")({
   head: () => ({ meta: [{ title: "Customers — FlowyBookings" }] }),
@@ -47,6 +61,7 @@ function CustomersPage() {
   const readOnly = useImpersonationReadOnly();
   const roTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const [q, setQ] = useState("");
+  const [filter, setFilter] = useState<FilterKey>("all");
   const [editing, setEditing] = useState<CustomerRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<CustomerRow | null>(null);
@@ -65,10 +80,15 @@ function CustomersPage() {
 
   const { data: customers = [], isLoading } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
   const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
-  const visitsByCustomer = bookings.reduce<Record<string, number>>((acc, b) => {
-    if (b.customer_id && (b.status === "completed" || b.status === "confirmed")) acc[b.customer_id] = (acc[b.customer_id] ?? 0) + 1;
-    return acc;
-  }, {});
+  const visitsByCustomer = useMemo(
+    () =>
+      bookings.reduce<Record<string, number>>((acc, b) => {
+        if (b.customer_id && (b.status === "completed" || b.status === "confirmed"))
+          acc[b.customer_id] = (acc[b.customer_id] ?? 0) + 1;
+        return acc;
+      }, {}),
+    [bookings],
+  );
 
   const remove = useMutation({
     mutationFn: async (id: string) => { assertNotImpersonating(); const { error } = await supabase.from("customers").delete().eq("id", id); if (error) throw error; },
@@ -76,7 +96,44 @@ function CustomersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const list = customers.filter((c) => { const needle = q.toLowerCase(); return c.full_name.toLowerCase().includes(needle) || (c.email ?? "").toLowerCase().includes(needle) || (c.phone ?? "").toLowerCase().includes(needle); });
+  const list = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    const now = Date.now();
+    return customers.filter((c) => {
+      if (needle) {
+        const hit =
+          c.full_name.toLowerCase().includes(needle) ||
+          (c.email ?? "").toLowerCase().includes(needle) ||
+          (c.phone ?? "").toLowerCase().includes(needle);
+        if (!hit) return false;
+      }
+      if (filter === "all") return true;
+      const createdAt = (c as { created_at?: string }).created_at;
+      if (filter === "new") {
+        if (!createdAt) return false;
+        return (now - new Date(createdAt).getTime()) / 86_400_000 <= NEW_CUSTOMER_DAYS;
+      }
+      if (filter === "top") return (c.total_spent_cents ?? 0) >= TOP_SPENT_THRESHOLD_CENTS;
+      if (filter === "risk") return (c.no_show_count ?? 0) >= 2 || c.requires_deposit === true;
+      if (filter === "recent") {
+        if (!c.last_visit_at) return false;
+        return (now - new Date(c.last_visit_at).getTime()) / 86_400_000 <= RECENT_VISIT_DAYS;
+      }
+      return true;
+    });
+  }, [customers, q, filter]);
+
+  function badgesFor(c: CustomerRow): Array<"new" | "vip" | "noshow"> {
+    const out: Array<"new" | "vip" | "noshow"> = [];
+    const createdAt = (c as { created_at?: string }).created_at;
+    if (createdAt) {
+      const ageDays = (Date.now() - new Date(createdAt).getTime()) / 86_400_000;
+      if (ageDays <= NEW_CUSTOMER_DAYS) out.push("new");
+    }
+    if ((c.total_spent_cents ?? 0) >= TOP_SPENT_THRESHOLD_CENTS) out.push("vip");
+    if ((c.no_show_count ?? 0) >= 2) out.push("noshow");
+    return out;
+  }
 
   return (
     <ShopLayout>
@@ -96,21 +153,72 @@ function CustomersPage() {
       />
       {!shopId ? <NoShopState /> : (
         <>
-          <div className="mb-4 flex max-w-md items-center gap-2 rounded-xl border border-border bg-card px-3 shadow-xs">
-            <Search className="h-4 w-4 text-muted-foreground" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("customers.searchPlaceholder")} className="h-10 flex-1 bg-transparent text-sm outline-none" />
+          {/* Sticky search + filter bar */}
+          <div className="sticky top-0 z-10 -mx-4 mb-4 border-b border-border bg-background/85 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none">
+            <div className="flex items-center gap-2">
+              <div className="flex flex-1 items-center gap-2 rounded-xl border border-border bg-card px-3 shadow-xs sm:max-w-md">
+                <Search className="h-4 w-4 text-muted-foreground" />
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder={t("customers.searchPlaceholder")}
+                  className="h-11 flex-1 bg-transparent text-base outline-none sm:h-10 sm:text-sm"
+                  inputMode="search"
+                  autoComplete="off"
+                />
+              </div>
+              <Select value={filter} onValueChange={(v) => setFilter(v as FilterKey)}>
+                <SelectTrigger
+                  aria-label={t("customers.filterLabel")}
+                  className="h-11 w-11 shrink-0 justify-center rounded-xl border-border bg-card p-0 sm:h-10 sm:w-auto sm:gap-2 sm:px-3 [&>svg:last-child]:hidden sm:[&>svg:last-child]:inline"
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                  <span className="hidden sm:inline">
+                    <SelectValue placeholder={t("customers.filterLabel")} />
+                  </span>
+                </SelectTrigger>
+                <SelectContent align="end">
+                  <SelectItem value="all">{t("customers.filterAll")}</SelectItem>
+                  <SelectItem value="new">{t("customers.filterNew")}</SelectItem>
+                  <SelectItem value="top">{t("customers.filterTop")}</SelectItem>
+                  <SelectItem value="risk">{t("customers.filterRisk")}</SelectItem>
+                  <SelectItem value="recent">{t("customers.filterRecent")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {!isLoading && (
+              <p className="mt-2 text-[11px] text-muted-foreground sm:hidden">
+                {t("customers.resultsCount", { count: String(list.length) })}
+              </p>
+            )}
           </div>
-          {isLoading ? <div className="h-72 animate-pulse rounded-2xl border border-border bg-card" /> : list.length === 0 ? (
-            <EmptyState icon={Users} title={q ? t("customers.noMatches") : t("customers.noCustomers")} description={q ? t("customers.noMatchDesc") : t("customers.noCustomersDesc")} action={!q && <Button variant="hero" onClick={() => setCreating(true)} disabled={readOnly} title={roTitle}><Plus className="h-4 w-4" /> {t("customers.addCustomer")}</Button>} />
+          {isLoading ? (
+            <div className="space-y-2 sm:hidden">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3">
+                  <Skeleton className="h-11 w-11 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+              ))}
+              <div className="hidden sm:block">
+                <Skeleton className="h-72 w-full rounded-2xl" />
+              </div>
+            </div>
+          ) : list.length === 0 ? (
+            <EmptyState icon={Users} title={q || filter !== "all" ? t("customers.noMatches") : t("customers.noCustomers")} description={q || filter !== "all" ? t("customers.noMatchDesc") : t("customers.noCustomersDesc")} action={!q && filter === "all" && <Button variant="hero" onClick={() => setCreating(true)} disabled={readOnly} title={roTitle}><Plus className="h-4 w-4" /> {t("customers.addCustomer")}</Button>} />
           ) : (
             <>
               {/* Mobile card list — tap opens MobileActionSheet (View/Edit/Delete). */}
-              <div className="space-y-2 sm:hidden">
+              <div className="space-y-2 pb-24 sm:hidden">
                 {list.map((c) => {
                   const ns = c.no_show_count ?? 0;
                   const repeat = ns >= 2;
                   const allergy = getAllergyText(c);
                   const visits = visitsByCustomer[c.id] ?? 0;
+                  const badges = badgesFor(c);
                   return (
                     <button
                       key={c.id}
@@ -128,14 +236,32 @@ function CustomersPage() {
                         <div className="flex items-center gap-2">
                           <p className="truncate text-base font-semibold">{c.full_name}</p>
                           {allergy && <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />}
-                          {repeat && <ShieldAlert className="h-4 w-4 shrink-0 text-destructive" />}
                         </div>
-                        <p className="truncate text-xs text-muted-foreground">
+                        {badges.length > 0 && (
+                          <div className="mt-0.5 flex flex-wrap items-center gap-1">
+                            {badges.includes("new") && (
+                              <span className="inline-flex items-center gap-0.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                                <Sparkles className="h-2.5 w-2.5" /> {t("customers.badgeNew")}
+                              </span>
+                            )}
+                            {badges.includes("vip") && (
+                              <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
+                                <Crown className="h-2.5 w-2.5" /> {t("customers.badgeVip")}
+                              </span>
+                            )}
+                            {badges.includes("noshow") && (
+                              <span className="inline-flex items-center gap-0.5 rounded-full bg-destructive/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-destructive">
+                                <ShieldAlert className="h-2.5 w-2.5" /> {t("customers.badgeNoShow")}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
                           {c.phone ?? c.email ?? "—"}
                         </p>
-                        <div className="mt-1 flex items-center gap-3 text-[11px] text-muted-foreground">
+                        <div className="mt-1 flex items-center gap-2 text-[11px] text-muted-foreground">
                           <span>
-                            {visits} {visits === 1 ? "bezoek" : "bezoeken"}
+                            {visits} {visits === 1 ? t("customers.visitsOne") : t("customers.visitsMany")}
                           </span>
                           <span>·</span>
                           <span className="font-medium text-foreground tabular-nums">

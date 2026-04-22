@@ -502,6 +502,18 @@ export const en: Record<string, string> = {
   "customers.depositRequired": "Deposit required",
   "customers.requireDeposit": "Always require a deposit for this customer",
   "customers.requireDepositHint": "Recommended for customers with 2 or more no-shows.",
+  "customers.filterLabel": "Filter",
+  "customers.filterAll": "All customers",
+  "customers.filterNew": "New customers",
+  "customers.filterTop": "Top customers",
+  "customers.filterRisk": "No-show risk",
+  "customers.filterRecent": "Recent visit",
+  "customers.badgeNew": "New",
+  "customers.badgeVip": "VIP",
+  "customers.badgeNoShow": "No-show",
+  "customers.visitsOne": "visit",
+  "customers.visitsMany": "visits",
+  "customers.resultsCount": "{count} customers",
 
   // ── Shared error messages ──
   "errors.notSignedIn": "You need to be signed in to do that.",
