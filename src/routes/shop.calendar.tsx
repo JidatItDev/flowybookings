@@ -1705,6 +1705,7 @@ function SearchableSelect({
   searchPlaceholder: string;
   emptyLabel: string;
 }) {
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const selected = useMemo(() => options.find((o) => o.id === value) ?? null, [options, value]);
@@ -1714,54 +1715,82 @@ function SearchableSelect({
     return options.filter((o) => o.label.toLowerCase().includes(q) || (o.hint ?? "").toLowerCase().includes(q));
   }, [options, query]);
 
+  const trigger = (
+    <Button
+      type="button"
+      variant="outline"
+      role="combobox"
+      aria-expanded={open}
+      onClick={() => setOpen(true)}
+      className="h-11 w-full justify-between font-normal sm:h-9"
+    >
+      <span className={cn("truncate", !selected && "text-muted-foreground")}>
+        {selected ? selected.label : placeholder}
+      </span>
+      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+    </Button>
+  );
+
+  // Shared list — same filter/select logic on every device.
+  const list = (
+    <Command shouldFilter={false} className="bg-transparent">
+      <CommandInput
+        placeholder={searchPlaceholder}
+        value={query}
+        onValueChange={setQuery}
+        autoFocus={!isMobile}
+      />
+      <CommandList className={cn(isMobile ? "max-h-[60dvh]" : "max-h-[50dvh]")}>
+        <CommandEmpty>
+          <div className="py-2 text-center text-sm text-muted-foreground">{emptyLabel}</div>
+        </CommandEmpty>
+        <CommandGroup>
+          {filtered.map((o) => (
+            <CommandItem
+              key={o.id}
+              value={o.id}
+              onSelect={() => { onChange(o.id); setOpen(false); setQuery(""); }}
+              className={cn("cursor-pointer", isMobile ? "min-h-12 py-3" : "py-2.5 sm:py-1.5")}
+            >
+              <Check className={cn("mr-2 h-4 w-4", value === o.id ? "opacity-100" : "opacity-0")} />
+              <span className="flex-1 truncate">{o.label}</span>
+              {o.hint && <span className="ml-2 text-xs text-muted-foreground">{o.hint}</span>}
+            </CommandItem>
+          ))}
+        </CommandGroup>
+      </CommandList>
+    </Command>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        {trigger}
+        <Sheet open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQuery(""); }}>
+          <SheetContent
+            side="bottom"
+            className="flex max-h-[85dvh] flex-col gap-0 rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom,0px)]"
+          >
+            <div className="mx-auto mt-2 mb-1 h-1.5 w-10 shrink-0 rounded-full bg-muted" aria-hidden="true" />
+            <SheetHeader className="shrink-0 px-5 pb-2 pt-1 text-left">
+              <SheetTitle>{placeholder}</SheetTitle>
+            </SheetHeader>
+            <div className="min-h-0 flex-1 overflow-hidden px-2 pb-2">{list}</div>
+          </SheetContent>
+        </Sheet>
+      </>
+    );
+  }
+
   return (
     <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQuery(""); }}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="h-11 w-full justify-between font-normal sm:h-9"
-        >
-          <span className={cn("truncate", !selected && "text-muted-foreground")}>
-            {selected ? selected.label : placeholder}
-          </span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
         className="z-[60] w-[--radix-popover-trigger-width] min-w-[14rem] max-w-[calc(100vw-2rem)] p-0"
         align="start"
         sideOffset={4}
       >
-        <Command shouldFilter={false}>
-          <CommandInput
-            placeholder={searchPlaceholder}
-            value={query}
-            onValueChange={setQuery}
-            autoFocus
-          />
-          <CommandList className="max-h-[50dvh]">
-            <CommandEmpty>
-              <div className="py-2 text-center text-sm text-muted-foreground">{emptyLabel}</div>
-            </CommandEmpty>
-            <CommandGroup>
-              {filtered.map((o) => (
-                <CommandItem
-                  key={o.id}
-                  value={o.id}
-                  onSelect={() => { onChange(o.id); setOpen(false); setQuery(""); }}
-                  className="cursor-pointer py-2.5 sm:py-1.5"
-                >
-                  <Check className={cn("mr-2 h-4 w-4", value === o.id ? "opacity-100" : "opacity-0")} />
-                  <span className="flex-1 truncate">{o.label}</span>
-                  {o.hint && <span className="ml-2 text-xs text-muted-foreground">{o.hint}</span>}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+        {list}
       </PopoverContent>
     </Popover>
   );
