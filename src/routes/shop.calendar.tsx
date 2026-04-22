@@ -104,6 +104,8 @@ function CalendarPage() {
   // Aantal weken offset t.o.v. huidige week (0 = deze week, -1 = vorige, +1 = volgende)
   const [weekOffset, setWeekOffset] = useState(0);
   const [slotPrefill, setSlotPrefill] = useState<{ staffId: string | null; startsAt: Date } | null>(null);
+  // Swipe gesture tracking for mobile day-navigation on the booking list.
+  const swipeRef = useRef<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false });
 
   // Mobile is list-only — never show the grid even if user previously switched on desktop.
   useEffect(() => {
