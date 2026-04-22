@@ -144,9 +144,11 @@ function CustomersPage() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" onClick={() => setImporting(true)} disabled={!shopId || readOnly} title={roTitle}>
-              <Upload className="h-4 w-4" /> {t("customerImport.cta")}
+              <Upload className="h-4 w-4" /> <span className="hidden sm:inline">{t("customerImport.cta")}</span>
             </Button>
-            <Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId || readOnly} title={roTitle}>
+            {/* Mobile uses the FloatingActionButton as the single primary create
+                CTA — hide this duplicate to clean the visual hierarchy. */}
+            <Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId || readOnly} title={roTitle} className="hidden sm:inline-flex">
               <Plus className="h-4 w-4" /> {t("customers.newCustomer")}
             </Button>
           </div>
