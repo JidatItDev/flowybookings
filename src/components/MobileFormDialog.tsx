@@ -58,8 +58,21 @@ export function MobileFormDialog({
           // while the keyboard is open thanks to dvh sizing.
           "flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col gap-0 overflow-hidden rounded-none border-0 p-0",
           "left-0 top-0 translate-x-0 translate-y-0",
-          // Tablet+ (≥sm): classic centered modal.
+          // Override the inherited centered-modal zoom/slide animations and
+          // use a clean bottom-sheet slide-up on mobile (matches Calendar feel).
+          "data-[state=open]:zoom-in-100 data-[state=closed]:zoom-out-100",
+          "data-[state=open]:slide-in-from-left-0 data-[state=closed]:slide-out-to-left-0",
+          "data-[state=open]:slide-in-from-top-0 data-[state=closed]:slide-out-to-top-0",
+          "data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom",
+          "duration-300",
+          // Tablet+ (≥sm): classic centered modal — restore the standard
+          // shadcn zoom-in animation by re-enabling the centered slide origins.
           "sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[92dvh] sm:w-full sm:translate-x-[-50%] sm:translate-y-[-50%] sm:rounded-2xl sm:border",
+          "sm:data-[state=open]:zoom-in-95 sm:data-[state=closed]:zoom-out-95",
+          "sm:data-[state=open]:slide-in-from-left-1/2 sm:data-[state=closed]:slide-out-to-left-1/2",
+          "sm:data-[state=open]:slide-in-from-top-[48%] sm:data-[state=closed]:slide-out-to-top-[48%]",
+          "sm:data-[state=open]:slide-in-from-bottom-0 sm:data-[state=closed]:slide-out-to-bottom-0",
+          "sm:duration-200",
           desktopMax,
         )}
       >
