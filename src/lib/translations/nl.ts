@@ -1792,5 +1792,11 @@ export const nl: Record<string, string> = {
   "billing.activating": "activatie loopt…",
   "billing.activatingShort": "ACTIVATIE…",
   "impersonate.readOnlyTooltip": "Alleen-lezen tijdens impersonate",
+  "mobileSheet.view": "Bekijken",
+  "mobileSheet.edit": "Bewerken",
+  "mobileSheet.delete": "Verwijderen",
+  "mobileSheet.actions": "Acties",
+  "common.filter": "Filter",
+  "common.all": "Alles",
 };
 
