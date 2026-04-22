@@ -631,7 +631,7 @@ export function WeekTimeGrid({
                   </div>
                 )}
                 {/* Bookings */}
-                {dayBookings.map((b) => {
+                {dayBookings.map(({ booking: b, lane, lanes }) => {
                   const start = new Date(b.starts_at);
                   const end = new Date(b.ends_at);
                   const startTs = start.getTime();
