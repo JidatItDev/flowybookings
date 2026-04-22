@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Plus, Filter, CalendarDays, UserX, Check, ChevronsUpDown, UserPlus, Search, List, LayoutGrid, AlertTriangle } from "lucide-react";
@@ -21,6 +21,9 @@ import {
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle,
+} from "@/components/ui/sheet";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -101,6 +104,8 @@ function CalendarPage() {
   // Aantal weken offset t.o.v. huidige week (0 = deze week, -1 = vorige, +1 = volgende)
   const [weekOffset, setWeekOffset] = useState(0);
   const [slotPrefill, setSlotPrefill] = useState<{ staffId: string | null; startsAt: Date } | null>(null);
+  // Swipe gesture tracking for mobile day-navigation on the booking list.
+  const swipeRef = useRef<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false });
 
   // Mobile is list-only — never show the grid even if user previously switched on desktop.
   useEffect(() => {
@@ -869,8 +874,28 @@ function CalendarPage() {
             />
           ) : (
             <>
-              {/* Mobile card list — uses shared BookingCard. Tap opens quick-action sheet. */}
-              <ul className="space-y-3 sm:hidden">
+              {/* Mobile card list — uses shared BookingCard. Tap opens action bottom-sheet.
+                  Swipe left/right anywhere on the list switches day (uses existing dayOffset state). */}
+              <ul
+                className="space-y-3 sm:hidden touch-pan-y"
+                onTouchStart={(e) => {
+                  const t = e.touches[0];
+                  swipeRef.current = { x: t.clientX, y: t.clientY, active: true };
+                }}
+                onTouchEnd={(e) => {
+                  const s = swipeRef.current;
+                  if (!s.active) return;
+                  swipeRef.current = { x: 0, y: 0, active: false };
+                  const t = e.changedTouches[0];
+                  const dx = t.clientX - s.x;
+                  const dy = t.clientY - s.y;
+                  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+                  // Swipe right → previous day, swipe left → next day. Skip when "all upcoming".
+                  if (dayOffset === null) return;
+                  const next = dx > 0 ? dayOffset - 1 : dayOffset + 1;
+                  if (next >= 0 && next <= 13) setDayOffset(next);
+                }}
+              >
                 {filtered.map((b, idx) => {
                   const cust = customers.find((c) => c.id === b.customer_id);
                   const svc = services.find((s) => s.id === b.service_id);
@@ -980,6 +1005,7 @@ function CalendarPage() {
         booking={viewing}
         onClose={() => setViewing(null)}
         onEdit={(b) => { setViewing(null); setEditing(b); }}
+        onReschedule={(b) => { setViewing(null); setEditing(b); }}
         onAction={(id, status) => { updateStatus.mutate({ id, status }); setViewing(null); }}
         customers={customers}
         services={services}
@@ -1410,11 +1436,12 @@ function CustomerCombobox({
 }
 
 function BookingActionDialog({
-  booking, onClose, onEdit, onAction, customers, services, staff,
+  booking, onClose, onEdit, onReschedule, onAction, customers, services, staff,
 }: {
   booking: BookingWithRelations | null;
   onClose: () => void;
   onEdit: (b: BookingWithRelations) => void;
+  onReschedule?: (b: BookingWithRelations) => void;
   onAction: (id: string, status: BookingWithRelations["status"]) => void;
   customers: Array<{ id: string; full_name: string; email: string | null; phone: string | null; preferences?: unknown }>;
   services: Array<{ id: string; name: string }>;
@@ -1422,6 +1449,8 @@ function BookingActionDialog({
 }) {
   const shopId = useActiveShopId();
   const colors = useStaffColors(shopId);
+  const isMobile = useIsMobile();
+  const { t } = useT();
   if (!booking) return null;
   const cust = customers.find((c) => c.id === booking.customer_id);
   const svc = services.find((s) => s.id === booking.service_id);
@@ -1431,80 +1460,129 @@ function BookingActionDialog({
     ? (prefs as Record<string, unknown>).allergies
     : null;
   const allergy = typeof allergyRaw === "string" && allergyRaw.trim().length > 0 ? allergyRaw.trim() : null;
+
+  // Shared body — identical content for Sheet (mobile) and Dialog (desktop/tablet).
+  const body = (
+    <div className="space-y-3 py-2 text-sm">
+      {allergy && (
+        <div className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-destructive">
+          <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wider">Allergie / aandachtspunt</p>
+            <p className="mt-0.5 whitespace-pre-wrap text-sm font-medium">{allergy}</p>
+          </div>
+        </div>
+      )}
+      <div className="rounded-xl bg-muted/40 p-3">
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">Wanneer</p>
+        <p className="mt-1 font-medium">
+          {new Date(booking.starts_at).toLocaleDateString("nl-NL", { weekday: "long", day: "2-digit", month: "long", timeZone: "UTC" })}
+          {" · "}
+          {formatTime(booking.starts_at)}
+        </p>
+      </div>
+      <div className="grid gap-2">
+        <ActionRow label="Klant" value={cust?.full_name ?? "—"} sub={cust?.email ?? cust?.phone ?? undefined} />
+        <ActionRow label="Service" value={svc?.name ?? "—"} />
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">Medewerker</span>
+          {stf ? (() => {
+            const c = colors.get(stf.id);
+            return (
+              <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium", c.bg, c.text)}>
+                <span className={cn("flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold", c.dot)}>
+                  {staffInitials(stf.full_name)}
+                </span>
+                <span className="max-w-[160px] truncate">{stf.full_name}</span>
+              </span>
+            );
+          })() : (
+            <span className="text-xs italic text-muted-foreground">Niet toegewezen</span>
+          )}
+        </div>
+        <ActionRow label="Bedrag" value={formatCents(booking.price_cents)} />
+      </div>
+      {booking.notes && (
+        <div className="rounded-xl border border-border bg-card p-3">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">Notities</p>
+          <p className="mt-1 whitespace-pre-wrap">{booking.notes}</p>
+        </div>
+      )}
+    </div>
+  );
+
+  // Status mutation actions — identical on every device.
+  const statusActions = (
+    <div className="grid grid-cols-2 gap-2 pt-2">
+      <Button variant="default" disabled={booking.status === "confirmed"} onClick={() => onAction(booking.id, "confirmed")}>
+        {t("calendar.confirmed")}
+      </Button>
+      <Button variant="hero" disabled={booking.status === "completed"} onClick={() => onAction(booking.id, "completed")}>
+        {t("calendar.completed")}
+      </Button>
+      <Button variant="outline" disabled={booking.status === "cancelled"} onClick={() => onAction(booking.id, "cancelled")}>
+        {t("calendar.cancel")}
+      </Button>
+      <Button
+        variant="outline"
+        disabled={booking.status === "no_show"}
+        onClick={() => onAction(booking.id, "no_show")}
+        className="text-destructive border-destructive/30 hover:bg-destructive/10"
+      >
+        <UserX className="h-4 w-4" /> {t("calendar.noShow")}
+      </Button>
+    </div>
+  );
+
+  // Mobile: bottom sheet with prominent Reschedule + Edit row above status actions.
+  if (isMobile) {
+    return (
+      <Sheet open={!!booking} onOpenChange={(o) => !o && onClose()}>
+        <SheetContent
+          side="bottom"
+          className="max-h-[92dvh] overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom,0px)]"
+        >
+          {/* Grab handle */}
+          <div className="mx-auto mt-2 mb-1 h-1.5 w-10 rounded-full bg-muted" aria-hidden="true" />
+          <SheetHeader className="px-5 pb-2 pt-1 text-left">
+            <SheetTitle>Afspraak details</SheetTitle>
+          </SheetHeader>
+          <div className="px-5">{body}</div>
+          <div className="sticky bottom-0 mt-2 space-y-2 border-t border-border bg-background/95 px-5 pb-3 pt-3 backdrop-blur supports-[backdrop-filter]:bg-background/85">
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" onClick={() => (onReschedule ?? onEdit)(booking)}>
+                {t("calendar.reschedule")}
+              </Button>
+              <Button variant="outline" onClick={() => onEdit(booking)}>
+                {t("calendar.edit")}
+              </Button>
+            </div>
+            {statusActions}
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  // Tablet/Desktop: existing centered modal — unchanged behavior.
   return (
     <Dialog open={!!booking} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Afspraak details</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3 py-2 text-sm">
-          {allergy && (
-            <div className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-destructive">
-              <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-wider">Allergie / aandachtspunt</p>
-                <p className="mt-0.5 whitespace-pre-wrap text-sm font-medium">{allergy}</p>
-              </div>
-            </div>
-          )}
-          <div className="rounded-xl bg-muted/40 p-3">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Wanneer</p>
-            <p className="mt-1 font-medium">
-              {new Date(booking.starts_at).toLocaleDateString("nl-NL", { weekday: "long", day: "2-digit", month: "long", timeZone: "UTC" })}
-              {" · "}
-              {formatTime(booking.starts_at)}
-            </p>
-          </div>
-          <div className="grid gap-2">
-            <ActionRow label="Klant" value={cust?.full_name ?? "—"} sub={cust?.email ?? cust?.phone ?? undefined} />
-            <ActionRow label="Service" value={svc?.name ?? "—"} />
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
-              <span className="text-xs uppercase tracking-wider text-muted-foreground">Medewerker</span>
-              {stf ? (() => {
-                const c = colors.get(stf.id);
-                return (
-                  <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium", c.bg, c.text)}>
-                    <span className={cn("flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold", c.dot)}>
-                      {staffInitials(stf.full_name)}
-                    </span>
-                    <span className="max-w-[160px] truncate">{stf.full_name}</span>
-                  </span>
-                );
-              })() : (
-                <span className="text-xs italic text-muted-foreground">Niet toegewezen</span>
-              )}
-            </div>
-            <ActionRow label="Bedrag" value={formatCents(booking.price_cents)} />
-          </div>
-          {booking.notes && (
-            <div className="rounded-xl border border-border bg-card p-3">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">Notities</p>
-              <p className="mt-1 whitespace-pre-wrap">{booking.notes}</p>
-            </div>
-          )}
-        </div>
-        <div className="grid grid-cols-2 gap-2 pt-2">
-          <Button variant="default" disabled={booking.status === "confirmed"} onClick={() => onAction(booking.id, "confirmed")}>
-            Bevestigen
-          </Button>
-          <Button variant="hero" disabled={booking.status === "completed"} onClick={() => onAction(booking.id, "completed")}>
-            Voltooien
-          </Button>
-          <Button variant="outline" disabled={booking.status === "cancelled"} onClick={() => onAction(booking.id, "cancelled")}>
-            Annuleren
-          </Button>
-          <Button
-            variant="outline"
-            disabled={booking.status === "no_show"}
-            onClick={() => onAction(booking.id, "no_show")}
-            className="text-destructive border-destructive/30 hover:bg-destructive/10"
-          >
-            <UserX className="h-4 w-4" /> No-show
-          </Button>
-        </div>
+        {body}
+        {statusActions}
         <DialogFooter className="mt-2 flex-row justify-between sm:justify-between">
-          <Button variant="ghost" size="sm" onClick={() => onEdit(booking)}>Bewerken</Button>
-          <Button variant="ghost" size="sm" onClick={onClose}>Sluiten</Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={() => (onReschedule ?? onEdit)(booking)}>
+              {t("calendar.reschedule")}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => onEdit(booking)}>
+              {t("calendar.edit")}
+            </Button>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onClose}>{t("calendar.cancel")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

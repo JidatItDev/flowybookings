@@ -446,6 +446,8 @@ export const nl: Record<string, string> = {
   "calendar.save": "Opslaan",
   "calendar.saving": "Bezig met opslaan…",
   "calendar.edit": "Bewerken",
+  "calendar.view": "Bekijken",
+  "calendar.reschedule": "Verplaatsen",
   "calendar.markNoShow": "Markeer als no-show",
 
   // ── Customers ──
