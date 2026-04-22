@@ -309,6 +309,9 @@ export function DayTimeGrid({
   // pre-validatie-logica als de mouse drag-flow. State houdt de actief
   // "opgepakte" booking + grab-offset bij; visuele feedback via dragPreview.
   const [touchDrag, setTouchDrag] = useState<{ bookingId: string } | null>(null);
+  // Desktop HTML5-drag tracking — gebruikt voor visuele feedback (oorspronkelijk
+  // blok dimt + scaled tijdens slepen). Geen invloed op data of mutaties.
+  const [mouseDrag, setMouseDrag] = useState<{ bookingId: string } | null>(null);
 
   const hours = useMemo(() => {
     const arr: number[] = [];
@@ -794,29 +797,56 @@ export function DayTimeGrid({
               )}
 
               {/* Drop-indicator: gesnapte horizontale lijn met tijd-label tijdens drag.
+                  Toont ook klant + dienst zodat je niet hoeft terug te scrollen.
                   Rood (destructive) wanneer de positie buiten werkuren of in pauze valt. */}
-              {dragPreview && dragPreview.colKey === c.key && (
-                <div
-                  className={cn(
-                    "pointer-events-none absolute left-0 right-0 z-[15] border-t-2 border-dashed",
-                    dragPreview.invalid ? "border-destructive" : "border-primary",
-                  )}
-                  style={{ top: dragPreview.topPx }}
-                  title={dragPreview.reason}
-                >
-                  <span
+              {dragPreview && dragPreview.colKey === c.key && (() => {
+                const draggedId = mouseDrag?.bookingId ?? touchDrag?.bookingId ?? draggedIdRef.current;
+                const draggedBk = draggedId ? bookings.find((bk) => bk.id === draggedId) : null;
+                const draggedCust = draggedBk?.customer_id
+                  ? customers.find((x) => x.id === draggedBk.customer_id)
+                  : null;
+                const draggedSvc = draggedBk?.service_id
+                  ? services.find((x) => x.id === draggedBk.service_id)
+                  : null;
+                return (
+                  <div
                     className={cn(
-                      "absolute -top-2.5 left-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shadow-soft",
-                      dragPreview.invalid
-                        ? "bg-destructive text-destructive-foreground"
-                        : "bg-primary text-primary-foreground",
+                      "pointer-events-none absolute left-0 right-0 z-[15] border-t-2 border-dashed",
+                      dragPreview.invalid ? "border-destructive" : "border-primary",
                     )}
+                    style={{ top: dragPreview.topPx }}
+                    title={dragPreview.reason}
                   >
-                    {dragPreview.label}
-                    {dragPreview.invalid && dragPreview.reason ? ` · ${dragPreview.reason}` : ""}
-                  </span>
-                </div>
-              )}
+                    <div
+                      className={cn(
+                        "absolute -top-2 left-1 max-w-[calc(100%-0.5rem)] rounded-md px-1.5 py-1 text-[10px] font-semibold tabular-nums shadow-soft",
+                        dragPreview.invalid
+                          ? "bg-destructive text-destructive-foreground"
+                          : "bg-primary text-primary-foreground",
+                      )}
+                    >
+                      <div className="flex items-center gap-1">
+                        <span>{dragPreview.label}</span>
+                        {draggedCust && (
+                          <span className="truncate font-medium opacity-90">
+                            · {draggedCust.full_name}
+                          </span>
+                        )}
+                      </div>
+                      {draggedSvc && !dragPreview.invalid && (
+                        <div className="truncate text-[9px] font-normal opacity-80">
+                          {draggedSvc.name}
+                        </div>
+                      )}
+                      {dragPreview.invalid && dragPreview.reason && (
+                        <div className="truncate text-[9px] font-normal opacity-90">
+                          {dragPreview.reason}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Bookings in deze kolom */}
               {visibleBookings
@@ -859,10 +889,13 @@ export function DayTimeGrid({
                           // (waar dataTransfer.getData niet leesbaar is).
                           draggedIdRef.current = b.id;
                           e.dataTransfer.setData("application/x-grab-offset-min", String(grabMin));
+                          // Visuele feedback: bron-blok dimt + krimpt subtiel.
+                          setMouseDrag({ bookingId: b.id });
                         } : undefined}
                         onDragEnd={() => {
                           draggedIdRef.current = null;
                           setDragPreview(null);
+                          setMouseDrag(null);
                         }}
                         onTouchStart={draggable ? (e) => {
                           // Touch long-press → drag flow voor iPad/tablet in salons.
@@ -1170,14 +1203,16 @@ export function DayTimeGrid({
                           });
                         } : undefined}
                         className={cn(
-                          "block h-full w-full overflow-hidden rounded-lg border px-2 py-1 text-left text-[11px] shadow-soft transition-transform hover:z-20 hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-                          draggable && !isResizingThis && "cursor-grab active:cursor-grabbing active:opacity-70",
+                          "block h-full w-full overflow-hidden rounded-lg border px-2 py-1 text-left text-[11px] shadow-soft transition-all duration-150 hover:z-20 hover:scale-[1.01] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+                          draggable && !isResizingThis && "cursor-grab active:cursor-grabbing",
                           tone
                             ? `${tone.bg} ${tone.text} border-transparent`
                             : "border-border bg-muted text-foreground",
                           isCancelled && "opacity-60 line-through decoration-1",
                           isResizingThis && "ring-2 ring-primary/60",
-                          touchDrag?.bookingId === b.id && "scale-[1.02] opacity-70 ring-2 ring-primary/70",
+                          // Lifted state — desktop drag (mouseDrag) + touch drag.
+                          mouseDrag?.bookingId === b.id && "scale-[0.98] opacity-40 ring-2 ring-primary/40",
+                          touchDrag?.bookingId === b.id && "scale-[1.02] opacity-70 ring-2 ring-primary/70 shadow-lg",
                         )}
                         style={touchDrag?.bookingId === b.id ? { touchAction: "none" } : undefined}
                         title={`${cust?.full_name ?? "—"} · ${svc?.name ?? "—"} · ${formatTime(b.starts_at)}–${formatTime(b.ends_at)}${draggable ? " · Sleep of gebruik pijltjestoetsen om te verplaatsen" : ""}`}
