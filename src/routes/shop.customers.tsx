@@ -61,6 +61,7 @@ function CustomersPage() {
   const readOnly = useImpersonationReadOnly();
   const roTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const [q, setQ] = useState("");
+  const [filter, setFilter] = useState<FilterKey>("all");
   const [editing, setEditing] = useState<CustomerRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<CustomerRow | null>(null);
@@ -79,10 +80,15 @@ function CustomersPage() {
 
   const { data: customers = [], isLoading } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
   const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
-  const visitsByCustomer = bookings.reduce<Record<string, number>>((acc, b) => {
-    if (b.customer_id && (b.status === "completed" || b.status === "confirmed")) acc[b.customer_id] = (acc[b.customer_id] ?? 0) + 1;
-    return acc;
-  }, {});
+  const visitsByCustomer = useMemo(
+    () =>
+      bookings.reduce<Record<string, number>>((acc, b) => {
+        if (b.customer_id && (b.status === "completed" || b.status === "confirmed"))
+          acc[b.customer_id] = (acc[b.customer_id] ?? 0) + 1;
+        return acc;
+      }, {}),
+    [bookings],
+  );
 
   const remove = useMutation({
     mutationFn: async (id: string) => { assertNotImpersonating(); const { error } = await supabase.from("customers").delete().eq("id", id); if (error) throw error; },
@@ -90,7 +96,44 @@ function CustomersPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const list = customers.filter((c) => { const needle = q.toLowerCase(); return c.full_name.toLowerCase().includes(needle) || (c.email ?? "").toLowerCase().includes(needle) || (c.phone ?? "").toLowerCase().includes(needle); });
+  const list = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    const now = Date.now();
+    return customers.filter((c) => {
+      if (needle) {
+        const hit =
+          c.full_name.toLowerCase().includes(needle) ||
+          (c.email ?? "").toLowerCase().includes(needle) ||
+          (c.phone ?? "").toLowerCase().includes(needle);
+        if (!hit) return false;
+      }
+      if (filter === "all") return true;
+      const createdAt = (c as { created_at?: string }).created_at;
+      if (filter === "new") {
+        if (!createdAt) return false;
+        return (now - new Date(createdAt).getTime()) / 86_400_000 <= NEW_CUSTOMER_DAYS;
+      }
+      if (filter === "top") return (c.total_spent_cents ?? 0) >= TOP_SPENT_THRESHOLD_CENTS;
+      if (filter === "risk") return (c.no_show_count ?? 0) >= 2 || c.requires_deposit === true;
+      if (filter === "recent") {
+        if (!c.last_visit_at) return false;
+        return (now - new Date(c.last_visit_at).getTime()) / 86_400_000 <= RECENT_VISIT_DAYS;
+      }
+      return true;
+    });
+  }, [customers, q, filter]);
+
+  function badgesFor(c: CustomerRow): Array<"new" | "vip" | "noshow"> {
+    const out: Array<"new" | "vip" | "noshow"> = [];
+    const createdAt = (c as { created_at?: string }).created_at;
+    if (createdAt) {
+      const ageDays = (Date.now() - new Date(createdAt).getTime()) / 86_400_000;
+      if (ageDays <= NEW_CUSTOMER_DAYS) out.push("new");
+    }
+    if ((c.total_spent_cents ?? 0) >= TOP_SPENT_THRESHOLD_CENTS) out.push("vip");
+    if ((c.no_show_count ?? 0) >= 2) out.push("noshow");
+    return out;
+  }
 
   return (
     <ShopLayout>
