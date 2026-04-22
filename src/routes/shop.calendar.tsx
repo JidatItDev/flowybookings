@@ -762,7 +762,28 @@ function CalendarPage() {
             );
           })()}
 
-          {filtered.length === 0 && viewMode === "list" ? (
+          {bookingsLoading && bookings.length === 0 ? (
+            <ul className="space-y-3 sm:hidden" aria-busy="true">
+              {[0, 1, 2, 3].map((i) => (
+                <li key={i}>
+                  <div className="flex w-full overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                    <span className="w-1 shrink-0 bg-muted" aria-hidden="true" />
+                    <div className="flex-1 px-4 py-3.5">
+                      <div className="flex items-start justify-between gap-3">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-4 w-14" />
+                      </div>
+                      <Skeleton className="mt-2 h-3 w-40" />
+                      <div className="mt-3 flex items-center justify-between gap-2">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-3 w-20" />
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : filtered.length === 0 && viewMode === "list" ? (
             <EmptyState
               icon={CalendarDays}
               title={filter === "all" ? t("calendar.noBookings") : t("calendar.noMatch")}
