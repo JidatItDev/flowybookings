@@ -344,61 +344,60 @@ function ServiceFormDialog({ open, onClose, service, duplicateOf, shopId }: { op
   });
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      {/* Mobile: full-height sheet with sticky header + footer. Desktop: standard dialog. */}
-      <DialogContent className="flex h-[100dvh] max-h-[100dvh] w-screen max-w-none flex-col gap-0 rounded-none p-0 sm:h-auto sm:max-h-[90vh] sm:w-full sm:max-w-lg sm:rounded-lg">
-        <DialogHeader className="sticky top-0 z-10 border-b border-border bg-background px-5 pb-3 pt-4 text-left sm:static sm:border-0 sm:px-6 sm:pt-6">
-          <DialogTitle>{service ? t("services.editService") : t("services.newService")}</DialogTitle>
-          <DialogDescription>{t("services.setDetails")}</DialogDescription>
-        </DialogHeader>
-        <div className="flex-1 overflow-y-auto px-5 py-4 sm:px-6">
-          <div className="grid gap-4">
-            <div>
-              <Label htmlFor="name">{t("services.name")}</Label>
-              <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="h-11 text-base sm:h-9 sm:text-sm" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="cat">{t("services.category")}</Label>
-                <Input id="cat" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="h-11 text-base sm:h-9 sm:text-sm" />
-              </div>
-              <div>
-                <Label htmlFor="dur">{t("services.durationMin")}</Label>
-                <Input id="dur" type="number" min={1} inputMode="numeric" value={form.duration_minutes} onChange={(e) => setForm({ ...form, duration_minutes: Number(e.target.value) })} className="h-11 text-base sm:h-9 sm:text-sm" />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="price">{t("services.priceEur")}</Label>
-                <Input id="price" type="number" min={0} step="0.01" inputMode="decimal" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} aria-invalid={!!priceError} className={cn("h-11 text-base sm:h-9 sm:text-sm", priceError && "border-destructive")} />
-                {priceError && <p className="mt-1 text-xs text-destructive">{priceError}</p>}
-              </div>
-              <div>
-                <Label htmlFor="dep">{t("services.depositEur")}</Label>
-                <Input id="dep" type="number" min={0} step="0.01" inputMode="decimal" max={priceNum || undefined} value={form.deposit} onChange={(e) => setForm({ ...form, deposit: Number(e.target.value) })} aria-invalid={!!depositError} className={cn("h-11 text-base sm:h-9 sm:text-sm", depositError && "border-destructive")} />
-                {depositError ? <p className="mt-1 text-xs text-destructive">{depositError}</p> : <p className="mt-1 text-xs text-muted-foreground">{t("services.depositHint")}</p>}
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="desc">{t("services.descriptionLabel")}</Label>
-              <Textarea id="desc" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="text-base sm:text-sm" />
-            </div>
-            <div className="flex items-center justify-between rounded-xl border border-border p-3">
-              <div>
-                <p className="text-sm font-medium">{t("services.activeLabel")}</p>
-                <p className="text-xs text-muted-foreground">{t("services.bookable")}</p>
-              </div>
-              <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
-            </div>
-          </div>
-        </div>
-        <DialogFooter className="sticky bottom-0 z-10 flex-row gap-2 border-t border-border bg-background px-5 py-3 pb-[env(safe-area-inset-bottom,12px)] sm:static sm:border-0 sm:px-6 sm:py-4">
-          <Button variant="outline" onClick={onClose} className="h-11 flex-1 sm:h-9 sm:flex-none">{t("services.cancel")}</Button>
-          <Button variant="hero" onClick={() => save.mutate()} disabled={!form.name.trim() || hasErrors || save.isPending} className="h-11 flex-1 sm:h-9 sm:flex-none">
+    <MobileFormDialog
+      open={open}
+      onClose={onClose}
+      size="lg"
+      title={service ? t("services.editService") : t("services.newService")}
+      description={t("services.setDetails")}
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose} className="h-11 w-full sm:h-9 sm:w-auto">{t("services.cancel")}</Button>
+          <Button variant="hero" onClick={() => save.mutate()} disabled={!form.name.trim() || hasErrors || save.isPending} className="h-11 w-full sm:h-9 sm:w-auto">
             {save.isPending ? t("services.saving") : service ? t("services.saveChanges") : t("services.createService")}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div className="grid gap-4">
+        <div>
+          <Label htmlFor="name">{t("services.name")}</Label>
+          <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="h-11 text-base sm:h-9 sm:text-sm" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="cat">{t("services.category")}</Label>
+            <Input id="cat" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="h-11 text-base sm:h-9 sm:text-sm" />
+          </div>
+          <div>
+            <Label htmlFor="dur">{t("services.durationMin")}</Label>
+            <Input id="dur" type="number" min={1} inputMode="numeric" value={form.duration_minutes} onChange={(e) => setForm({ ...form, duration_minutes: Number(e.target.value) })} className="h-11 text-base sm:h-9 sm:text-sm" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="price">{t("services.priceEur")}</Label>
+            <Input id="price" type="number" min={0} step="0.01" inputMode="decimal" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} aria-invalid={!!priceError} className={cn("h-11 text-base sm:h-9 sm:text-sm", priceError && "border-destructive")} />
+            {priceError && <p className="mt-1 text-xs text-destructive">{priceError}</p>}
+          </div>
+          <div>
+            <Label htmlFor="dep">{t("services.depositEur")}</Label>
+            <Input id="dep" type="number" min={0} step="0.01" inputMode="decimal" max={priceNum || undefined} value={form.deposit} onChange={(e) => setForm({ ...form, deposit: Number(e.target.value) })} aria-invalid={!!depositError} className={cn("h-11 text-base sm:h-9 sm:text-sm", depositError && "border-destructive")} />
+            {depositError ? <p className="mt-1 text-xs text-destructive">{depositError}</p> : <p className="mt-1 text-xs text-muted-foreground">{t("services.depositHint")}</p>}
+          </div>
+        </div>
+        <div>
+          <Label htmlFor="desc">{t("services.descriptionLabel")}</Label>
+          <Textarea id="desc" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className="text-base sm:text-sm" />
+        </div>
+        <div className="flex items-center justify-between rounded-xl border border-border p-3">
+          <div>
+            <p className="text-sm font-medium">{t("services.activeLabel")}</p>
+            <p className="text-xs text-muted-foreground">{t("services.bookable")}</p>
+          </div>
+          <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
+        </div>
+      </div>
+    </MobileFormDialog>
   );
 }
