@@ -625,8 +625,8 @@ function CalendarPage() {
             </div>
           )}
 
-          {/* View toggle: lijst of tijdgrid + Dag/Week schakelaar. */}
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          {/* View toggle: lijst of tijdgrid + Dag/Week schakelaar. Desktop/tablet only. */}
+          <div className="mb-3 hidden flex-wrap items-center justify-between gap-2 sm:flex">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <span>
                 {(() => {
