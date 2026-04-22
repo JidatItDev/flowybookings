@@ -803,7 +803,7 @@ function CalendarPage() {
                 onDropBlocked={(reason) => toast.error(t("calendar.dropBlocked", { reason }))}
               />
             );
-          })() : viewMode === "grid" && dayOffset !== null ? (
+          })() : viewMode === "grid" && dayOffset !== null && !isMobile ? (
             <DayTimeGrid
               day={(() => {
                 const d = new Date();
