@@ -457,8 +457,14 @@ function CalendarPage() {
                     key={c.offset}
                     onClick={() => setDayOffset(c.offset)}
                     className={cn(
-                      "relative shrink-0 rounded-xl border px-3 py-2 text-center transition-colors",
-                      active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card hover:bg-muted",
+                      "relative shrink-0 rounded-xl border text-center transition-colors",
+                      // Bigger tap target on mobile (60×64), compact on desktop.
+                      "min-w-[60px] px-3 py-2.5 sm:min-w-0 sm:py-2",
+                      active
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : isToday
+                          ? "border-primary/60 bg-card hover:bg-muted"
+                          : "border-border bg-card hover:bg-muted",
                     )}
                   >
                     {showRing && (
@@ -485,11 +491,15 @@ function CalendarPage() {
                     <div className="text-[10px] uppercase tracking-wider opacity-80">
                       {isToday ? t("calendar.today") : c.date.toLocaleDateString("nl-NL", { weekday: "short", timeZone: "UTC" })}
                     </div>
-                    <div className="text-sm font-semibold">
+                    <div className="text-base font-semibold sm:text-sm">
                       {c.date.toLocaleDateString("nl-NL", { day: "2-digit", month: "short", timeZone: "UTC" })}
                     </div>
+                    {/* Today indicator dot under the date when not active */}
+                    {isToday && !active && (
+                      <span className="mx-auto mt-1 block h-1 w-1 rounded-full bg-primary" aria-hidden="true" />
+                    )}
                     {c.count > 0 && (
-                      <div className={cn("mt-0.5 text-[10px] font-medium", active ? "text-primary-foreground/90" : "text-primary")}>
+                      <div className={cn("mt-0.5 hidden text-[10px] font-medium sm:block", active ? "text-primary-foreground/90" : "text-primary")}>
                         {c.count} {c.count === 1 ? t("calendar.appointment") : t("calendar.appointments")}
                       </div>
                     )}
