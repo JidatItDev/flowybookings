@@ -101,6 +101,14 @@ function CalendarPage() {
   const [weekOffset, setWeekOffset] = useState(0);
   const [slotPrefill, setSlotPrefill] = useState<{ staffId: string | null; startsAt: Date } | null>(null);
 
+  // Mobile is list-only — never show the grid even if user previously switched on desktop.
+  useEffect(() => {
+    if (isMobile) {
+      setViewMode("list");
+      setCalendarMode("day");
+    }
+  }, [isMobile]);
+
   const statusLabel: Record<string, string> = {
     all: t("calendar.filterAll"), pending: t("calendar.pending"), confirmed: t("calendar.confirmed"),
     completed: t("calendar.completed"), cancelled: t("calendar.cancelled"), no_show: t("calendar.noShow"),
