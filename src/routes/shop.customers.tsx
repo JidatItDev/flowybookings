@@ -252,6 +252,23 @@ function CustomersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <MobileActionSheet
+        open={!!sheetFor}
+        onClose={() => setSheetFor(null)}
+        title={sheetFor?.full_name ?? ""}
+        description={sheetFor?.email ?? sheetFor?.phone ?? undefined}
+        actions={sheetActions}
+      />
+
+      {shopId && (
+        <FloatingActionButton
+          onClick={() => setCreating(true)}
+          disabled={readOnly}
+          title={roTitle}
+          ariaLabel={t("customers.newCustomer")}
+        />
+      )}
     </ShopLayout>
   );
 }
