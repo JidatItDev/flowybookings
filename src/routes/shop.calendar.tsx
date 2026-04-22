@@ -1550,7 +1550,7 @@ function BookingActionDialog({
           <div className="px-5">{body}</div>
           <div className="sticky bottom-0 mt-2 space-y-2 border-t border-border bg-background/95 px-5 pb-3 pt-3 backdrop-blur supports-[backdrop-filter]:bg-background/85">
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" onClick={() => onReschedule?.(booking) ?? onEdit(booking)}>
+              <Button variant="outline" onClick={() => (onReschedule ?? onEdit)(booking)}>
                 {t("calendar.reschedule")}
               </Button>
               <Button variant="outline" onClick={() => onEdit(booking)}>
@@ -1575,7 +1575,7 @@ function BookingActionDialog({
         {statusActions}
         <DialogFooter className="mt-2 flex-row justify-between sm:justify-between">
           <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => onReschedule?.(booking) ?? onEdit(booking)}>
+            <Button variant="ghost" size="sm" onClick={() => (onReschedule ?? onEdit)(booking)}>
               {t("calendar.reschedule")}
             </Button>
             <Button variant="ghost" size="sm" onClick={() => onEdit(booking)}>
