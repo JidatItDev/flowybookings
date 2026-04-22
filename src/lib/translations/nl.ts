@@ -1758,6 +1758,8 @@ export const nl: Record<string, string> = {
   "calendar.emptyTitle": "Geen afspraken zichtbaar",
   "calendar.emptyNoStaffSelected": "Selecteer een medewerker om afspraken te bekijken.",
   "calendar.emptyNoStaffActive": "Voeg een actieve medewerker toe om je rooster te starten.",
+  "calendar.filterLabel": "Filter",
+  "calendar.unassignedShort": "Niet toegewezen",
   "billing.choosePlan": "Kies een plan",
   "billing.viewPlans": "Bekijk plannen",
   "billing.updatePayment": "Betaalmethode bijwerken",

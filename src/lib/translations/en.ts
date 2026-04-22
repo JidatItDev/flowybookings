@@ -1758,6 +1758,8 @@ export const en: Record<string, string> = {
   "calendar.emptyTitle": "No appointments to show",
   "calendar.emptyNoStaffSelected": "Pick a staff member to view their appointments.",
   "calendar.emptyNoStaffActive": "Add an active staff member to start your schedule.",
+  "calendar.filterLabel": "Filter",
+  "calendar.unassignedShort": "Unassigned",
   "billing.choosePlan": "Pick a plan",
   "billing.viewPlans": "View plans",
   "billing.updatePayment": "Update payment method",
