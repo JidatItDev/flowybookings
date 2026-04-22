@@ -552,7 +552,7 @@ function CalendarPage() {
           </div>
 
           {staff.filter((s) => s.is_active).length > 0 && (
-            <div className="mb-4 -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            <div className="mb-4 -mx-4 hidden overflow-x-auto px-4 sm:mx-0 sm:block sm:px-0">
               <div className="flex items-center gap-2 pb-1">
                 <span className="shrink-0 text-xs font-medium uppercase tracking-wider text-muted-foreground">{t("calendar.staffCol")}</span>
                 <button
