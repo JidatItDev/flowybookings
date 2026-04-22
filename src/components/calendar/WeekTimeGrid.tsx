@@ -193,14 +193,46 @@ export function WeekTimeGrid({
   const winEnd = END_HOUR * 60;
 
   // Snelle lookup: bookings per dag-key (YYYY-M-D in UTC).
+  // Per booking berekenen we ook een lane-index zodat overlappende bookings
+  // (bv. verschillende staff op hetzelfde tijdstip) naast elkaar staan
+  // i.p.v. visueel te botsen. Sweep-line algoritme: bookings gesorteerd op
+  // start, lane = eerst-vrije lane (waar laatste end ≤ huidige start).
   const bookingsByDay = useMemo(() => {
-    const map = new Map<string, BookingWithRelations[]>();
+    const map = new Map<
+      string,
+      Array<{ booking: BookingWithRelations; lane: number; lanes: number }>
+    >();
+    const grouped = new Map<string, BookingWithRelations[]>();
     for (const b of bookings) {
       const d = new Date(b.starts_at);
       const key = `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
-      const list = map.get(key) ?? [];
+      const list = grouped.get(key) ?? [];
       list.push(b);
-      map.set(key, list);
+      grouped.set(key, list);
+    }
+    for (const [key, list] of grouped) {
+      const sorted = [...list].sort(
+        (a, b) => +new Date(a.starts_at) - +new Date(b.starts_at),
+      );
+      const laneEnds: number[] = [];
+      const assigned: Array<{ booking: BookingWithRelations; lane: number }> = [];
+      for (const b of sorted) {
+        const startMs = +new Date(b.starts_at);
+        const endMs = +new Date(b.ends_at);
+        let lane = laneEnds.findIndex((e) => e <= startMs);
+        if (lane === -1) {
+          lane = laneEnds.length;
+          laneEnds.push(endMs);
+        } else {
+          laneEnds[lane] = endMs;
+        }
+        assigned.push({ booking: b, lane });
+      }
+      const lanes = Math.max(1, laneEnds.length);
+      map.set(
+        key,
+        assigned.map((a) => ({ booking: a.booking, lane: a.lane, lanes })),
+      );
     }
     return map;
   }, [bookings]);
