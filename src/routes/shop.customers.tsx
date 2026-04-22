@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState, NoShopState } from "@/components/EmptyState";
+import { MobileActionSheet, useStandardRowActions } from "@/components/MobileActionSheet";
+import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { CustomerImportDialog } from "@/components/CustomerImportDialog";
 import { useActiveShopId } from "@/lib/shop-context";
@@ -49,6 +51,17 @@ function CustomersPage() {
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<CustomerRow | null>(null);
   const [importing, setImporting] = useState(false);
+  const [sheetFor, setSheetFor] = useState<CustomerRow | null>(null);
+
+  const sheetActions = useStandardRowActions({
+    onView: sheetFor
+      ? () => navigate({ to: "/shop/customers/$customerId", params: { customerId: sheetFor.id } })
+      : null,
+    onEdit: sheetFor ? () => setEditing(sheetFor) : null,
+    onDelete: sheetFor ? () => setDeleting(sheetFor) : null,
+    disabled: readOnly,
+    disabledTitle: roTitle,
+  });
 
   const { data: customers = [], isLoading } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
   const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
@@ -90,85 +103,138 @@ function CustomersPage() {
           {isLoading ? <div className="h-72 animate-pulse rounded-2xl border border-border bg-card" /> : list.length === 0 ? (
             <EmptyState icon={Users} title={q ? t("customers.noMatches") : t("customers.noCustomers")} description={q ? t("customers.noMatchDesc") : t("customers.noCustomersDesc")} action={!q && <Button variant="hero" onClick={() => setCreating(true)} disabled={readOnly} title={roTitle}><Plus className="h-4 w-4" /> {t("customers.addCustomer")}</Button>} />
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
-                  <tr>
-                    <th className="px-6 py-3 text-left">{t("customers.customerCol")}</th>
-                    <th className="hidden px-6 py-3 text-left md:table-cell">{t("customers.contact")}</th>
-                    <th className="hidden px-6 py-3 text-left sm:table-cell">Bezoeken</th>
-                    <th className="hidden px-6 py-3 text-left sm:table-cell">{t("customers.totalSpent")}</th>
-                    <th className="hidden px-6 py-3 text-left lg:table-cell">{t("customers.lastVisit")}</th>
-                    <th className="hidden px-6 py-3 text-left sm:table-cell">{t("customers.noShows")}</th>
-                    <th className="px-6 py-3" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {list.map((c) => {
-                    const ns = c.no_show_count ?? 0;
-                    const repeat = ns >= 2;
-                    const allergy = getAllergyText(c);
-                    return (
-                    <tr
+            <>
+              {/* Mobile card list — tap opens MobileActionSheet (View/Edit/Delete). */}
+              <div className="space-y-2 sm:hidden">
+                {list.map((c) => {
+                  const ns = c.no_show_count ?? 0;
+                  const repeat = ns >= 2;
+                  const allergy = getAllergyText(c);
+                  const visits = visitsByCustomer[c.id] ?? 0;
+                  return (
+                    <button
                       key={c.id}
-                      onClick={() => navigate({ to: "/shop/customers/$customerId", params: { customerId: c.id } })}
-                      className={cn("cursor-pointer hover:bg-muted/30", (repeat || allergy) && "bg-destructive/5")}
+                      type="button"
+                      onClick={() => setSheetFor(c)}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-left shadow-soft transition active:scale-[0.99]",
+                        (repeat || allergy) && "border-destructive/40 bg-destructive/5",
+                      )}
                     >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-warm text-xs font-semibold text-pink-foreground">{initials(c.full_name)}</div>
-                          <div className="min-w-0">
-                            <p className="truncate font-medium flex items-center gap-2 flex-wrap">
-                              {c.full_name}
-                              {allergy && (
-                                <span
-                                  className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-destructive ring-1 ring-destructive/30"
-                                  title={allergy}
-                                >
-                                  <AlertTriangle className="h-3 w-3" /> {t("customers.allergyBadge")}
-                                </span>
-                              )}
-                              {repeat && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-destructive">
-                                  <ShieldAlert className="h-3 w-3" /> {t("customers.repeatNoShow")}
-                                </span>
-                              )}
-                              {c.requires_deposit && (
-                                <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
-                                  {t("customers.depositRequired")}
-                                </span>
-                              )}
-                              {(c.tags ?? []).slice(0, 3).map((tg) => (
-                                <span key={tg} className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
-                                  {tg}
-                                </span>
-                              ))}
-                            </p>
-                            {allergy && (
-                              <p className="truncate text-xs font-medium text-destructive" title={allergy}>
-                                ⚠ {allergy}
-                              </p>
-                            )}
-                            {c.notes && <p className="truncate text-xs text-muted-foreground">{c.notes}</p>}
-                          </div>
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-warm text-sm font-semibold text-pink-foreground">
+                        {initials(c.full_name)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-base font-semibold">{c.full_name}</p>
+                          {allergy && <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />}
+                          {repeat && <ShieldAlert className="h-4 w-4 shrink-0 text-destructive" />}
                         </div>
-                      </td>
-                      <td className="hidden px-6 py-4 text-xs text-muted-foreground md:table-cell">{c.email && <div className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" />{c.email}</div>}{c.phone && <div className="mt-1 flex items-center gap-2"><Phone className="h-3.5 w-3.5" />{c.phone}</div>}</td>
-                      <td className="hidden px-6 py-4 sm:table-cell"><span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{visitsByCustomer[c.id] ?? 0}</span></td>
-                      <td className="hidden px-6 py-4 sm:table-cell"><span className="font-medium text-success-foreground tabular-nums">{formatCents(c.total_spent_cents)}</span></td>
-                      <td className="hidden px-6 py-4 text-muted-foreground lg:table-cell">{relativeFromNow(c.last_visit_at)}</td>
-                      <td className="hidden px-6 py-4 sm:table-cell">
-                        <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium", ns === 0 ? "bg-mint/40 text-mint-foreground" : ns === 1 ? "bg-amber-500/15 text-amber-700" : "bg-destructive/15 text-destructive")}>
-                          {ns > 0 && <AlertTriangle className="h-3 w-3" />} {ns}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" disabled={readOnly} title={roTitle} onClick={() => setEditing(c)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" disabled={readOnly} title={roTitle} onClick={() => setDeleting(c)}><Trash2 className="h-4 w-4" /></Button></td>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {c.phone ?? c.email ?? "—"}
+                        </p>
+                        <div className="mt-1 flex items-center gap-3 text-[11px] text-muted-foreground">
+                          <span>
+                            {visits} {visits === 1 ? "bezoek" : "bezoeken"}
+                          </span>
+                          <span>·</span>
+                          <span className="font-medium text-foreground tabular-nums">
+                            {formatCents(c.total_spent_cents)}
+                          </span>
+                          {c.last_visit_at && (
+                            <>
+                              <span>·</span>
+                              <span className="truncate">{relativeFromNow(c.last_visit_at)}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Desktop / tablet — original table preserved. */}
+              <div className="hidden overflow-hidden rounded-2xl border border-border bg-card shadow-soft sm:block">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                    <tr>
+                      <th className="px-6 py-3 text-left">{t("customers.customerCol")}</th>
+                      <th className="hidden px-6 py-3 text-left md:table-cell">{t("customers.contact")}</th>
+                      <th className="hidden px-6 py-3 text-left sm:table-cell">Bezoeken</th>
+                      <th className="hidden px-6 py-3 text-left sm:table-cell">{t("customers.totalSpent")}</th>
+                      <th className="hidden px-6 py-3 text-left lg:table-cell">{t("customers.lastVisit")}</th>
+                      <th className="hidden px-6 py-3 text-left sm:table-cell">{t("customers.noShows")}</th>
+                      <th className="px-6 py-3" />
                     </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {list.map((c) => {
+                      const ns = c.no_show_count ?? 0;
+                      const repeat = ns >= 2;
+                      const allergy = getAllergyText(c);
+                      return (
+                      <tr
+                        key={c.id}
+                        onClick={() => navigate({ to: "/shop/customers/$customerId", params: { customerId: c.id } })}
+                        className={cn("cursor-pointer hover:bg-muted/30", (repeat || allergy) && "bg-destructive/5")}
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-warm text-xs font-semibold text-pink-foreground">{initials(c.full_name)}</div>
+                            <div className="min-w-0">
+                              <p className="truncate font-medium flex items-center gap-2 flex-wrap">
+                                {c.full_name}
+                                {allergy && (
+                                  <span
+                                    className="inline-flex items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-destructive ring-1 ring-destructive/30"
+                                    title={allergy}
+                                  >
+                                    <AlertTriangle className="h-3 w-3" /> {t("customers.allergyBadge")}
+                                  </span>
+                                )}
+                                {repeat && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-destructive">
+                                    <ShieldAlert className="h-3 w-3" /> {t("customers.repeatNoShow")}
+                                  </span>
+                                )}
+                                {c.requires_deposit && (
+                                  <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
+                                    {t("customers.depositRequired")}
+                                  </span>
+                                )}
+                                {(c.tags ?? []).slice(0, 3).map((tg) => (
+                                  <span key={tg} className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                                    {tg}
+                                  </span>
+                                ))}
+                              </p>
+                              {allergy && (
+                                <p className="truncate text-xs font-medium text-destructive" title={allergy}>
+                                  ⚠ {allergy}
+                                </p>
+                              )}
+                              {c.notes && <p className="truncate text-xs text-muted-foreground">{c.notes}</p>}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="hidden px-6 py-4 text-xs text-muted-foreground md:table-cell">{c.email && <div className="flex items-center gap-2"><Mail className="h-3.5 w-3.5" />{c.email}</div>}{c.phone && <div className="mt-1 flex items-center gap-2"><Phone className="h-3.5 w-3.5" />{c.phone}</div>}</td>
+                        <td className="hidden px-6 py-4 sm:table-cell"><span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">{visitsByCustomer[c.id] ?? 0}</span></td>
+                        <td className="hidden px-6 py-4 sm:table-cell"><span className="font-medium text-success-foreground tabular-nums">{formatCents(c.total_spent_cents)}</span></td>
+                        <td className="hidden px-6 py-4 text-muted-foreground lg:table-cell">{relativeFromNow(c.last_visit_at)}</td>
+                        <td className="hidden px-6 py-4 sm:table-cell">
+                          <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium", ns === 0 ? "bg-mint/40 text-mint-foreground" : ns === 1 ? "bg-amber-500/15 text-amber-700" : "bg-destructive/15 text-destructive")}>
+                            {ns > 0 && <AlertTriangle className="h-3 w-3" />} {ns}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}><Button variant="ghost" size="icon" disabled={readOnly} title={roTitle} onClick={() => setEditing(c)}><Pencil className="h-4 w-4" /></Button><Button variant="ghost" size="icon" disabled={readOnly} title={roTitle} onClick={() => setDeleting(c)}><Trash2 className="h-4 w-4" /></Button></td>
+                      </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </>
       )}
@@ -186,6 +252,23 @@ function CustomersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <MobileActionSheet
+        open={!!sheetFor}
+        onClose={() => setSheetFor(null)}
+        title={sheetFor?.full_name ?? ""}
+        description={sheetFor?.email ?? sheetFor?.phone ?? undefined}
+        actions={sheetActions}
+      />
+
+      {shopId && (
+        <FloatingActionButton
+          onClick={() => setCreating(true)}
+          disabled={readOnly}
+          title={roTitle}
+          ariaLabel={t("customers.newCustomer")}
+        />
+      )}
     </ShopLayout>
   );
 }

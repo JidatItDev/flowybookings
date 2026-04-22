@@ -13,6 +13,8 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState, LoadingGrid, NoShopState } from "@/components/EmptyState";
+import { MobileActionSheet, useStandardRowActions } from "@/components/MobileActionSheet";
+import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { useActiveShopId } from "@/lib/shop-context";
 import { servicesQuery, shopKeys } from "@/lib/queries";
@@ -34,7 +36,15 @@ function ServicesPage() {
   const [editing, setEditing] = useState<ServiceRow | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<ServiceRow | null>(null);
+  const [sheetFor, setSheetFor] = useState<ServiceRow | null>(null);
   const { data: services = [], isLoading } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
+
+  const sheetActions = useStandardRowActions({
+    onEdit: sheetFor ? () => setEditing(sheetFor) : null,
+    onDelete: sheetFor ? () => setDeleting(sheetFor) : null,
+    disabled: readOnly,
+    disabledTitle: roTitle,
+  });
 
   const toggleActive = useMutation({
     mutationFn: async (s: ServiceRow) => { assertNotImpersonating(); const { error } = await supabase.from("services").update({ is_active: !s.is_active }).eq("id", s.id); if (error) throw error; },
@@ -55,7 +65,24 @@ function ServicesPage() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {services.map((s) => (
-            <div key={s.id} className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+            <div
+              key={s.id}
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                // Only trigger sheet on mobile (sm-) — desktop keeps inline buttons.
+                if (window.matchMedia("(min-width: 640px)").matches) return;
+                if ((e.target as HTMLElement).closest("button")) return;
+                setSheetFor(s);
+              }}
+              onKeyDown={(e) => {
+                if ((e.key === "Enter" || e.key === " ") && window.innerWidth < 640) {
+                  e.preventDefault();
+                  setSheetFor(s);
+                }
+              }}
+              className="rounded-2xl border border-border bg-card p-5 shadow-soft transition active:scale-[0.99] sm:active:scale-100"
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   {s.category && <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase", categoryColors[s.category] ?? "bg-muted text-muted-foreground")}>{s.category}</span>}
@@ -69,7 +96,8 @@ function ServicesPage() {
                   <p className="text-2xl font-semibold tracking-tight">{formatCents(s.price_cents, s.currency)}</p>
                   {s.deposit_cents > 0 && <p className="text-xs text-muted-foreground">{t("services.deposit", { amount: formatCents(s.deposit_cents, s.currency) })}</p>}
                 </div>
-                <div className="flex gap-1">
+                {/* Inline icon buttons — desktop/tablet only; mobile uses the action sheet. */}
+                <div className="hidden gap-1 sm:flex">
                   <Button variant="ghost" size="icon" disabled={readOnly} title={roTitle} onClick={() => setEditing(s)}><Pencil className="h-4 w-4" /></Button>
                   <Button variant="ghost" size="icon" disabled={readOnly} title={roTitle} onClick={() => setDeleting(s)}><Trash2 className="h-4 w-4" /></Button>
                 </div>
@@ -85,6 +113,23 @@ function ServicesPage() {
           <AlertDialogFooter><AlertDialogCancel>{t("services.cancel")}</AlertDialogCancel><AlertDialogAction onClick={() => deleting && remove.mutate(deleting.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{t("services.delete")}</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <MobileActionSheet
+        open={!!sheetFor}
+        onClose={() => setSheetFor(null)}
+        title={sheetFor?.name ?? ""}
+        description={sheetFor ? formatCents(sheetFor.price_cents, sheetFor.currency) : undefined}
+        actions={sheetActions}
+      />
+
+      {shopId && (
+        <FloatingActionButton
+          onClick={() => setCreating(true)}
+          disabled={readOnly}
+          title={roTitle}
+          ariaLabel={t("services.addService")}
+        />
+      )}
     </ShopLayout>
   );
 }

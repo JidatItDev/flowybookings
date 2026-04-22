@@ -119,8 +119,23 @@ function PaymentsPage() {
           {/* Incoming Mollie Connect payments with refund action */}
           <MollieConnectPayments shopId={shopId} />
 
-          {/* Status filter pills */}
-          <div className="mt-6 flex flex-wrap items-center gap-2">
+          {/* Mobile: compact filter dropdown saves vertical space. */}
+          <div className="mt-6 sm:hidden">
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
+              <SelectTrigger className="h-11 w-full text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("payments.filterAll")}</SelectItem>
+                <SelectItem value="paid">{t("payments.filterPaid")}</SelectItem>
+                <SelectItem value="pending">{t("payments.filterPending")}</SelectItem>
+                <SelectItem value="failed">{t("payments.filterFailed")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Tablet/Desktop: horizontal pill row (unchanged). */}
+          <div className="mt-6 hidden flex-wrap items-center gap-2 sm:flex">
             {([
               { k: "all", label: t("payments.filterAll") },
               { k: "paid", label: t("payments.filterPaid") },
@@ -151,63 +166,126 @@ function PaymentsPage() {
               />
             </div>
           ) : (
-            <div className="mt-4 overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-              <div className="border-b border-border px-6 py-4">
-                <h2 className="text-base font-semibold">{t("payments.recentTransactions")}</h2>
-              </div>
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
-                  <tr>
-                    <th className="px-6 py-3 text-left">{t("payments.customer")}</th>
-                    <th className="hidden px-6 py-3 text-left sm:table-cell">{t("payments.method")}</th>
-                    <th className="hidden px-6 py-3 text-left md:table-cell">{t("payments.booking")}</th>
-                    <th className="px-6 py-3 text-left">{t("payments.amount")}</th>
-                    <th className="px-6 py-3 text-left">{t("payments.status")}</th>
-                    <th className="hidden px-6 py-3 text-left lg:table-cell">{t("payments.date")}</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {payments.map((p) => {
-                    const booking = bookings.find((b) => b.id === p.booking_id);
-                    const cust = customers.find((c) => c.id === booking?.customer_id);
-                    const meta = (p.metadata ?? {}) as { method?: string };
-                    const method = (meta.method ?? p.provider ?? "—").toString();
-                    const MethodIcon = method.toLowerCase().includes("ideal") ? Landmark : method.toLowerCase().includes("cash") ? Banknote : CreditCard;
-                    return (
-                      <tr key={p.id} className="hover:bg-muted/30">
-                        <td className="px-6 py-4 font-medium">{cust?.full_name ?? "—"}</td>
-                        <td className="hidden px-6 py-4 text-muted-foreground sm:table-cell">
-                          <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-xs font-medium">
+            <>
+              {/* Mobile: card list. */}
+              <div className="mt-4 space-y-2 sm:hidden">
+                {payments.map((p) => {
+                  const booking = bookings.find((b) => b.id === p.booking_id);
+                  const cust = customers.find((c) => c.id === booking?.customer_id);
+                  const meta = (p.metadata ?? {}) as { method?: string };
+                  const method = (meta.method ?? p.provider ?? "—").toString();
+                  const MethodIcon = method.toLowerCase().includes("ideal")
+                    ? Landmark
+                    : method.toLowerCase().includes("cash")
+                      ? Banknote
+                      : CreditCard;
+                  return (
+                    <div
+                      key={p.id}
+                      className="rounded-2xl border border-border bg-card p-4 shadow-soft"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-base font-semibold">
+                            {cust?.full_name ?? "—"}
+                          </p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {booking ? formatDate(booking.starts_at) : formatDate(p.created_at)}
+                          </p>
+                          <span className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-xs font-medium">
                             <MethodIcon className="h-3.5 w-3.5" /> {method}
                           </span>
-                        </td>
-                        <td className="hidden px-6 py-4 text-muted-foreground md:table-cell">{booking ? formatDate(booking.starts_at) : "—"}</td>
-                        <td className="px-6 py-4 font-medium">{formatCents(p.amount_cents, p.currency)}</td>
-                        <td className="px-6 py-4">
-                          <Select
-                            value={p.status}
-                            onValueChange={(v) => updateStatus.mutate({ id: p.id, status: v as PaymentStatus })}
-                            disabled={readOnly}
-                          >
-                            <SelectTrigger className="h-8 w-[140px] text-xs" title={readOnlyTitle}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {paymentStatuses.map((s) => (
-                                <SelectItem key={s} value={s}>
-                                  {s.replace("_", " ")}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="hidden px-6 py-4 text-muted-foreground lg:table-cell">{formatDate(p.created_at)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-semibold tabular-nums">
+                            {formatCents(p.amount_cents, p.currency)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-3">
+                        <Select
+                          value={p.status}
+                          onValueChange={(v) =>
+                            updateStatus.mutate({ id: p.id, status: v as PaymentStatus })
+                          }
+                          disabled={readOnly}
+                        >
+                          <SelectTrigger className="h-10 w-full text-sm" title={readOnlyTitle}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {paymentStatuses.map((s) => (
+                              <SelectItem key={s} value={s}>
+                                {s.replace("_", " ")}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop / tablet — original table preserved. */}
+              <div className="mt-4 hidden overflow-hidden rounded-2xl border border-border bg-card shadow-soft sm:block">
+                <div className="border-b border-border px-6 py-4">
+                  <h2 className="text-base font-semibold">{t("payments.recentTransactions")}</h2>
+                </div>
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/40 text-xs uppercase tracking-wider text-muted-foreground">
+                    <tr>
+                      <th className="px-6 py-3 text-left">{t("payments.customer")}</th>
+                      <th className="hidden px-6 py-3 text-left sm:table-cell">{t("payments.method")}</th>
+                      <th className="hidden px-6 py-3 text-left md:table-cell">{t("payments.booking")}</th>
+                      <th className="px-6 py-3 text-left">{t("payments.amount")}</th>
+                      <th className="px-6 py-3 text-left">{t("payments.status")}</th>
+                      <th className="hidden px-6 py-3 text-left lg:table-cell">{t("payments.date")}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {payments.map((p) => {
+                      const booking = bookings.find((b) => b.id === p.booking_id);
+                      const cust = customers.find((c) => c.id === booking?.customer_id);
+                      const meta = (p.metadata ?? {}) as { method?: string };
+                      const method = (meta.method ?? p.provider ?? "—").toString();
+                      const MethodIcon = method.toLowerCase().includes("ideal") ? Landmark : method.toLowerCase().includes("cash") ? Banknote : CreditCard;
+                      return (
+                        <tr key={p.id} className="hover:bg-muted/30">
+                          <td className="px-6 py-4 font-medium">{cust?.full_name ?? "—"}</td>
+                          <td className="hidden px-6 py-4 text-muted-foreground sm:table-cell">
+                            <span className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-xs font-medium">
+                              <MethodIcon className="h-3.5 w-3.5" /> {method}
+                            </span>
+                          </td>
+                          <td className="hidden px-6 py-4 text-muted-foreground md:table-cell">{booking ? formatDate(booking.starts_at) : "—"}</td>
+                          <td className="px-6 py-4 font-medium">{formatCents(p.amount_cents, p.currency)}</td>
+                          <td className="px-6 py-4">
+                            <Select
+                              value={p.status}
+                              onValueChange={(v) => updateStatus.mutate({ id: p.id, status: v as PaymentStatus })}
+                              disabled={readOnly}
+                            >
+                              <SelectTrigger className="h-8 w-[140px] text-xs" title={readOnlyTitle}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {paymentStatuses.map((s) => (
+                                  <SelectItem key={s} value={s}>
+                                    {s.replace("_", " ")}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="hidden px-6 py-4 text-muted-foreground lg:table-cell">{formatDate(p.created_at)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </>
       )}
