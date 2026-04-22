@@ -828,10 +828,13 @@ export function WeekTimeGrid({
                             DRAG_MIME,
                             JSON.stringify({ id: b.id, grabOffsetMin }),
                           );
+                          // Visuele feedback: bron-blok dimt + krimpt subtiel.
+                          setMouseDrag({ bookingId: b.id });
                         }}
                         onDragEnd={() => {
                           draggedIdRef.current = null;
                           setDragPreview(null);
+                          setMouseDrag(null);
                         }}
                         onTouchStart={draggable ? (e) => {
                           // Touch long-press → drag flow voor iPad/tablet.
@@ -1035,11 +1038,13 @@ export function WeekTimeGrid({
                         } : undefined}
                         className={cn(
                           // Card-stijl: subtiele bg, accent-rand links in staff-kleur (geen full-fill).
-                          "group relative block h-full w-full overflow-hidden rounded-md border border-border/60 bg-card pl-2 pr-1.5 py-1 text-left text-[11px] text-foreground shadow-sm transition-all hover:z-[6] hover:-translate-y-px hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+                          "group relative block h-full w-full overflow-hidden rounded-md border border-border/60 bg-card pl-2 pr-1.5 py-1 text-left text-[11px] text-foreground shadow-sm transition-all duration-150 hover:z-[6] hover:-translate-y-px hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
                           draggable && !isResizingThis && "cursor-grab active:cursor-grabbing",
                           cancelled && "opacity-60 line-through",
                           isResizingThis && "ring-2 ring-primary/60",
-                          touchDrag?.bookingId === b.id && "scale-[1.03] opacity-70 ring-2 ring-primary/70",
+                          // Lifted state — desktop drag (mouseDrag) + touch drag.
+                          mouseDrag?.bookingId === b.id && "scale-[0.98] opacity-40 ring-2 ring-primary/40",
+                          touchDrag?.bookingId === b.id && "scale-[1.03] opacity-70 ring-2 ring-primary/70 shadow-lg",
                         )}
                         style={touchDrag?.bookingId === b.id ? { touchAction: "none" } : undefined}
                         title={(() => {
