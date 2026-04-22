@@ -85,12 +85,14 @@ export function MobileActionSheet({
 export function useStandardRowActions({
   onView,
   onEdit,
+  onDuplicate,
   onDelete,
   disabled,
   disabledTitle,
 }: {
   onView?: (() => void) | null;
   onEdit?: (() => void) | null;
+  onDuplicate?: (() => void) | null;
   onDelete?: (() => void) | null;
   disabled?: boolean;
   disabledTitle?: string;
@@ -105,6 +107,15 @@ export function useStandardRowActions({
       label: t("mobileSheet.edit"),
       icon: Pencil,
       onClick: onEdit,
+      disabled,
+      title: disabled ? disabledTitle : undefined,
+    });
+  if (onDuplicate)
+    out.push({
+      key: "duplicate",
+      label: t("mobileSheet.duplicate"),
+      icon: Copy,
+      onClick: onDuplicate,
       disabled,
       title: disabled ? disabledTitle : undefined,
     });
