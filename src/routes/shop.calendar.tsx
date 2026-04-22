@@ -29,6 +29,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EmptyState, NoShopState } from "@/components/EmptyState";
+import { Skeleton } from "@/components/ui/skeleton";
 import { FeatureLock } from "@/components/FeatureLock";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { bookingErrorToast } from "@/lib/booking-errors";
@@ -120,7 +121,7 @@ function CalendarPage() {
     completed: t("calendar.completed"), cancelled: t("calendar.cancelled"), no_show: t("calendar.noShow"),
   };
 
-  const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
+  const { data: bookings = [], isLoading: bookingsLoading } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
   const { data: customers = [] } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
   const { data: staff = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
@@ -761,7 +762,28 @@ function CalendarPage() {
             );
           })()}
 
-          {filtered.length === 0 && viewMode === "list" ? (
+          {bookingsLoading && bookings.length === 0 ? (
+            <ul className="space-y-3 sm:hidden" aria-busy="true">
+              {[0, 1, 2, 3].map((i) => (
+                <li key={i}>
+                  <div className="flex w-full overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                    <span className="w-1 shrink-0 bg-muted" aria-hidden="true" />
+                    <div className="flex-1 px-4 py-3.5">
+                      <div className="flex items-start justify-between gap-3">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-4 w-14" />
+                      </div>
+                      <Skeleton className="mt-2 h-3 w-40" />
+                      <div className="mt-3 flex items-center justify-between gap-2">
+                        <Skeleton className="h-3 w-24" />
+                        <Skeleton className="h-3 w-20" />
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : filtered.length === 0 && viewMode === "list" ? (
             <EmptyState
               icon={CalendarDays}
               title={filter === "all" ? t("calendar.noBookings") : t("calendar.noMatch")}
@@ -1324,6 +1346,7 @@ function CustomerCombobox({
   onClose: () => void;
 }) {
   const { t } = useT();
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const selected = useMemo(() => customers.find((c) => c.id === value) ?? null, [customers, value]);
@@ -1341,95 +1364,119 @@ function CustomerCombobox({
 
   const hasCustomers = customers.length > 0;
 
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between font-normal"
-        >
-          <span className={cn("truncate", !selected && "text-muted-foreground")}>
-            {selected
-              ? selected.full_name + (selected.phone ? ` · ${selected.phone}` : "")
-              : t("calendar.pickCustomer")}
-          </span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        className="z-[60] w-[--radix-popover-trigger-width] min-w-[16rem] max-w-[calc(100vw-2rem)] p-0"
-        align="start"
-        sideOffset={4}
-      >
-        {hasCustomers ? (
-          <Command shouldFilter={false}>
-            <CommandInput
-              placeholder={t("customers.searchPlaceholder")}
-              value={query}
-              onValueChange={setQuery}
-              autoFocus
-            />
-            <CommandList className="max-h-64">
-              <CommandEmpty>
-                <div className="flex flex-col items-center gap-2 py-2 text-sm">
-                  <span className="text-muted-foreground">{t("customers.noMatches")}</span>
-                  <Button asChild size="sm" variant="outline" onClick={() => { setOpen(false); onClose(); }}>
-                    <Link to="/shop/customers">
-                      <UserPlus className="h-4 w-4" /> {t("customers.addCustomer")}
-                    </Link>
-                  </Button>
-                </div>
-              </CommandEmpty>
-              <CommandGroup>
-                {filtered.map((c) => (
-                  <CommandItem
-                    key={c.id}
-                    value={c.id}
-                    onSelect={() => {
-                      onChange(c.id);
-                      setOpen(false);
-                      setQuery("");
-                    }}
-                    className="flex items-center justify-between gap-2"
-                  >
-                    <div className="flex min-w-0 flex-col">
-                      <span className="truncate font-medium">{c.full_name}</span>
-                      {(c.phone || c.email) && (
-                        <span className="truncate text-xs text-muted-foreground">
-                          {c.phone || c.email}
-                        </span>
-                      )}
-                    </div>
-                    <Check
-                      className={cn(
-                        "h-4 w-4 shrink-0",
-                        value === c.id ? "opacity-100" : "opacity-0",
-                      )}
-                    />
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        ) : (
-          <div className="flex flex-col items-center gap-3 p-6 text-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-              <Search className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-sm font-medium">{t("customers.noCustomers")}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{t("customers.noCustomersDesc")}</p>
-            </div>
-            <Button asChild size="sm" variant="hero" onClick={() => { setOpen(false); onClose(); }}>
+  // Trigger button — same on mobile + desktop. Touch target is 44px on mobile (h-11).
+  const trigger = (
+    <Button
+      type="button"
+      variant="outline"
+      role="combobox"
+      aria-expanded={open}
+      onClick={() => setOpen(true)}
+      className="h-11 w-full justify-between font-normal sm:h-9"
+    >
+      <span className={cn("truncate", !selected && "text-muted-foreground")}>
+        {selected
+          ? selected.full_name + (selected.phone ? ` · ${selected.phone}` : "")
+          : t("calendar.pickCustomer")}
+      </span>
+      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+    </Button>
+  );
+
+  // List body — shared between mobile sheet and desktop popover so we never
+  // duplicate filter/select logic. Renders ≥48px tap rows on mobile.
+  const list = hasCustomers ? (
+    <Command shouldFilter={false} className="bg-transparent">
+      <CommandInput
+        placeholder={t("customers.searchPlaceholder")}
+        value={query}
+        onValueChange={setQuery}
+        autoFocus={!isMobile}
+      />
+      <CommandList className={cn(isMobile ? "max-h-[60dvh]" : "max-h-64")}>
+        <CommandEmpty>
+          <div className="flex flex-col items-center gap-2 py-2 text-sm">
+            <span className="text-muted-foreground">{t("customers.noMatches")}</span>
+            <Button asChild size="sm" variant="outline" onClick={() => { setOpen(false); onClose(); }}>
               <Link to="/shop/customers">
                 <UserPlus className="h-4 w-4" /> {t("customers.addCustomer")}
               </Link>
             </Button>
           </div>
-        )}
+        </CommandEmpty>
+        <CommandGroup>
+          {filtered.map((c) => (
+            <CommandItem
+              key={c.id}
+              value={c.id}
+              onSelect={() => { onChange(c.id); setOpen(false); setQuery(""); }}
+              className={cn(
+                "flex items-center justify-between gap-2",
+                isMobile && "min-h-12 py-3",
+              )}
+            >
+              <div className="flex min-w-0 flex-col">
+                <span className="truncate font-medium">{c.full_name}</span>
+                {(c.phone || c.email) && (
+                  <span className="truncate text-xs text-muted-foreground">
+                    {c.phone || c.email}
+                  </span>
+                )}
+              </div>
+              <Check className={cn("h-4 w-4 shrink-0", value === c.id ? "opacity-100" : "opacity-0")} />
+            </CommandItem>
+          ))}
+        </CommandGroup>
+      </CommandList>
+    </Command>
+  ) : (
+    <div className="flex flex-col items-center gap-3 p-6 text-center">
+      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+        <Search className="h-5 w-5 text-muted-foreground" />
+      </div>
+      <div>
+        <p className="text-sm font-medium">{t("customers.noCustomers")}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{t("customers.noCustomersDesc")}</p>
+      </div>
+      <Button asChild size="sm" variant="hero" onClick={() => { setOpen(false); onClose(); }}>
+        <Link to="/shop/customers">
+          <UserPlus className="h-4 w-4" /> {t("customers.addCustomer")}
+        </Link>
+      </Button>
+    </div>
+  );
+
+  // Mobile: bottom sheet — full width, large tap targets, no popover clipping.
+  if (isMobile) {
+    return (
+      <>
+        {trigger}
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetContent
+            side="bottom"
+            className="flex max-h-[85dvh] flex-col gap-0 rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom,0px)]"
+          >
+            <div className="mx-auto mt-2 mb-1 h-1.5 w-10 shrink-0 rounded-full bg-muted" aria-hidden="true" />
+            <SheetHeader className="shrink-0 px-5 pb-2 pt-1 text-left">
+              <SheetTitle>{t("calendar.pickCustomer")}</SheetTitle>
+            </SheetHeader>
+            <div className="min-h-0 flex-1 overflow-hidden px-2 pb-2">{list}</div>
+          </SheetContent>
+        </Sheet>
+      </>
+    );
+  }
+
+  // Desktop: keep the existing popover.
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+      <PopoverContent
+        className="z-[60] w-[--radix-popover-trigger-width] min-w-[16rem] max-w-[calc(100vw-2rem)] p-0"
+        align="start"
+        sideOffset={4}
+      >
+        {list}
       </PopoverContent>
     </Popover>
   );
@@ -1680,6 +1727,7 @@ function SearchableSelect({
   searchPlaceholder: string;
   emptyLabel: string;
 }) {
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const selected = useMemo(() => options.find((o) => o.id === value) ?? null, [options, value]);
@@ -1689,54 +1737,82 @@ function SearchableSelect({
     return options.filter((o) => o.label.toLowerCase().includes(q) || (o.hint ?? "").toLowerCase().includes(q));
   }, [options, query]);
 
+  const trigger = (
+    <Button
+      type="button"
+      variant="outline"
+      role="combobox"
+      aria-expanded={open}
+      onClick={() => setOpen(true)}
+      className="h-11 w-full justify-between font-normal sm:h-9"
+    >
+      <span className={cn("truncate", !selected && "text-muted-foreground")}>
+        {selected ? selected.label : placeholder}
+      </span>
+      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+    </Button>
+  );
+
+  // Shared list — same filter/select logic on every device.
+  const list = (
+    <Command shouldFilter={false} className="bg-transparent">
+      <CommandInput
+        placeholder={searchPlaceholder}
+        value={query}
+        onValueChange={setQuery}
+        autoFocus={!isMobile}
+      />
+      <CommandList className={cn(isMobile ? "max-h-[60dvh]" : "max-h-[50dvh]")}>
+        <CommandEmpty>
+          <div className="py-2 text-center text-sm text-muted-foreground">{emptyLabel}</div>
+        </CommandEmpty>
+        <CommandGroup>
+          {filtered.map((o) => (
+            <CommandItem
+              key={o.id}
+              value={o.id}
+              onSelect={() => { onChange(o.id); setOpen(false); setQuery(""); }}
+              className={cn("cursor-pointer", isMobile ? "min-h-12 py-3" : "py-2.5 sm:py-1.5")}
+            >
+              <Check className={cn("mr-2 h-4 w-4", value === o.id ? "opacity-100" : "opacity-0")} />
+              <span className="flex-1 truncate">{o.label}</span>
+              {o.hint && <span className="ml-2 text-xs text-muted-foreground">{o.hint}</span>}
+            </CommandItem>
+          ))}
+        </CommandGroup>
+      </CommandList>
+    </Command>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        {trigger}
+        <Sheet open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQuery(""); }}>
+          <SheetContent
+            side="bottom"
+            className="flex max-h-[85dvh] flex-col gap-0 rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom,0px)]"
+          >
+            <div className="mx-auto mt-2 mb-1 h-1.5 w-10 shrink-0 rounded-full bg-muted" aria-hidden="true" />
+            <SheetHeader className="shrink-0 px-5 pb-2 pt-1 text-left">
+              <SheetTitle>{placeholder}</SheetTitle>
+            </SheetHeader>
+            <div className="min-h-0 flex-1 overflow-hidden px-2 pb-2">{list}</div>
+          </SheetContent>
+        </Sheet>
+      </>
+    );
+  }
+
   return (
     <Popover open={open} onOpenChange={(o) => { setOpen(o); if (!o) setQuery(""); }}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="h-11 w-full justify-between font-normal sm:h-9"
-        >
-          <span className={cn("truncate", !selected && "text-muted-foreground")}>
-            {selected ? selected.label : placeholder}
-          </span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
       <PopoverContent
         className="z-[60] w-[--radix-popover-trigger-width] min-w-[14rem] max-w-[calc(100vw-2rem)] p-0"
         align="start"
         sideOffset={4}
       >
-        <Command shouldFilter={false}>
-          <CommandInput
-            placeholder={searchPlaceholder}
-            value={query}
-            onValueChange={setQuery}
-            autoFocus
-          />
-          <CommandList className="max-h-[50dvh]">
-            <CommandEmpty>
-              <div className="py-2 text-center text-sm text-muted-foreground">{emptyLabel}</div>
-            </CommandEmpty>
-            <CommandGroup>
-              {filtered.map((o) => (
-                <CommandItem
-                  key={o.id}
-                  value={o.id}
-                  onSelect={() => { onChange(o.id); setOpen(false); setQuery(""); }}
-                  className="cursor-pointer py-2.5 sm:py-1.5"
-                >
-                  <Check className={cn("mr-2 h-4 w-4", value === o.id ? "opacity-100" : "opacity-0")} />
-                  <span className="flex-1 truncate">{o.label}</span>
-                  {o.hint && <span className="ml-2 text-xs text-muted-foreground">{o.hint}</span>}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+        {list}
       </PopoverContent>
     </Popover>
   );
