@@ -768,7 +768,22 @@ function CalendarPage() {
             );
           })()}
 
-          {bookingsLoading && bookings.length === 0 ? (
+          {bookingsError && bookings.length === 0 ? (
+            <EmptyState
+              icon={AlertTriangle}
+              title={t("calendar.loadErrorTitle")}
+              description={t("calendar.loadErrorDesc")}
+              action={
+                <Button
+                  variant="hero"
+                  onClick={() => refetchBookings()}
+                  disabled={bookingsFetching}
+                >
+                  {bookingsFetching ? t("calendar.retrying") : t("calendar.retry")}
+                </Button>
+              }
+            />
+          ) : bookingsLoading && bookings.length === 0 ? (
             <ul className="space-y-3 sm:hidden" aria-busy="true">
               {[0, 1, 2, 3].map((i) => (
                 <li key={i}>
