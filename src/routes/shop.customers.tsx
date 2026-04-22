@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { MobileFormDialog } from "@/components/MobileFormDialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmptyState, NoShopState } from "@/components/EmptyState";
 import { MobileActionSheet, useStandardRowActions } from "@/components/MobileActionSheet";
@@ -423,33 +424,38 @@ function CustomerFormDialog({ open, onClose, customer, shopId }: { open: boolean
   const ns = customer?.no_show_count ?? 0;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader><DialogTitle>{customer ? t("customers.editCustomer") : t("customers.newCustomerTitle")}</DialogTitle></DialogHeader>
-        <div className="grid gap-4 py-2">
-          {customer && (
-            <div className={cn("rounded-lg border px-3 py-2 text-xs flex items-center justify-between", ns >= 2 ? "border-destructive/30 bg-destructive/5 text-destructive" : "border-border bg-muted/40 text-muted-foreground")}>
-              <span className="flex items-center gap-2"><AlertTriangle className="h-3.5 w-3.5" /> {t("customers.noShowsLabel")}</span>
-              <span className="font-semibold">{ns}</span>
-            </div>
-          )}
-          <div><Label htmlFor="fn">{t("customers.fullName")}</Label><Input id="fn" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} /></div>
-          <div><Label htmlFor="em">{t("customers.email")}</Label><Input id="em" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-          <div><Label htmlFor="ph">{t("customers.phone")}</Label><Input id="ph" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></div>
-          <div><Label htmlFor="nt">{t("customers.notes")}</Label><Textarea id="nt" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} /></div>
-          <label className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm cursor-pointer">
-            <input type="checkbox" className="mt-0.5" checked={form.requires_deposit} onChange={(e) => setForm({ ...form, requires_deposit: e.target.checked })} />
-            <span>
-              <span className="font-medium">{t("customers.requireDeposit")}</span>
-              <span className="block text-xs text-muted-foreground">{t("customers.requireDepositHint")}</span>
-            </span>
-          </label>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>{t("customers.cancel")}</Button>
-          <Button variant="hero" onClick={() => save.mutate()} disabled={!form.full_name.trim() || save.isPending}>{save.isPending ? t("customers.saving") : customer ? t("customers.saveChanges") : t("customers.addCustomer")}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <MobileFormDialog
+      open={open}
+      onClose={onClose}
+      title={customer ? t("customers.editCustomer") : t("customers.newCustomerTitle")}
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose} className="h-11 w-full sm:h-9 sm:w-auto">{t("customers.cancel")}</Button>
+          <Button variant="hero" onClick={() => save.mutate()} disabled={!form.full_name.trim() || save.isPending} className="h-11 w-full sm:h-9 sm:w-auto">
+            {save.isPending ? t("customers.saving") : customer ? t("customers.saveChanges") : t("customers.addCustomer")}
+          </Button>
+        </>
+      }
+    >
+      <div className="grid gap-4">
+        {customer && (
+          <div className={cn("rounded-lg border px-3 py-2 text-xs flex items-center justify-between", ns >= 2 ? "border-destructive/30 bg-destructive/5 text-destructive" : "border-border bg-muted/40 text-muted-foreground")}>
+            <span className="flex items-center gap-2"><AlertTriangle className="h-3.5 w-3.5" /> {t("customers.noShowsLabel")}</span>
+            <span className="font-semibold">{ns}</span>
+          </div>
+        )}
+        <div><Label htmlFor="fn">{t("customers.fullName")}</Label><Input id="fn" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className="h-11 text-base sm:h-9 sm:text-sm" /></div>
+        <div><Label htmlFor="em">{t("customers.email")}</Label><Input id="em" type="email" inputMode="email" autoComplete="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="h-11 text-base sm:h-9 sm:text-sm" /></div>
+        <div><Label htmlFor="ph">{t("customers.phone")}</Label><Input id="ph" type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="h-11 text-base sm:h-9 sm:text-sm" /></div>
+        <div><Label htmlFor="nt">{t("customers.notes")}</Label><Textarea id="nt" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3} className="text-base sm:text-sm" /></div>
+        <label className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm cursor-pointer">
+          <input type="checkbox" className="mt-0.5" checked={form.requires_deposit} onChange={(e) => setForm({ ...form, requires_deposit: e.target.checked })} />
+          <span>
+            <span className="font-medium">{t("customers.requireDeposit")}</span>
+            <span className="block text-xs text-muted-foreground">{t("customers.requireDepositHint")}</span>
+          </span>
+        </label>
+      </div>
+    </MobileFormDialog>
   );
 }
