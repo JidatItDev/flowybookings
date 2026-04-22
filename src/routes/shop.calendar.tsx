@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Plus, Filter, CalendarDays, UserX, Check, ChevronsUpDown, UserPlus, Search, List, LayoutGrid, AlertTriangle } from "lucide-react";
@@ -872,8 +872,28 @@ function CalendarPage() {
             />
           ) : (
             <>
-              {/* Mobile card list — uses shared BookingCard. Tap opens quick-action sheet. */}
-              <ul className="space-y-3 sm:hidden">
+              {/* Mobile card list — uses shared BookingCard. Tap opens action bottom-sheet.
+                  Swipe left/right anywhere on the list switches day (uses existing dayOffset state). */}
+              <ul
+                className="space-y-3 sm:hidden touch-pan-y"
+                onTouchStart={(e) => {
+                  const t = e.touches[0];
+                  swipeRef.current = { x: t.clientX, y: t.clientY, active: true };
+                }}
+                onTouchEnd={(e) => {
+                  const s = swipeRef.current;
+                  if (!s.active) return;
+                  swipeRef.current = { x: 0, y: 0, active: false };
+                  const t = e.changedTouches[0];
+                  const dx = t.clientX - s.x;
+                  const dy = t.clientY - s.y;
+                  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+                  // Swipe right → previous day, swipe left → next day. Skip when "all upcoming".
+                  if (dayOffset === null) return;
+                  const next = dx > 0 ? dayOffset - 1 : dayOffset + 1;
+                  if (next >= 0 && next <= 13) setDayOffset(next);
+                }}
+              >
                 {filtered.map((b, idx) => {
                   const cust = customers.find((c) => c.id === b.customer_id);
                   const svc = services.find((s) => s.id === b.service_id);
