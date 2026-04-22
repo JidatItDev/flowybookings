@@ -345,8 +345,11 @@ function ServiceFormDialog({ open, onClose, service, duplicateOf, shopId }: { op
       if (!shopId) throw new Error(t("errors.noActiveShop"));
       if (hasErrors) throw new Error(depositError ?? priceError ?? "Invalid input");
       const payload = { shop_id: shopId, name: form.name.trim(), category: form.category.trim() || null, description: form.description.trim() || null, duration_minutes: Number(form.duration_minutes) || 30, price_cents: Math.round(priceNum * 100), deposit_cents: Math.round(depositNum * 100), is_active: form.is_active };
-      if (service) { const { error } = await supabase.from("services").update(payload).eq("id", service.id); if (error) throw error; }
-      else {
+      let serviceId: string;
+      if (service) {
+        const { error } = await supabase.from("services").update(payload).eq("id", service.id); if (error) throw error;
+        serviceId = service.id;
+      } else {
         // Check of dit de eerste service van de shop is — log alleen dan service_created
         // (admin onboarding-funnel; latere services zijn niet relevant voor de funnel).
         const { count: existingCount } = await supabase
@@ -355,6 +358,7 @@ function ServiceFormDialog({ open, onClose, service, duplicateOf, shopId }: { op
           .eq("shop_id", shopId);
         const { data: inserted, error } = await supabase.from("services").insert(payload).select("id").single();
         if (error) throw error;
+        serviceId = inserted.id;
         if ((existingCount ?? 0) === 0) {
           void logActivity({
             entity: "service",
@@ -364,11 +368,29 @@ function ServiceFormDialog({ open, onClose, service, duplicateOf, shopId }: { op
           });
         }
       }
+      // Sync staff_services using the same diff pattern as src/routes/shop.staff.tsx
+      // (no new mutation logic — same insert/delete shape, just inverted scope).
+      const currentLinks = service ? allLinks.filter((l) => l.service_id === serviceId).map((l) => l.staff_id) : [];
+      const desired = new Set(staffIds);
+      const have = new Set(currentLinks);
+      const toAdd = staffIds.filter((id) => !have.has(id));
+      const toRemove = currentLinks.filter((id) => !desired.has(id));
+      if (toAdd.length) {
+        const { error } = await supabase.from("staff_services").insert(toAdd.map((staff_id) => ({ staff_id, service_id: serviceId })));
+        if (error) throw error;
+      }
+      if (toRemove.length) {
+        const { error } = await supabase.from("staff_services").delete().eq("service_id", serviceId).in("staff_id", toRemove);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       toast.success(service ? t("services.updated") : duplicateOf ? t("services.duplicated") : t("services.created"));
       onClose();
-      if (shopId) qc.invalidateQueries({ queryKey: shopKeys.services(shopId) });
+      if (shopId) {
+        qc.invalidateQueries({ queryKey: shopKeys.services(shopId) });
+        qc.invalidateQueries({ queryKey: ["staff_services", shopId] });
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });
