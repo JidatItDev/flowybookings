@@ -121,7 +121,13 @@ function CalendarPage() {
     completed: t("calendar.completed"), cancelled: t("calendar.cancelled"), no_show: t("calendar.noShow"),
   };
 
-  const { data: bookings = [], isLoading: bookingsLoading } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
+  const {
+    data: bookings = [],
+    isLoading: bookingsLoading,
+    error: bookingsError,
+    refetch: refetchBookings,
+    isFetching: bookingsFetching,
+  } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
   const { data: customers = [] } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
   const { data: staff = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
@@ -762,7 +768,22 @@ function CalendarPage() {
             );
           })()}
 
-          {bookingsLoading && bookings.length === 0 ? (
+          {bookingsError && bookings.length === 0 ? (
+            <EmptyState
+              icon={AlertTriangle}
+              title={t("calendar.loadErrorTitle")}
+              description={t("calendar.loadErrorDesc")}
+              action={
+                <Button
+                  variant="hero"
+                  onClick={() => refetchBookings()}
+                  disabled={bookingsFetching}
+                >
+                  {bookingsFetching ? t("calendar.retrying") : t("calendar.retry")}
+                </Button>
+              }
+            />
+          ) : bookingsLoading && bookings.length === 0 ? (
             <ul className="space-y-3 sm:hidden" aria-busy="true">
               {[0, 1, 2, 3].map((i) => (
                 <li key={i}>
