@@ -1,5 +1,5 @@
 import { type ReactNode } from "react";
-import { Eye, Pencil, Trash2, type LucideIcon } from "lucide-react";
+import { Eye, Pencil, Copy, Trash2, type LucideIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/lib/i18n";
