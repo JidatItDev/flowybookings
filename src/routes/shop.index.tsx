@@ -14,7 +14,8 @@ import { UpgradeNudge } from "@/components/UpgradeNudge";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import { BookingLinkCard } from "@/components/BookingLinkCard";
 import { useActiveShopId, useShopContext } from "@/lib/shop-context";
-import { bookingsQuery, customersQuery, servicesQuery, staffQuery } from "@/lib/queries";
+import { bookingsQuery, customersQuery, servicesQuery, shopFullQuery, staffQuery } from "@/lib/queries";
+import { supabase } from "@/integrations/supabase/client";
 import { formatCents, formatTime, initials } from "@/lib/format";
 import { useT } from "@/lib/i18n";
 import { staffInitials, useStaffColors } from "@/lib/staff-color";
@@ -35,6 +36,19 @@ function ShopDashboard() {
   const { data: customers = [] } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
   const { data: staff = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
+  const { data: shopFull } = useQuery({ ...shopFullQuery(shopId ?? ""), enabled: !!shopId });
+  const { data: paymentProviders = [] } = useQuery({
+    queryKey: ["shop", shopId ?? "", "payment-providers-onboarding"],
+    enabled: !!shopId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("shop_payment_providers")
+        .select("connection_status")
+        .eq("shop_id", shopId!);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
   const colors = useStaffColors(shopId);
 
   const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0);
