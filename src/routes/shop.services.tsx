@@ -113,6 +113,23 @@ function ServicesPage() {
           <AlertDialogFooter><AlertDialogCancel>{t("services.cancel")}</AlertDialogCancel><AlertDialogAction onClick={() => deleting && remove.mutate(deleting.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{t("services.delete")}</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <MobileActionSheet
+        open={!!sheetFor}
+        onClose={() => setSheetFor(null)}
+        title={sheetFor?.name ?? ""}
+        description={sheetFor ? formatCents(sheetFor.price_cents, sheetFor.currency) : undefined}
+        actions={sheetActions}
+      />
+
+      {shopId && (
+        <FloatingActionButton
+          onClick={() => setCreating(true)}
+          disabled={readOnly}
+          title={roTitle}
+          ariaLabel={t("services.addService")}
+        />
+      )}
     </ShopLayout>
   );
 }
