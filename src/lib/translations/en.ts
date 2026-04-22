@@ -446,6 +446,8 @@ export const en: Record<string, string> = {
   "calendar.save": "Save",
   "calendar.saving": "Saving…",
   "calendar.edit": "Edit",
+  "calendar.view": "View",
+  "calendar.reschedule": "Reschedule",
   "calendar.markNoShow": "Mark as no-show",
 
   // ── Customers ──
