@@ -290,7 +290,7 @@ function CalendarPage() {
                 onClick={() => setCreating(true)}
                 disabled={newBookingDisabled}
                 title={newBookingTitle}
-                className="h-10 px-4 sm:h-9 sm:px-3"
+                className="hidden h-10 px-4 sm:inline-flex sm:h-9 sm:px-3"
               >
                 <Plus className="h-4 w-4" /> {t("calendar.newBooking")}
               </Button>
