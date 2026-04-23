@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Plus, Filter, CalendarDays, UserX, Check, Ch
 import { DayTimeGrid } from "@/components/calendar/DayTimeGrid";
 import { WeekTimeGrid } from "@/components/calendar/WeekTimeGrid";
 import { BookingCard } from "@/components/calendar/BookingCard";
+import { RescheduleSheet } from "@/components/calendar/RescheduleSheet";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
