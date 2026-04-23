@@ -1684,16 +1684,18 @@ function BookingActionDialog({
     );
   }
 
-  // Tablet/Desktop: existing centered modal — unchanged behavior.
+  // Tablet/Desktop: right-side slide-in panel (replaces the old centered modal).
   return (
-    <Dialog open={!!booking} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Afspraak details</DialogTitle>
-        </DialogHeader>
-        {body}
-        {statusActions}
-        <DialogFooter className="mt-2 flex-row justify-between sm:justify-between">
+    <Sheet open={!!booking} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
+        <SheetHeader className="border-b border-border/60 px-5 py-4 text-left">
+          <SheetTitle>Afspraak details</SheetTitle>
+        </SheetHeader>
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          {body}
+          {statusActions}
+        </div>
+        <div className="flex items-center justify-between gap-2 border-t border-border/60 px-5 py-3">
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" onClick={() => (onReschedule ?? onEdit)(booking)}>
               {t("calendar.reschedule")}
@@ -1703,9 +1705,9 @@ function BookingActionDialog({
             </Button>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}>{t("calendar.cancel")}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
