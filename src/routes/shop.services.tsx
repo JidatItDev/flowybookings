@@ -131,7 +131,7 @@ function ServicesPage() {
 
   return (
     <ShopLayout>
-      <PageHeader title={t("services.title")} description={t("services.description")} actions={<Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId || readOnly} title={roTitle}><Plus className="h-4 w-4" /> {t("services.addService")}</Button>} />
+      <PageHeader title={t("services.title")} description={t("services.description")} actions={<Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId || readOnly} title={roTitle} className="hidden sm:inline-flex"><Plus className="h-4 w-4" /> {t("services.addService")}</Button>} />
 
       {/* Sticky search + filter row — reuses Input/Select primitives. */}
       {shopId && services.length > 0 && (
