@@ -110,6 +110,14 @@ function CalendarPage() {
   const [slotPrefill, setSlotPrefill] = useState<{ staffId: string | null; startsAt: Date } | null>(null);
   // Swipe gesture tracking for mobile day-navigation on the booking list.
   const swipeRef = useRef<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false });
+  // Slide-direction for the mobile list when swapping days. Drives a one-shot
+  // CSS animation so the list feels like it physically moves with the gesture.
+  const [slideDir, setSlideDir] = useState<"left" | "right" | null>(null);
+  // Pull-to-refresh — composes with the existing bookingsQuery refetch.
+  const ptr = usePullToRefresh({
+    enabled: isMobile,
+    onRefresh: () => refetchBookings(),
+  });
 
   // Mobile is list-only — never show the grid even if user previously switched on desktop.
   useEffect(() => {
