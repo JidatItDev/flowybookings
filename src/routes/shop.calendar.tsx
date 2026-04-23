@@ -143,6 +143,12 @@ function CalendarPage() {
     | undefined;
   const colors = useStaffColors(shopId);
 
+  // Pull-to-refresh — composes with the existing bookingsQuery refetch above.
+  const ptr = usePullToRefresh({
+    enabled: isMobile,
+    onRefresh: () => refetchBookings(),
+  });
+
   // Realtime: live-patch the bookings cache on INSERT/UPDATE/DELETE for this shop.
   const realtimeStatus = useBookingsRealtime(shopId);
 
