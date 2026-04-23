@@ -141,13 +141,12 @@ function CustomersPage() {
         title={t("customers.title")}
         description={t("customers.description")}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
+          // Tablet+ only — mobile uses the dedicated action row below + FAB.
+          <div className="hidden sm:flex flex-wrap items-center gap-2">
             <Button variant="outline" onClick={() => setImporting(true)} disabled={!shopId || readOnly} title={roTitle}>
-              <Upload className="h-4 w-4" /> <span className="hidden sm:inline">{t("customerImport.cta")}</span>
+              <Upload className="h-4 w-4" /> {t("customerImport.cta")}
             </Button>
-            {/* Mobile uses the FloatingActionButton as the single primary create
-                CTA — hide this duplicate to clean the visual hierarchy. */}
-            <Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId || readOnly} title={roTitle} className="hidden sm:inline-flex">
+            <Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId || readOnly} title={roTitle}>
               <Plus className="h-4 w-4" /> {t("customers.newCustomer")}
             </Button>
           </div>
@@ -155,9 +154,24 @@ function CustomersPage() {
       />
       {!shopId ? <NoShopState /> : (
         <>
+          {/* Mobile-only secondary action row — Import as outlined secondary,
+              compact and never clipped (Filter lives in the search row below). */}
+          <div className="mb-3 flex items-center gap-2 sm:hidden">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setImporting(true)}
+              disabled={!shopId || readOnly}
+              title={roTitle}
+              className="h-9 flex-1 justify-center rounded-xl"
+            >
+              <Upload className="h-4 w-4" /> {t("customerImport.cta")}
+            </Button>
+          </div>
+
           {/* Sticky search + filter bar */}
           <div className="sticky top-0 z-10 -mx-4 mb-4 border-b border-border bg-background/85 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/70 sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none">
-            <div className="flex items-center gap-2">
+            <div className="flex w-full min-w-0 items-center gap-2">
               <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-border bg-card px-3 shadow-xs sm:max-w-md">
                 <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <input
@@ -173,14 +187,14 @@ function CustomersPage() {
                 <SelectTrigger
                   aria-label={t("customers.filterLabel")}
                   className={cn(
-                    // Mobile: clean 44×44 square icon button — no chevron, no label.
+                    // Mobile: clean 44×44 square icon button — no chevron, no label, never shrinks.
                     "h-11 w-11 shrink-0 justify-center rounded-xl border-border bg-card p-0",
                     "[&>svg:last-child]:hidden",
-                    // Tablet+: standard select with label + chevron.
-                    "sm:h-10 sm:w-auto sm:gap-2 sm:px-3 sm:[&>svg:last-child]:inline-block",
+                    // Tablet+: compact icon+label trigger that won't overflow narrow tablets.
+                    "sm:h-10 sm:w-auto sm:min-w-[44px] sm:gap-2 sm:px-3 sm:[&>svg:last-child]:inline-block",
                   )}
                 >
-                  <SlidersHorizontal className="h-4 w-4" />
+                  <SlidersHorizontal className="h-4 w-4 shrink-0" />
                   <span className="hidden sm:inline">
                     <SelectValue placeholder={t("customers.filterLabel")} />
                   </span>
