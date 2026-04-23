@@ -1051,11 +1051,23 @@ function CalendarPage() {
         booking={viewing}
         onClose={() => setViewing(null)}
         onEdit={(b) => { setViewing(null); setEditing(b); }}
-        onReschedule={(b) => { setViewing(null); setEditing(b); }}
+        onReschedule={(b) => { setViewing(null); setRescheduling(b); }}
         onAction={(id, status) => { updateStatus.mutate({ id, status }); setViewing(null); }}
         customers={customers}
         services={services}
         staff={staff}
+      />
+
+      <RescheduleSheet
+        booking={rescheduling}
+        onClose={() => setRescheduling(null)}
+        isPending={reschedule.isPending}
+        onConfirm={(b, newStartsAt) => {
+          reschedule.mutate(
+            { booking: b, newStaffId: b.staff_id, newStartsAt },
+            { onSuccess: () => setRescheduling(null) },
+          );
+        }}
       />
 
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
