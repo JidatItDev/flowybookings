@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Plus, Filter, CalendarDays, UserX, Check, Ch
 import { DayTimeGrid } from "@/components/calendar/DayTimeGrid";
 import { WeekTimeGrid } from "@/components/calendar/WeekTimeGrid";
 import { BookingCard } from "@/components/calendar/BookingCard";
+import { RescheduleSheet } from "@/components/calendar/RescheduleSheet";
 import { toast } from "sonner";
 import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
@@ -42,6 +43,7 @@ import {
 import { Sparkles } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
+import { usePullToRefresh } from "@/lib/use-pull-to-refresh";
 import { formatCents, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
@@ -99,6 +101,7 @@ function CalendarPage() {
   const [editing, setEditing] = useState<BookingWithRelations | null>(null);
   const [deleting, setDeleting] = useState<BookingWithRelations | null>(null);
   const [viewing, setViewing] = useState<BookingWithRelations | null>(null);
+  const [rescheduling, setRescheduling] = useState<BookingWithRelations | null>(null);
   const [dayOffset, setDayOffset] = useState<number | null>(0); // 0 = vandaag, null = alle
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [calendarMode, setCalendarMode] = useState<"day" | "week">("day");
@@ -107,6 +110,9 @@ function CalendarPage() {
   const [slotPrefill, setSlotPrefill] = useState<{ staffId: string | null; startsAt: Date } | null>(null);
   // Swipe gesture tracking for mobile day-navigation on the booking list.
   const swipeRef = useRef<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false });
+  // Slide-direction for the mobile list when swapping days. Drives a one-shot
+  // CSS animation so the list feels like it physically moves with the gesture.
+  const [slideDir, setSlideDir] = useState<"left" | "right" | null>(null);
 
   // Mobile is list-only — never show the grid even if user previously switched on desktop.
   useEffect(() => {
@@ -136,6 +142,12 @@ function CalendarPage() {
     | import("@/components/calendar/DayTimeGrid").BusinessHours
     | undefined;
   const colors = useStaffColors(shopId);
+
+  // Pull-to-refresh — composes with the existing bookingsQuery refetch above.
+  const ptr = usePullToRefresh({
+    enabled: isMobile,
+    onRefresh: () => refetchBookings(),
+  });
 
   // Realtime: live-patch the bookings cache on INSERT/UPDATE/DELETE for this shop.
   const realtimeStatus = useBookingsRealtime(shopId);
@@ -918,50 +930,78 @@ function CalendarPage() {
           ) : (
             <>
               {/* Mobile card list — uses shared BookingCard. Tap opens action bottom-sheet.
-                  Swipe left/right anywhere on the list switches day (uses existing dayOffset state). */}
-              <ul
-                className="space-y-3 sm:hidden touch-pan-y"
-                onTouchStart={(e) => {
-                  const t = e.touches[0];
-                  swipeRef.current = { x: t.clientX, y: t.clientY, active: true };
-                }}
-                onTouchEnd={(e) => {
-                  const s = swipeRef.current;
-                  if (!s.active) return;
-                  swipeRef.current = { x: 0, y: 0, active: false };
-                  const t = e.changedTouches[0];
-                  const dx = t.clientX - s.x;
-                  const dy = t.clientY - s.y;
-                  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-                  // Swipe right → previous day, swipe left → next day. Skip when "all upcoming".
-                  if (dayOffset === null) return;
-                  const next = dx > 0 ? dayOffset - 1 : dayOffset + 1;
-                  if (next >= 0 && next <= 13) setDayOffset(next);
-                }}
-              >
-                {filtered.map((b, idx) => {
-                  const cust = customers.find((c) => c.id === b.customer_id);
-                  const svc = services.find((s) => s.id === b.service_id);
-                  const stf = staff.find((s) => s.id === b.staff_id);
-                  const c = stf ? colors.get(stf.id) : null;
-                  return (
-                    <li key={b.id}>
-                      <BookingCard
-                        variant="card"
-                        booking={b}
-                        customerName={cust?.full_name ?? null}
-                        serviceName={svc?.name ?? null}
-                        staffName={stf?.full_name ?? null}
-                        color={c}
-                        unassignedLabel={t("calendar.unassignedShort")}
-                        statusLabel={statusLabel[b.status]}
-                        onClick={() => setViewing(b)}
-                        animationIndex={idx}
-                      />
-                    </li>
-                  );
-                })}
-              </ul>
+                  Pull-to-refresh + horizontal swipe to switch days. */}
+              <div className="sm:hidden">
+                {/* PTR indicator — only visible while pulling/refreshing. */}
+                <div
+                  className="flex items-center justify-center overflow-hidden text-xs text-muted-foreground transition-[height] duration-150"
+                  style={{ height: ptr.state.pulling || ptr.state.refreshing ? Math.max(28, ptr.state.distance) : 0 }}
+                  aria-hidden={!ptr.state.pulling && !ptr.state.refreshing}
+                >
+                  <span className={cn("transition-opacity", ptr.state.distance > 8 || ptr.state.refreshing ? "opacity-100" : "opacity-0")}>
+                    {ptr.state.refreshing
+                      ? t("calendar.refreshing")
+                      : ptr.state.ready
+                        ? t("calendar.releaseToRefresh")
+                        : t("calendar.pullToRefresh")}
+                  </span>
+                </div>
+                <ul
+                  key={`day-${dayOffset ?? "all"}`}
+                  className={cn(
+                    "space-y-3 touch-pan-y",
+                    slideDir === "left" && "animate-[slide-in-right_0.22s_ease-out]",
+                    slideDir === "right" && "animate-[fade-in_0.22s_ease-out]",
+                  )}
+                  onAnimationEnd={() => setSlideDir(null)}
+                  onTouchStart={(e) => {
+                    ptr.bind.onTouchStart(e);
+                    const t = e.touches[0];
+                    swipeRef.current = { x: t.clientX, y: t.clientY, active: true };
+                  }}
+                  onTouchMove={ptr.bind.onTouchMove}
+                  onTouchEnd={(e) => {
+                    ptr.bind.onTouchEnd();
+                    const s = swipeRef.current;
+                    if (!s.active) return;
+                    swipeRef.current = { x: 0, y: 0, active: false };
+                    const t = e.changedTouches[0];
+                    const dx = t.clientX - s.x;
+                    const dy = t.clientY - s.y;
+                    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+                    // Swipe right → previous day, swipe left → next day. Skip when "all upcoming".
+                    if (dayOffset === null) return;
+                    const next = dx > 0 ? dayOffset - 1 : dayOffset + 1;
+                    if (next >= 0 && next <= 13) {
+                      setSlideDir(dx > 0 ? "right" : "left");
+                      setDayOffset(next);
+                    }
+                  }}
+                >
+                  {filtered.map((b, idx) => {
+                    const cust = customers.find((c) => c.id === b.customer_id);
+                    const svc = services.find((s) => s.id === b.service_id);
+                    const stf = staff.find((s) => s.id === b.staff_id);
+                    const c = stf ? colors.get(stf.id) : null;
+                    return (
+                      <li key={b.id}>
+                        <BookingCard
+                          variant="card"
+                          booking={b}
+                          customerName={cust?.full_name ?? null}
+                          serviceName={svc?.name ?? null}
+                          staffName={stf?.full_name ?? null}
+                          color={c}
+                          unassignedLabel={t("calendar.unassignedShort")}
+                          statusLabel={statusLabel[b.status]}
+                          onClick={() => setViewing(b)}
+                          animationIndex={idx}
+                        />
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
 
               {/* Desktop/tablet table view */}
               <div className="hidden overflow-hidden rounded-2xl border border-border bg-card shadow-soft sm:block">
@@ -1048,11 +1088,23 @@ function CalendarPage() {
         booking={viewing}
         onClose={() => setViewing(null)}
         onEdit={(b) => { setViewing(null); setEditing(b); }}
-        onReschedule={(b) => { setViewing(null); setEditing(b); }}
+        onReschedule={(b) => { setViewing(null); setRescheduling(b); }}
         onAction={(id, status) => { updateStatus.mutate({ id, status }); setViewing(null); }}
         customers={customers}
         services={services}
         staff={staff}
+      />
+
+      <RescheduleSheet
+        booking={rescheduling}
+        onClose={() => setRescheduling(null)}
+        isPending={reschedule.isPending}
+        onConfirm={(b, newStartsAt) => {
+          reschedule.mutate(
+            { booking: b, newStaffId: b.staff_id, newStartsAt },
+            { onSuccess: () => setRescheduling(null) },
+          );
+        }}
       />
 
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
@@ -1632,16 +1684,18 @@ function BookingActionDialog({
     );
   }
 
-  // Tablet/Desktop: existing centered modal — unchanged behavior.
+  // Tablet/Desktop: right-side slide-in panel (replaces the old centered modal).
   return (
-    <Dialog open={!!booking} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Afspraak details</DialogTitle>
-        </DialogHeader>
-        {body}
-        {statusActions}
-        <DialogFooter className="mt-2 flex-row justify-between sm:justify-between">
+    <Sheet open={!!booking} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
+        <SheetHeader className="border-b border-border/60 px-5 py-4 text-left">
+          <SheetTitle>Afspraak details</SheetTitle>
+        </SheetHeader>
+        <div className="flex-1 overflow-y-auto px-5 py-4">
+          {body}
+          {statusActions}
+        </div>
+        <div className="flex items-center justify-between gap-2 border-t border-border/60 px-5 py-3">
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" onClick={() => (onReschedule ?? onEdit)(booking)}>
               {t("calendar.reschedule")}
@@ -1651,9 +1705,9 @@ function BookingActionDialog({
             </Button>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}>{t("calendar.cancel")}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 
