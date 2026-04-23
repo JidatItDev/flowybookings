@@ -113,11 +113,6 @@ function CalendarPage() {
   // Slide-direction for the mobile list when swapping days. Drives a one-shot
   // CSS animation so the list feels like it physically moves with the gesture.
   const [slideDir, setSlideDir] = useState<"left" | "right" | null>(null);
-  // Pull-to-refresh — composes with the existing bookingsQuery refetch.
-  const ptr = usePullToRefresh({
-    enabled: isMobile,
-    onRefresh: () => refetchBookings(),
-  });
 
   // Mobile is list-only — never show the grid even if user previously switched on desktop.
   useEffect(() => {
