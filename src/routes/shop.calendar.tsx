@@ -101,6 +101,7 @@ function CalendarPage() {
   const [editing, setEditing] = useState<BookingWithRelations | null>(null);
   const [deleting, setDeleting] = useState<BookingWithRelations | null>(null);
   const [viewing, setViewing] = useState<BookingWithRelations | null>(null);
+  const [rescheduling, setRescheduling] = useState<BookingWithRelations | null>(null);
   const [dayOffset, setDayOffset] = useState<number | null>(0); // 0 = vandaag, null = alle
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const [calendarMode, setCalendarMode] = useState<"day" | "week">("day");
