@@ -930,50 +930,78 @@ function CalendarPage() {
           ) : (
             <>
               {/* Mobile card list — uses shared BookingCard. Tap opens action bottom-sheet.
-                  Swipe left/right anywhere on the list switches day (uses existing dayOffset state). */}
-              <ul
-                className="space-y-3 sm:hidden touch-pan-y"
-                onTouchStart={(e) => {
-                  const t = e.touches[0];
-                  swipeRef.current = { x: t.clientX, y: t.clientY, active: true };
-                }}
-                onTouchEnd={(e) => {
-                  const s = swipeRef.current;
-                  if (!s.active) return;
-                  swipeRef.current = { x: 0, y: 0, active: false };
-                  const t = e.changedTouches[0];
-                  const dx = t.clientX - s.x;
-                  const dy = t.clientY - s.y;
-                  if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-                  // Swipe right → previous day, swipe left → next day. Skip when "all upcoming".
-                  if (dayOffset === null) return;
-                  const next = dx > 0 ? dayOffset - 1 : dayOffset + 1;
-                  if (next >= 0 && next <= 13) setDayOffset(next);
-                }}
-              >
-                {filtered.map((b, idx) => {
-                  const cust = customers.find((c) => c.id === b.customer_id);
-                  const svc = services.find((s) => s.id === b.service_id);
-                  const stf = staff.find((s) => s.id === b.staff_id);
-                  const c = stf ? colors.get(stf.id) : null;
-                  return (
-                    <li key={b.id}>
-                      <BookingCard
-                        variant="card"
-                        booking={b}
-                        customerName={cust?.full_name ?? null}
-                        serviceName={svc?.name ?? null}
-                        staffName={stf?.full_name ?? null}
-                        color={c}
-                        unassignedLabel={t("calendar.unassignedShort")}
-                        statusLabel={statusLabel[b.status]}
-                        onClick={() => setViewing(b)}
-                        animationIndex={idx}
-                      />
-                    </li>
-                  );
-                })}
-              </ul>
+                  Pull-to-refresh + horizontal swipe to switch days. */}
+              <div className="sm:hidden">
+                {/* PTR indicator — only visible while pulling/refreshing. */}
+                <div
+                  className="flex items-center justify-center overflow-hidden text-xs text-muted-foreground transition-[height] duration-150"
+                  style={{ height: ptr.state.pulling || ptr.state.refreshing ? Math.max(28, ptr.state.distance) : 0 }}
+                  aria-hidden={!ptr.state.pulling && !ptr.state.refreshing}
+                >
+                  <span className={cn("transition-opacity", ptr.state.distance > 8 || ptr.state.refreshing ? "opacity-100" : "opacity-0")}>
+                    {ptr.state.refreshing
+                      ? t("calendar.refreshing")
+                      : ptr.state.ready
+                        ? t("calendar.releaseToRefresh")
+                        : t("calendar.pullToRefresh")}
+                  </span>
+                </div>
+                <ul
+                  key={`day-${dayOffset ?? "all"}`}
+                  className={cn(
+                    "space-y-3 touch-pan-y",
+                    slideDir === "left" && "animate-[slide-in-right_0.22s_ease-out]",
+                    slideDir === "right" && "animate-[fade-in_0.22s_ease-out]",
+                  )}
+                  onAnimationEnd={() => setSlideDir(null)}
+                  onTouchStart={(e) => {
+                    ptr.bind.onTouchStart(e);
+                    const t = e.touches[0];
+                    swipeRef.current = { x: t.clientX, y: t.clientY, active: true };
+                  }}
+                  onTouchMove={ptr.bind.onTouchMove}
+                  onTouchEnd={(e) => {
+                    ptr.bind.onTouchEnd();
+                    const s = swipeRef.current;
+                    if (!s.active) return;
+                    swipeRef.current = { x: 0, y: 0, active: false };
+                    const t = e.changedTouches[0];
+                    const dx = t.clientX - s.x;
+                    const dy = t.clientY - s.y;
+                    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+                    // Swipe right → previous day, swipe left → next day. Skip when "all upcoming".
+                    if (dayOffset === null) return;
+                    const next = dx > 0 ? dayOffset - 1 : dayOffset + 1;
+                    if (next >= 0 && next <= 13) {
+                      setSlideDir(dx > 0 ? "right" : "left");
+                      setDayOffset(next);
+                    }
+                  }}
+                >
+                  {filtered.map((b, idx) => {
+                    const cust = customers.find((c) => c.id === b.customer_id);
+                    const svc = services.find((s) => s.id === b.service_id);
+                    const stf = staff.find((s) => s.id === b.staff_id);
+                    const c = stf ? colors.get(stf.id) : null;
+                    return (
+                      <li key={b.id}>
+                        <BookingCard
+                          variant="card"
+                          booking={b}
+                          customerName={cust?.full_name ?? null}
+                          serviceName={svc?.name ?? null}
+                          staffName={stf?.full_name ?? null}
+                          color={c}
+                          unassignedLabel={t("calendar.unassignedShort")}
+                          statusLabel={statusLabel[b.status]}
+                          onClick={() => setViewing(b)}
+                          animationIndex={idx}
+                        />
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
 
               {/* Desktop/tablet table view */}
               <div className="hidden overflow-hidden rounded-2xl border border-border bg-card shadow-soft sm:block">
