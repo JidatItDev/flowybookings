@@ -230,20 +230,24 @@ function CustomersPage() {
               </div>
             </div>
           ) : list.length === 0 ? (
-            <EmptyState
-              icon={Users}
-              title={q || filter !== "all" ? t("customers.noMatches") : t("customers.noCustomers")}
-              description={q || filter !== "all" ? t("customers.noMatchDesc") : t("customers.noCustomersDesc")}
-              action={
-                !q && filter === "all" ? (
-                  // On mobile the FloatingActionButton is the canonical create CTA
-                  // — hide this duplicate button so the empty state stays uncluttered.
-                  <Button variant="hero" onClick={() => setCreating(true)} disabled={readOnly} title={roTitle} className="hidden sm:inline-flex">
-                    <Plus className="h-4 w-4" /> {t("customers.addCustomer")}
-                  </Button>
-                ) : undefined
-              }
-            />
+            // Bottom padding (mobile) reserves space so the floating + button
+            // never visually collides with the empty-state card.
+            <div className="pb-28 sm:pb-0">
+              <EmptyState
+                icon={Users}
+                title={q || filter !== "all" ? t("customers.noMatches") : t("customers.noCustomers")}
+                description={q || filter !== "all" ? t("customers.noMatchDesc") : t("customers.noCustomersDesc")}
+                action={
+                  !q && filter === "all" ? (
+                    // On mobile the FloatingActionButton is the canonical create CTA
+                    // — hide this duplicate button so the empty state stays uncluttered.
+                    <Button variant="hero" onClick={() => setCreating(true)} disabled={readOnly} title={roTitle} className="hidden sm:inline-flex">
+                      <Plus className="h-4 w-4" /> {t("customers.addCustomer")}
+                    </Button>
+                  ) : undefined
+                }
+              />
+            </div>
           ) : (
             <>
               {/* Mobile card list — tap opens MobileActionSheet (View/Edit/Delete). */}
