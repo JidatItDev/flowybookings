@@ -177,8 +177,9 @@ export const Route = createFileRoute("/api/bookings/checkout")({
                 status: "failed",
                 metadata: {
                   kind: "booking_deposit",
-                  fee_percent: feePercent,
+                  booking_fee_cents: bookingFeeCents,
                   plan: shop?.plan ?? null,
+                  fee_model: "fixed_per_booking",
                   mollie_error: errText,
                   mollie_status: mollieRes.status,
                 },
