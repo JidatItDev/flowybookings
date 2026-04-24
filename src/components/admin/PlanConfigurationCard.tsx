@@ -61,7 +61,9 @@ export function PlanConfigurationCard() {
   const { data: pricing = [], isLoading: pricingLoading } = useQuery({
     queryKey: ["admin", "plan_pricing"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("plan_pricing").select("plan_name, monthly_price_cents, platform_fee_bps");
+      const { data, error } = await supabase
+        .from("plan_pricing")
+        .select("plan_name, monthly_price_cents, platform_fee_bps, booking_fee_cents");
       if (error) throw error;
       return data as Pricing[];
     },
