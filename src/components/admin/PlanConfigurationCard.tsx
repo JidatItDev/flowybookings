@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { ALL_DB_PLANS, planLabel, type DbPlan } from "@/lib/plans";
 
-type Pricing = { plan_name: DbPlan; monthly_price_cents: number; platform_fee_bps: number };
+type Pricing = { plan_name: DbPlan; monthly_price_cents: number; platform_fee_bps: number; booking_fee_cents: number };
 type FeatureRow = { plan_name: DbPlan; feature_slug: string; is_included: boolean; limit_value: number | null };
 
 // Feature display config — order + nice labels
@@ -22,7 +22,6 @@ const FEATURE_GROUPS: { title: string; features: { slug: string; label: string; 
     features: [
       { slug: "max_staff", label: "Max medewerkers", hasLimit: true, isLimitOnly: true },
       { slug: "max_bookings_per_month", label: "Max boekingen / maand", hasLimit: true, isLimitOnly: true },
-      { slug: "platform_fee_percentage", label: "Platform fee (%)", hasLimit: true, isLimitOnly: true },
     ],
   },
   {
