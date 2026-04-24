@@ -129,7 +129,7 @@ export function MollieConnectCard({ shopId }: Props) {
           <dl className="mt-5 grid gap-3 sm:grid-cols-2">
             <Row label={t("mollie.onboarding")} value={t(`mollie.onboarding.${onboarding}`)} />
             <Row label={t("mollie.feeEnabled")} value={provider?.application_fee_enabled ? t("common.yes") : t("common.no")} />
-            <Row label={t("mollie.feePercent")} value={`${provider?.application_fee_percent ?? 2}%`} />
+            <Row label={t("mollie.feePercent")} value={provider?.application_fee_enabled ? t("pricing.transactionFee") : t("mollie.feeNoFee")} />
             <Row label={t("mollie.payouts")} value={t("mollie.payoutsValue")} />
           </dl>
 
