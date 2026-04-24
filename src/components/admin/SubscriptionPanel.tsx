@@ -63,7 +63,7 @@ export function SubscriptionPanel({ shop }: { shop: Shop }) {
   const [expiresAt, setExpiresAt] = useState(toDateInputValue(shop.plan_expires_at));
   const [nextBilling, setNextBilling] = useState(toDateInputValue(shop.next_billing_at));
   const [feeOverride, setFeeOverride] = useState<string>(
-    shop.platform_fee_bps_override == null ? "" : (shop.platform_fee_bps_override / 100).toFixed(2),
+    shop.booking_fee_cents_override == null ? "" : (shop.booking_fee_cents_override / 100).toFixed(2),
   );
   const [notes, setNotes] = useState(shop.subscription_notes ?? "");
   const [confirmAction, setConfirmAction] = useState<{ label: string; run: () => Promise<void> } | null>(null);
