@@ -47,6 +47,10 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 const ACTIVE_SHOP_KEY = "flowybookings:active-shop-id";
+const LAST_ACTIVITY_KEY = "flowybookings:last-activity";
+// Auto-logout after 7 days of inactivity. Updated on any user interaction
+// while the tab is open. Checked once on app boot.
+const INACTIVITY_LIMIT_MS = 7 * 24 * 60 * 60 * 1000;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -60,20 +64,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s);
       // Reset cached per-user data when auth changes
       qc.invalidateQueries();
-      // Best-effort: stamp last_login_at on real sign-in so admins can see activity.
       if (event === "SIGNED_IN" && s?.user?.id) {
+        // Stamp activity on fresh sign-in.
+        if (typeof window !== "undefined") {
+          try { window.localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now())); } catch { /* ignore */ }
+        }
+        // Best-effort: stamp last_login_at on real sign-in so admins can see activity.
         const uid = s.user.id;
         setTimeout(() => {
           void supabase.from("profiles").update({ last_login_at: new Date().toISOString() }).eq("id", uid);
         }, 0);
       }
+      if (event === "SIGNED_OUT" && typeof window !== "undefined") {
+        try { window.localStorage.removeItem(LAST_ACTIVITY_KEY); } catch { /* ignore */ }
+      }
     });
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
+      // Enforce inactivity timeout on boot.
+      if (data.session && typeof window !== "undefined") {
+        const raw = window.localStorage.getItem(LAST_ACTIVITY_KEY);
+        const last = raw ? Number(raw) : NaN;
+        if (Number.isFinite(last) && Date.now() - last > INACTIVITY_LIMIT_MS) {
+          await supabase.auth.signOut();
+          try { window.localStorage.removeItem(LAST_ACTIVITY_KEY); } catch { /* ignore */ }
+          try { window.localStorage.removeItem(ACTIVE_SHOP_KEY); } catch { /* ignore */ }
+          setSession(null);
+          setLoading(false);
+          // Send the user back to the public homepage on expiry.
+          if (window.location.pathname !== "/") window.location.replace("/");
+          return;
+        }
+        if (!raw) {
+          try { window.localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now())); } catch { /* ignore */ }
+        }
+      }
       setSession(data.session);
       setLoading(false);
     });
     return () => sub.subscription.unsubscribe();
   }, [qc]);
+
+  // Update "last activity" timestamp on user interaction while a session exists.
+  useEffect(() => {
+    if (typeof window === "undefined" || !session) return;
+    let pending = false;
+    const stamp = () => {
+      if (pending) return;
+      pending = true;
+      // Throttle writes to once per minute.
+      setTimeout(() => {
+        try { window.localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now())); } catch { /* ignore */ }
+        pending = false;
+      }, 60_000);
+    };
+    const events: Array<keyof WindowEventMap> = ["click", "keydown", "mousemove", "touchstart", "visibilitychange"];
+    events.forEach((e) => window.addEventListener(e, stamp, { passive: true }));
+    // Initial stamp.
+    try { window.localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now())); } catch { /* ignore */ }
+    return () => events.forEach((e) => window.removeEventListener(e, stamp));
+  }, [session]);
 
   const userId = session?.user?.id ?? null;
 
