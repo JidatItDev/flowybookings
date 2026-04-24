@@ -60,18 +60,40 @@ export const Route = createFileRoute("/api/bookings/checkout")({
             return json({ ok: true, skipped: true, reason: "no_mollie_connection" });
           }
 
-          // Look up provider config + shop plan to compute the application fee.
+          // Load provider toggle + shop (plan + per-shop fee override + DB plan_pricing)
+          // to determine the FIXED booking fee in cents.
           const { data: provider } = await supabaseAdmin
             .from("shop_payment_providers")
-            .select("application_fee_enabled, application_fee_percent")
+            .select("application_fee_enabled")
             .eq("shop_id", booking.shop_id)
             .eq("provider", "mollie")
             .maybeSingle();
           const { data: shop } = await supabaseAdmin
             .from("shops")
-            .select("plan")
+            .select("plan, booking_fee_cents_override")
             .eq("id", booking.shop_id)
             .maybeSingle();
+
+          // Prefer the live DB row for plan_pricing.booking_fee_cents so admin
+          // edits in the dashboard apply instantly. Fall back to the constant
+          // map if the row cannot be loaded for any reason.
+          let planBookingFee = bookingFeeCentsForPlan(shop?.plan);
+          if (shop?.plan) {
+            const { data: pricingRow } = await supabaseAdmin
+              .from("plan_pricing")
+              .select("booking_fee_cents")
+              .eq("plan_name", shop.plan)
+              .maybeSingle();
+            if (pricingRow && typeof pricingRow.booking_fee_cents === "number") {
+              planBookingFee = pricingRow.booking_fee_cents;
+            }
+          }
+
+          // Per-shop override wins (e.g. admin compensates a shop with €0 fee).
+          const effectiveBookingFee =
+            shop?.booking_fee_cents_override != null
+              ? Math.max(0, shop.booking_fee_cents_override)
+              : planBookingFee;
 
           // Resolve customer email (best-effort).
           let customerEmail: string | null = null;
@@ -86,11 +108,9 @@ export const Route = createFileRoute("/api/bookings/checkout")({
 
           const amountCents = booking.deposit_cents;
           const currency = booking.currency || "EUR";
-          // Plan-based fee: trial 0% / starter 1.5% / pro 1.0% / premium 0.5%,
-          // capped at min(10% of amount, €2). Owner-disabled fee → 0.
-          const planPercent = feePercentForPlan(shop?.plan);
-          const feePercent = provider?.application_fee_enabled === false ? 0 : planPercent;
-          const feeCents = computeApplicationFeeCents(amountCents, feePercent);
+          const ownerDisabledFee = provider?.application_fee_enabled === false;
+          const bookingFeeCents = ownerDisabledFee ? 0 : effectiveBookingFee;
+          const feeCents = resolveApplicationFeeCents(amountCents, bookingFeeCents);
 
           const { data: payment, error: payErr } = await supabaseAdmin
             .from("payments")
@@ -104,8 +124,9 @@ export const Route = createFileRoute("/api/bookings/checkout")({
               provider: "mollie_connect",
               metadata: {
                 kind: "booking_deposit",
-                fee_percent: feePercent,
+                booking_fee_cents: bookingFeeCents,
                 plan: shop?.plan ?? null,
+                fee_model: "fixed_per_booking",
               },
             })
             .select("id")
