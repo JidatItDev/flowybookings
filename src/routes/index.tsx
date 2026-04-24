@@ -60,7 +60,8 @@ function Landing() {
       name: "Trial",
       price: 0,
       period: t("pricing.period.trial"),
-      fee: "0%",
+      fee: t("pricing.compare.val.noFee"),
+      feeIsFree: true,
       featured: false,
       ctaKey: "pricing.cta.trial",
       features: [
@@ -74,7 +75,8 @@ function Landing() {
       name: "Starter",
       price: 19,
       period: t("pricing.period.month"),
-      fee: "1,5%",
+      fee: t("pricing.compare.val.starterFee"),
+      feeIsFree: false,
       featured: false,
       ctaKey: "pricing.cta.starter",
       features: [
@@ -88,7 +90,8 @@ function Landing() {
       name: "Pro",
       price: 49,
       period: t("pricing.period.month"),
-      fee: "1,0%",
+      fee: t("pricing.compare.val.proFee"),
+      feeIsFree: false,
       featured: true,
       ctaKey: "pricing.cta.pro",
       features: [
@@ -104,7 +107,8 @@ function Landing() {
       name: "Premium",
       price: 99,
       period: t("pricing.period.month"),
-      fee: "0,5%",
+      fee: t("pricing.compare.val.noFee"),
+      feeIsFree: true,
       featured: false,
       ctaKey: "pricing.cta.premium",
       features: [
@@ -275,7 +279,13 @@ function Landing() {
                 {p.featured && <span className="absolute -top-3 left-6 rounded-full bg-gradient-brand px-3 py-1 text-xs font-semibold text-primary-foreground">{t("pricing.mostPopular")}</span>}
                 <h3 className="text-base font-semibold">{p.name}</h3>
                 <p className="mt-3 text-3xl font-semibold tracking-tight">€{p.price}<span className="text-sm font-normal text-muted-foreground">/{p.period}</span></p>
-                <p className="mt-1 text-xs text-muted-foreground">{p.fee} {t("pricing.transactionFee")}</p>
+                <p className="mt-1 text-xs font-medium text-muted-foreground">
+                  {p.feeIsFree ? (
+                    <span className="text-success-foreground">{t("pricing.noFee")}</span>
+                  ) : (
+                    <>{p.fee} {t("pricing.transactionFee")}</>
+                  )}
+                </p>
                 <ul className="mt-5 flex-1 space-y-2 text-sm text-muted-foreground">
                   {p.features.map((f) => <li key={f} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-success-foreground" />{f}</li>)}
                 </ul>

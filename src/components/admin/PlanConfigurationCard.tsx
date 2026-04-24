@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { ALL_DB_PLANS, planLabel, type DbPlan } from "@/lib/plans";
 
-type Pricing = { plan_name: DbPlan; monthly_price_cents: number; platform_fee_bps: number };
+type Pricing = { plan_name: DbPlan; monthly_price_cents: number; platform_fee_bps: number; booking_fee_cents: number };
 type FeatureRow = { plan_name: DbPlan; feature_slug: string; is_included: boolean; limit_value: number | null };
 
 // Feature display config — order + nice labels
@@ -22,7 +22,6 @@ const FEATURE_GROUPS: { title: string; features: { slug: string; label: string; 
     features: [
       { slug: "max_staff", label: "Max medewerkers", hasLimit: true, isLimitOnly: true },
       { slug: "max_bookings_per_month", label: "Max boekingen / maand", hasLimit: true, isLimitOnly: true },
-      { slug: "platform_fee_percentage", label: "Platform fee (%)", hasLimit: true, isLimitOnly: true },
     ],
   },
   {
@@ -62,7 +61,9 @@ export function PlanConfigurationCard() {
   const { data: pricing = [], isLoading: pricingLoading } = useQuery({
     queryKey: ["admin", "plan_pricing"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("plan_pricing").select("plan_name, monthly_price_cents, platform_fee_bps");
+      const { data, error } = await supabase
+        .from("plan_pricing")
+        .select("plan_name, monthly_price_cents, platform_fee_bps, booking_fee_cents");
       if (error) throw error;
       return data as Pricing[];
     },
@@ -117,7 +118,8 @@ export function PlanConfigurationCard() {
       const pricingRows = Object.values(pricingDraft).map((p) => ({
         plan_name: p.plan_name,
         monthly_price_cents: Math.max(0, Math.round(p.monthly_price_cents || 0)),
-        platform_fee_bps: Math.max(0, Math.round(p.platform_fee_bps || 0)),
+        platform_fee_bps: 0, // legacy: vast bedrag vervangt percentage
+        booking_fee_cents: Math.max(0, Math.round(p.booking_fee_cents || 0)),
       }));
       const { error: pricingErr } = await supabase
         .from("plan_pricing")
@@ -167,7 +169,7 @@ export function PlanConfigurationCard() {
         <div>
           <h2 className="text-base font-semibold">Plan configuratie</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Beheer prijzen, platform-fee, limieten en feature-toggles per abonnement.
+            Beheer prijzen, vaste boekingsfee, limieten en feature-toggles per abonnement.
           </p>
         </div>
         <Button variant="hero" disabled={!dirty || saveMutation.isPending} onClick={() => saveMutation.mutate()}>
@@ -189,12 +191,12 @@ export function PlanConfigurationCard() {
             <tr>
               <th className="px-4 py-3 text-left">Plan</th>
               <th className="px-4 py-3 text-left">Prijs / maand (EUR)</th>
-              <th className="px-4 py-3 text-left">Platform fee (%)</th>
+              <th className="px-4 py-3 text-left">Boekingsfee (€ per boeking)</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {allPlans.map((plan) => {
-              const p = pricingDraft[plan] ?? { plan_name: plan, monthly_price_cents: 0, platform_fee_bps: 0 };
+              const p = pricingDraft[plan] ?? { plan_name: plan, monthly_price_cents: 0, platform_fee_bps: 0, booking_fee_cents: 0 };
               return (
                 <tr key={plan}>
                   <td className="px-4 py-3 font-medium">{planLabel(plan)}</td>
@@ -213,10 +215,12 @@ export function PlanConfigurationCard() {
                       type="number"
                       min={0}
                       step="0.01"
-                      value={(p.platform_fee_bps / 100).toString()}
-                      onChange={(e) => setPricing(plan, { platform_fee_bps: Math.round(parseFloat(e.target.value || "0") * 100) })}
+                      placeholder="0,00"
+                      value={((p.booking_fee_cents ?? 0) / 100).toString()}
+                      onChange={(e) => setPricing(plan, { booking_fee_cents: Math.round(parseFloat(e.target.value || "0") * 100) })}
                       className="h-9 w-32"
                     />
+                    <p className="mt-1 text-[10px] text-muted-foreground">Vast bedrag · 0 = geen fee</p>
                   </td>
                 </tr>
               );

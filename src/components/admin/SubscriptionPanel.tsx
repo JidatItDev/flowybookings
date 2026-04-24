@@ -1,5 +1,5 @@
 // Admin subscription management for a single shop.
-// Editable: plan, subscription_status, plan_expires_at, platform_fee_bps_override,
+// Editable: plan, subscription_status, plan_expires_at, booking_fee_cents_override,
 // next_billing_at, mollie_subscription_id (read-only), subscription_notes.
 // Quick actions: extend trial +7/+14/+30, pause, reactivate, cancel, free month.
 
@@ -26,7 +26,7 @@ type Shop = {
   plan: string;
   subscription_status: string | null;
   plan_expires_at: string | null;
-  platform_fee_bps_override: number | null;
+  booking_fee_cents_override: number | null;
   next_billing_at: string | null;
   mollie_subscription_id: string | null;
   subscription_notes: string | null;
@@ -63,7 +63,7 @@ export function SubscriptionPanel({ shop }: { shop: Shop }) {
   const [expiresAt, setExpiresAt] = useState(toDateInputValue(shop.plan_expires_at));
   const [nextBilling, setNextBilling] = useState(toDateInputValue(shop.next_billing_at));
   const [feeOverride, setFeeOverride] = useState<string>(
-    shop.platform_fee_bps_override == null ? "" : (shop.platform_fee_bps_override / 100).toFixed(2),
+    shop.booking_fee_cents_override == null ? "" : (shop.booking_fee_cents_override / 100).toFixed(2),
   );
   const [notes, setNotes] = useState(shop.subscription_notes ?? "");
   const [confirmAction, setConfirmAction] = useState<{ label: string; run: () => Promise<void> } | null>(null);
@@ -76,7 +76,7 @@ export function SubscriptionPanel({ shop }: { shop: Shop }) {
         subscription_status: status,
         plan_expires_at: expiresAt ? new Date(expiresAt + "T23:59:59Z").toISOString() : null,
         next_billing_at: nextBilling ? new Date(nextBilling + "T00:00:00Z").toISOString() : null,
-        platform_fee_bps_override: feeOverride === "" ? null : Math.round(parseFloat(feeOverride) * 100),
+        booking_fee_cents_override: feeOverride === "" ? null : Math.max(0, Math.round(parseFloat(feeOverride) * 100)),
         subscription_notes: notes || null,
       };
       const { error } = await supabase.from("shops").update(updates).eq("id", shop.id);
@@ -139,8 +139,8 @@ export function SubscriptionPanel({ shop }: { shop: Shop }) {
           <Input id="nb" type="date" value={nextBilling} onChange={(e) => setNextBilling(e.target.value)} className="mt-1" />
         </div>
         <div>
-          <Label className="text-xs" htmlFor="fee">Platform fee % (override, leeg = standaard)</Label>
-          <Input id="fee" type="number" step="0.01" min="0" max="100" value={feeOverride} onChange={(e) => setFeeOverride(e.target.value)} className="mt-1" />
+          <Label className="text-xs" htmlFor="fee">Boekingsfee € override (leeg = standaard)</Label>
+          <Input id="fee" type="number" step="0.01" min="0" max="10" value={feeOverride} onChange={(e) => setFeeOverride(e.target.value)} className="mt-1" placeholder="bv. 0,50" />
         </div>
         <div>
           <Label className="text-xs">Mollie subscription ID</Label>

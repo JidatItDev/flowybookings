@@ -319,7 +319,7 @@ function ShopDetailPage() {
             plan: shop.plan,
             subscription_status: shop.subscription_status,
             plan_expires_at: shop.plan_expires_at,
-            platform_fee_bps_override: shop.platform_fee_bps_override,
+            booking_fee_cents_override: shop.booking_fee_cents_override,
             next_billing_at: shop.next_billing_at,
             mollie_subscription_id: shop.mollie_subscription_id,
             subscription_notes: shop.subscription_notes,
