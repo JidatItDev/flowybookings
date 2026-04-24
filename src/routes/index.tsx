@@ -135,12 +135,20 @@ function Landing() {
           </nav>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
-            <Link to="/login" className="hidden text-sm font-medium text-muted-foreground hover:text-foreground sm:inline-flex">
-              {t("nav.signIn")}
-            </Link>
-            <Button asChild variant="hero" size="default">
-              <Link to="/signup">{t("nav.getStarted")}</Link>
-            </Button>
+            {session ? (
+              <Button asChild variant="hero" size="default">
+                <Link to={dashboardHref}>{t("nav.goToDashboard")} <ArrowRight className="h-4 w-4" /></Link>
+              </Button>
+            ) : (
+              <>
+                <Link to="/login" className="hidden text-sm font-medium text-muted-foreground hover:text-foreground sm:inline-flex">
+                  {t("nav.signIn")}
+                </Link>
+                <Button asChild variant="hero" size="default">
+                  <Link to="/signup">{t("nav.getStarted")}</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
