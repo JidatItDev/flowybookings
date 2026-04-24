@@ -49,6 +49,10 @@ function UpgradePage() {
   // no more fragile polling loop.
   useEffect(() => {
     if (!search.billing || !activeShop?.id) return;
+    if (search.billing === "success" || search.billing === "mock") {
+      // Conversion-focused confirmation — directly after Mollie redirect.
+      toast.success(t("upgrade.toastUpgraded", { plan: activeShop?.plan ?? "" }));
+    }
     qc.invalidateQueries({ queryKey: ["auth", "shops"] });
     qc.invalidateQueries({ queryKey: shopKeys.shopFull(activeShop.id) });
     refreshShops?.();
