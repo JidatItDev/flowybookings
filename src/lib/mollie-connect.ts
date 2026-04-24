@@ -79,17 +79,35 @@ export type MollieConnectMetadata = {
  * - Otherwise: amount × percent, hard-capped at min(10% of amount, €2.00).
  * - Mollie requires the merchant to keep at least €0.01 of the payment.
  */
-export function computeApplicationFeeCents(amountCents: number, percent: number): number {
-  if (amountCents <= 0 || percent <= 0) return 0;
-  const raw = Math.round((amountCents * percent) / 100);
+/**
+ * Resolve the applicationFee in cents for a Mollie payment, given the booking
+ * amount and the shop's plan-derived fixed fee. Caps:
+ *   - Never exceed the absolute platform ceiling (€2.00)
+ *   - Never exceed 10% of the amount (Mollie partner safety zone)
+ *   - Always leave the merchant ≥ €0,01
+ *   - Returns 0 when the plan fee is 0 → caller MUST omit applicationFee
+ *     from the Mollie API request entirely (Mollie min applicationFee = €0,01)
+ */
+export function resolveApplicationFeeCents(
+  amountCents: number,
+  bookingFeeCents: number,
+): number {
+  if (amountCents <= 0 || bookingFeeCents <= 0) return 0;
   const absoluteCap = Math.min(
     APPLICATION_FEE_MAX_CENTS,
     Math.floor((amountCents * APPLICATION_FEE_MAX_PERCENT) / 100),
   );
-  const capped = Math.min(raw, absoluteCap);
-  // Always leave at least €0.01 for the merchant; require at least 1 cent fee
-  // when we're charging anything at all.
-  return Math.max(1, Math.min(capped, amountCents - 1));
+  const capped = Math.min(bookingFeeCents, absoluteCap);
+  return Math.max(0, Math.min(capped, amountCents - 1));
+}
+
+/**
+ * @deprecated Old percentage-based fee compute. Replaced by
+ * `resolveApplicationFeeCents`. Returns 0 so any leftover callers stop
+ * charging a fee until they are migrated.
+ */
+export function computeApplicationFeeCents(_amountCents: number, _percent: number): number {
+  return 0;
 }
 
 // =====================================================================
