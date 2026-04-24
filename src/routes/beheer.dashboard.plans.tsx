@@ -21,7 +21,7 @@ export const Route = createFileRoute("/beheer/dashboard/plans")({
 const PLAN_TIERS = [
   {
     plan: "starter" as DbPlan,
-    label: "Basic",
+    label: "Starter",
     price: 19,
     features: ["bookings", "staff3", "email", "analytics"],
     fee: "1.5%",
