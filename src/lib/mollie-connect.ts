@@ -21,7 +21,7 @@ export const MOLLIE_CONNECT_SCOPES = [
   "onboarding.read",
 ].join(" ");
 
-export const APPLICATION_FEE_DESCRIPTION = "FlowyBookings platformkosten";
+export const APPLICATION_FEE_DESCRIPTION = "FlowyBookings boekingsfee";
 
 // Mollie hard-caps applicationFee at ~10% / €25 by default; we cap at €2 by
 // default so we stay safely within Mollie's "no extra approval" zone for new
@@ -29,19 +29,38 @@ export const APPLICATION_FEE_DESCRIPTION = "FlowyBookings platformkosten";
 export const APPLICATION_FEE_MAX_CENTS = 200; // €2.00
 export const APPLICATION_FEE_MAX_PERCENT = 10; // 10% absolute ceiling
 
-/** Per-plan fee percentage charged on each booking deposit. */
-export const PLAN_FEE_PERCENT: Record<string, number> = {
+/**
+ * Per-plan FIXED booking fee in cents (replaces the old percentage model).
+ * - trial   = €0   (geen fee tijdens trial)
+ * - starter = €0,50
+ * - pro     = €0,30
+ * - premium = €0   (geen transactiekosten)
+ *
+ * Mirrored in DB table `plan_pricing.booking_fee_cents`. Code uses these
+ * constants as a safe fallback when the DB row cannot be loaded.
+ */
+export const PLAN_BOOKING_FEE_CENTS: Record<string, number> = {
   trial: 0,
-  starter: 1.5,
-  pro: 1.0,
-  premium: 0.5,
+  starter: 50,
+  pro: 30,
+  premium: 0,
 };
 
-export const APPLICATION_FEE_PERCENT_DEFAULT = PLAN_FEE_PERCENT.starter;
+export const BOOKING_FEE_CENTS_DEFAULT = PLAN_BOOKING_FEE_CENTS.starter;
 
-export function feePercentForPlan(plan: string | null | undefined): number {
-  if (!plan) return APPLICATION_FEE_PERCENT_DEFAULT;
-  return PLAN_FEE_PERCENT[plan] ?? APPLICATION_FEE_PERCENT_DEFAULT;
+/** Returns the fixed booking fee (in cents) for a given plan. */
+export function bookingFeeCentsForPlan(plan: string | null | undefined): number {
+  if (!plan) return BOOKING_FEE_CENTS_DEFAULT;
+  return PLAN_BOOKING_FEE_CENTS[plan] ?? BOOKING_FEE_CENTS_DEFAULT;
+}
+
+/**
+ * @deprecated The percentage-based model has been replaced by a fixed
+ * per-booking fee. Kept only for binary compatibility with any in-flight
+ * imports. New code MUST use `bookingFeeCentsForPlan`.
+ */
+export function feePercentForPlan(_plan: string | null | undefined): number {
+  return 0;
 }
 
 export type MollieConnectMetadata = {
@@ -60,17 +79,35 @@ export type MollieConnectMetadata = {
  * - Otherwise: amount × percent, hard-capped at min(10% of amount, €2.00).
  * - Mollie requires the merchant to keep at least €0.01 of the payment.
  */
-export function computeApplicationFeeCents(amountCents: number, percent: number): number {
-  if (amountCents <= 0 || percent <= 0) return 0;
-  const raw = Math.round((amountCents * percent) / 100);
+/**
+ * Resolve the applicationFee in cents for a Mollie payment, given the booking
+ * amount and the shop's plan-derived fixed fee. Caps:
+ *   - Never exceed the absolute platform ceiling (€2.00)
+ *   - Never exceed 10% of the amount (Mollie partner safety zone)
+ *   - Always leave the merchant ≥ €0,01
+ *   - Returns 0 when the plan fee is 0 → caller MUST omit applicationFee
+ *     from the Mollie API request entirely (Mollie min applicationFee = €0,01)
+ */
+export function resolveApplicationFeeCents(
+  amountCents: number,
+  bookingFeeCents: number,
+): number {
+  if (amountCents <= 0 || bookingFeeCents <= 0) return 0;
   const absoluteCap = Math.min(
     APPLICATION_FEE_MAX_CENTS,
     Math.floor((amountCents * APPLICATION_FEE_MAX_PERCENT) / 100),
   );
-  const capped = Math.min(raw, absoluteCap);
-  // Always leave at least €0.01 for the merchant; require at least 1 cent fee
-  // when we're charging anything at all.
-  return Math.max(1, Math.min(capped, amountCents - 1));
+  const capped = Math.min(bookingFeeCents, absoluteCap);
+  return Math.max(0, Math.min(capped, amountCents - 1));
+}
+
+/**
+ * @deprecated Old percentage-based fee compute. Replaced by
+ * `resolveApplicationFeeCents`. Returns 0 so any leftover callers stop
+ * charging a fee until they are migrated.
+ */
+export function computeApplicationFeeCents(_amountCents: number, _percent: number): number {
+  return 0;
 }
 
 // =====================================================================

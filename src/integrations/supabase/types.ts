@@ -468,6 +468,7 @@ export type Database = {
       }
       plan_pricing: {
         Row: {
+          booking_fee_cents: number
           created_at: string
           currency: string
           id: string
@@ -478,6 +479,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          booking_fee_cents?: number
           created_at?: string
           currency?: string
           id?: string
@@ -488,6 +490,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          booking_fee_cents?: number
           created_at?: string
           currency?: string
           id?: string
@@ -835,6 +838,7 @@ export type Database = {
         Row: {
           address: string | null
           admin_notes: string | null
+          booking_fee_cents_override: number | null
           branding: Json
           business_hours: Json
           category: string | null
@@ -866,6 +870,7 @@ export type Database = {
         Insert: {
           address?: string | null
           admin_notes?: string | null
+          booking_fee_cents_override?: number | null
           branding?: Json
           business_hours?: Json
           category?: string | null
@@ -897,6 +902,7 @@ export type Database = {
         Update: {
           address?: string | null
           admin_notes?: string | null
+          booking_fee_cents_override?: number | null
           branding?: Json
           business_hours?: Json
           category?: string | null
