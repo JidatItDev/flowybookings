@@ -169,7 +169,7 @@ export function PlanConfigurationCard() {
         <div>
           <h2 className="text-base font-semibold">Plan configuratie</h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Beheer prijzen, platform-fee, limieten en feature-toggles per abonnement.
+            Beheer prijzen, vaste boekingsfee, limieten en feature-toggles per abonnement.
           </p>
         </div>
         <Button variant="hero" disabled={!dirty || saveMutation.isPending} onClick={() => saveMutation.mutate()}>
