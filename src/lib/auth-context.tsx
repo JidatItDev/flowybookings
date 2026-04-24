@@ -233,6 +233,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(ACTIVE_SHOP_KEY);
+      window.localStorage.removeItem(LAST_ACTIVITY_KEY);
     }
     setActiveShopIdState(null);
   };
