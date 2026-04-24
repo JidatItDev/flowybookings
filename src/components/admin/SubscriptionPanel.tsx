@@ -1,5 +1,5 @@
 // Admin subscription management for a single shop.
-// Editable: plan, subscription_status, plan_expires_at, platform_fee_bps_override,
+// Editable: plan, subscription_status, plan_expires_at, booking_fee_cents_override,
 // next_billing_at, mollie_subscription_id (read-only), subscription_notes.
 // Quick actions: extend trial +7/+14/+30, pause, reactivate, cancel, free month.
 
