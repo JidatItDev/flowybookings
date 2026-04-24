@@ -125,6 +125,19 @@ export function ShopBillingCard() {
   const isExpired = !!expiresDate && expiresDate.getTime() < Date.now();
   const canCancel = activeShop?.plan && activeShop.plan !== "trial" && subscriptionStatus !== "cancelled";
 
+  // "Next payment" line — only for actief betaald abonnement (geen trial,
+  // niet opgezegd, niet vervallen). Hergebruikt de bestaande pricing-hook.
+  const isPaidActive =
+    !!activeShop?.plan &&
+    activeShop.plan !== "trial" &&
+    !isExpired &&
+    subscriptionStatus !== "cancelled";
+  const nextPaymentAmount = useMemo(() => {
+    if (!isPaidActive) return null;
+    const priceLabel = formatPlanPrice(pricing, activeShop?.plan, cycle === "yearly" ? "yearly" : "monthly");
+    return priceLabel || null;
+  }, [isPaidActive, pricing, activeShop?.plan, cycle]);
+
   const mockPaymentId = useMemo(() => {
     if (search?.billing !== "mock" || !search?.payment) return null;
     return search.payment;
