@@ -60,7 +60,8 @@ function Landing() {
       name: "Trial",
       price: 0,
       period: t("pricing.period.trial"),
-      fee: "0%",
+      fee: t("pricing.compare.val.noFee"),
+      feeIsFree: true,
       featured: false,
       ctaKey: "pricing.cta.trial",
       features: [
@@ -74,7 +75,8 @@ function Landing() {
       name: "Starter",
       price: 19,
       period: t("pricing.period.month"),
-      fee: "1,5%",
+      fee: t("pricing.compare.val.starterFee"),
+      feeIsFree: false,
       featured: false,
       ctaKey: "pricing.cta.starter",
       features: [
@@ -88,7 +90,8 @@ function Landing() {
       name: "Pro",
       price: 49,
       period: t("pricing.period.month"),
-      fee: "1,0%",
+      fee: t("pricing.compare.val.proFee"),
+      feeIsFree: false,
       featured: true,
       ctaKey: "pricing.cta.pro",
       features: [
@@ -104,7 +107,8 @@ function Landing() {
       name: "Premium",
       price: 99,
       period: t("pricing.period.month"),
-      fee: "0,5%",
+      fee: t("pricing.compare.val.noFee"),
+      feeIsFree: true,
       featured: false,
       ctaKey: "pricing.cta.premium",
       features: [
