@@ -178,6 +178,19 @@ export function ShopBillingCard() {
         </span>
       </div>
 
+      {/* Next-payment row + Mollie trust line — alleen tonen bij actief betaald
+          abonnement met een bekende einddatum/bedrag. Geen duplicate billing-
+          logic: alles komt uit `activeShop` en de bestaande pricing-hook. */}
+      {isPaidActive && expiresDate && nextPaymentAmount && (
+        <p className="mt-3 text-xs text-muted-foreground">
+          {t("billing.nextPayment", {
+            amount: nextPaymentAmount.replace(/\/(maand|jaar|month|year)$/, ""),
+            date: expiresDate.toLocaleDateString(),
+          })}
+        </p>
+      )}
+      <p className="mt-1 text-xs text-muted-foreground">{t("billing.securePayments")}</p>
+
       {mockPaymentId && (
         <div className="mt-4 rounded-2xl border border-peach/60 bg-peach/30 p-3 text-xs text-foreground">
           <p className="flex items-center gap-2 font-medium"><AlertTriangle className="h-4 w-4" />{t("shopBilling.mockBanner")}</p>
