@@ -117,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         pending = false;
       }, 60_000);
     };
-    const events: Array<keyof WindowEventMap> = ["click", "keydown", "mousemove", "touchstart", "visibilitychange"];
+    const events = ["click", "keydown", "mousemove", "touchstart", "visibilitychange"] as const;
     events.forEach((e) => window.addEventListener(e, stamp, { passive: true }));
     // Initial stamp.
     try { window.localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now())); } catch { /* ignore */ }
