@@ -49,6 +49,10 @@ function UpgradePage() {
   // no more fragile polling loop.
   useEffect(() => {
     if (!search.billing || !activeShop?.id) return;
+    if (search.billing === "success" || search.billing === "mock") {
+      // Conversion-focused confirmation — directly after Mollie redirect.
+      toast.success(t("upgrade.toastUpgraded", { plan: activeShop?.plan ?? "" }));
+    }
     qc.invalidateQueries({ queryKey: ["auth", "shops"] });
     qc.invalidateQueries({ queryKey: shopKeys.shopFull(activeShop.id) });
     refreshShops?.();
@@ -71,7 +75,7 @@ function UpgradePage() {
       });
     },
     onSuccess: async (_d, planKey) => {
-      toast.success(t("upgrade.toastApplied", { plan: planKey }));
+      toast.success(t("upgrade.toastDowngradeScheduled", { plan: planKey }));
       if (activeShop) {
         try {
           await import("@/integrations/supabase/client").then(({ supabase }) =>
@@ -287,6 +291,10 @@ function UpgradePage() {
                     if (!window.confirm(t("upgrade.confirmDowngrade", { plan: p.name }))) return;
                     downgrade.mutate(p.key);
                   } else {
+                    // Upgrade tijdens trial: laat duidelijk weten dat de trial direct stopt.
+                    if (currentPlan === "trial") {
+                      if (!window.confirm(t("upgrade.confirmUpgradeFromTrial"))) return;
+                    }
                     // Real upgrade flow → Mollie checkout (or mock checkout in dev).
                     checkout.mutate({ plan: p.key, cycle });
                   }
@@ -297,7 +305,9 @@ function UpgradePage() {
                   ? t("upgrade.currentPlan")
                   : isDowngrade
                   ? t("upgrade.cta.downgrade", { plan: p.name })
-                  : t("upgrade.cta.upgrade", { plan: p.name })}
+                  : p.key === "premium"
+                  ? t("upgrade.cta.upgradePremium")
+                  : t("upgrade.cta.upgradeShort", { plan: p.name })}
                 {!isCurrent && !busy && <ArrowRight className="h-4 w-4" />}
               </Button>
             </div>
@@ -306,6 +316,7 @@ function UpgradePage() {
       </div>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">{t("upgrade.guarantee")}</p>
+      <p className="mt-2 text-center text-xs text-muted-foreground">{t("upgrade.instantNote")}</p>
       <p className="mt-2 text-center text-xs text-muted-foreground">{t("upgrade.billingNotice")}</p>
 
       {/* FAQ */}

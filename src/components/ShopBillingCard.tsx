@@ -125,6 +125,19 @@ export function ShopBillingCard() {
   const isExpired = !!expiresDate && expiresDate.getTime() < Date.now();
   const canCancel = activeShop?.plan && activeShop.plan !== "trial" && subscriptionStatus !== "cancelled";
 
+  // "Next payment" line — only for actief betaald abonnement (geen trial,
+  // niet opgezegd, niet vervallen). Hergebruikt de bestaande pricing-hook.
+  const isPaidActive =
+    !!activeShop?.plan &&
+    activeShop.plan !== "trial" &&
+    !isExpired &&
+    subscriptionStatus !== "cancelled";
+  const nextPaymentAmount = useMemo(() => {
+    if (!isPaidActive) return null;
+    const priceLabel = formatPlanPrice(pricing, activeShop?.plan, cycle === "yearly" ? "yearly" : "monthly");
+    return priceLabel || null;
+  }, [isPaidActive, pricing, activeShop?.plan, cycle]);
+
   const mockPaymentId = useMemo(() => {
     if (search?.billing !== "mock" || !search?.payment) return null;
     return search.payment;
@@ -164,6 +177,19 @@ export function ShopBillingCard() {
           ) : t("shopBilling.noExpiry")}
         </span>
       </div>
+
+      {/* Next-payment row + Mollie trust line — alleen tonen bij actief betaald
+          abonnement met een bekende einddatum/bedrag. Geen duplicate billing-
+          logic: alles komt uit `activeShop` en de bestaande pricing-hook. */}
+      {isPaidActive && expiresDate && nextPaymentAmount && (
+        <p className="mt-3 text-xs text-muted-foreground">
+          {t("billing.nextPayment", {
+            amount: nextPaymentAmount.replace(/\/(maand|jaar|month|year)$/, ""),
+            date: expiresDate.toLocaleDateString(),
+          })}
+        </p>
+      )}
+      <p className="mt-1 text-xs text-muted-foreground">{t("billing.securePayments")}</p>
 
       {mockPaymentId && (
         <div className="mt-4 rounded-2xl border border-peach/60 bg-peach/30 p-3 text-xs text-foreground">

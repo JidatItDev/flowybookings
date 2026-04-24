@@ -99,25 +99,45 @@ export function TrialBanner() {
     );
   }
 
-  // 4) Trial ≤7 dagen countdown
-  if (state.isTrial && state.daysLeft !== null && state.daysLeft <= 7 && state.daysLeft > 0) {
-    const urgent = state.daysLeft <= 3;
+  // 4) Trial countdown — split into "ending" (≤3 dagen, urgent) en
+  //    "active" (>3 dagen). Beide tonen de exacte einddatum zodat er
+  //    nooit verwarring is over wanneer er kosten in rekening komen.
+  if (state.isTrial && state.daysLeft !== null && state.daysLeft > 0 && state.expiresAt) {
+    const dateLabel = state.expiresAt.toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" });
+    const ending = state.daysLeft <= 3;
+
+    if (ending) {
+      return (
+        <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-pink/50 bg-gradient-warm/40 p-4 shadow-soft">
+          <Clock className="h-5 w-5 shrink-0 text-pink-foreground" />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">
+              {t("billing.trialEndingTitle", { days: state.daysLeft })}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("billing.trialEndingSub", { days: state.daysLeft, date: dateLabel })}
+            </p>
+          </div>
+          <Link to="/shop/upgrade">
+            <Button variant="hero" size="sm">
+              {t("billing.choosePlan")} <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+      );
+    }
+
     return (
-      <div
-        className={
-          "mb-4 flex flex-wrap items-center gap-3 rounded-2xl border p-4 shadow-soft " +
-          (urgent ? "border-pink/50 bg-gradient-warm/40" : "border-primary/30 bg-primary-soft/40")
-        }
-      >
-        <Clock className={"h-5 w-5 shrink-0 " + (urgent ? "text-pink-foreground" : "text-primary")} />
+      <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary-soft/40 p-4 shadow-soft">
+        <Clock className="h-5 w-5 shrink-0 text-primary" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">
-            {t("billing.trialDaysLeft", { days: state.daysLeft })}
+          <p className="text-sm font-semibold">{t("billing.trialActiveTitle")}</p>
+          <p className="text-xs text-muted-foreground">
+            {t("billing.trialActiveSub", { date: dateLabel })}
           </p>
-          <p className="text-xs text-muted-foreground">{t("billing.trialDaysLeftSub")}</p>
         </div>
         <Link to="/shop/upgrade">
-          <Button variant={urgent ? "hero" : "outline"} size="sm">
+          <Button variant="outline" size="sm">
             {t("billing.viewPlans")} <ArrowRight className="h-4 w-4" />
           </Button>
         </Link>

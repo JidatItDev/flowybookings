@@ -57,7 +57,7 @@ export function planLabel(plan: DbPlan | string | null | undefined): string {
   if (plan === "trial") return "Trial";
   if (plan === "pro") return "Pro";
   if (plan === "premium") return "Premium";
-  return "Basic";
+  return "Starter";
 }
 
 export const ALL_DB_PLANS: DbPlan[] = ["trial", "starter", "pro", "premium"];
