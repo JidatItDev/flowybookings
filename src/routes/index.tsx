@@ -1,5 +1,4 @@
-import { useEffect } from "react";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -23,14 +22,12 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
-  const { session, loading, isSuperAdmin } = useAuth();
-  const navigate = useNavigate();
+  const { session, isSuperAdmin } = useAuth();
   const { t } = useT();
-
-  useEffect(() => {
-    if (loading || !session) return;
-    navigate({ to: isSuperAdmin ? "/beheer/dashboard" : "/shop" });
-  }, [session, loading, isSuperAdmin, navigate]);
+  // Note: do NOT auto-redirect authenticated users away from "/".
+  // The homepage stays accessible at all times. We only show a small CTA
+  // pointing them to their dashboard (rendered in the header below).
+  const dashboardHref = isSuperAdmin ? "/beheer/dashboard" : "/shop";
 
   const features = [
     { title: t("features.smartBookings"), desc: t("features.smartBookingsDesc"), icon: CalendarCheck, color: "bg-primary-soft text-primary" },
