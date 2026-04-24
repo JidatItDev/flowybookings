@@ -118,7 +118,8 @@ export function PlanConfigurationCard() {
       const pricingRows = Object.values(pricingDraft).map((p) => ({
         plan_name: p.plan_name,
         monthly_price_cents: Math.max(0, Math.round(p.monthly_price_cents || 0)),
-        platform_fee_bps: Math.max(0, Math.round(p.platform_fee_bps || 0)),
+        platform_fee_bps: 0, // legacy: vast bedrag vervangt percentage
+        booking_fee_cents: Math.max(0, Math.round(p.booking_fee_cents || 0)),
       }));
       const { error: pricingErr } = await supabase
         .from("plan_pricing")
