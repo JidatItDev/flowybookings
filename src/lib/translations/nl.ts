@@ -8,6 +8,7 @@ export const nl: Record<string, string> = {
   "nav.lovedBy": "Waarom wij",
   "nav.signIn": "Inloggen",
   "nav.getStarted": "Aan de slag",
+  "nav.goToDashboard": "Ga naar je dashboard",
   "nav.terms": "Voorwaarden",
   "nav.privacy": "Privacy",
   "nav.status": "Status",
