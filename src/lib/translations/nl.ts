@@ -1350,7 +1350,7 @@ export const nl: Record<string, string> = {
   "platformBilling.subtitle": "Beheer de eigen Mollie-koppeling van FlowyBookings voor abonnementsbetalingen",
   "platformBilling.adminOnly": "Alleen verborgen admin — nooit zichtbaar voor shopeigenaren",
   "platformBilling.sectionA": "Abonnementsbetalingen",
-  "platformBilling.sectionADesc": "De eigen Mollie-account van FlowyBookings voor Basic / Pro / Premium-betalingen. Hier geconfigureerd.",
+  "platformBilling.sectionADesc": "De eigen Mollie-account van FlowyBookings voor Starter / Pro / Premium-betalingen. Hier geconfigureerd.",
   "platformBilling.sectionB": "Boekingsbetaalproviders",
   "platformBilling.sectionBDesc": "De eigen Mollie Connect-account van elke shop voor boekingsaanbetalingen. Per shop beheerd, overzicht onder Providers.",
   "platformBilling.runCheck": "Statuscontrole uitvoeren",

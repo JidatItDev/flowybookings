@@ -1350,7 +1350,7 @@ export const en: Record<string, string> = {
   "platformBilling.subtitle": "Manage FlowyBookings' own Mollie connection for plan payments",
   "platformBilling.adminOnly": "Hidden admin only — never visible to shop owners",
   "platformBilling.sectionA": "Subscription Billing",
-  "platformBilling.sectionADesc": "FlowyBookings' own Mollie account for Basic / Pro / Premium plan payments. Configured here.",
+  "platformBilling.sectionADesc": "FlowyBookings' own Mollie account for Starter / Pro / Premium plan payments. Configured here.",
   "platformBilling.sectionB": "Booking Payment Providers",
   "platformBilling.sectionBDesc": "Each shop's own Mollie Connect account for booking deposits. Managed per shop, overviewed under Providers.",
   "platformBilling.runCheck": "Run health check",
