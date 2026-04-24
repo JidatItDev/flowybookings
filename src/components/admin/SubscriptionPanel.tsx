@@ -26,7 +26,7 @@ type Shop = {
   plan: string;
   subscription_status: string | null;
   plan_expires_at: string | null;
-  platform_fee_bps_override: number | null;
+  booking_fee_cents_override: number | null;
   next_billing_at: string | null;
   mollie_subscription_id: string | null;
   subscription_notes: string | null;
