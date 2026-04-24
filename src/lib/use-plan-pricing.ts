@@ -16,6 +16,7 @@ export type PlanPricingRow = {
   monthly_price_cents: number;
   currency: string;
   platform_fee_bps: number;
+  booking_fee_cents: number;
 };
 
 export type PlanPricingMap = Record<DbPlan, PlanPricingRow | undefined>;
@@ -25,7 +26,7 @@ const planPricingKey = ["plan-pricing"] as const;
 async function fetchPlanPricing(): Promise<PlanPricingMap> {
   const { data, error } = await supabase
     .from("plan_pricing")
-    .select("plan_name, monthly_price_cents, currency, platform_fee_bps");
+    .select("plan_name, monthly_price_cents, currency, platform_fee_bps, booking_fee_cents");
   if (error) throw error;
   const map: PlanPricingMap = { trial: undefined, starter: undefined, pro: undefined, premium: undefined };
   for (const row of data ?? []) {
