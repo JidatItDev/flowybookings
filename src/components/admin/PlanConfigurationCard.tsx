@@ -191,12 +191,12 @@ export function PlanConfigurationCard() {
             <tr>
               <th className="px-4 py-3 text-left">Plan</th>
               <th className="px-4 py-3 text-left">Prijs / maand (EUR)</th>
-              <th className="px-4 py-3 text-left">Platform fee (%)</th>
+              <th className="px-4 py-3 text-left">Boekingsfee (€ per boeking)</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {allPlans.map((plan) => {
-              const p = pricingDraft[plan] ?? { plan_name: plan, monthly_price_cents: 0, platform_fee_bps: 0 };
+              const p = pricingDraft[plan] ?? { plan_name: plan, monthly_price_cents: 0, platform_fee_bps: 0, booking_fee_cents: 0 };
               return (
                 <tr key={plan}>
                   <td className="px-4 py-3 font-medium">{planLabel(plan)}</td>
@@ -215,10 +215,12 @@ export function PlanConfigurationCard() {
                       type="number"
                       min={0}
                       step="0.01"
-                      value={(p.platform_fee_bps / 100).toString()}
-                      onChange={(e) => setPricing(plan, { platform_fee_bps: Math.round(parseFloat(e.target.value || "0") * 100) })}
+                      placeholder="0,00"
+                      value={((p.booking_fee_cents ?? 0) / 100).toString()}
+                      onChange={(e) => setPricing(plan, { booking_fee_cents: Math.round(parseFloat(e.target.value || "0") * 100) })}
                       className="h-9 w-32"
                     />
+                    <p className="mt-1 text-[10px] text-muted-foreground">Vast bedrag · 0 = geen fee</p>
                   </td>
                 </tr>
               );
