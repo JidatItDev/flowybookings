@@ -21,7 +21,7 @@ export const MOLLIE_CONNECT_SCOPES = [
   "onboarding.read",
 ].join(" ");
 
-export const APPLICATION_FEE_DESCRIPTION = "FlowyBookings platformkosten";
+export const APPLICATION_FEE_DESCRIPTION = "FlowyBookings boekingsfee";
 
 // Mollie hard-caps applicationFee at ~10% / €25 by default; we cap at €2 by
 // default so we stay safely within Mollie's "no extra approval" zone for new
@@ -29,19 +29,38 @@ export const APPLICATION_FEE_DESCRIPTION = "FlowyBookings platformkosten";
 export const APPLICATION_FEE_MAX_CENTS = 200; // €2.00
 export const APPLICATION_FEE_MAX_PERCENT = 10; // 10% absolute ceiling
 
-/** Per-plan fee percentage charged on each booking deposit. */
-export const PLAN_FEE_PERCENT: Record<string, number> = {
+/**
+ * Per-plan FIXED booking fee in cents (replaces the old percentage model).
+ * - trial   = €0   (geen fee tijdens trial)
+ * - starter = €0,50
+ * - pro     = €0,30
+ * - premium = €0   (geen transactiekosten)
+ *
+ * Mirrored in DB table `plan_pricing.booking_fee_cents`. Code uses these
+ * constants as a safe fallback when the DB row cannot be loaded.
+ */
+export const PLAN_BOOKING_FEE_CENTS: Record<string, number> = {
   trial: 0,
-  starter: 1.5,
-  pro: 1.0,
-  premium: 0.5,
+  starter: 50,
+  pro: 30,
+  premium: 0,
 };
 
-export const APPLICATION_FEE_PERCENT_DEFAULT = PLAN_FEE_PERCENT.starter;
+export const BOOKING_FEE_CENTS_DEFAULT = PLAN_BOOKING_FEE_CENTS.starter;
 
-export function feePercentForPlan(plan: string | null | undefined): number {
-  if (!plan) return APPLICATION_FEE_PERCENT_DEFAULT;
-  return PLAN_FEE_PERCENT[plan] ?? APPLICATION_FEE_PERCENT_DEFAULT;
+/** Returns the fixed booking fee (in cents) for a given plan. */
+export function bookingFeeCentsForPlan(plan: string | null | undefined): number {
+  if (!plan) return BOOKING_FEE_CENTS_DEFAULT;
+  return PLAN_BOOKING_FEE_CENTS[plan] ?? BOOKING_FEE_CENTS_DEFAULT;
+}
+
+/**
+ * @deprecated The percentage-based model has been replaced by a fixed
+ * per-booking fee. Kept only for binary compatibility with any in-flight
+ * imports. New code MUST use `bookingFeeCentsForPlan`.
+ */
+export function feePercentForPlan(_plan: string | null | undefined): number {
+  return 0;
 }
 
 export type MollieConnectMetadata = {
