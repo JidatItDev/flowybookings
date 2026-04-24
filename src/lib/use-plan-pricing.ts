@@ -74,3 +74,24 @@ export function planMonthlyAmount(
   if (!row) return null;
   return row.monthly_price_cents / 100;
 }
+
+/** Format the fixed booking fee for a plan, or "Geen boekingsfee" / "" if unknown. */
+export function formatBookingFee(
+  pricing: PlanPricingMap | undefined,
+  plan: string | null | undefined,
+  locale = "nl-NL",
+): string {
+  if (!plan || !pricing) return "";
+  const row = pricing[plan as DbPlan];
+  if (!row) return "";
+  if (!row.booking_fee_cents || row.booking_fee_cents <= 0) {
+    return locale.startsWith("en") ? "No booking fee" : "Geen boekingsfee";
+  }
+  const formatted = new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: row.currency || "EUR",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(row.booking_fee_cents / 100);
+  return locale.startsWith("en") ? `${formatted} per booking` : `${formatted} per boeking`;
+}
