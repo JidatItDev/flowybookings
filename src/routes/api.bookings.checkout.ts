@@ -17,9 +17,9 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   APPLICATION_FEE_DESCRIPTION,
   MOLLIE_CONNECT_API_BASE,
-  computeApplicationFeeCents,
-  feePercentForPlan,
+  bookingFeeCentsForPlan,
   getActiveMollieAccessToken,
+  resolveApplicationFeeCents,
 } from "@/lib/mollie-connect";
 
 const corsHeaders = {
