@@ -76,7 +76,7 @@ export function SubscriptionPanel({ shop }: { shop: Shop }) {
         subscription_status: status,
         plan_expires_at: expiresAt ? new Date(expiresAt + "T23:59:59Z").toISOString() : null,
         next_billing_at: nextBilling ? new Date(nextBilling + "T00:00:00Z").toISOString() : null,
-        platform_fee_bps_override: feeOverride === "" ? null : Math.round(parseFloat(feeOverride) * 100),
+        booking_fee_cents_override: feeOverride === "" ? null : Math.max(0, Math.round(parseFloat(feeOverride) * 100)),
         subscription_notes: notes || null,
       };
       const { error } = await supabase.from("shops").update(updates).eq("id", shop.id);
@@ -139,8 +139,8 @@ export function SubscriptionPanel({ shop }: { shop: Shop }) {
           <Input id="nb" type="date" value={nextBilling} onChange={(e) => setNextBilling(e.target.value)} className="mt-1" />
         </div>
         <div>
-          <Label className="text-xs" htmlFor="fee">Platform fee % (override, leeg = standaard)</Label>
-          <Input id="fee" type="number" step="0.01" min="0" max="100" value={feeOverride} onChange={(e) => setFeeOverride(e.target.value)} className="mt-1" />
+          <Label className="text-xs" htmlFor="fee">Boekingsfee € override (leeg = standaard)</Label>
+          <Input id="fee" type="number" step="0.01" min="0" max="10" value={feeOverride} onChange={(e) => setFeeOverride(e.target.value)} className="mt-1" placeholder="bv. 0,50" />
         </div>
         <div>
           <Label className="text-xs">Mollie subscription ID</Label>
