@@ -312,6 +312,7 @@ function UpgradePage() {
       </div>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">{t("upgrade.guarantee")}</p>
+      <p className="mt-2 text-center text-xs text-muted-foreground">{t("upgrade.instantNote")}</p>
       <p className="mt-2 text-center text-xs text-muted-foreground">{t("upgrade.billingNotice")}</p>
 
       {/* FAQ */}
