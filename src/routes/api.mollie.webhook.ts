@@ -11,6 +11,12 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BILLING_ENTITY, PLATFORM_PROVIDER, nextExpiry, type BillingCycle } from "@/lib/platform-billing";
 import type { DbPlan } from "@/lib/plans";
 import { enqueueBookingEmail } from "@/lib/email/enqueue-booking-email";
+import {
+  getMolliePlatformKeys,
+  mollieAuthHeader,
+  mollieFetchWithFallback,
+  type MollieKeyKind,
+} from "@/lib/mollie-platform";
 
 type MolliePayment = {
   id: string;
