@@ -15,6 +15,11 @@ export type PlatformBillingStatus = {
   apiKeyPresent: boolean;
   apiKeyMode: "test" | "live" | "unknown" | "missing";
   apiKeyMasked: string | null;
+  // Optional legacy key kept for backwards compatibility during a key rotation.
+  // When present, existing payments / subscriptions / customers created under
+  // the previous key remain reachable via the fallback fetch helper.
+  legacyApiKeyPresent: boolean;
+  legacyApiKeyMasked: string | null;
   clientIdPresent: boolean;
   clientSecretPresent: boolean;
   webhookSecretPresent: boolean;
