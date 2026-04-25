@@ -1,9 +1,27 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { CheckCircle2, AlertCircle, Wallet, Plug, Loader2, Info, ExternalLink } from "lucide-react";
+import {
+  CheckCircle2,
+  AlertCircle,
+  Wallet,
+  Plug,
+  Loader2,
+  Info,
+  ExternalLink,
+  ShieldAlert,
+  Building2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
 import {
@@ -11,6 +29,7 @@ import {
   shopPaymentProviderQuery,
   type ConnectionStatus,
 } from "@/lib/payment-providers";
+import { useShopContext } from "@/lib/shop-context";
 import { assertNotImpersonating, useImpersonationReadOnly } from "@/components/ImpersonationBanner";
 
 interface Props {
