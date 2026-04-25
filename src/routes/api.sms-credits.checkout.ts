@@ -7,6 +7,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { PLATFORM_PROVIDER } from "@/lib/platform-billing";
+import { getMolliePrimaryKey, mollieAuthHeader } from "@/lib/mollie-platform";
 import { getSmsPackage } from "@/lib/sms-packages";
 
 const corsHeaders = {
