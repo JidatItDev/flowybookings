@@ -83,7 +83,8 @@ export const Route = createFileRoute("/api/sms-credits/checkout")({
           }
 
           // 2) Real Mollie payment, or mock URL.
-          const mollieKey = process.env.MOLLIE_API_KEY;
+          // New one-off payments always go through the primary key.
+          const mollieKey = getMolliePrimaryKey();
           let checkoutUrl: string;
           let mollieId: string | null = null;
           let mocked = false;
@@ -92,7 +93,7 @@ export const Route = createFileRoute("/api/sms-credits/checkout")({
             const mollieRes = await fetch("https://api.mollie.com/v2/payments", {
               method: "POST",
               headers: {
-                Authorization: `Bearer ${mollieKey}`,
+                Authorization: mollieAuthHeader(mollieKey),
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
