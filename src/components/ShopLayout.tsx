@@ -273,3 +273,148 @@ function SidebarFooter() {
     </div>
   );
 }
+
+type AccountMenuProps = {
+  displayName: string;
+  initials: string;
+  shopName: string | null;
+  planText: string;
+  isStaffOnly: boolean;
+  onNavigate: (to: string) => void;
+  onSignOut: () => void | Promise<void>;
+};
+
+function AccountMenu(props: AccountMenuProps) {
+  const isMobile = useIsMobile();
+  const { t } = useT();
+  const [open, setOpen] = useState(false);
+
+  const items: Array<{ key: string; label: string; icon: typeof LayoutDashboard; to: string }> = [
+    { key: "dashboard", label: t("shopNav.dashboard"), icon: LayoutDashboard, to: "/shop" },
+  ];
+  if (!props.isStaffOnly) {
+    items.push({ key: "settings", label: t("shopNav.settings"), icon: SettingsIcon, to: "/shop/settings" });
+    items.push({ key: "subscription", label: t("shopNav.subscription"), icon: CreditCard, to: "/shop/billing" });
+  }
+  items.push({ key: "support", label: t("shopNav.support"), icon: LifeBuoyIcon, to: "/support" });
+
+  const Trigger = (
+    <button
+      type="button"
+      aria-label={t("account.menuLabel")}
+      onClick={() => setOpen((v) => !v)}
+      className="flex items-center gap-2 rounded-full border border-border bg-card pl-1 pr-3 py-1 text-xs font-medium transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-primary/30"
+    >
+      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-warm text-xs font-semibold text-pink-foreground">
+        {props.initials}
+      </span>
+      <span className="hidden max-w-[140px] truncate sm:inline">
+        {props.shopName ?? props.displayName}
+      </span>
+      <span className="hidden rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary sm:inline">
+        {props.planText}
+      </span>
+    </button>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        {Trigger}
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetContent
+            side="bottom"
+            className="max-h-[92dvh] overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom,0px)] data-[state=open]:animate-[slide-up_320ms_cubic-bezier(0.22,1,0.36,1)]"
+          >
+            <div className="mx-auto mt-2 mb-1 h-1.5 w-10 rounded-full bg-muted" aria-hidden="true" />
+            <SheetHeader className="px-5 pb-3 pt-2 text-left">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-warm text-base font-semibold text-pink-foreground">
+                  {props.initials}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <SheetTitle className="truncate text-base">
+                    {props.shopName ?? props.displayName}
+                  </SheetTitle>
+                  <p className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                    <span className="truncate">{props.displayName}</span>
+                    <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary">
+                      {props.planText}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </SheetHeader>
+            <div className="border-t border-border px-3 py-2">
+              {items.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      props.onNavigate(item.to);
+                    }}
+                    className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium text-foreground hover:bg-accent"
+                  >
+                    <Icon className="h-5 w-5 text-muted-foreground" />
+                    {item.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="border-t border-border px-3 py-2 pb-4">
+              <button
+                type="button"
+                onClick={async () => {
+                  setOpen(false);
+                  await props.onSignOut();
+                }}
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-semibold text-destructive hover:bg-destructive/10"
+              >
+                <LogOut className="h-5 w-5" />
+                {t("auth.signOut")}
+              </button>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </>
+    );
+  }
+
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>{Trigger}</DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuLabel className="flex flex-col gap-0.5">
+          <span className="text-[10px] font-normal uppercase tracking-wider text-muted-foreground">
+            {t("auth.signedInAs")}
+          </span>
+          <span className="truncate text-sm font-medium text-foreground">{props.displayName}</span>
+          {props.shopName && (
+            <span className="text-xs text-muted-foreground">
+              {props.shopName} · <span className="font-semibold text-primary">{props.planText}</span>
+            </span>
+          )}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {items.map((item) => {
+          const Icon = item.icon;
+          return (
+            <DropdownMenuItem key={item.key} onClick={() => props.onNavigate(item.to)}>
+              <Icon className="h-4 w-4" /> {item.label}
+            </DropdownMenuItem>
+          );
+        })}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => props.onSignOut()}
+          className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+        >
+          <LogOut className="h-4 w-4" /> {t("auth.signOut")}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
