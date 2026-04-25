@@ -145,6 +145,10 @@ export const Route = createFileRoute("/api/mollie-connect/callback")({
           oauth_error: null,
           last_refresh_at: null,
           last_refresh_error: null,
+          // Force the user to verify in the UI that they picked the right
+          // Mollie organisation. Cleared to `true` by the confirmation step.
+          connection_confirmed: false,
+          confirmed_at: null,
         };
 
         await supabaseAdmin
