@@ -211,48 +211,20 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
             <div className="w-56">
               <ShopPicker />
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2 rounded-full border border-border bg-card pl-1 pr-3 py-1 text-xs font-medium hover:bg-accent">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-warm text-xs font-semibold text-pink-foreground">
-                  {initials}
-                </span>
-                <span className="hidden max-w-[140px] truncate sm:inline">
-                  {activeShop?.name ?? displayName}
-                </span>
-                <span className="hidden rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary sm:inline">
-                  {planText}
-                </span>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuLabel className="flex flex-col gap-0.5">
-                  <span className="text-[10px] font-normal uppercase tracking-wider text-muted-foreground">
-                    {t("auth.signedInAs")}
-                  </span>
-                  <span className="truncate text-sm font-medium text-foreground">{displayName}</span>
-                  {activeShop && (
-                    <span className="text-xs text-muted-foreground">
-                      {activeShop.name} · <span className="font-semibold text-primary">{planText}</span>
-                    </span>
-                  )}
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {!isStaffOnly && (
-                  <DropdownMenuItem onClick={() => navigate({ to: "/shop/settings" })}>
-                    <SettingsIcon className="h-4 w-4" /> {t("shopNav.settings")}
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={() => navigate({ to: "/support" })}>
-                  <LifeBuoyIcon className="h-4 w-4" /> {t("shopNav.support")}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => signOut()}
-                  className="text-destructive focus:bg-destructive/10 focus:text-destructive"
-                >
-                  <LogOut className="h-4 w-4" /> {t("auth.signOut")}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <AccountMenu
+              displayName={displayName}
+              initials={initials}
+              shopName={activeShop?.name ?? null}
+              planText={planText}
+              isStaffOnly={isStaffOnly}
+              onNavigate={(to) => navigate({ to })}
+              onSignOut={async () => {
+                await signOut();
+                if (typeof window !== "undefined") {
+                  window.location.assign("/");
+                }
+              }}
+            />
           </div>
         </header>
 
