@@ -8,6 +8,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { PLATFORM_PROVIDER, BILLING_ENTITY } from "@/lib/platform-billing";
+import { getMolliePrimaryKey, getMollieLegacyKey, mollieAuthHeader } from "@/lib/mollie-platform";
 
 export type PlatformBillingStatus = {
   // Secret presence (never the raw values).
