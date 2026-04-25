@@ -235,7 +235,7 @@ export const runPlatformBillingHealthCheck = createServerFn({ method: "POST" })
   .inputValidator((input: { accessToken: string }) => input)
   .handler(async ({ data }): Promise<PlatformBillingHealthResult> => {
     const user = await assertSuperAdmin(data.accessToken);
-    const apiKey = process.env.MOLLIE_API_KEY;
+    const apiKey = getMolliePrimaryKey();
     const checkedAt = new Date().toISOString();
 
     if (!apiKey) {
