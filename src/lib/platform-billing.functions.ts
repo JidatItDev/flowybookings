@@ -8,12 +8,18 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { PLATFORM_PROVIDER, BILLING_ENTITY } from "@/lib/platform-billing";
+import { getMolliePrimaryKey, getMollieLegacyKey, mollieAuthHeader } from "@/lib/mollie-platform";
 
 export type PlatformBillingStatus = {
   // Secret presence (never the raw values).
   apiKeyPresent: boolean;
   apiKeyMode: "test" | "live" | "unknown" | "missing";
   apiKeyMasked: string | null;
+  // Optional legacy key kept for backwards compatibility during a key rotation.
+  // When present, existing payments / subscriptions / customers created under
+  // the previous key remain reachable via the fallback fetch helper.
+  legacyApiKeyPresent: boolean;
+  legacyApiKeyMasked: string | null;
   clientIdPresent: boolean;
   clientSecretPresent: boolean;
   webhookSecretPresent: boolean;
@@ -69,7 +75,8 @@ export const getPlatformBillingStatus = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<PlatformBillingStatus> => {
     await assertSuperAdmin(data.accessToken);
 
-    const apiKey = process.env.MOLLIE_API_KEY;
+    const apiKey = getMolliePrimaryKey() ?? undefined;
+    const legacyKey = getMollieLegacyKey() ?? undefined;
     const clientId = process.env.MOLLIE_CLIENT_ID;
     const clientSecret = process.env.MOLLIE_CLIENT_SECRET;
     const webhookSecret = process.env.MOLLIE_WEBHOOK_SECRET;
@@ -142,6 +149,8 @@ export const getPlatformBillingStatus = createServerFn({ method: "POST" })
       apiKeyPresent: Boolean(apiKey),
       apiKeyMode: mode,
       apiKeyMasked: maskKey(apiKey),
+      legacyApiKeyPresent: Boolean(legacyKey),
+      legacyApiKeyMasked: maskKey(legacyKey),
       clientIdPresent: Boolean(clientId),
       clientSecretPresent: Boolean(clientSecret),
       webhookSecretPresent: Boolean(webhookSecret),
@@ -226,7 +235,7 @@ export const runPlatformBillingHealthCheck = createServerFn({ method: "POST" })
   .inputValidator((input: { accessToken: string }) => input)
   .handler(async ({ data }): Promise<PlatformBillingHealthResult> => {
     const user = await assertSuperAdmin(data.accessToken);
-    const apiKey = process.env.MOLLIE_API_KEY;
+    const apiKey = getMolliePrimaryKey();
     const checkedAt = new Date().toISOString();
 
     if (!apiKey) {
@@ -254,7 +263,7 @@ export const runPlatformBillingHealthCheck = createServerFn({ method: "POST" })
 
     try {
       const res = await fetch("https://api.mollie.com/v2/methods?resource=payments", {
-        headers: { Authorization: `Bearer ${apiKey}` },
+        headers: { Authorization: mollieAuthHeader(apiKey) },
       });
       if (!res.ok) {
         const txt = await res.text();

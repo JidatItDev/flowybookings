@@ -10,6 +10,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { PLATFORM_PROVIDER, BILLING_ENTITY, priceFor, type BillingCycle } from "@/lib/platform-billing";
+import {
+  getMolliePrimaryKey,
+  mollieAuthHeader,
+  mollieFetchWithFallback,
+} from "@/lib/mollie-platform";
 import type { DbPlan } from "@/lib/plans";
 
 const ALLOWED_PLANS = new Set(["starter", "pro", "premium"]);
@@ -96,7 +101,7 @@ export const Route = createFileRoute("/api/billing/plan-checkout")({
           //    For real recurring billing we first ensure a Mollie Customer exists for this shop,
           //    then create a "first" payment which captures a SEPA/card mandate. The webhook
           //    will later create the actual mollie_subscription on success.
-          const mollieKey = process.env.MOLLIE_API_KEY;
+          const mollieKey = getMolliePrimaryKey();
           let checkoutUrl: string;
           let mollieId: string | null = null;
           let mocked = false;
@@ -108,9 +113,10 @@ export const Route = createFileRoute("/api/billing/plan-checkout")({
             let mollieCustomerId = (onboarding.mollie_customer_id as string | undefined) ?? null;
 
             if (!mollieCustomerId) {
+              // New customers are ALWAYS created on the primary key.
               const custRes = await fetch("https://api.mollie.com/v2/customers", {
                 method: "POST",
-                headers: { Authorization: `Bearer ${mollieKey}`, "Content-Type": "application/json" },
+                headers: { Authorization: mollieAuthHeader(mollieKey), "Content-Type": "application/json" },
                 body: JSON.stringify({
                   name: shop.name,
                   email: userRes.user.email ?? undefined,
@@ -131,23 +137,26 @@ export const Route = createFileRoute("/api/billing/plan-checkout")({
               }
             }
 
-            const mollieRes = await fetch(`https://api.mollie.com/v2/customers/${mollieCustomerId}/payments`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${mollieKey}`,
-                "Content-Type": "application/json",
+            // The customer may have been created under the legacy key — use the
+            // fallback fetch so the new payment is created under whichever key
+            // owns the existing customer object.
+            const fallback = await mollieFetchWithFallback(
+              `https://api.mollie.com/v2/customers/${mollieCustomerId}/payments`,
+              {
+                method: "POST",
+                body: JSON.stringify({
+                  amount: { currency: "EUR", value: (amount / 100).toFixed(2) },
+                  description: `FlowyBookings ${plan.toUpperCase()} abonnement — ${shop.name}`,
+                  redirectUrl: `${origin}/shop/settings?billing=return&payment=${payment.id}`,
+                  webhookUrl: `${origin}/api/mollie/webhook`,
+                  sequenceType: "first",
+                  metadata: { payment_id: payment.id, shop_id: shop.id, plan, cycle, kind: "subscription_first", mollie_customer_id: mollieCustomerId },
+                }),
               },
-              body: JSON.stringify({
-                amount: { currency: "EUR", value: (amount / 100).toFixed(2) },
-                description: `FlowyBookings ${plan.toUpperCase()} abonnement — ${shop.name}`,
-                redirectUrl: `${origin}/shop/settings?billing=return&payment=${payment.id}`,
-                webhookUrl: `${origin}/api/mollie/webhook`,
-                sequenceType: "first",
-                metadata: { payment_id: payment.id, shop_id: shop.id, plan, cycle, kind: "subscription_first", mollie_customer_id: mollieCustomerId },
-              }),
-            });
-            if (!mollieRes.ok) {
-              const errText = await mollieRes.text();
+            );
+            const mollieRes = fallback?.response;
+            if (!mollieRes || !mollieRes.ok) {
+              const errText = mollieRes ? await mollieRes.text() : "no_mollie_response";
               await supabaseAdmin
                 .from("payments")
                 .update({ status: "failed", metadata: { mollie_error: errText, plan, cycle } })

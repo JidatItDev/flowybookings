@@ -315,6 +315,20 @@ function StatusGrid({
           </span>
         }
       />
+      {status.legacyApiKeyPresent && (
+        <Field
+          icon={<KeyRound className="h-3.5 w-3.5" />}
+          label="MOLLIE_API_KEY_LEGACY"
+          value={
+            <span className="flex items-center gap-2 font-mono text-xs">
+              {status.legacyApiKeyMasked}
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                fallback
+              </span>
+            </span>
+          }
+        />
+      )}
       <Field
         label={t("platformBilling.field.clientId")}
         value={<PresenceBadge present={status.clientIdPresent} />}
