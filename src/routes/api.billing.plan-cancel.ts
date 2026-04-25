@@ -9,6 +9,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BILLING_ENTITY } from "@/lib/platform-billing";
+import { getMolliePlatformKeys, mollieFetchWithFallback } from "@/lib/mollie-platform";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
