@@ -125,6 +125,56 @@ export function MollieConnectCard({ shopId }: Props) {
   const onboarding = isDisconnected ? "not_started" : onboardingRaw;
   const meta = (provider?.metadata ?? {}) as Record<string, unknown>;
   const orgName = isDisconnected ? null : ((meta.organization_name as string | undefined) ?? null);
+  const orgId = isDisconnected ? null : ((meta.organization_id as string | undefined) ?? null);
+  // Treat anything truthy except `false` as confirmed for backwards compatibility:
+  // pre-existing connections (before this UX) have no flag and stay confirmed.
+  const isConfirmed = meta.connection_confirmed !== false;
+  const needsConfirmation = isConnected && meta.connection_confirmed === false;
+
+  // Mark confirmation. RLS policy `shop_payment_providers_owner_update` lets the
+  // shop owner set this flag without a server round-trip — no new endpoint needed.
+  const confirmConnection = useMutation({
+    mutationFn: async () => {
+      assertNotImpersonating();
+      if (!provider) throw new Error("no_provider");
+      const newMeta = { ...meta, connection_confirmed: true, confirmed_at: new Date().toISOString() };
+      const { error } = await (supabase as any)
+        .from("shop_payment_providers")
+        .update({ metadata: newMeta })
+        .eq("id", provider.id);
+      if (error) throw error;
+    },
+    onSuccess: async () => {
+      toast.success(t("mollie.confirm.confirmed"));
+      await qc.invalidateQueries({ queryKey: paymentProviderKeys.byShop(shopId) });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // "No, reconnect" → disconnect existing, then immediately re-open the
+  // pre-connect dialog. Reuses the existing disconnect + startConnect flows.
+  const rejectAndReconnect = useMutation({
+    mutationFn: async () => {
+      assertNotImpersonating();
+      const { data: session } = await supabase.auth.getSession();
+      const token = session.session?.access_token;
+      if (!token) throw new Error("Niet ingelogd");
+      const res = await fetch("/api/mollie-connect/disconnect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ shop_id: shopId }),
+      });
+      const data = (await res.json()) as { ok?: boolean; error?: string };
+      if (!res.ok || !data.ok) throw new Error(data.error || "disconnect_failed");
+    },
+    onSuccess: async () => {
+      qc.removeQueries({ queryKey: paymentProviderKeys.byShop(shopId) });
+      await qc.refetchQueries({ queryKey: paymentProviderKeys.byShop(shopId) });
+      toast.info(t("mollie.confirm.reconnecting"));
+      setPreConnectOpen(true);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-6">
