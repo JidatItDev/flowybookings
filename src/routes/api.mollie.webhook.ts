@@ -74,15 +74,17 @@ export const Route = createFileRoute("/api/mollie/webhook")({
             .eq("provider_payment_id", mollieId)
             .maybeSingle();
 
-          // Fetch real Mollie payment (only when key is present + we recognise the id).
-          const mollieKey = process.env.MOLLIE_API_KEY;
+          // Fetch real Mollie payment. Existing payments may have been created
+          // under either the primary OR the legacy key — the fallback helper
+          // tries both transparently.
+          const hasMollieKey = getMolliePlatformKeys().length > 0;
           let mollie: MolliePayment | null = null;
-          if (mollieKey && mollieId.startsWith("tr_")) {
-            const res = await fetch(`https://api.mollie.com/v2/payments/${mollieId}`, {
-              headers: { Authorization: `Bearer ${mollieKey}` },
-            });
-            if (res.ok) {
-              mollie = (await res.json()) as MolliePayment;
+          let usedKeyKind: MollieKeyKind | null = null;
+          if (hasMollieKey && mollieId.startsWith("tr_")) {
+            const result = await mollieFetchWithFallback(`https://api.mollie.com/v2/payments/${mollieId}`);
+            if (result?.response.ok) {
+              mollie = (await result.response.json()) as MolliePayment;
+              usedKeyKind = result.usedKind;
             }
           }
 
