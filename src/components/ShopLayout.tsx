@@ -324,7 +324,7 @@ function AccountMenu(props: AccountMenuProps) {
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetContent
             side="bottom"
-            className="max-h-[92dvh] overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom,0px)] data-[state=open]:animate-[slide-up_320ms_cubic-bezier(0.22,1,0.36,1)]"
+            className="max-h-[92dvh] overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom,0px)]"
           >
             <div className="mx-auto mt-2 mb-1 h-1.5 w-10 rounded-full bg-muted" aria-hidden="true" />
             <SheetHeader className="px-5 pb-3 pt-2 text-left">
