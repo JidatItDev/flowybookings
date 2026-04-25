@@ -841,6 +841,30 @@ export const nl: Record<string, string> = {
   "mollie.notConfigured": "Mollie Connect is niet geconfigureerd op het platform",
   "mollie.reconnect": "Opnieuw koppelen",
 
+  // Pre-connect screen
+  "mollie.preConnect.title": "Koppel je betalingen",
+  "mollie.preConnect.subtitle": "Eén keer koppelen — daarna ontvang je betalingen direct op je eigen Mollie-account.",
+  "mollie.preConnect.benefit1": "Ontvang betalingen direct op je eigen rekening",
+  "mollie.preConnect.benefit2": "Laat klanten online betalen (iDEAL, kaart, Bancontact)",
+  "mollie.preConnect.benefit3": "Minder no-shows door aanbetalingen",
+  "mollie.preConnect.warningTitle": "Let op — kies straks het juiste bedrijf in Mollie",
+  "mollie.preConnect.warningBody": "Mollie laat je een organisatie kiezen. Selecteer alleen de organisatie die hoort bij:",
+  "mollie.preConnect.cancel": "Annuleren",
+  "mollie.preConnect.continue": "Verder naar Mollie",
+
+  // Post-callback confirmation
+  "mollie.confirm.title": "Betaling gekoppeld",
+  "mollie.confirm.subtitle": "Controleer of je het juiste bedrijf hebt gekoppeld.",
+  "mollie.confirm.connectedWith": "Gekoppeld met",
+  "mollie.confirm.question": "Klopt dit?",
+  "mollie.confirm.yes": "Ja, doorgaan",
+  "mollie.confirm.no": "Nee, opnieuw koppelen",
+  "mollie.confirm.confirmed": "Koppeling bevestigd",
+  "mollie.confirm.reconnecting": "Verbinding wordt opnieuw gestart…",
+  "mollie.confirm.pendingPill": "Bevestiging vereist",
+  "mollie.dashboard.activeTitle": "Betalingen actief",
+  "mollie.dashboard.connectedWith": "Verbonden met",
+
   // ── Admin: Providers ──
   "adminProviders.title": "Betalingsproviders",
   "adminProviders.description": "Mollie Connect-status en platformkosten per shop.",
