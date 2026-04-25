@@ -290,6 +290,8 @@ export const en: Record<string, string> = {
   "shopNav.upgradePremium": "Upgrade to Premium",
   "shopNav.upgradeSub": "Unlock multi-location, API access and priority support.",
   "shopNav.seePlans": "See plans",
+  "shopNav.subscription": "Subscription",
+  "account.menuLabel": "Open account menu",
 
   // ── Admin sidebar / nav ──
   "adminNav.overview": "Overview",
