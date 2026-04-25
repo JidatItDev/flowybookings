@@ -205,55 +205,79 @@ export function MollieConnectCard({ shopId }: Props) {
       {isLoading ? (
         <div className="mt-5 h-24 animate-pulse rounded-xl bg-muted" />
       ) : needsConfirmation ? (
-        // ── POST-CONNECT CONFIRMATION ─────────────────────────────────────
-        // The OAuth callback completed but the user must verify the chosen
-        // Mollie organisation matches their shop before we treat the link as
-        // active.
-        <div className="mt-5 space-y-4">
-          <div className="rounded-xl border border-border bg-mint/20 p-4">
-            <div className="flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-mint-foreground" />
-              <div>
-                <p className="text-sm font-semibold text-foreground">{t("mollie.confirm.title")}</p>
-                <p className="text-xs text-muted-foreground">{t("mollie.confirm.subtitle")}</p>
+        // Premium, human confirmation step shown right after returning from
+        // Mollie. Verifies the merchant linked the correct business.
+        <div className="mt-5">
+          <div className="overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-mint/30 via-card to-card shadow-soft">
+            <div className="space-y-5 p-5 sm:p-6">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 flex-none items-center justify-center rounded-full bg-mint text-mint-foreground">
+                  <CheckCircle2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-base font-semibold text-foreground">
+                    {t("mollie.confirm.title")}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {t("mollie.confirm.subtitle")}
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="mt-3 rounded-lg border border-border bg-background p-3">
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                {t("mollie.confirm.connectedWith")}
-              </p>
-              <p className="mt-1 flex items-center gap-2 text-sm font-semibold">
-                <Building2 className="h-4 w-4 text-primary" />
-                {orgName ?? "—"}
-              </p>
-              {orgId && (
-                <p className="mt-0.5 text-xs text-muted-foreground">#{orgId}</p>
-              )}
-            </div>
-            <p className="mt-3 text-sm font-medium">{t("mollie.confirm.question")}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button
-                onClick={() => confirmConnection.mutate()}
-                disabled={confirmConnection.isPending || readOnly}
-                title={readOnlyTitle}
-                variant="hero"
-              >
-                {confirmConnection.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4" />
-                )}
-                {t("mollie.confirm.yes")}
-              </Button>
-              <Button
-                onClick={() => rejectAndReconnect.mutate()}
-                disabled={rejectAndReconnect.isPending || readOnly}
-                title={readOnlyTitle}
-                variant="outline"
-              >
-                {rejectAndReconnect.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                {t("mollie.confirm.no")}
-              </Button>
+
+              <div className="rounded-xl border border-border bg-background p-4 shadow-soft">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 flex-none items-center justify-center rounded-full bg-gradient-brand text-base font-semibold text-primary-foreground shadow-glow">
+                    {getInitials(orgName)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-semibold text-foreground">
+                      {orgName ?? "—"}
+                    </p>
+                    {orgId && (
+                      <p className="truncate text-xs text-muted-foreground">
+                        <span className="font-medium">{t("mollie.confirm.orgIdLabel")}:</span>{" "}
+                        <span className="font-mono">{orgId}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  {t("mollie.confirm.question")}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t("mollie.confirm.safetyHint")}
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Button
+                  onClick={() => confirmConnection.mutate()}
+                  disabled={confirmConnection.isPending || readOnly}
+                  title={readOnlyTitle}
+                  variant="hero"
+                  size="lg"
+                  className="w-full sm:w-auto"
+                >
+                  {confirmConnection.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : null}
+                  {t("mollie.confirm.yes")}
+                  {!confirmConnection.isPending && <ArrowRight className="h-4 w-4" />}
+                </Button>
+                <Button
+                  onClick={() => rejectAndReconnect.mutate()}
+                  disabled={rejectAndReconnect.isPending || readOnly}
+                  title={readOnlyTitle}
+                  variant="ghost"
+                  className="w-full sm:w-auto"
+                >
+                  {rejectAndReconnect.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {t("mollie.confirm.no")}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
