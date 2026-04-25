@@ -243,32 +243,35 @@ async function handleSubscriptionLifecycle(opts: {
       .maybeSingle();
 
     const onboarding = ((prevShop?.onboarding ?? {}) as Record<string, unknown>);
-    const mollieKey = process.env.MOLLIE_API_KEY;
+    const hasMollie = getMolliePlatformKeys().length > 0;
     const mollieCustomerId =
       (opts.metadata.mollie_customer_id as string | undefined) ??
       (onboarding.mollie_customer_id as string | undefined) ??
       null;
 
     // If this was a sequenceType:first payment, create the actual recurring Subscription on Mollie now.
+    // The customer may live under either platform key — let the helper choose.
     let mollieSubscriptionId: string | null = (onboarding.mollie_subscription_id as string | undefined) ?? null;
-    if (mollieKey && mollieCustomerId && !mollieSubscriptionId && opts.metadata.kind === "subscription_first") {
+    if (hasMollie && mollieCustomerId && !mollieSubscriptionId && opts.metadata.kind === "subscription_first") {
       const amountValue = ((subscriptionAmountCents(plan, cycle)) / 100).toFixed(2);
-      const subRes = await fetch(`https://api.mollie.com/v2/customers/${mollieCustomerId}/subscriptions`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${mollieKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: { currency: "EUR", value: amountValue },
-          interval: cycle === "yearly" ? "12 months" : "1 month",
-          description: `FlowyBookings ${plan.toUpperCase()} abonnement`,
-          webhookUrl: new URL("/api/mollie/webhook", process.env.APP_URL ?? "https://www.flowybookings.com").toString(),
-          metadata: { shop_id: opts.shopId, plan, cycle, kind: "subscription_recurring" },
-        }),
-      });
-      if (subRes.ok) {
-        const sub = (await subRes.json()) as { id: string };
+      const result = await mollieFetchWithFallback(
+        `https://api.mollie.com/v2/customers/${mollieCustomerId}/subscriptions`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            amount: { currency: "EUR", value: amountValue },
+            interval: cycle === "yearly" ? "12 months" : "1 month",
+            description: `FlowyBookings ${plan.toUpperCase()} abonnement`,
+            webhookUrl: new URL("/api/mollie/webhook", process.env.APP_URL ?? "https://www.flowybookings.com").toString(),
+            metadata: { shop_id: opts.shopId, plan, cycle, kind: "subscription_recurring" },
+          }),
+        },
+      );
+      if (result?.response.ok) {
+        const sub = (await result.response.json()) as { id: string };
         mollieSubscriptionId = sub.id;
-      } else {
-        console.error("[mollie/webhook] subscription_create_failed", await subRes.text());
+      } else if (result) {
+        console.error("[mollie/webhook] subscription_create_failed", await result.response.text());
       }
     }
 
