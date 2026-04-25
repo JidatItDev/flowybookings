@@ -28,6 +28,7 @@ import { useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { NotificationBell } from "@/components/NotificationBell";
 import { usePendingBilling } from "@/lib/use-pending-billing";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +37,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { LogOut, Settings as SettingsIcon, LifeBuoy as LifeBuoyIcon } from "lucide-react";
 
 type NavItem = { to: string; labelKey: string; icon: typeof LayoutDashboard; exact?: boolean; ownerOnly?: boolean };
