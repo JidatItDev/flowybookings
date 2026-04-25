@@ -263,7 +263,7 @@ export const runPlatformBillingHealthCheck = createServerFn({ method: "POST" })
 
     try {
       const res = await fetch("https://api.mollie.com/v2/methods?resource=payments", {
-        headers: { Authorization: `Bearer ${apiKey}` },
+        headers: { Authorization: mollieAuthHeader(apiKey) },
       });
       if (!res.ok) {
         const txt = await res.text();
