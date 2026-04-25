@@ -39,20 +39,15 @@ export const APPLICATION_FEE_MAX_PERCENT = 10; // 10% absolute ceiling
  * Mirrored in DB table `plan_pricing.booking_fee_cents`. Code uses these
  * constants as a safe fallback when the DB row cannot be loaded.
  */
-export const PLAN_BOOKING_FEE_CENTS: Record<string, number> = {
-  trial: 0,
-  starter: 50,
-  pro: 30,
-  premium: 0,
-};
-
-export const BOOKING_FEE_CENTS_DEFAULT = PLAN_BOOKING_FEE_CENTS.starter;
-
-/** Returns the fixed booking fee (in cents) for a given plan. */
-export function bookingFeeCentsForPlan(plan: string | null | undefined): number {
-  if (!plan) return BOOKING_FEE_CENTS_DEFAULT;
-  return PLAN_BOOKING_FEE_CENTS[plan] ?? BOOKING_FEE_CENTS_DEFAULT;
-}
+// Re-export from the client-safe module so this file remains the single
+// import surface for server code, while client components can import the
+// same constants/helper from "@/lib/plan-fees" without pulling in
+// supabaseAdmin (server-only).
+export {
+  PLAN_BOOKING_FEE_CENTS,
+  BOOKING_FEE_CENTS_DEFAULT,
+  bookingFeeCentsForPlan,
+} from "@/lib/plan-fees";
 
 /**
  * @deprecated The percentage-based model has been replaced by a fixed
