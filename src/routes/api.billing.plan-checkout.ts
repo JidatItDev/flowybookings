@@ -10,6 +10,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { PLATFORM_PROVIDER, BILLING_ENTITY, priceFor, type BillingCycle } from "@/lib/platform-billing";
+import {
+  getMolliePrimaryKey,
+  mollieAuthHeader,
+  mollieFetchWithFallback,
+} from "@/lib/mollie-platform";
 import type { DbPlan } from "@/lib/plans";
 
 const ALLOWED_PLANS = new Set(["starter", "pro", "premium"]);
