@@ -186,18 +186,93 @@ export function MollieConnectCard({ shopId }: Props) {
           <div className="min-w-0">
             <h2 className="text-base font-semibold">{t("mollie.title")}</h2>
             <p className="text-xs text-muted-foreground sm:text-sm">{t("mollie.description")}</p>
-            {isConnected && orgName && (
+            {isConnected && isConfirmed && orgName && (
               <p className="mt-1 text-xs font-medium text-primary">{orgName}</p>
             )}
           </div>
         </div>
-        <StatusPill status={status} />
+        {needsConfirmation ? (
+          <span className="inline-flex flex-none items-center gap-1.5 rounded-full bg-peach px-2.5 py-1 text-xs font-medium text-peach-foreground">
+            <ShieldAlert className="h-3.5 w-3.5" />
+            {t("mollie.confirm.pendingPill")}
+          </span>
+        ) : (
+          <StatusPill status={status} />
+        )}
       </div>
 
       {isLoading ? (
         <div className="mt-5 h-24 animate-pulse rounded-xl bg-muted" />
+      ) : needsConfirmation ? (
+        // ── POST-CONNECT CONFIRMATION ─────────────────────────────────────
+        // The OAuth callback completed but the user must verify the chosen
+        // Mollie organisation matches their shop before we treat the link as
+        // active.
+        <div className="mt-5 space-y-4">
+          <div className="rounded-xl border border-border bg-mint/20 p-4">
+            <div className="flex items-start gap-2">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none text-mint-foreground" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">{t("mollie.confirm.title")}</p>
+                <p className="text-xs text-muted-foreground">{t("mollie.confirm.subtitle")}</p>
+              </div>
+            </div>
+            <div className="mt-3 rounded-lg border border-border bg-background p-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                {t("mollie.confirm.connectedWith")}
+              </p>
+              <p className="mt-1 flex items-center gap-2 text-sm font-semibold">
+                <Building2 className="h-4 w-4 text-primary" />
+                {orgName ?? "—"}
+              </p>
+              {orgId && (
+                <p className="mt-0.5 text-xs text-muted-foreground">#{orgId}</p>
+              )}
+            </div>
+            <p className="mt-3 text-sm font-medium">{t("mollie.confirm.question")}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                onClick={() => confirmConnection.mutate()}
+                disabled={confirmConnection.isPending || readOnly}
+                title={readOnlyTitle}
+                variant="hero"
+              >
+                {confirmConnection.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-4 w-4" />
+                )}
+                {t("mollie.confirm.yes")}
+              </Button>
+              <Button
+                onClick={() => rejectAndReconnect.mutate()}
+                disabled={rejectAndReconnect.isPending || readOnly}
+                title={readOnlyTitle}
+                variant="outline"
+              >
+                {rejectAndReconnect.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                {t("mollie.confirm.no")}
+              </Button>
+            </div>
+          </div>
+        </div>
       ) : (
         <>
+          {isConnected && isConfirmed && (
+            <div className="mt-5 flex items-start gap-2 rounded-xl border border-mint/40 bg-mint/15 p-3 text-sm">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-mint-foreground" />
+              <div>
+                <p className="font-semibold text-foreground">{t("mollie.dashboard.activeTitle")}</p>
+                {orgName && (
+                  <p className="text-xs text-muted-foreground">
+                    {t("mollie.dashboard.connectedWith")}:{" "}
+                    <span className="font-medium text-foreground">{orgName}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           <dl className="mt-5 grid gap-3 sm:grid-cols-2">
             <Row label={t("mollie.onboarding")} value={t(`mollie.onboarding.${onboarding}`)} />
             <Row label={t("mollie.feeEnabled")} value={provider?.application_fee_enabled ? t("common.yes") : t("common.no")} />
@@ -212,7 +287,12 @@ export function MollieConnectCard({ shopId }: Props) {
 
           <div className="mt-5 flex flex-wrap gap-2">
             {!isConnected && (
-              <Button onClick={() => startConnect.mutate()} disabled={startConnect.isPending || readOnly} title={readOnlyTitle} variant="hero">
+              <Button
+                onClick={() => setPreConnectOpen(true)}
+                disabled={startConnect.isPending || readOnly}
+                title={readOnlyTitle}
+                variant="hero"
+              >
                 {startConnect.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plug className="h-4 w-4" />}
                 {isPending ? t("mollie.reconnect") : t("mollie.connect")}
                 {!startConnect.isPending && <ExternalLink className="h-3.5 w-3.5" />}
@@ -227,6 +307,69 @@ export function MollieConnectCard({ shopId }: Props) {
           </div>
         </>
       )}
+
+      {/* ── PRE-CONNECT DIALOG ───────────────────────────────────────────── */}
+      <Dialog open={preConnectOpen} onOpenChange={setPreConnectOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("mollie.preConnect.title")}</DialogTitle>
+            <DialogDescription>{t("mollie.preConnect.subtitle")}</DialogDescription>
+          </DialogHeader>
+
+          <ul className="space-y-2 text-sm">
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-primary" />
+              <span>{t("mollie.preConnect.benefit1")}</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-primary" />
+              <span>{t("mollie.preConnect.benefit2")}</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-primary" />
+              <span>{t("mollie.preConnect.benefit3")}</span>
+            </li>
+          </ul>
+
+          <div className="rounded-xl border border-peach/60 bg-peach/20 p-3">
+            <div className="flex items-start gap-2">
+              <ShieldAlert className="mt-0.5 h-5 w-5 flex-none text-peach-foreground" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">{t("mollie.preConnect.warningTitle")}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t("mollie.preConnect.warningBody")}
+                </p>
+                <p className="mt-2 flex items-center gap-2 rounded-md bg-background px-2.5 py-1.5 text-sm font-semibold">
+                  <Building2 className="h-4 w-4 text-primary" />
+                  {shopName || "—"}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setPreConnectOpen(false)}>
+              {t("mollie.preConnect.cancel")}
+            </Button>
+            <Button
+              variant="hero"
+              onClick={() => {
+                setPreConnectOpen(false);
+                startConnect.mutate();
+              }}
+              disabled={startConnect.isPending || readOnly}
+              title={readOnlyTitle}
+            >
+              {startConnect.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ExternalLink className="h-4 w-4" />
+              )}
+              {t("mollie.preConnect.continue")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
