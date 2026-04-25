@@ -841,6 +841,30 @@ export const en: Record<string, string> = {
   "mollie.notConfigured": "Mollie Connect is not configured on the platform",
   "mollie.reconnect": "Reconnect",
 
+  // Pre-connect screen
+  "mollie.preConnect.title": "Connect your payments",
+  "mollie.preConnect.subtitle": "Connect once — then you'll receive payments directly into your own Mollie account.",
+  "mollie.preConnect.benefit1": "Receive payments directly to your own account",
+  "mollie.preConnect.benefit2": "Let customers pay online (iDEAL, card, Bancontact)",
+  "mollie.preConnect.benefit3": "Fewer no-shows thanks to deposits",
+  "mollie.preConnect.warningTitle": "Heads up — pick the right organisation in Mollie",
+  "mollie.preConnect.warningBody": "Mollie will ask you to choose an organisation. Select only the organisation that matches:",
+  "mollie.preConnect.cancel": "Cancel",
+  "mollie.preConnect.continue": "Continue to Mollie",
+
+  // Post-callback confirmation
+  "mollie.confirm.title": "Payments connected",
+  "mollie.confirm.subtitle": "Please verify you connected the correct organisation.",
+  "mollie.confirm.connectedWith": "Connected with",
+  "mollie.confirm.question": "Is this correct?",
+  "mollie.confirm.yes": "Yes, continue",
+  "mollie.confirm.no": "No, reconnect",
+  "mollie.confirm.confirmed": "Connection confirmed",
+  "mollie.confirm.reconnecting": "Restarting connection…",
+  "mollie.confirm.pendingPill": "Confirmation required",
+  "mollie.dashboard.activeTitle": "Payments active",
+  "mollie.dashboard.connectedWith": "Connected with",
+
   // ── Admin: Providers ──
   "adminProviders.title": "Payment providers",
   "adminProviders.description": "Per-shop Mollie Connect status and platform fee configuration.",
