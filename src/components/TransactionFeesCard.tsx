@@ -23,7 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { useT } from "@/lib/i18n";
 import { formatCents, formatDate } from "@/lib/format";
-import { bookingFeeCentsForPlan } from "@/lib/mollie-connect";
+import { bookingFeeCentsForPlan } from "@/lib/plan-fees";
 import { planLabel } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
