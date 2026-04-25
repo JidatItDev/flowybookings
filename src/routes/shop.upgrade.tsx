@@ -13,6 +13,7 @@ import { changeShopPlan, tierOf, TIER_RANK, type DbPlan } from "@/lib/plans";
 import { usePermissions } from "@/lib/use-permissions";
 import { shopKeys } from "@/lib/queries";
 import { ShopBillingCard, usePlanCheckout } from "@/components/ShopBillingCard";
+import { TransactionFeesCard } from "@/components/TransactionFeesCard";
 import { assertNotImpersonating, useImpersonationReadOnly } from "@/components/ImpersonationBanner";
 
 export const Route = createFileRoute("/shop/upgrade")({
@@ -188,6 +189,11 @@ function UpgradePage() {
       {/* Billing card (current plan, expiry, payment history, mock-confirm banner) */}
       <div className="mb-6">
         <ShopBillingCard />
+      </div>
+
+      {/* Transparency: per-booking transaction fees for the current plan */}
+      <div className="mb-6">
+        <TransactionFeesCard />
       </div>
 
       {/* Billing cycle toggle */}
