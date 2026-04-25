@@ -290,6 +290,8 @@ export const nl: Record<string, string> = {
   "shopNav.upgradePremium": "Upgrade naar Premium",
   "shopNav.upgradeSub": "Ontgrendel meerdere locaties, API-toegang en prioriteitsondersteuning.",
   "shopNav.seePlans": "Bekijk plannen",
+  "shopNav.subscription": "Abonnement",
+  "account.menuLabel": "Account-menu openen",
 
   // ── Admin sidebar / nav ──
   "adminNav.overview": "Overzicht",
