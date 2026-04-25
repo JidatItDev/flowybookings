@@ -58,19 +58,21 @@ export const Route = createFileRoute("/api/billing/plan-cancel")({
           const onboarding = ((shop.onboarding ?? {}) as Record<string, unknown>);
           const subId = onboarding.mollie_subscription_id as string | undefined;
           const customerId = onboarding.mollie_customer_id as string | undefined;
-          const mollieKey = process.env.MOLLIE_API_KEY;
+          const hasMollie = getMolliePlatformKeys().length > 0;
 
           let mollieCancelled = false;
           let mollieError: string | null = null;
-          if (mollieKey && customerId && subId) {
-            const res = await fetch(`https://api.mollie.com/v2/customers/${customerId}/subscriptions/${subId}`, {
-              method: "DELETE",
-              headers: { Authorization: `Bearer ${mollieKey}` },
-            });
-            if (res.ok) {
+          if (hasMollie && customerId && subId) {
+            // Subscription was created on whichever key was active at the time —
+            // the fallback helper transparently retries the legacy key on 401/404.
+            const result = await mollieFetchWithFallback(
+              `https://api.mollie.com/v2/customers/${customerId}/subscriptions/${subId}`,
+              { method: "DELETE" },
+            );
+            if (result?.response.ok) {
               mollieCancelled = true;
-            } else {
-              mollieError = await res.text();
+            } else if (result) {
+              mollieError = await result.response.text();
               console.error("[billing/plan-cancel] mollie delete failed:", mollieError);
             }
           }
