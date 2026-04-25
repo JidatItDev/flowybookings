@@ -45,6 +45,9 @@ export function MollieConnectCard({ shopId }: Props) {
   // Read mollie_connect=ok|error from the callback redirect to show toast.
   const search = useSearch({ strict: false }) as { mollie_connect?: string; reason?: string };
   const { data: provider, isLoading } = useQuery(shopPaymentProviderQuery(shopId));
+  const { activeShop } = useShopContext();
+  const shopName = activeShop?.name ?? "";
+  const [preConnectOpen, setPreConnectOpen] = useState(false);
 
   useEffect(() => {
     if (!search?.mollie_connect) return;
