@@ -226,7 +226,7 @@ function Landing() {
                 </div>
               </div>
             </div>
-          </div>
+          </Reveal>
         </div>
       </section>
 
