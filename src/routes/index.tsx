@@ -468,7 +468,7 @@ function Landing() {
       {/* Final CTA */}
       <section className="py-24">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <div className="overflow-hidden rounded-3xl bg-gradient-brand p-10 text-center text-primary-foreground shadow-glow sm:p-16">
+          <Reveal className="overflow-hidden rounded-3xl bg-gradient-brand p-10 text-center text-primary-foreground shadow-glow sm:p-16">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("landing.finalCta.title")}</h2>
             <p className="mx-auto mt-3 max-w-xl text-sm opacity-90 sm:text-base">{t("landing.finalCta.sub")}</p>
             <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
