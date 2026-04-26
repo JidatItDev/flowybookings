@@ -379,7 +379,7 @@ function Landing() {
       <section className="border-t border-border bg-background py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid items-center gap-10 lg:grid-cols-2">
-            <div>
+            <Reveal>
               <span className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary">
                 <Smartphone className="h-3.5 w-3.5" /> Mobile-first
               </span>
