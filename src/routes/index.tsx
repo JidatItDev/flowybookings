@@ -221,6 +221,63 @@ function Landing() {
         </div>
       </section>
 
+      {/* Social proof — stat cards */}
+      <section className="border-t border-border bg-background py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("landing.proof.title")}</h2>
+            <p className="mt-3 text-muted-foreground">{t("landing.proof.sub")}</p>
+          </div>
+          <div className="mt-12 grid gap-5 sm:grid-cols-3">
+            {[
+              { value: t("landing.proof.stat1.value"), label: t("landing.proof.stat1.label"), desc: t("landing.proof.stat1.desc"), accent: "bg-primary-soft text-primary" },
+              { value: t("landing.proof.stat2.value"), label: t("landing.proof.stat2.label"), desc: t("landing.proof.stat2.desc"), accent: "bg-mint text-mint-foreground" },
+              { value: t("landing.proof.stat3.value"), label: t("landing.proof.stat3.label"), desc: t("landing.proof.stat3.desc"), accent: "bg-peach text-peach-foreground" },
+            ].map((s) => (
+              <div key={s.label} className="rounded-2xl border border-border bg-card p-6 text-center shadow-soft">
+                <p className={`mx-auto inline-flex rounded-xl px-3 py-1 text-3xl font-bold tracking-tight ${s.accent}`}>{s.value}</p>
+                <p className="mt-4 text-base font-semibold">{s.label}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Problem → Solution */}
+      <section className="border-t border-border bg-muted/40 py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("landing.ps.title")}</h2>
+            <p className="mt-3 text-muted-foreground">{t("landing.ps.sub")}</p>
+          </div>
+          <div className="mt-12 grid gap-5 lg:grid-cols-2">
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-soft sm:p-8">
+              <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t("landing.ps.problemsTitle")}</p>
+              <ul className="mt-5 space-y-3">
+                {[t("landing.ps.p1"), t("landing.ps.p2"), t("landing.ps.p3"), t("landing.ps.p4")].map((p) => (
+                  <li key={p} className="flex items-start gap-3 rounded-xl bg-muted/60 px-4 py-3 text-sm">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive"><X className="h-3.5 w-3.5" /></span>
+                    <span className="text-foreground/90">{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-primary/30 bg-card p-6 shadow-soft ring-soft sm:p-8">
+              <p className="text-sm font-semibold uppercase tracking-wider text-primary">{t("landing.ps.solutionsTitle")}</p>
+              <ul className="mt-5 space-y-3">
+                {[t("landing.ps.s1"), t("landing.ps.s2"), t("landing.ps.s3"), t("landing.ps.s4")].map((s) => (
+                  <li key={s} className="flex items-start gap-3 rounded-xl bg-primary-soft/40 px-4 py-3 text-sm">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-mint text-mint-foreground"><Check className="h-3.5 w-3.5" /></span>
+                    <span className="font-medium text-foreground">{s}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="features" className="border-t border-border bg-background py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
