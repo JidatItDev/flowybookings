@@ -486,7 +486,7 @@ function Landing() {
               <span className="mx-2">·</span>
               <Check className="mr-1 inline h-3.5 w-3.5" /> {t("landing.cancelAnytime")}
             </p>
-          </div>
+          </Reveal>
         </div>
       </section>
 
