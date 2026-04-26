@@ -5,8 +5,10 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   CalendarCheck, Sparkles, Bell, CreditCard, BarChart3, Users,
   Sparkle, ArrowRight, Check, ShieldCheck, Smartphone, Zap, Euro, MessageCircle,
+  X, HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { PricingComparisonTable } from "@/components/PricingComparisonTable";
 
 export const Route = createFileRoute("/")({
