@@ -5,7 +5,9 @@ import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { NoShopState } from "@/components/EmptyState";
+import { FeatureLock } from "@/components/FeatureLock";
 import { useActiveShopId } from "@/lib/shop-context";
+import { useFeatureAccess } from "@/lib/use-feature-access";
 import { bookingsQuery, paymentsQuery, customersQuery, servicesQuery } from "@/lib/queries";
 import { formatCents } from "@/lib/format";
 import { useT } from "@/lib/i18n";
@@ -19,6 +21,7 @@ export const Route = createFileRoute("/shop/analytics")({
 function AnalyticsPage() {
   const { t } = useT();
   const shopId = useActiveShopId();
+  const analyticsAccess = useFeatureAccess(shopId, "advanced_analytics");
 
   const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
   const { data: payments = [] } = useQuery({ ...paymentsQuery(shopId ?? ""), enabled: !!shopId });
