@@ -397,8 +397,8 @@ function Landing() {
                   <Link to="/signup">{t("landing.startFreeTrial")} <ArrowRight className="h-4 w-4" /></Link>
                 </Button>
               </div>
-            </div>
-            <div className="relative mx-auto w-full max-w-sm">
+            </Reveal>
+            <Reveal delay={140} className="relative mx-auto w-full max-w-sm">
               <div className="rounded-[2.25rem] border-8 border-foreground/90 bg-card shadow-elevated">
                 <div className="rounded-[1.5rem] bg-gradient-to-br from-primary-soft via-card to-pink p-5">
                   <div className="flex items-center justify-between">
