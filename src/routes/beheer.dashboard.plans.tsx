@@ -24,14 +24,12 @@ const PLAN_TIERS = [
     label: "Starter",
     price: 19,
     features: ["bookings", "staff3", "email", "analytics"],
-    fee: "1.5%",
   },
   {
     plan: "pro" as DbPlan,
     label: "Pro",
     price: 49,
     features: ["bookings", "staff10", "sms", "deposits", "advAnalytics", "branding"],
-    fee: "1.0%",
     featured: true,
   },
   {
@@ -39,7 +37,6 @@ const PLAN_TIERS = [
     label: "Premium",
     price: 99,
     features: ["bookings", "staffUnlimited", "whatsapp", "multiloc", "priority", "api"],
-    fee: "0.5%",
   },
 ];
 
