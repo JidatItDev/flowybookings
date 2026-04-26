@@ -160,28 +160,36 @@ function Landing() {
         <div className="absolute inset-0 -z-10 bg-gradient-hero opacity-90" />
         <div className="mx-auto max-w-7xl px-4 pb-24 pt-16 sm:px-6 sm:pt-24 lg:px-8 lg:pb-32">
           <div className="mx-auto max-w-3xl text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1 text-xs font-medium text-muted-foreground shadow-xs backdrop-blur">
-              <span className="h-1.5 w-1.5 rounded-full bg-success" /> {t("landing.badge")}
-            </span>
-            <h1 className="mt-6 text-4xl font-semibold tracking-tight text-foreground sm:text-6xl">
-              {t("landing.headline")}{" "}
-              <span className="text-gradient-brand">{t("landing.headlineAccent")}</span>
-            </h1>
-            <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">{t("landing.sub")}</p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button asChild variant="hero" size="xl">
-                <Link to="/signup">{t("landing.startFreeTrial")} <ArrowRight className="h-4 w-4" /></Link>
-              </Button>
-              <Button asChild variant="outline" size="xl">
-                <Link to="/demo">{t("landing.viewLiveDemo")}</Link>
-              </Button>
-            </div>
-            <p className="mt-3 text-xs text-muted-foreground">{t("landing.demoHint")}</p>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-success-foreground" /> {t("landing.trial")}</span>
-              <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-success-foreground" /> {t("landing.noCreditCard")}</span>
-              <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-success-foreground" /> {t("landing.cancelAnytime")}</span>
-            </div>
+            <Reveal>
+              <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1 text-xs font-medium text-muted-foreground shadow-xs backdrop-blur">
+                <span className="h-1.5 w-1.5 rounded-full bg-success" /> {t("landing.badge")}
+              </span>
+            </Reveal>
+            <Reveal delay={80}>
+              <h1 className="mt-6 text-4xl font-semibold tracking-tight text-foreground sm:text-6xl">
+                {t("landing.headline")}{" "}
+                <span className="text-gradient-brand">{t("landing.headlineAccent")}</span>
+              </h1>
+            </Reveal>
+            <Reveal delay={160}>
+              <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">{t("landing.sub")}</p>
+            </Reveal>
+            <Reveal delay={240}>
+              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <Button asChild variant="hero" size="xl" className="press">
+                  <Link to="/signup">{t("landing.startFreeTrial")} <ArrowRight className="h-4 w-4" /></Link>
+                </Button>
+                <Button asChild variant="outline" size="xl" className="press">
+                  <Link to="/demo">{t("landing.viewLiveDemo")}</Link>
+                </Button>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">{t("landing.demoHint")}</p>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-success-foreground" /> {t("landing.trial")}</span>
+                <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-success-foreground" /> {t("landing.noCreditCard")}</span>
+                <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-success-foreground" /> {t("landing.cancelAnytime")}</span>
+              </div>
+            </Reveal>
           </div>
 
           <div className="relative mx-auto mt-16 max-w-5xl">
