@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { PricingComparisonTable } from "@/components/PricingComparisonTable";
+import { Reveal } from "@/components/Reveal";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -138,7 +139,7 @@ function Landing() {
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
             {session ? (
-              <Button asChild variant="hero" size="default">
+              <Button asChild variant="hero" size="default" className="press">
                 <Link to={dashboardHref}>{t("nav.goToDashboard")} <ArrowRight className="h-4 w-4" /></Link>
               </Button>
             ) : (
@@ -146,7 +147,7 @@ function Landing() {
                 <Link to="/login" className="hidden text-sm font-medium text-muted-foreground hover:text-foreground sm:inline-flex">
                   {t("nav.signIn")}
                 </Link>
-                <Button asChild variant="hero" size="default">
+                <Button asChild variant="hero" size="default" className="press">
                   <Link to="/signup">{t("nav.getStarted")}</Link>
                 </Button>
               </>
@@ -159,31 +160,39 @@ function Landing() {
         <div className="absolute inset-0 -z-10 bg-gradient-hero opacity-90" />
         <div className="mx-auto max-w-7xl px-4 pb-24 pt-16 sm:px-6 sm:pt-24 lg:px-8 lg:pb-32">
           <div className="mx-auto max-w-3xl text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1 text-xs font-medium text-muted-foreground shadow-xs backdrop-blur">
-              <span className="h-1.5 w-1.5 rounded-full bg-success" /> {t("landing.badge")}
-            </span>
-            <h1 className="mt-6 text-4xl font-semibold tracking-tight text-foreground sm:text-6xl">
-              {t("landing.headline")}{" "}
-              <span className="text-gradient-brand">{t("landing.headlineAccent")}</span>
-            </h1>
-            <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">{t("landing.sub")}</p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button asChild variant="hero" size="xl">
-                <Link to="/signup">{t("landing.startFreeTrial")} <ArrowRight className="h-4 w-4" /></Link>
-              </Button>
-              <Button asChild variant="outline" size="xl">
-                <Link to="/demo">{t("landing.viewLiveDemo")}</Link>
-              </Button>
-            </div>
-            <p className="mt-3 text-xs text-muted-foreground">{t("landing.demoHint")}</p>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-success-foreground" /> {t("landing.trial")}</span>
-              <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-success-foreground" /> {t("landing.noCreditCard")}</span>
-              <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-success-foreground" /> {t("landing.cancelAnytime")}</span>
-            </div>
+            <Reveal>
+              <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1 text-xs font-medium text-muted-foreground shadow-xs backdrop-blur">
+                <span className="h-1.5 w-1.5 rounded-full bg-success" /> {t("landing.badge")}
+              </span>
+            </Reveal>
+            <Reveal delay={80}>
+              <h1 className="mt-6 text-4xl font-semibold tracking-tight text-foreground sm:text-6xl">
+                {t("landing.headline")}{" "}
+                <span className="text-gradient-brand">{t("landing.headlineAccent")}</span>
+              </h1>
+            </Reveal>
+            <Reveal delay={160}>
+              <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">{t("landing.sub")}</p>
+            </Reveal>
+            <Reveal delay={240}>
+              <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <Button asChild variant="hero" size="xl" className="press">
+                  <Link to="/signup">{t("landing.startFreeTrial")} <ArrowRight className="h-4 w-4" /></Link>
+                </Button>
+                <Button asChild variant="outline" size="xl" className="press">
+                  <Link to="/demo">{t("landing.viewLiveDemo")}</Link>
+                </Button>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">{t("landing.demoHint")}</p>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-success-foreground" /> {t("landing.trial")}</span>
+                <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-success-foreground" /> {t("landing.noCreditCard")}</span>
+                <span className="inline-flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-success-foreground" /> {t("landing.cancelAnytime")}</span>
+              </div>
+            </Reveal>
           </div>
 
-          <div className="relative mx-auto mt-16 max-w-5xl">
+          <Reveal delay={320} className="relative mx-auto mt-16 max-w-5xl">
             <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-elevated">
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr]">
                 <div className="border-b border-border bg-gradient-to-br from-primary-soft to-pink p-6 lg:border-b-0 lg:border-r">
@@ -217,28 +226,28 @@ function Landing() {
                 </div>
               </div>
             </div>
-          </div>
+          </Reveal>
         </div>
       </section>
 
       {/* Social proof — stat cards */}
       <section className="border-t border-border bg-background py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
+          <Reveal className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("landing.proof.title")}</h2>
             <p className="mt-3 text-muted-foreground">{t("landing.proof.sub")}</p>
-          </div>
+          </Reveal>
           <div className="mt-12 grid gap-5 sm:grid-cols-3">
             {[
               { value: t("landing.proof.stat1.value"), label: t("landing.proof.stat1.label"), desc: t("landing.proof.stat1.desc"), accent: "bg-primary-soft text-primary" },
               { value: t("landing.proof.stat2.value"), label: t("landing.proof.stat2.label"), desc: t("landing.proof.stat2.desc"), accent: "bg-mint text-mint-foreground" },
               { value: t("landing.proof.stat3.value"), label: t("landing.proof.stat3.label"), desc: t("landing.proof.stat3.desc"), accent: "bg-peach text-peach-foreground" },
-            ].map((s) => (
-              <div key={s.label} className="rounded-2xl border border-border bg-card p-6 text-center shadow-soft">
+            ].map((s, i) => (
+              <Reveal key={s.label} delay={i * 90} className="rounded-2xl border border-border bg-card p-6 text-center shadow-soft lift">
                 <p className={`mx-auto inline-flex rounded-xl px-3 py-1 text-3xl font-bold tracking-tight ${s.accent}`}>{s.value}</p>
                 <p className="mt-4 text-base font-semibold">{s.label}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{s.desc}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -247,12 +256,12 @@ function Landing() {
       {/* Problem → Solution */}
       <section className="border-t border-border bg-muted/40 py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
+          <Reveal className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("landing.ps.title")}</h2>
             <p className="mt-3 text-muted-foreground">{t("landing.ps.sub")}</p>
-          </div>
+          </Reveal>
           <div className="mt-12 grid gap-5 lg:grid-cols-2">
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-soft sm:p-8">
+            <Reveal className="rounded-2xl border border-border bg-card p-6 shadow-soft sm:p-8 lift">
               <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t("landing.ps.problemsTitle")}</p>
               <ul className="mt-5 space-y-3">
                 {[t("landing.ps.p1"), t("landing.ps.p2"), t("landing.ps.p3"), t("landing.ps.p4")].map((p) => (
@@ -262,8 +271,8 @@ function Landing() {
                   </li>
                 ))}
               </ul>
-            </div>
-            <div className="rounded-2xl border border-primary/30 bg-card p-6 shadow-soft ring-soft sm:p-8">
+            </Reveal>
+            <Reveal delay={120} className="rounded-2xl border border-primary/30 bg-card p-6 shadow-soft ring-soft sm:p-8 lift">
               <p className="text-sm font-semibold uppercase tracking-wider text-primary">{t("landing.ps.solutionsTitle")}</p>
               <ul className="mt-5 space-y-3">
                 {[t("landing.ps.s1"), t("landing.ps.s2"), t("landing.ps.s3"), t("landing.ps.s4")].map((s) => (
@@ -273,26 +282,26 @@ function Landing() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>
 
       <section id="features" className="border-t border-border bg-background py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
+          <Reveal className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("features.title")}</h2>
             <p className="mt-4 text-muted-foreground">{t("features.sub")}</p>
-          </div>
+          </Reveal>
           <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {features.map((f) => {
+            {features.map((f, i) => {
               const Icon = f.icon;
               return (
-                <div key={f.title} className="group rounded-2xl border border-border bg-card p-6 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-elevated">
+                <Reveal key={f.title} delay={i * 70} className="group rounded-2xl border border-border bg-card p-6 shadow-soft lift">
                   <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${f.color}`}><Icon className="h-5 w-5" /></div>
                   <h3 className="mt-4 text-base font-semibold">{f.title}</h3>
                   <p className="mt-2 text-sm text-muted-foreground">{f.desc}</p>
-                </div>
+                </Reveal>
               );
             })}
           </div>
@@ -312,19 +321,19 @@ function Landing() {
 
       <section id="testimonials" className="border-t border-border py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
+          <Reveal className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("whyUs.title")}</h2>
             <p className="mt-4 text-muted-foreground">{t("whyUs.sub")}</p>
-          </div>
+          </Reveal>
           <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {whyUs.map((w) => {
+            {whyUs.map((w, i) => {
               const Icon = w.icon;
               return (
-                <div key={w.title} className="rounded-2xl border border-border bg-card p-6 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-elevated">
+                <Reveal key={w.title} delay={i * 70} className="rounded-2xl border border-border bg-card p-6 shadow-soft lift">
                   <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${w.color}`}><Icon className="h-5 w-5" /></div>
                   <h3 className="mt-4 text-base font-semibold">{w.title}</h3>
                   <p className="mt-2 text-sm text-muted-foreground">{w.desc}</p>
-                </div>
+                </Reveal>
               );
             })}
           </div>
@@ -338,8 +347,8 @@ function Landing() {
             <p className="mt-4 text-muted-foreground">{t("pricing.sub")}</p>
           </div>
           <div className="mt-14 grid gap-5 lg:grid-cols-4">
-            {pricing.map((p) => (
-              <div key={p.name} className={`relative flex flex-col rounded-2xl border bg-card p-6 shadow-soft ${p.featured ? "border-primary ring-soft" : "border-border"}`}>
+            {pricing.map((p, i) => (
+              <Reveal key={p.name} delay={i * 80} className={`relative flex flex-col rounded-2xl border bg-card p-6 shadow-soft lift ${p.featured ? "border-primary ring-soft" : "border-border"}`}>
                 {p.featured && <span className="absolute -top-3 left-6 rounded-full bg-gradient-brand px-3 py-1 text-xs font-semibold text-primary-foreground">{t("pricing.mostPopular")}</span>}
                 <h3 className="text-base font-semibold">{p.name}</h3>
                 <p className="mt-3 text-3xl font-semibold tracking-tight">€{p.price}<span className="text-sm font-normal text-muted-foreground">/{p.period}</span></p>
@@ -353,10 +362,10 @@ function Landing() {
                 <ul className="mt-5 flex-1 space-y-2 text-sm text-muted-foreground">
                   {p.features.map((f) => <li key={f} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-success-foreground" />{f}</li>)}
                 </ul>
-                <Button asChild variant={p.featured ? "hero" : "outline"} className="mt-6">
+                <Button asChild variant={p.featured ? "hero" : "outline"} className="mt-6 press">
                   <Link to="/signup">{t(p.ctaKey)}</Link>
                 </Button>
-              </div>
+              </Reveal>
             ))}
           </div>
           <PricingComparisonTable />
@@ -370,7 +379,7 @@ function Landing() {
       <section className="border-t border-border bg-background py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid items-center gap-10 lg:grid-cols-2">
-            <div>
+            <Reveal>
               <span className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary">
                 <Smartphone className="h-3.5 w-3.5" /> Mobile-first
               </span>
@@ -384,12 +393,12 @@ function Landing() {
                 ))}
               </ul>
               <div className="mt-7">
-                <Button asChild variant="hero" size="lg">
+                <Button asChild variant="hero" size="lg" className="press">
                   <Link to="/signup">{t("landing.startFreeTrial")} <ArrowRight className="h-4 w-4" /></Link>
                 </Button>
               </div>
-            </div>
-            <div className="relative mx-auto w-full max-w-sm">
+            </Reveal>
+            <Reveal delay={140} className="relative mx-auto w-full max-w-sm">
               <div className="rounded-[2.25rem] border-8 border-foreground/90 bg-card shadow-elevated">
                 <div className="rounded-[1.5rem] bg-gradient-to-br from-primary-soft via-card to-pink p-5">
                   <div className="flex items-center justify-between">
@@ -408,7 +417,7 @@ function Landing() {
                   </div>
                 </div>
               </div>
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>
@@ -459,14 +468,14 @@ function Landing() {
       {/* Final CTA */}
       <section className="py-24">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <div className="overflow-hidden rounded-3xl bg-gradient-brand p-10 text-center text-primary-foreground shadow-glow sm:p-16">
+          <Reveal className="overflow-hidden rounded-3xl bg-gradient-brand p-10 text-center text-primary-foreground shadow-glow sm:p-16">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("landing.finalCta.title")}</h2>
             <p className="mx-auto mt-3 max-w-xl text-sm opacity-90 sm:text-base">{t("landing.finalCta.sub")}</p>
             <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button asChild size="xl" className="bg-card text-foreground hover:bg-card/90">
+              <Button asChild size="xl" className="bg-card text-foreground hover:bg-card/90 press">
                 <Link to="/signup">{t("landing.startFreeTrial")} <ArrowRight className="h-4 w-4" /></Link>
               </Button>
-              <Button asChild size="xl" variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10">
+              <Button asChild size="xl" variant="outline" className="border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 press">
                 <Link to="/demo">{t("landing.viewLiveDemo")}</Link>
               </Button>
             </div>
@@ -477,7 +486,7 @@ function Landing() {
               <span className="mx-2">·</span>
               <Check className="mr-1 inline h-3.5 w-3.5" /> {t("landing.cancelAnytime")}
             </p>
-          </div>
+          </Reveal>
         </div>
       </section>
 
