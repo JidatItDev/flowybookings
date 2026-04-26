@@ -100,7 +100,7 @@ function PlansPage() {
               <span className="text-sm font-normal text-muted-foreground">/mo</span>
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {p.fee} {t("adminPlans.transactionFee")} · {counts.get(p.plan) ?? 0} {t("adminPlans.shopsOnPlan")}
+              {bookingFeeLabel(p.plan)} · {counts.get(p.plan) ?? 0} {t("adminPlans.shopsOnPlan")}
             </p>
             <ul className="mt-5 flex-1 space-y-2 text-sm text-muted-foreground">
               {p.features.map((f) => (
