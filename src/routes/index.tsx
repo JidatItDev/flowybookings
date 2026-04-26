@@ -233,21 +233,21 @@ function Landing() {
       {/* Social proof — stat cards */}
       <section className="border-t border-border bg-background py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
+          <Reveal className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("landing.proof.title")}</h2>
             <p className="mt-3 text-muted-foreground">{t("landing.proof.sub")}</p>
-          </div>
+          </Reveal>
           <div className="mt-12 grid gap-5 sm:grid-cols-3">
             {[
               { value: t("landing.proof.stat1.value"), label: t("landing.proof.stat1.label"), desc: t("landing.proof.stat1.desc"), accent: "bg-primary-soft text-primary" },
               { value: t("landing.proof.stat2.value"), label: t("landing.proof.stat2.label"), desc: t("landing.proof.stat2.desc"), accent: "bg-mint text-mint-foreground" },
               { value: t("landing.proof.stat3.value"), label: t("landing.proof.stat3.label"), desc: t("landing.proof.stat3.desc"), accent: "bg-peach text-peach-foreground" },
-            ].map((s) => (
-              <div key={s.label} className="rounded-2xl border border-border bg-card p-6 text-center shadow-soft">
+            ].map((s, i) => (
+              <Reveal key={s.label} delay={i * 90} className="rounded-2xl border border-border bg-card p-6 text-center shadow-soft lift">
                 <p className={`mx-auto inline-flex rounded-xl px-3 py-1 text-3xl font-bold tracking-tight ${s.accent}`}>{s.value}</p>
                 <p className="mt-4 text-base font-semibold">{s.label}</p>
                 <p className="mt-1 text-sm text-muted-foreground">{s.desc}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
