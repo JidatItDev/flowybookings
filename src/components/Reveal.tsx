@@ -51,7 +51,6 @@ export function Reveal({
   const Tag = as as "div";
   return (
     <Tag
-      // @ts-expect-error - polymorphic ref is fine for this set of tags
       ref={ref}
       className={cn("reveal", visible && "reveal-in", className)}
       style={{ transitionDelay: `${delay}ms`, ...style }}
