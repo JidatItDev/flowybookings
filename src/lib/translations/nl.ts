@@ -75,7 +75,7 @@ export const nl: Record<string, string> = {
   "landing.cancelAnytime": "Op elk moment opzeggen",
   "landing.viewLiveDemo": "Bekijk live demo",
   "landing.startFreeTrial": "Start gratis proefperiode",
-  "landing.demoHint": "Geen account nodig — boek in onder 60 seconden.",
+  "landing.demoHint": "Geen account nodig — boek binnen 60 seconden.",
   "demo.badge": "Live demo",
   "demo.pickTitle": "Kies een demo-zaak",
   "demo.pickSub": "Twee voorbeeldzaken — kies er één om de boekingsstroom te ervaren.",
