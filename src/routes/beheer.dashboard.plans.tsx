@@ -12,6 +12,7 @@ import { changeShopPlan, planLabel, ALL_DB_PLANS, type DbPlan } from "@/lib/plan
 import { useAuth } from "@/lib/auth-context";
 import { useT } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { usePlanPricing, formatBookingFee } from "@/lib/use-plan-pricing";
 
 export const Route = createFileRoute("/beheer/dashboard/plans")({
   head: () => ({ meta: [{ title: "Plans — Admin" }] }),
@@ -46,6 +47,7 @@ function PlansPage() {
   const { user } = useAuth();
   const { data: shops, isLoading } = useQuery(adminShopsQuery());
   const { data: log } = useQuery(adminActivityLogQuery());
+  const { data: pricing } = usePlanPricing();
 
   const counts = useMemo(() => {
     const m = new Map<string, number>();
@@ -100,7 +102,7 @@ function PlansPage() {
               <span className="text-sm font-normal text-muted-foreground">/mo</span>
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {bookingFeeLabel(p.plan)} · {counts.get(p.plan) ?? 0} {t("adminPlans.shopsOnPlan")}
+              {formatBookingFee(pricing, p.plan)} · {counts.get(p.plan) ?? 0} {t("adminPlans.shopsOnPlan")}
             </p>
             <ul className="mt-5 flex-1 space-y-2 text-sm text-muted-foreground">
               {p.features.map((f) => (
