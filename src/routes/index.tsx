@@ -139,7 +139,7 @@ function Landing() {
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
             {session ? (
-              <Button asChild variant="hero" size="default">
+              <Button asChild variant="hero" size="default" className="press">
                 <Link to={dashboardHref}>{t("nav.goToDashboard")} <ArrowRight className="h-4 w-4" /></Link>
               </Button>
             ) : (
@@ -147,7 +147,7 @@ function Landing() {
                 <Link to="/login" className="hidden text-sm font-medium text-muted-foreground hover:text-foreground sm:inline-flex">
                   {t("nav.signIn")}
                 </Link>
-                <Button asChild variant="hero" size="default">
+                <Button asChild variant="hero" size="default" className="press">
                   <Link to="/signup">{t("nav.getStarted")}</Link>
                 </Button>
               </>
