@@ -192,7 +192,7 @@ function Landing() {
             </Reveal>
           </div>
 
-          <div className="relative mx-auto mt-16 max-w-5xl">
+          <Reveal delay={320} className="relative mx-auto mt-16 max-w-5xl">
             <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-elevated">
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.4fr]">
                 <div className="border-b border-border bg-gradient-to-br from-primary-soft to-pink p-6 lg:border-b-0 lg:border-r">
