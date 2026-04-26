@@ -5,8 +5,10 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   CalendarCheck, Sparkles, Bell, CreditCard, BarChart3, Users,
   Sparkle, ArrowRight, Check, ShieldCheck, Smartphone, Zap, Euro, MessageCircle,
+  X, HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { PricingComparisonTable } from "@/components/PricingComparisonTable";
 
 export const Route = createFileRoute("/")({
@@ -167,10 +169,10 @@ function Landing() {
             <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">{t("landing.sub")}</p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button asChild variant="hero" size="xl">
-                <Link to="/demo">{t("landing.viewLiveDemo")} <ArrowRight className="h-4 w-4" /></Link>
+                <Link to="/signup">{t("landing.startFreeTrial")} <ArrowRight className="h-4 w-4" /></Link>
               </Button>
               <Button asChild variant="outline" size="xl">
-                <Link to="/signup">{t("landing.startFreeTrial")}</Link>
+                <Link to="/demo">{t("landing.viewLiveDemo")}</Link>
               </Button>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">{t("landing.demoHint")}</p>
@@ -214,6 +216,63 @@ function Landing() {
                   })}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Social proof — stat cards */}
+      <section className="border-t border-border bg-background py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("landing.proof.title")}</h2>
+            <p className="mt-3 text-muted-foreground">{t("landing.proof.sub")}</p>
+          </div>
+          <div className="mt-12 grid gap-5 sm:grid-cols-3">
+            {[
+              { value: t("landing.proof.stat1.value"), label: t("landing.proof.stat1.label"), desc: t("landing.proof.stat1.desc"), accent: "bg-primary-soft text-primary" },
+              { value: t("landing.proof.stat2.value"), label: t("landing.proof.stat2.label"), desc: t("landing.proof.stat2.desc"), accent: "bg-mint text-mint-foreground" },
+              { value: t("landing.proof.stat3.value"), label: t("landing.proof.stat3.label"), desc: t("landing.proof.stat3.desc"), accent: "bg-peach text-peach-foreground" },
+            ].map((s) => (
+              <div key={s.label} className="rounded-2xl border border-border bg-card p-6 text-center shadow-soft">
+                <p className={`mx-auto inline-flex rounded-xl px-3 py-1 text-3xl font-bold tracking-tight ${s.accent}`}>{s.value}</p>
+                <p className="mt-4 text-base font-semibold">{s.label}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Problem → Solution */}
+      <section className="border-t border-border bg-muted/40 py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("landing.ps.title")}</h2>
+            <p className="mt-3 text-muted-foreground">{t("landing.ps.sub")}</p>
+          </div>
+          <div className="mt-12 grid gap-5 lg:grid-cols-2">
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-soft sm:p-8">
+              <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t("landing.ps.problemsTitle")}</p>
+              <ul className="mt-5 space-y-3">
+                {[t("landing.ps.p1"), t("landing.ps.p2"), t("landing.ps.p3"), t("landing.ps.p4")].map((p) => (
+                  <li key={p} className="flex items-start gap-3 rounded-xl bg-muted/60 px-4 py-3 text-sm">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-destructive/15 text-destructive"><X className="h-3.5 w-3.5" /></span>
+                    <span className="text-foreground/90">{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-primary/30 bg-card p-6 shadow-soft ring-soft sm:p-8">
+              <p className="text-sm font-semibold uppercase tracking-wider text-primary">{t("landing.ps.solutionsTitle")}</p>
+              <ul className="mt-5 space-y-3">
+                {[t("landing.ps.s1"), t("landing.ps.s2"), t("landing.ps.s3"), t("landing.ps.s4")].map((s) => (
+                  <li key={s} className="flex items-start gap-3 rounded-xl bg-primary-soft/40 px-4 py-3 text-sm">
+                    <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-mint text-mint-foreground"><Check className="h-3.5 w-3.5" /></span>
+                    <span className="font-medium text-foreground">{s}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </div>
@@ -307,15 +366,117 @@ function Landing() {
         </div>
       </section>
 
+      {/* App feel — mobile-first USP */}
+      <section className="border-t border-border bg-background py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid items-center gap-10 lg:grid-cols-2">
+            <div>
+              <span className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary">
+                <Smartphone className="h-3.5 w-3.5" /> Mobile-first
+              </span>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">{t("landing.appFeel.title")}</h2>
+              <p className="mt-4 text-muted-foreground">{t("landing.appFeel.sub")}</p>
+              <ul className="mt-6 space-y-3 text-sm">
+                {[t("landing.appFeel.b1"), t("landing.appFeel.b2"), t("landing.appFeel.b3")].map((b) => (
+                  <li key={b} className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-success-foreground" /> {b}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-7">
+                <Button asChild variant="hero" size="lg">
+                  <Link to="/signup">{t("landing.startFreeTrial")} <ArrowRight className="h-4 w-4" /></Link>
+                </Button>
+              </div>
+            </div>
+            <div className="relative mx-auto w-full max-w-sm">
+              <div className="rounded-[2.25rem] border-8 border-foreground/90 bg-card shadow-elevated">
+                <div className="rounded-[1.5rem] bg-gradient-to-br from-primary-soft via-card to-pink p-5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-primary">{t("landing.today")}</p>
+                    <span className="rounded-full bg-mint px-2 py-0.5 text-[10px] font-semibold text-mint-foreground">Live</span>
+                  </div>
+                  <p className="mt-2 text-2xl font-semibold tracking-tight">€1,240</p>
+                  <p className="text-xs text-muted-foreground">{t("landing.fromBookings", { count: 18 })}</p>
+                  <div className="mt-4 space-y-2">
+                    {["10:00 · Sophie", "11:30 · Liam", "13:00 · Noor", "15:00 · Ava"].map((txt) => (
+                      <div key={txt} className="flex items-center justify-between rounded-xl bg-card/80 px-3 py-2 text-sm shadow-xs">
+                        <span className="flex items-center gap-2"><CalendarCheck className="h-3.5 w-3.5 text-primary" />{txt}</span>
+                        <Check className="h-3.5 w-3.5 text-success-foreground" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Transparency */}
+      <section className="border-t border-border bg-muted/40 py-20">
+        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
+          <span className="inline-flex items-center gap-2 rounded-full bg-mint px-3 py-1 text-xs font-medium text-mint-foreground">
+            <ShieldCheck className="h-3.5 w-3.5" /> {t("landing.transparency.title")}
+          </span>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">{t("landing.transparency.title")}</h2>
+          <p className="mt-4 text-muted-foreground">{t("landing.transparency.sub")}</p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            {[t("landing.transparency.b1"), t("landing.transparency.b2"), t("landing.transparency.b3")].map((b) => (
+              <span key={b} className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium shadow-xs">
+                <Check className="h-4 w-4 text-success-foreground" /> {b}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="border-t border-border bg-background py-24">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <span className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary">
+              <HelpCircle className="h-3.5 w-3.5" /> FAQ
+            </span>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">{t("landing.faq.title")}</h2>
+          </div>
+          <Accordion type="single" collapsible className="mt-10 rounded-2xl border border-border bg-card px-6 shadow-soft">
+            {[
+              { q: t("landing.faq.q1"), a: t("landing.faq.a1") },
+              { q: t("landing.faq.q2"), a: t("landing.faq.a2") },
+              { q: t("landing.faq.q3"), a: t("landing.faq.a3") },
+              { q: t("landing.faq.q4"), a: t("landing.faq.a4") },
+            ].map((item, i) => (
+              <AccordionItem key={item.q} value={`faq-${i}`} className="border-border last:border-0">
+                <AccordionTrigger className="text-base font-semibold">{item.q}</AccordionTrigger>
+                <AccordionContent className="text-sm text-muted-foreground">{item.a}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </section>
+
+      {/* Final CTA */}
       <section className="py-24">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <div className="overflow-hidden rounded-3xl bg-gradient-brand p-10 text-center text-primary-foreground shadow-glow sm:p-16">
-            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("cta.title")}</h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm opacity-90 sm:text-base">{t("cta.sub")}</p>
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("landing.finalCta.title")}</h2>
+            <p className="mx-auto mt-3 max-w-xl text-sm opacity-90 sm:text-base">{t("landing.finalCta.sub")}</p>
             <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button asChild size="xl" className="bg-card text-foreground hover:bg-card/90"><Link to="/demo">{t("cta.tryBooking")}</Link></Button>
-              <Button asChild size="xl" variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10"><Link to="/login">{t("cta.exploreDashboard")}</Link></Button>
+              <Button asChild size="xl" className="bg-card text-foreground hover:bg-card/90">
+                <Link to="/signup">{t("landing.startFreeTrial")} <ArrowRight className="h-4 w-4" /></Link>
+              </Button>
+              <Button asChild size="xl" variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10">
+                <Link to="/demo">{t("landing.viewLiveDemo")}</Link>
+              </Button>
             </div>
+            <p className="mt-4 text-xs opacity-80">
+              <Check className="mr-1 inline h-3.5 w-3.5" /> {t("landing.trial")}
+              <span className="mx-2">·</span>
+              <Check className="mr-1 inline h-3.5 w-3.5" /> {t("landing.noCreditCard")}
+              <span className="mx-2">·</span>
+              <Check className="mr-1 inline h-3.5 w-3.5" /> {t("landing.cancelAnytime")}
+            </p>
           </div>
         </div>
       </section>
