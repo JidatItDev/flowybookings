@@ -393,7 +393,7 @@ function Landing() {
                 ))}
               </ul>
               <div className="mt-7">
-                <Button asChild variant="hero" size="lg">
+                <Button asChild variant="hero" size="lg" className="press">
                   <Link to="/signup">{t("landing.startFreeTrial")} <ArrowRight className="h-4 w-4" /></Link>
                 </Button>
               </div>
