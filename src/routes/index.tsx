@@ -321,19 +321,19 @@ function Landing() {
 
       <section id="testimonials" className="border-t border-border py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
+          <Reveal className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("whyUs.title")}</h2>
             <p className="mt-4 text-muted-foreground">{t("whyUs.sub")}</p>
-          </div>
+          </Reveal>
           <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {whyUs.map((w) => {
+            {whyUs.map((w, i) => {
               const Icon = w.icon;
               return (
-                <div key={w.title} className="rounded-2xl border border-border bg-card p-6 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-elevated">
+                <Reveal key={w.title} delay={i * 70} className="rounded-2xl border border-border bg-card p-6 shadow-soft lift">
                   <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${w.color}`}><Icon className="h-5 w-5" /></div>
                   <h3 className="mt-4 text-base font-semibold">{w.title}</h3>
                   <p className="mt-2 text-sm text-muted-foreground">{w.desc}</p>
-                </div>
+                </Reveal>
               );
             })}
           </div>
