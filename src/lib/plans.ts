@@ -20,7 +20,9 @@ export function tierOf(plan: DbPlan | string | null | undefined): Tier {
   return "basic"; // trial + starter + unknown
 }
 
-/** Feature flags. Each flag declares the minimum tier required. */
+/** Feature flags. Each flag declares the minimum tier required.
+ *  IMPORTANT: keep this list in sync with `plan_features` in the DB.
+ *  Only list features that are actually built and gated in the UI. */
 export const FEATURES = {
   // BASIC
   bookings: "basic",
@@ -30,13 +32,10 @@ export const FEATURES = {
   emailReminders: "basic",
   // PRO
   smsReminders: "pro",
-  noShowProtection: "pro",
   advancedAnalytics: "pro",
   customBranding: "pro",
-  deposits: "pro",
   // PREMIUM
   whatsappReminders: "premium",
-  automation: "premium",
   multiLocation: "premium",
   apiAccess: "premium",
   prioritySupport: "premium",

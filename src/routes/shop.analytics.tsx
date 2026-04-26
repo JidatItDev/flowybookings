@@ -5,7 +5,9 @@ import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { NoShopState } from "@/components/EmptyState";
+import { FeatureLock } from "@/components/FeatureLock";
 import { useActiveShopId } from "@/lib/shop-context";
+import { useFeatureAccess } from "@/lib/use-feature-access";
 import { bookingsQuery, paymentsQuery, customersQuery, servicesQuery } from "@/lib/queries";
 import { formatCents } from "@/lib/format";
 import { useT } from "@/lib/i18n";
@@ -19,6 +21,7 @@ export const Route = createFileRoute("/shop/analytics")({
 function AnalyticsPage() {
   const { t } = useT();
   const shopId = useActiveShopId();
+  const analyticsAccess = useFeatureAccess(shopId, "advanced_analytics");
 
   const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
   const { data: payments = [] } = useQuery({ ...paymentsQuery(shopId ?? ""), enabled: !!shopId });
@@ -75,10 +78,22 @@ function AnalyticsPage() {
 
   const hasData = bookings.length > 0;
 
+  const hasAdvancedAnalytics = analyticsAccess.data?.allowed ?? true;
+
   return (
     <ShopLayout>
       <PageHeader title={t("analytics.title")} description={t("analytics.description")} />
-      {!shopId ? <NoShopState /> : (
+      {!shopId ? <NoShopState /> : !hasAdvancedAnalytics ? (
+        <>
+          <FeatureLock access={analyticsAccess.data} featureLabel={t("feature.advancedAnalytics")} mode="inline" />
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard label={t("analytics.revenue30d")} value={formatCents(revenue30)} icon={TrendingUp} accent="primary" />
+            <StatCard label={t("analytics.bookings30d")} value={String(bookings30.length)} icon={CalendarCheck} accent="mint" />
+            <StatCard label={t("analytics.returningCustomers")} value={`${returningPct}%`} icon={Repeat} accent="peach" />
+            <StatCard label={t("analytics.noShowRate")} value={`${noShowRate.toFixed(1)}%`} icon={Users} accent="pink" />
+          </div>
+        </>
+      ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard label={t("analytics.revenue30d")} value={formatCents(revenue30)} icon={TrendingUp} accent="primary" />
