@@ -169,10 +169,10 @@ function Landing() {
             <p className="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">{t("landing.sub")}</p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Button asChild variant="hero" size="xl">
-                <Link to="/demo">{t("landing.viewLiveDemo")} <ArrowRight className="h-4 w-4" /></Link>
+                <Link to="/signup">{t("landing.startFreeTrial")} <ArrowRight className="h-4 w-4" /></Link>
               </Button>
               <Button asChild variant="outline" size="xl">
-                <Link to="/signup">{t("landing.startFreeTrial")}</Link>
+                <Link to="/demo">{t("landing.viewLiveDemo")}</Link>
               </Button>
             </div>
             <p className="mt-3 text-xs text-muted-foreground">{t("landing.demoHint")}</p>
