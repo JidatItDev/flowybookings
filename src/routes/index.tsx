@@ -472,10 +472,10 @@ function Landing() {
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("landing.finalCta.title")}</h2>
             <p className="mx-auto mt-3 max-w-xl text-sm opacity-90 sm:text-base">{t("landing.finalCta.sub")}</p>
             <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Button asChild size="xl" className="bg-card text-foreground hover:bg-card/90">
+              <Button asChild size="xl" className="bg-card text-foreground hover:bg-card/90 press">
                 <Link to="/signup">{t("landing.startFreeTrial")} <ArrowRight className="h-4 w-4" /></Link>
               </Button>
-              <Button asChild size="xl" variant="ghost" className="text-primary-foreground hover:bg-primary-foreground/10">
+              <Button asChild size="xl" variant="outline" className="border-primary-foreground/40 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 press">
                 <Link to="/demo">{t("landing.viewLiveDemo")}</Link>
               </Button>
             </div>
