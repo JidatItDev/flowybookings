@@ -347,8 +347,8 @@ function Landing() {
             <p className="mt-4 text-muted-foreground">{t("pricing.sub")}</p>
           </div>
           <div className="mt-14 grid gap-5 lg:grid-cols-4">
-            {pricing.map((p) => (
-              <div key={p.name} className={`relative flex flex-col rounded-2xl border bg-card p-6 shadow-soft ${p.featured ? "border-primary ring-soft" : "border-border"}`}>
+            {pricing.map((p, i) => (
+              <Reveal key={p.name} delay={i * 80} className={`relative flex flex-col rounded-2xl border bg-card p-6 shadow-soft lift ${p.featured ? "border-primary ring-soft" : "border-border"}`}>
                 {p.featured && <span className="absolute -top-3 left-6 rounded-full bg-gradient-brand px-3 py-1 text-xs font-semibold text-primary-foreground">{t("pricing.mostPopular")}</span>}
                 <h3 className="text-base font-semibold">{p.name}</h3>
                 <p className="mt-3 text-3xl font-semibold tracking-tight">€{p.price}<span className="text-sm font-normal text-muted-foreground">/{p.period}</span></p>
@@ -362,10 +362,10 @@ function Landing() {
                 <ul className="mt-5 flex-1 space-y-2 text-sm text-muted-foreground">
                   {p.features.map((f) => <li key={f} className="flex items-start gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-success-foreground" />{f}</li>)}
                 </ul>
-                <Button asChild variant={p.featured ? "hero" : "outline"} className="mt-6">
+                <Button asChild variant={p.featured ? "hero" : "outline"} className="mt-6 press">
                   <Link to="/signup">{t(p.ctaKey)}</Link>
                 </Button>
-              </div>
+              </Reveal>
             ))}
           </div>
           <PricingComparisonTable />
