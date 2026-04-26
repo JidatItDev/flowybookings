@@ -256,12 +256,12 @@ function Landing() {
       {/* Problem → Solution */}
       <section className="border-t border-border bg-muted/40 py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
+          <Reveal className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("landing.ps.title")}</h2>
             <p className="mt-3 text-muted-foreground">{t("landing.ps.sub")}</p>
-          </div>
+          </Reveal>
           <div className="mt-12 grid gap-5 lg:grid-cols-2">
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-soft sm:p-8">
+            <Reveal className="rounded-2xl border border-border bg-card p-6 shadow-soft sm:p-8 lift">
               <p className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{t("landing.ps.problemsTitle")}</p>
               <ul className="mt-5 space-y-3">
                 {[t("landing.ps.p1"), t("landing.ps.p2"), t("landing.ps.p3"), t("landing.ps.p4")].map((p) => (
@@ -271,8 +271,8 @@ function Landing() {
                   </li>
                 ))}
               </ul>
-            </div>
-            <div className="rounded-2xl border border-primary/30 bg-card p-6 shadow-soft ring-soft sm:p-8">
+            </Reveal>
+            <Reveal delay={120} className="rounded-2xl border border-primary/30 bg-card p-6 shadow-soft ring-soft sm:p-8 lift">
               <p className="text-sm font-semibold uppercase tracking-wider text-primary">{t("landing.ps.solutionsTitle")}</p>
               <ul className="mt-5 space-y-3">
                 {[t("landing.ps.s1"), t("landing.ps.s2"), t("landing.ps.s3"), t("landing.ps.s4")].map((s) => (
@@ -282,7 +282,7 @@ function Landing() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>
