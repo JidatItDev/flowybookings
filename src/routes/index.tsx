@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { PricingComparisonTable } from "@/components/PricingComparisonTable";
 import { Reveal } from "@/components/Reveal";
+import { usePlanPricing, planMonthlyAmount } from "@/lib/use-plan-pricing";
+import type { DbPlan } from "@/lib/plans";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -27,6 +29,8 @@ export const Route = createFileRoute("/")({
 function Landing() {
   const { session, isSuperAdmin } = useAuth();
   const { t } = useT();
+  const { data: pricingMap } = usePlanPricing();
+  const priceFor = (plan: DbPlan, fallback: number) => planMonthlyAmount(pricingMap, plan) ?? fallback;
   // Note: do NOT auto-redirect authenticated users away from "/".
   // The homepage stays accessible at all times. We only show a small CTA
   // pointing them to their dashboard (rendered in the header below).
@@ -73,7 +77,7 @@ function Landing() {
     },
     {
       name: "Starter",
-      price: 19,
+      price: priceFor("starter", 19),
       period: t("pricing.period.month"),
       fee: t("pricing.compare.val.starterFee"),
       feeIsFree: false,
@@ -88,7 +92,7 @@ function Landing() {
     },
     {
       name: "Pro",
-      price: 49,
+      price: priceFor("pro", 49),
       period: t("pricing.period.month"),
       fee: t("pricing.compare.val.proFee"),
       feeIsFree: false,
@@ -105,7 +109,7 @@ function Landing() {
     },
     {
       name: "Premium",
-      price: 99,
+      price: priceFor("premium", 99),
       period: t("pricing.period.month"),
       fee: t("pricing.compare.val.noFee"),
       feeIsFree: true,

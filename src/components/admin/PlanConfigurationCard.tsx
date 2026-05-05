@@ -114,6 +114,32 @@ export function PlanConfigurationCard() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      // Diff vóór upsert voor audit log
+      const pricingChanges: Array<{ plan: DbPlan; field: string; old: number; new: number }> = [];
+      for (const draft of Object.values(pricingDraft)) {
+        const original = pricing.find((p) => p.plan_name === draft.plan_name);
+        if (!original) continue;
+        if (original.monthly_price_cents !== Math.round(draft.monthly_price_cents || 0)) {
+          pricingChanges.push({ plan: draft.plan_name, field: "monthly_price_cents", old: original.monthly_price_cents, new: Math.round(draft.monthly_price_cents || 0) });
+        }
+        if ((original.booking_fee_cents ?? 0) !== Math.round(draft.booking_fee_cents || 0)) {
+          pricingChanges.push({ plan: draft.plan_name, field: "booking_fee_cents", old: original.booking_fee_cents ?? 0, new: Math.round(draft.booking_fee_cents || 0) });
+        }
+      }
+      const featureChanges: Array<{ plan: DbPlan; slug: string; field: string; old: unknown; new: unknown }> = [];
+      for (const draft of Object.values(featureDraft)) {
+        const original = features.find((f) => f.plan_name === draft.plan_name && f.feature_slug === draft.feature_slug);
+        const oldIncluded = original?.is_included ?? false;
+        const oldLimit = original?.limit_value ?? null;
+        const newLimit = draft.limit_value === null || draft.limit_value === undefined || (draft.limit_value as unknown as string) === "" ? null : Math.max(0, Math.round(Number(draft.limit_value)));
+        if (oldIncluded !== !!draft.is_included) {
+          featureChanges.push({ plan: draft.plan_name, slug: draft.feature_slug, field: "is_included", old: oldIncluded, new: !!draft.is_included });
+        }
+        if (oldLimit !== newLimit) {
+          featureChanges.push({ plan: draft.plan_name, slug: draft.feature_slug, field: "limit_value", old: oldLimit, new: newLimit });
+        }
+      }
+
       // Pricing upserts
       const pricingRows = Object.values(pricingDraft).map((p) => ({
         plan_name: p.plan_name,
@@ -139,6 +165,31 @@ export function PlanConfigurationCard() {
         .from("plan_features")
         .upsert(featureRows, { onConflict: "plan_name,feature_slug" });
       if (featuresErr) throw featuresErr;
+
+      // Audit log — best-effort, blokkeert opslaan niet
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        const actor = auth?.user;
+        const rows = [
+          ...pricingChanges.map((c) => ({
+            actor_user_id: actor?.id ?? null,
+            actor_email: actor?.email ?? null,
+            action: "plan_pricing_changed",
+            entity: "plan_pricing",
+            metadata: { plan: c.plan, field: c.field, old_value: c.old, new_value: c.new },
+          })),
+          ...featureChanges.map((c) => ({
+            actor_user_id: actor?.id ?? null,
+            actor_email: actor?.email ?? null,
+            action: "plan_feature_changed",
+            entity: "plan_features",
+            metadata: { plan: c.plan, feature_slug: c.slug, field: c.field, old_value: c.old, new_value: c.new },
+          })),
+        ];
+        if (rows.length > 0) await supabase.from("activity_log").insert(rows as never);
+      } catch {
+        /* ignore audit failures */
+      }
     },
     onSuccess: () => {
       toast.success("Plan-configuratie opgeslagen");

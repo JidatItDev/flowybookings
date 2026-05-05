@@ -15,6 +15,7 @@ import { shopKeys } from "@/lib/queries";
 import { ShopBillingCard, usePlanCheckout } from "@/components/ShopBillingCard";
 import { TransactionFeesCard } from "@/components/TransactionFeesCard";
 import { assertNotImpersonating, useImpersonationReadOnly } from "@/components/ImpersonationBanner";
+import { usePlanPricing, planMonthlyAmount } from "@/lib/use-plan-pricing";
 
 export const Route = createFileRoute("/shop/upgrade")({
   head: () => ({ meta: [{ title: "Upgrade — FlowyBookings" }] }),
@@ -41,6 +42,8 @@ function UpgradePage() {
   const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const search = Route.useSearch();
   const navigate = useNavigate();
+  const { data: pricingMap } = usePlanPricing();
+  const priceFor = (plan: DbPlan, fallback: number) => planMonthlyAmount(pricingMap, plan) ?? fallback;
 
   const checkout = usePlanCheckout();
 
@@ -114,7 +117,7 @@ function UpgradePage() {
       tier: "basic",
       name: t("upgrade.basic"),
       tagline: t("upgrade.basicTagline"),
-      price: 19,
+      price: priceFor("starter", 19),
       accent: "neutral",
       features: [t("upgrade.feat.bookings"), t("upgrade.feat.staff3"), t("upgrade.feat.email"), t("upgrade.feat.analytics")],
     },
@@ -123,7 +126,7 @@ function UpgradePage() {
       tier: "pro",
       name: t("upgrade.pro"),
       tagline: t("upgrade.proTagline"),
-      price: 49,
+      price: priceFor("pro", 49),
       badge: t("upgrade.mostPopular"),
       accent: "primary",
       features: [t("upgrade.feat.bookings"), t("upgrade.feat.staff10"), t("upgrade.feat.sms"), t("upgrade.feat.deposits"), t("upgrade.feat.advAnalytics"), t("upgrade.feat.branding")],
@@ -133,7 +136,7 @@ function UpgradePage() {
       tier: "premium",
       name: t("upgrade.premium"),
       tagline: t("upgrade.premiumTagline"),
-      price: 99,
+      price: priceFor("premium", 99),
       badge: t("upgrade.bestValue"),
       accent: "premium",
       features: [t("upgrade.feat.bookings"), t("upgrade.feat.staffUnlimited"), t("upgrade.feat.whatsapp"), t("upgrade.feat.multiloc"), t("upgrade.feat.priority"), t("upgrade.feat.api")],
