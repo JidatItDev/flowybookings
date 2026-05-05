@@ -126,7 +126,7 @@ function UpgradePage() {
       tier: "pro",
       name: t("upgrade.pro"),
       tagline: t("upgrade.proTagline"),
-      price: 49,
+      price: priceFor("pro", 49),
       badge: t("upgrade.mostPopular"),
       accent: "primary",
       features: [t("upgrade.feat.bookings"), t("upgrade.feat.staff10"), t("upgrade.feat.sms"), t("upgrade.feat.deposits"), t("upgrade.feat.advAnalytics"), t("upgrade.feat.branding")],
