@@ -33,7 +33,7 @@ const DEMO_PASSWORD = "Demo1234!";
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { redirect } = Route.useSearch();
+  const { redirect, auth_error } = Route.useSearch();
   const { session, loading, rolesLoading, isSuperAdmin, isShopOwner, isStaff } = useAuth();
   const { t } = useT();
   const [email, setEmail] = useState("");
