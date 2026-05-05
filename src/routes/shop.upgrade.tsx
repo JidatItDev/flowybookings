@@ -15,6 +15,7 @@ import { shopKeys } from "@/lib/queries";
 import { ShopBillingCard, usePlanCheckout } from "@/components/ShopBillingCard";
 import { TransactionFeesCard } from "@/components/TransactionFeesCard";
 import { assertNotImpersonating, useImpersonationReadOnly } from "@/components/ImpersonationBanner";
+import { usePlanPricing, planMonthlyAmount } from "@/lib/use-plan-pricing";
 
 export const Route = createFileRoute("/shop/upgrade")({
   head: () => ({ meta: [{ title: "Upgrade — FlowyBookings" }] }),
