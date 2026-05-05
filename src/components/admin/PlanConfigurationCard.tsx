@@ -186,7 +186,7 @@ export function PlanConfigurationCard() {
             metadata: { plan: c.plan, feature_slug: c.slug, field: c.field, old_value: c.old, new_value: c.new },
           })),
         ];
-        if (rows.length > 0) await supabase.from("activity_log").insert(rows);
+        if (rows.length > 0) await supabase.from("activity_log").insert(rows as never);
       } catch {
         /* ignore audit failures */
       }
