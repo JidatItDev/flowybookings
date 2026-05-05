@@ -42,6 +42,8 @@ function UpgradePage() {
   const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const search = Route.useSearch();
   const navigate = useNavigate();
+  const { data: pricingMap } = usePlanPricing();
+  const priceFor = (plan: DbPlan, fallback: number) => planMonthlyAmount(pricingMap, plan) ?? fallback;
 
   const checkout = usePlanCheckout();
 
