@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, useMemo, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Sparkle, Loader2, Check, ArrowRight, ArrowLeft, CalendarCheck, Bell, Users, BarChart3, Copy } from "lucide-react";
+import { Sparkle, Loader2, Check, X, ArrowRight, ArrowLeft, CalendarCheck, Bell, Users, BarChart3, Copy, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 import { useT } from "@/lib/i18n";
@@ -12,10 +12,26 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
 function slugify(s: string) {
-  return s.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").slice(0, 60);
+  return s
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
+const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,58}[a-z0-9])?$/;
+const RESERVED = new Set(["admin", "api", "app", "auth", "book", "beheer", "shop", "login", "signup", "support", "legal", "demo", "www"]);
+
+function randomSuffix() {
+  return Math.random().toString(36).slice(2, 6);
 }
 
 type Step = 0 | 1 | 2;
+type SlugState = "idle" | "checking" | "available" | "taken" | "invalid" | "reserved";
 
 export function ShopOnboarding() {
   const { user } = useAuth();
@@ -24,7 +40,48 @@ export function ShopOnboarding() {
   const [step, setStep] = useState<Step>(0);
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
+  const [slugTouched, setSlugTouched] = useState(false);
+  const [slugState, setSlugState] = useState<SlugState>("idle");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [nameWarning, setNameWarning] = useState(false);
   const [createdSlug, setCreatedSlug] = useState<string | null>(null);
+
+  const slugValidFormat = useMemo(() => SLUG_RE.test(slug) && !RESERVED.has(slug), [slug]);
+
+  // Debounced slug availability check
+  useEffect(() => {
+    if (!slug) { setSlugState("idle"); setSuggestions([]); return; }
+    if (RESERVED.has(slug)) { setSlugState("reserved"); setSuggestions([]); return; }
+    if (!SLUG_RE.test(slug)) { setSlugState("invalid"); setSuggestions([]); return; }
+    setSlugState("checking");
+    const handle = setTimeout(async () => {
+      const { data } = await supabase.from("shops").select("id").eq("slug", slug).maybeSingle();
+      if (data) {
+        setSlugState("taken");
+        // Generate suggestions and verify each is free
+        const base = slug.replace(/-\d+$/, "");
+        const candidates = [`${base}-1`, `${base}-${randomSuffix()}`, `${base}-shop`, `${base}-${randomSuffix()}`];
+        const { data: taken } = await supabase.from("shops").select("slug").in("slug", candidates);
+        const takenSet = new Set((taken ?? []).map((r) => r.slug));
+        setSuggestions(candidates.filter((c) => !takenSet.has(c)).slice(0, 3));
+      } else {
+        setSlugState("available");
+        setSuggestions([]);
+      }
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [slug]);
+
+  // Debounced name similarity check (soft warning)
+  useEffect(() => {
+    const trimmed = name.trim();
+    if (trimmed.length < 3) { setNameWarning(false); return; }
+    const handle = setTimeout(async () => {
+      const { data } = await supabase.from("shops").select("id").ilike("name", trimmed).limit(1);
+      setNameWarning((data ?? []).length > 0);
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [name]);
 
   const createShop = useMutation({
     mutationFn: async () => {
@@ -32,10 +89,16 @@ export function ShopOnboarding() {
       const finalSlug = slug || slugify(name);
       const { data: shop, error } = await supabase
         .from("shops")
-        .insert({ name, slug: finalSlug, owner_id: user.id, status: "active", plan: "trial" })
+        .insert({ name: name.trim(), slug: finalSlug, owner_id: user.id, status: "active", plan: "trial" })
         .select("id, slug")
         .single();
-      if (error) throw error;
+      if (error) {
+        if ((error as { code?: string }).code === "23505") {
+          setSlugState("taken");
+          throw new Error("Deze URL is al in gebruik. Kies een andere.");
+        }
+        throw error;
+      }
       await supabase.from("user_roles").insert({ user_id: user.id, role: "shop_owner", shop_id: shop.id });
       return shop;
     },
@@ -52,8 +115,12 @@ export function ShopOnboarding() {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    if (!slugValidFormat) { toast.error("Ongeldige URL — alleen kleine letters, cijfers en streepjes."); return; }
+    if (slugState === "taken" || slugState === "reserved" || slugState === "checking") return;
     createShop.mutate();
   };
+
+  const pickSuggestion = (s: string) => { setSlug(s); setSlugTouched(true); };
 
   const total = 3;
   const progress = ((step + 1) / total) * 100;
@@ -69,6 +136,16 @@ export function ShopOnboarding() {
       /* ignore */
     }
   };
+
+  const submitDisabled =
+    createShop.isPending ||
+    !name.trim() ||
+    !slug ||
+    !slugValidFormat ||
+    slugState === "taken" ||
+    slugState === "reserved" ||
+    slugState === "invalid" ||
+    slugState === "checking";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-hero px-4 py-12">
@@ -137,22 +214,83 @@ export function ShopOnboarding() {
                     required
                     autoFocus
                     value={name}
-                    onChange={(e) => { setName(e.target.value); if (!slug) setSlug(slugify(e.target.value)); }}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setName(v);
+                      if (!slugTouched) setSlug(slugify(v));
+                    }}
                   />
+                  {nameWarning && (
+                    <p className="flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      <span>Deze naam bestaat al op het platform. Je kunt doorgaan of een andere naam kiezen.</span>
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="slug">{t("onboarding.urlSlug")}</Label>
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">flowybookings.com/</span>
-                    <Input id="slug" placeholder={t("onboarding.slugPlaceholder")} required value={slug} onChange={(e) => setSlug(slugify(e.target.value))} />
+                    <Input
+                      id="slug"
+                      placeholder={t("onboarding.slugPlaceholder")}
+                      required
+                      value={slug}
+                      onChange={(e) => { setSlug(slugify(e.target.value)); setSlugTouched(true); }}
+                      aria-invalid={slugState === "taken" || slugState === "invalid" || slugState === "reserved"}
+                    />
                   </div>
-                  <p className="text-xs text-muted-foreground">{t("onboarding.slugHint")}</p>
+                  <div className="min-h-[1.25rem] text-xs">
+                    {slugState === "checking" && (
+                      <span className="flex items-center gap-1.5 text-muted-foreground">
+                        <Loader2 className="h-3 w-3 animate-spin" /> Controleren…
+                      </span>
+                    )}
+                    {slugState === "available" && (
+                      <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                        <Check className="h-3.5 w-3.5" /> Beschikbaar
+                      </span>
+                    )}
+                    {slugState === "taken" && (
+                      <span className="flex items-center gap-1.5 text-destructive">
+                        <X className="h-3.5 w-3.5" /> Deze URL is al in gebruik
+                      </span>
+                    )}
+                    {slugState === "reserved" && (
+                      <span className="flex items-center gap-1.5 text-destructive">
+                        <X className="h-3.5 w-3.5" /> Deze URL is gereserveerd
+                      </span>
+                    )}
+                    {slugState === "invalid" && slug.length > 0 && (
+                      <span className="flex items-center gap-1.5 text-destructive">
+                        <X className="h-3.5 w-3.5" /> Alleen a–z, 0–9 en streepjes
+                      </span>
+                    )}
+                    {slugState === "idle" && (
+                      <span className="text-muted-foreground">{t("onboarding.slugHint")}</span>
+                    )}
+                  </div>
+                  {suggestions.length > 0 && slugState === "taken" && (
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="text-xs text-muted-foreground">Suggesties:</span>
+                      {suggestions.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => pickSuggestion(s)}
+                          className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-xs font-medium hover:bg-muted"
+                        >
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 pt-2">
                   <Button type="button" variant="ghost" onClick={() => setStep(0)} disabled={createShop.isPending}>
                     <ArrowLeft className="h-4 w-4" /> {t("book.back")}
                   </Button>
-                  <Button type="submit" variant="hero" className="flex-1" disabled={createShop.isPending}>
+                  <Button type="submit" variant="hero" className="flex-1" disabled={submitDisabled}>
                     {createShop.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                     {t("onboarding.createBtn")} <ArrowRight className="h-4 w-4" />
                   </Button>
