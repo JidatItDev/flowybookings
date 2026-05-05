@@ -109,7 +109,7 @@ function Landing() {
     },
     {
       name: "Premium",
-      price: 99,
+      price: priceFor("premium", 99),
       period: t("pricing.period.month"),
       fee: t("pricing.compare.val.noFee"),
       feeIsFree: true,
