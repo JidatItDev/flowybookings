@@ -113,6 +113,38 @@ function LoginPage() {
           <h1 className="text-2xl font-semibold tracking-tight">{t("auth.welcomeBack")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t("auth.signInSub")}</p>
 
+          {auth_error && (
+            <div
+              role="alert"
+              className="mt-5 rounded-2xl border border-destructive/30 bg-destructive/10 p-4"
+            >
+              <p className="text-sm font-semibold text-foreground">
+                {t("auth.loginFailedTitle")}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t("auth.loginFailedMessage")}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="hero"
+                  onClick={() => navigate({ to: "/login", search: redirect ? { redirect } : {}, replace: true })}
+                >
+                  {t("auth.loginRetry")}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate({ to: "/", replace: true })}
+                >
+                  {t("auth.backToHome")}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {googleAvailable !== false && (
             <div className="mt-6 space-y-3">
               <GoogleSignInButton redirect={redirect} />
