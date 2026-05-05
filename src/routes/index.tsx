@@ -29,6 +29,8 @@ export const Route = createFileRoute("/")({
 function Landing() {
   const { session, isSuperAdmin } = useAuth();
   const { t } = useT();
+  const { data: pricingMap } = usePlanPricing();
+  const priceFor = (plan: DbPlan, fallback: number) => planMonthlyAmount(pricingMap, plan) ?? fallback;
   // Note: do NOT auto-redirect authenticated users away from "/".
   // The homepage stays accessible at all times. We only show a small CTA
   // pointing them to their dashboard (rendered in the header below).
