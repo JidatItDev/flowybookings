@@ -15,9 +15,10 @@ import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { useGoogleAuthAvailable } from "@/lib/use-google-auth-available";
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (s: Record<string, unknown>): { redirect?: string } => {
-    const out: { redirect?: string } = {};
+  validateSearch: (s: Record<string, unknown>): { redirect?: string; auth_error?: string } => {
+    const out: { redirect?: string; auth_error?: string } = {};
     if (typeof s.redirect === "string") out.redirect = s.redirect;
+    if (typeof s.auth_error === "string") out.auth_error = s.auth_error;
     return out;
   },
   head: () => ({ meta: [{ title: "Sign in — FlowyBookings" }] }),
@@ -32,7 +33,7 @@ const DEMO_PASSWORD = "Demo1234!";
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { redirect } = Route.useSearch();
+  const { redirect, auth_error } = Route.useSearch();
   const { session, loading, rolesLoading, isSuperAdmin, isShopOwner, isStaff } = useAuth();
   const { t } = useT();
   const [email, setEmail] = useState("");
@@ -111,6 +112,38 @@ function LoginPage() {
         <div className="rounded-3xl border border-border bg-card p-8 shadow-elevated">
           <h1 className="text-2xl font-semibold tracking-tight">{t("auth.welcomeBack")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{t("auth.signInSub")}</p>
+
+          {auth_error && (
+            <div
+              role="alert"
+              className="mt-5 rounded-2xl border border-destructive/30 bg-destructive/10 p-4"
+            >
+              <p className="text-sm font-semibold text-foreground">
+                {t("auth.loginFailedTitle")}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t("auth.loginFailedMessage")}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="hero"
+                  onClick={() => navigate({ to: "/login", search: redirect ? { redirect } : {}, replace: true })}
+                >
+                  {t("auth.loginRetry")}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate({ to: "/", replace: true })}
+                >
+                  {t("auth.backToHome")}
+                </Button>
+              </div>
+            </div>
+          )}
 
           {googleAvailable !== false && (
             <div className="mt-6 space-y-3">
