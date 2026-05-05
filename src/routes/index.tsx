@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { PricingComparisonTable } from "@/components/PricingComparisonTable";
 import { Reveal } from "@/components/Reveal";
+import { usePlanPricing, planMonthlyAmount } from "@/lib/use-plan-pricing";
+import type { DbPlan } from "@/lib/plans";
 
 export const Route = createFileRoute("/")({
   head: () => ({
