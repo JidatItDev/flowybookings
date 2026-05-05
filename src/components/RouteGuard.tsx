@@ -70,18 +70,46 @@ export function RequireShopAccess({ children }: { children: ReactNode }) {
   }, [session, loading, navigate]);
 
   if (loading || !session) return <FullPageLoader />;
-  // Customers (no role) get bounced to landing
+  // No linked shop yet → send them to the branded onboarding flow
+  // instead of a dead-end screen. ShopOnboarding handles shop creation,
+  // owner role assignment, and trial start (via DB trigger).
   if (!allowed) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="max-w-md text-center">
-          <h1 className="text-xl font-semibold">No shop access</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Your account isn't linked to a shop yet.
-          </p>
-        </div>
-      </div>
-    );
+    return <NoShopAccessOnboardingPrompt />;
   }
   return <>{children}</>;
+}
+
+function NoShopAccessOnboardingPrompt() {
+  const navigate = useNavigate();
+  // Auto-redirect to the existing onboarding route which renders <ShopOnboarding />
+  useEffect(() => {
+    navigate({ to: "/shop/onboarding", replace: true });
+  }, [navigate]);
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gradient-hero px-4">
+      <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 text-center shadow-elevated">
+        <h1 className="text-2xl font-semibold tracking-tight">Welkom bij FlowyBookings</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Maak je shop aan om je dashboard te starten.
+        </p>
+        <div className="mt-6 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/shop/onboarding", replace: true })}
+            className="inline-flex h-10 items-center justify-center rounded-xl bg-gradient-brand px-4 text-sm font-medium text-primary-foreground shadow-elevated transition-opacity hover:opacity-90"
+          >
+            Maak je shop aan
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/", replace: true })}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-background px-4 text-sm font-medium text-foreground hover:bg-muted"
+          >
+            Terug naar homepage
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
