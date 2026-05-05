@@ -117,7 +117,7 @@ function UpgradePage() {
       tier: "basic",
       name: t("upgrade.basic"),
       tagline: t("upgrade.basicTagline"),
-      price: 19,
+      price: priceFor("starter", 19),
       accent: "neutral",
       features: [t("upgrade.feat.bookings"), t("upgrade.feat.staff3"), t("upgrade.feat.email"), t("upgrade.feat.analytics")],
     },
