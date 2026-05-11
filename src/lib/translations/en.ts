@@ -353,6 +353,7 @@ export const en: Record<string, string> = {
   "adminNav.activity": "Activity",
   "adminNav.auditLogs": "Audit log",
   "adminNav.demo": "Demo controls",
+  "adminNav.security": "Security & Access",
   "adminNav.settings": "Settings",
   "activityPage.title": "Activity",
   "activityPage.subtitle": "Last {limit} platform events with filters and CSV export.",
