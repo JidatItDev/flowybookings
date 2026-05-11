@@ -1201,7 +1201,14 @@ export type Database = {
       shop_can_accept_bookings: { Args: { _shop_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "super_admin" | "shop_owner" | "staff" | "customer"
+      app_role:
+        | "super_admin"
+        | "shop_owner"
+        | "staff"
+        | "customer"
+        | "admin"
+        | "support"
+        | "read_only_admin"
       booking_status:
         | "pending"
         | "confirmed"
@@ -1339,7 +1346,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "shop_owner", "staff", "customer"],
+      app_role: [
+        "super_admin",
+        "shop_owner",
+        "staff",
+        "customer",
+        "admin",
+        "support",
+        "read_only_admin",
+      ],
       booking_status: [
         "pending",
         "confirmed",
