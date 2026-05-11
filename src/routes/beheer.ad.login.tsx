@@ -17,32 +17,31 @@ export const Route = createFileRoute("/beheer/ad/login")({
 
 function AdminLoginPage() {
   const navigate = useNavigate();
-  const { session, loading, rolesLoading, isSuperAdmin, signOut } = useAuth();
+  const { session, loading, rolesLoading, isPlatformAdmin, signOut } = useAuth();
   const { t } = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  // Strict redirect: only super_admin proceeds to dashboard. Any other authenticated
-  // user is shown a "wrong account" screen — we never silently grant admin access
-  // and never redirect them into /shop as if admin login succeeded.
   useEffect(() => {
     if (loading || rolesLoading || !session) return;
-    if (isSuperAdmin) navigate({ to: "/beheer/dashboard", replace: true });
-  }, [session, loading, rolesLoading, isSuperAdmin, navigate]);
+    if (isPlatformAdmin) navigate({ to: "/beheer/dashboard", replace: true });
+  }, [session, loading, rolesLoading, isPlatformAdmin, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    // Sign out any existing session first so a non-admin session cannot bleed through.
     if (session) await supabase.auth.signOut();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setSubmitting(false);
     if (error) {
+      void supabase.from("admin_login_log").insert({
+        email, success: false, failure_reason: error.message?.slice(0, 200) ?? "unknown",
+        user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 500) : null,
+      });
       toast.error(error.message);
       return;
     }
-    // Verify the freshly authenticated user actually has super_admin.
     const { data: userData } = await supabase.auth.getUser();
     const uid = userData.user?.id;
     if (!uid) {
@@ -51,19 +50,28 @@ function AdminLoginPage() {
     }
     const { data: roleRows } = await supabase
       .from("user_roles")
-      .select("role")
+      .select("role, disabled_at, expires_at")
       .eq("user_id", uid)
-      .eq("role", "super_admin");
-    if (!roleRows || roleRows.length === 0) {
+      .in("role", ["super_admin", "admin", "support", "read_only_admin"]);
+    const active = (roleRows ?? []).find(
+      (r) => !r.disabled_at && (!r.expires_at || new Date(r.expires_at) > new Date()),
+    );
+    if (!active) {
       await supabase.auth.signOut();
+      void supabase.from("admin_login_log").insert({
+        user_id: uid, email, success: false, failure_reason: "not_platform_admin_or_expired",
+      });
       toast.error(t("admin.notAuthorized") ?? "This account is not a platform admin.");
       return;
     }
+    void supabase.from("admin_login_log").insert({
+      user_id: uid, email, role: active.role, success: true,
+      user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 500) : null,
+    });
     navigate({ to: "/beheer/dashboard", replace: true });
   };
 
-  // Logged-in but NOT super_admin → block the form entirely.
-  const blocked = !!session && !rolesLoading && !isSuperAdmin;
+  const blocked = !!session && !rolesLoading && !isPlatformAdmin;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
