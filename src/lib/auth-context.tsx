@@ -264,6 +264,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(() => {
     const activeShop = shops.find((s) => s.id === activeShopId) ?? null;
     const isSuperAdmin = roles.includes("super_admin");
+    const isAdmin = roles.includes("admin");
+    const isSupportAdmin = roles.includes("support");
+    const isReadOnlyAdmin = roles.includes("read_only_admin");
+    const isPlatformAdmin = isSuperAdmin || isAdmin || isSupportAdmin || isReadOnlyAdmin;
+    const isAdminWriter = isSuperAdmin || isAdmin;
     return {
       session,
       user: session?.user ?? null,
@@ -271,8 +276,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       roles,
       rolesLoading,
       isSuperAdmin,
+      isPlatformAdmin,
+      isAdminWriter,
+      isReadOnlyAdmin,
+      isSupportAdmin,
       // A super_admin sees all shops via RLS — don't mistake that for shop ownership.
-      isShopOwner: !isSuperAdmin && (roles.includes("shop_owner") || (session?.user?.id != null && shops.length > 0)),
+      isShopOwner: !isPlatformAdmin && (roles.includes("shop_owner") || (session?.user?.id != null && shops.length > 0)),
       isStaff: roles.includes("staff"),
       shops,
       activeShop,
