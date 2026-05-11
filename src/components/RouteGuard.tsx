@@ -35,7 +35,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
 /** Requires super_admin role. Strictly blocks non-admins. */
 export function RequireSuperAdmin({ children }: { children: ReactNode }) {
-  const { session, loading, rolesLoading, isSuperAdmin } = useAuth();
+  const { session, loading, rolesLoading, isPlatformAdmin } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,14 +45,14 @@ export function RequireSuperAdmin({ children }: { children: ReactNode }) {
       navigate({ to: "/beheer/ad/login", replace: true });
       return;
     }
-    if (!isSuperAdmin) {
+    if (!isPlatformAdmin) {
       // Non-admin with a session: bounce to homepage. Do NOT keep them here.
       navigate({ to: "/", replace: true });
     }
-  }, [session, loading, rolesLoading, isSuperAdmin, navigate]);
+  }, [session, loading, rolesLoading, isPlatformAdmin, navigate]);
 
   if (loading || rolesLoading) return <FullPageLoader />;
-  if (!session || !isSuperAdmin) return <FullPageLoader label="Checking access…" />;
+  if (!session || !isPlatformAdmin) return <FullPageLoader label="Checking access…" />;
   return <>{children}</>;
 }
 
