@@ -82,8 +82,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         // Best-effort: stamp last_login_at on real sign-in so admins can see activity.
         const uid = s.user.id;
+        const userEmail = s.user.email ?? null;
         setTimeout(() => {
           void supabase.from("profiles").update({ last_login_at: new Date().toISOString() }).eq("id", uid);
+          // Best-effort: log the login attempt for the admin security page.
+          void supabase.from("admin_login_log").insert({
+            user_id: uid,
+            email: userEmail,
+            success: true,
+            user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 500) : null,
+          });
         }, 0);
       }
       if (event === "SIGNED_OUT" && typeof window !== "undefined") {
