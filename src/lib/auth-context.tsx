@@ -13,7 +13,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "super_admin" | "shop_owner" | "staff" | "customer";
+export type AppRole =
+  | "super_admin"
+  | "admin"
+  | "support"
+  | "read_only_admin"
+  | "shop_owner"
+  | "staff"
+  | "customer";
 
 export type ShopRow = {
   id: string;
@@ -35,6 +42,10 @@ interface AuthContextValue {
   roles: AppRole[];
   rolesLoading: boolean;
   isSuperAdmin: boolean;
+  isPlatformAdmin: boolean;
+  isAdminWriter: boolean;
+  isReadOnlyAdmin: boolean;
+  isSupportAdmin: boolean;
   isShopOwner: boolean;
   isStaff: boolean;
   shops: ShopRow[];
