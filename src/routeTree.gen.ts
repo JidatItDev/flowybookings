@@ -49,6 +49,7 @@ import { Route as BeheerDashboardSupportRouteImport } from './routes/beheer.dash
 import { Route as BeheerDashboardSmsRouteImport } from './routes/beheer.dashboard.sms'
 import { Route as BeheerDashboardShopsRouteImport } from './routes/beheer.dashboard.shops'
 import { Route as BeheerDashboardSettingsRouteImport } from './routes/beheer.dashboard.settings'
+import { Route as BeheerDashboardSecurityRouteImport } from './routes/beheer.dashboard.security'
 import { Route as BeheerDashboardRevenueRouteImport } from './routes/beheer.dashboard.revenue'
 import { Route as BeheerDashboardProvidersRouteImport } from './routes/beheer.dashboard.providers'
 import { Route as BeheerDashboardPlansRouteImport } from './routes/beheer.dashboard.plans'
@@ -287,6 +288,11 @@ const BeheerDashboardSettingsRoute = BeheerDashboardSettingsRouteImport.update({
   path: '/beheer/dashboard/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BeheerDashboardSecurityRoute = BeheerDashboardSecurityRouteImport.update({
+  id: '/beheer/dashboard/security',
+  path: '/beheer/dashboard/security',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BeheerDashboardRevenueRoute = BeheerDashboardRevenueRouteImport.update({
   id: '/beheer/dashboard/revenue',
   path: '/beheer/dashboard/revenue',
@@ -520,6 +526,7 @@ export interface FileRoutesByFullPath {
   '/beheer/dashboard/plans': typeof BeheerDashboardPlansRoute
   '/beheer/dashboard/providers': typeof BeheerDashboardProvidersRoute
   '/beheer/dashboard/revenue': typeof BeheerDashboardRevenueRoute
+  '/beheer/dashboard/security': typeof BeheerDashboardSecurityRoute
   '/beheer/dashboard/settings': typeof BeheerDashboardSettingsRoute
   '/beheer/dashboard/shops': typeof BeheerDashboardShopsRouteWithChildren
   '/beheer/dashboard/sms': typeof BeheerDashboardSmsRoute
@@ -595,6 +602,7 @@ export interface FileRoutesByTo {
   '/beheer/dashboard/plans': typeof BeheerDashboardPlansRoute
   '/beheer/dashboard/providers': typeof BeheerDashboardProvidersRoute
   '/beheer/dashboard/revenue': typeof BeheerDashboardRevenueRoute
+  '/beheer/dashboard/security': typeof BeheerDashboardSecurityRoute
   '/beheer/dashboard/settings': typeof BeheerDashboardSettingsRoute
   '/beheer/dashboard/shops': typeof BeheerDashboardShopsRouteWithChildren
   '/beheer/dashboard/sms': typeof BeheerDashboardSmsRoute
@@ -671,6 +679,7 @@ export interface FileRoutesById {
   '/beheer/dashboard/plans': typeof BeheerDashboardPlansRoute
   '/beheer/dashboard/providers': typeof BeheerDashboardProvidersRoute
   '/beheer/dashboard/revenue': typeof BeheerDashboardRevenueRoute
+  '/beheer/dashboard/security': typeof BeheerDashboardSecurityRoute
   '/beheer/dashboard/settings': typeof BeheerDashboardSettingsRoute
   '/beheer/dashboard/shops': typeof BeheerDashboardShopsRouteWithChildren
   '/beheer/dashboard/sms': typeof BeheerDashboardSmsRoute
@@ -748,6 +757,7 @@ export interface FileRouteTypes {
     | '/beheer/dashboard/plans'
     | '/beheer/dashboard/providers'
     | '/beheer/dashboard/revenue'
+    | '/beheer/dashboard/security'
     | '/beheer/dashboard/settings'
     | '/beheer/dashboard/shops'
     | '/beheer/dashboard/sms'
@@ -823,6 +833,7 @@ export interface FileRouteTypes {
     | '/beheer/dashboard/plans'
     | '/beheer/dashboard/providers'
     | '/beheer/dashboard/revenue'
+    | '/beheer/dashboard/security'
     | '/beheer/dashboard/settings'
     | '/beheer/dashboard/shops'
     | '/beheer/dashboard/sms'
@@ -898,6 +909,7 @@ export interface FileRouteTypes {
     | '/beheer/dashboard/plans'
     | '/beheer/dashboard/providers'
     | '/beheer/dashboard/revenue'
+    | '/beheer/dashboard/security'
     | '/beheer/dashboard/settings'
     | '/beheer/dashboard/shops'
     | '/beheer/dashboard/sms'
@@ -974,6 +986,7 @@ export interface RootRouteChildren {
   BeheerDashboardPlansRoute: typeof BeheerDashboardPlansRoute
   BeheerDashboardProvidersRoute: typeof BeheerDashboardProvidersRoute
   BeheerDashboardRevenueRoute: typeof BeheerDashboardRevenueRoute
+  BeheerDashboardSecurityRoute: typeof BeheerDashboardSecurityRoute
   BeheerDashboardSettingsRoute: typeof BeheerDashboardSettingsRoute
   BeheerDashboardShopsRoute: typeof BeheerDashboardShopsRouteWithChildren
   BeheerDashboardSmsRoute: typeof BeheerDashboardSmsRoute
@@ -1269,6 +1282,13 @@ declare module '@tanstack/react-router' {
       path: '/beheer/dashboard/settings'
       fullPath: '/beheer/dashboard/settings'
       preLoaderRoute: typeof BeheerDashboardSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/beheer/dashboard/security': {
+      id: '/beheer/dashboard/security'
+      path: '/beheer/dashboard/security'
+      fullPath: '/beheer/dashboard/security'
+      preLoaderRoute: typeof BeheerDashboardSecurityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/beheer/dashboard/revenue': {
@@ -1597,6 +1617,7 @@ const rootRouteChildren: RootRouteChildren = {
   BeheerDashboardPlansRoute: BeheerDashboardPlansRoute,
   BeheerDashboardProvidersRoute: BeheerDashboardProvidersRoute,
   BeheerDashboardRevenueRoute: BeheerDashboardRevenueRoute,
+  BeheerDashboardSecurityRoute: BeheerDashboardSecurityRoute,
   BeheerDashboardSettingsRoute: BeheerDashboardSettingsRoute,
   BeheerDashboardShopsRoute: BeheerDashboardShopsRouteWithChildren,
   BeheerDashboardSmsRoute: BeheerDashboardSmsRoute,

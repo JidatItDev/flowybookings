@@ -84,7 +84,7 @@ function SecurityPage() {
       const { data: roles, error } = await supabase
         .from("user_roles")
         .select("id, user_id, role, label, expires_at, disabled_at, invited_by, created_at")
-        .in("role", ADMIN_ROLES as unknown as string[])
+        .in("role", [...ADMIN_ROLES])
         .order("created_at", { ascending: false });
       if (error) throw error;
       const userIds = Array.from(new Set((roles ?? []).map((r) => r.user_id)));
