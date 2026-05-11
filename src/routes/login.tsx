@@ -70,6 +70,13 @@ function LoginPage() {
     setSubmitting(false);
     if (error) {
       const msg = (error.message || "").toLowerCase();
+      // Audit failed login attempt (best-effort).
+      void supabase.from("admin_login_log").insert({
+        email,
+        success: false,
+        failure_reason: error.message?.slice(0, 200) ?? "unknown",
+        user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 500) : null,
+      });
       if (msg.includes("invalid login") || msg.includes("invalid credentials")) {
         toast.error(t("auth.invalidCredentials"));
       } else {
