@@ -55,6 +55,90 @@ export type Database = {
           },
         ]
       }
+      admin_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_user_id: string | null
+          created_at: string
+          email: string
+          expires_at: string | null
+          id: string
+          invited_by: string | null
+          invited_by_email: string | null
+          label: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_user_id?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string | null
+          id?: string
+          invited_by?: string | null
+          invited_by_email?: string | null
+          label?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          status?: string
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_user_id?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string | null
+          id?: string
+          invited_by?: string | null
+          invited_by_email?: string | null
+          label?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      admin_login_log: {
+        Row: {
+          created_at: string
+          email: string | null
+          failure_reason: string | null
+          id: string
+          ip_address: string | null
+          role: string | null
+          success: boolean
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          failure_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          role?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          failure_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          role?: string | null
+          success?: boolean
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           demo_logins_enabled: boolean
@@ -1088,21 +1172,33 @@ export type Database = {
       user_roles: {
         Row: {
           created_at: string
+          disabled_at: string | null
+          expires_at: string | null
           id: string
+          invited_by: string | null
+          label: string | null
           role: Database["public"]["Enums"]["app_role"]
           shop_id: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
+          disabled_at?: string | null
+          expires_at?: string | null
           id?: string
+          invited_by?: string | null
+          label?: string | null
           role: Database["public"]["Enums"]["app_role"]
           shop_id?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
+          disabled_at?: string | null
+          expires_at?: string | null
           id?: string
+          invited_by?: string | null
+          label?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           shop_id?: string | null
           user_id?: string
@@ -1168,6 +1264,12 @@ export type Database = {
         Args: { _shop_id: string; _user_id: string }
         Returns: boolean
       }
+      is_admin_writer: { Args: { _user_id: string }; Returns: boolean }
+      is_platform_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_role_active: {
+        Args: { _disabled_at: string; _expires_at: string }
+        Returns: boolean
+      }
       is_shop_owner: {
         Args: { _shop_id: string; _user_id: string }
         Returns: boolean
@@ -1201,7 +1303,14 @@ export type Database = {
       shop_can_accept_bookings: { Args: { _shop_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "super_admin" | "shop_owner" | "staff" | "customer"
+      app_role:
+        | "super_admin"
+        | "shop_owner"
+        | "staff"
+        | "customer"
+        | "admin"
+        | "support"
+        | "read_only_admin"
       booking_status:
         | "pending"
         | "confirmed"
@@ -1339,7 +1448,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "shop_owner", "staff", "customer"],
+      app_role: [
+        "super_admin",
+        "shop_owner",
+        "staff",
+        "customer",
+        "admin",
+        "support",
+        "read_only_admin",
+      ],
       booking_status: [
         "pending",
         "confirmed",

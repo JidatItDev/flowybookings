@@ -359,6 +359,7 @@ export const nl: Record<string, string> = {
   "adminNav.activity": "Activiteit",
   "adminNav.auditLogs": "Audit log",
   "adminNav.demo": "Demo-instellingen",
+  "adminNav.security": "Toegang & beveiliging",
   "adminNav.settings": "Instellingen",
   "activityPage.title": "Activiteit",
   "activityPage.subtitle": "Laatste {limit} platform-events met filters en CSV-export.",

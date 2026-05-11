@@ -34,7 +34,7 @@ const DEMO_PASSWORD = "Demo1234!";
 function LoginPage() {
   const navigate = useNavigate();
   const { redirect, auth_error } = Route.useSearch();
-  const { session, loading, rolesLoading, isSuperAdmin, isShopOwner, isStaff } = useAuth();
+  const { session, loading, rolesLoading, isPlatformAdmin, isShopOwner, isStaff } = useAuth();
   const { t } = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -46,8 +46,8 @@ function LoginPage() {
 
   useEffect(() => {
     if (loading || rolesLoading || !session) return;
-    // Super admins authenticated here go straight to admin dashboard.
-    if (isSuperAdmin) {
+    // Platform admins (super_admin, admin, support, read_only_admin) → admin dashboard.
+    if (isPlatformAdmin) {
       navigate({ to: "/beheer/dashboard", replace: true });
       return;
     }
@@ -57,7 +57,7 @@ function LoginPage() {
     }
     if (isShopOwner || isStaff) navigate({ to: "/shop", replace: true });
     else navigate({ to: "/", replace: true });
-  }, [session, loading, rolesLoading, isSuperAdmin, isShopOwner, isStaff, redirect, navigate]);
+  }, [session, loading, rolesLoading, isPlatformAdmin, isShopOwner, isStaff, redirect, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -70,6 +70,13 @@ function LoginPage() {
     setSubmitting(false);
     if (error) {
       const msg = (error.message || "").toLowerCase();
+      // Audit failed login attempt (best-effort).
+      void supabase.from("admin_login_log").insert({
+        email,
+        success: false,
+        failure_reason: error.message?.slice(0, 200) ?? "unknown",
+        user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 500) : null,
+      });
       if (msg.includes("invalid login") || msg.includes("invalid credentials")) {
         toast.error(t("auth.invalidCredentials"));
       } else {

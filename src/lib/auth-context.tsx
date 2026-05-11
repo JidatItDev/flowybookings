@@ -13,7 +13,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "super_admin" | "shop_owner" | "staff" | "customer";
+export type AppRole =
+  | "super_admin"
+  | "admin"
+  | "support"
+  | "read_only_admin"
+  | "shop_owner"
+  | "staff"
+  | "customer";
 
 export type ShopRow = {
   id: string;
@@ -35,6 +42,10 @@ interface AuthContextValue {
   roles: AppRole[];
   rolesLoading: boolean;
   isSuperAdmin: boolean;
+  isPlatformAdmin: boolean;
+  isAdminWriter: boolean;
+  isReadOnlyAdmin: boolean;
+  isSupportAdmin: boolean;
   isShopOwner: boolean;
   isStaff: boolean;
   shops: ShopRow[];
@@ -71,8 +82,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         // Best-effort: stamp last_login_at on real sign-in so admins can see activity.
         const uid = s.user.id;
+        const userEmail = s.user.email ?? null;
         setTimeout(() => {
           void supabase.from("profiles").update({ last_login_at: new Date().toISOString() }).eq("id", uid);
+          // Best-effort: log the login attempt for the admin security page.
+          void supabase.from("admin_login_log").insert({
+            user_id: uid,
+            email: userEmail,
+            success: true,
+            user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 500) : null,
+          });
         }, 0);
       }
       if (event === "SIGNED_OUT" && typeof window !== "undefined") {
@@ -245,6 +264,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(() => {
     const activeShop = shops.find((s) => s.id === activeShopId) ?? null;
     const isSuperAdmin = roles.includes("super_admin");
+    const isAdmin = roles.includes("admin");
+    const isSupportAdmin = roles.includes("support");
+    const isReadOnlyAdmin = roles.includes("read_only_admin");
+    const isPlatformAdmin = isSuperAdmin || isAdmin || isSupportAdmin || isReadOnlyAdmin;
+    const isAdminWriter = isSuperAdmin || isAdmin;
     return {
       session,
       user: session?.user ?? null,
@@ -252,8 +276,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       roles,
       rolesLoading,
       isSuperAdmin,
+      isPlatformAdmin,
+      isAdminWriter,
+      isReadOnlyAdmin,
+      isSupportAdmin,
       // A super_admin sees all shops via RLS — don't mistake that for shop ownership.
-      isShopOwner: !isSuperAdmin && (roles.includes("shop_owner") || (session?.user?.id != null && shops.length > 0)),
+      isShopOwner: !isPlatformAdmin && (roles.includes("shop_owner") || (session?.user?.id != null && shops.length > 0)),
       isStaff: roles.includes("staff"),
       shops,
       activeShop,

@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   ShieldCheck,
+  ShieldAlert,
   Bell,
   LogOut,
   Beaker,
@@ -62,6 +63,7 @@ const nav: NavItem[] = [
   { to: "/beheer/dashboard/activity", labelKey: "adminNav.activity", icon: Activity },
   { to: "/beheer/dashboard/logs", labelKey: "adminNav.auditLogs", icon: ScrollText },
   { to: "/beheer/dashboard/demo", labelKey: "adminNav.demo", icon: Beaker },
+  { to: "/beheer/dashboard/security", labelKey: "adminNav.security", icon: ShieldAlert },
   { to: "/beheer/dashboard/settings", labelKey: "adminNav.settings", icon: Settings },
 ];
 
