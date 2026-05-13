@@ -14,6 +14,20 @@ export const Route = createFileRoute("/legal/privacy")({
       { property: "og:type", content: "article" },
     ],
     links: [{ rel: "canonical", href: "https://www.flowybookings.com/legal/privacy" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          name: "Privacy Policy — FlowyBookings",
+          url: "https://www.flowybookings.com/legal/privacy",
+          description: "How FlowyBookings collects, uses, and protects your data.",
+          isPartOf: { "@type": "WebSite", url: "https://www.flowybookings.com" },
+          publisher: { "@type": "Organization", name: "FlowyBookings", url: "https://www.flowybookings.com" },
+        }),
+      },
+    ],
   }),
   component: PrivacyPage,
 });
