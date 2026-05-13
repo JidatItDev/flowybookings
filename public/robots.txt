@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+Disallow: /shop/
+Disallow: /beheer/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /hooks/
+Disallow: /email/
+Disallow: /lovable/
+
+Sitemap: https://www.flowybookings.com/sitemap.xml
