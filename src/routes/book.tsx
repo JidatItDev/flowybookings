@@ -80,6 +80,44 @@ export const Route = createFileRoute("/book")({
         { property: "og:url", content: canonical },
       ],
       links: [{ rel: "canonical", href: canonical }],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify(
+            shopName
+              ? {
+                  "@context": "https://schema.org",
+                  "@type": "LocalBusiness",
+                  name: shopName,
+                  url: canonical,
+                  image: ogImage,
+                  description: description,
+                  potentialAction: {
+                    "@type": "ReserveAction",
+                    target: {
+                      "@type": "EntryPoint",
+                      urlTemplate: canonical,
+                      inLanguage: "nl-NL",
+                      actionPlatform: [
+                        "http://schema.org/DesktopWebPlatform",
+                        "http://schema.org/MobileWebPlatform",
+                      ],
+                    },
+                    result: { "@type": "Reservation", name: `Afspraak bij ${shopName}` },
+                  },
+                }
+              : {
+                  "@context": "https://schema.org",
+                  "@type": "WebPage",
+                  name: title,
+                  url: canonical,
+                  description,
+                  inLanguage: "nl-NL",
+                  isPartOf: { "@type": "WebSite", url: "https://www.flowybookings.com" },
+                },
+          ),
+        },
+      ],
     };
   },
   component: BookingFlow,

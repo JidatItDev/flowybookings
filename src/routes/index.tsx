@@ -25,6 +25,22 @@ export const Route = createFileRoute("/")({
       { property: "og:type", content: "website" },
     ],
     links: [{ rel: "canonical", href: "https://www.flowybookings.com/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          name: "FlowyBookings — Modern boekingsplatform voor dienstverleners",
+          url: "https://www.flowybookings.com/",
+          description:
+            "Boekingen, betalingen, herinneringen en statistieken voor tattooshops, kappers, nagelsalons, beautystudio's en trimsalons.",
+          inLanguage: "nl-NL",
+          isPartOf: { "@type": "WebSite", url: "https://www.flowybookings.com" },
+          publisher: { "@type": "Organization", name: "FlowyBookings", url: "https://www.flowybookings.com" },
+        }),
+      },
+    ],
   }),
   component: Landing,
 });
