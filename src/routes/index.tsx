@@ -21,7 +21,10 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Boekingen, betalingen, herinneringen en statistieken voor tattooshops, kappers, nagelsalons, beautystudio's en trimsalons. Mollie, iDEAL en Bancontact ingebouwd." },
       { property: "og:title", content: "FlowyBookings — Modern boekingsplatform voor dienstverleners" },
       { property: "og:description", content: "Boekingen, betalingen en herinneringen — gebouwd voor zaken in de Benelux." },
+      { property: "og:url", content: "https://www.flowybookings.com/" },
+      { property: "og:type", content: "website" },
     ],
+    links: [{ rel: "canonical", href: "https://www.flowybookings.com/" }],
   }),
   component: Landing,
 });

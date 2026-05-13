@@ -10,7 +10,10 @@ export const Route = createFileRoute("/legal/refunds")({
       { name: "description", content: "How refunds are handled on FlowyBookings." },
       { property: "og:title", content: "Refund Policy — FlowyBookings" },
       { property: "og:description", content: "How refunds are handled on FlowyBookings." },
+      { property: "og:url", content: "https://www.flowybookings.com/legal/refunds" },
+      { property: "og:type", content: "article" },
     ],
+    links: [{ rel: "canonical", href: "https://www.flowybookings.com/legal/refunds" }],
   }),
   component: RefundsPage,
 });

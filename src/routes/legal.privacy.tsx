@@ -10,7 +10,10 @@ export const Route = createFileRoute("/legal/privacy")({
       { name: "description", content: "How FlowyBookings collects, uses, and protects your data." },
       { property: "og:title", content: "Privacy Policy — FlowyBookings" },
       { property: "og:description", content: "How FlowyBookings collects, uses, and protects your data." },
+      { property: "og:url", content: "https://www.flowybookings.com/legal/privacy" },
+      { property: "og:type", content: "article" },
     ],
+    links: [{ rel: "canonical", href: "https://www.flowybookings.com/legal/privacy" }],
   }),
   component: PrivacyPage,
 });

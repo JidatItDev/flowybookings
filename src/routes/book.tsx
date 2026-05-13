@@ -60,8 +60,11 @@ export const Route = createFileRoute("/book")({
       ? `Boek direct online een afspraak bij ${shopName}. Snel, veilig en 24/7 beschikbaar.`
       : "Kies een winkel, dienst en tijd. Bevestig in seconden.";
     const ogImage = shopId
-      ? `/api/og/book?shop=${encodeURIComponent(shopId)}`
-      : `/api/og/book`;
+      ? `https://www.flowybookings.com/api/og/book?shop=${encodeURIComponent(shopId)}`
+      : `https://www.flowybookings.com/api/og/book`;
+    const canonical = shopId
+      ? `https://www.flowybookings.com/book?shop=${encodeURIComponent(shopId)}`
+      : `https://www.flowybookings.com/book`;
     return {
       meta: [
         { title },
@@ -74,7 +77,9 @@ export const Route = createFileRoute("/book")({
         { name: "twitter:title", content: title },
         { name: "twitter:description", content: description },
         { name: "twitter:image", content: ogImage },
+        { property: "og:url", content: canonical },
       ],
+      links: [{ rel: "canonical", href: canonical }],
     };
   },
   component: BookingFlow,

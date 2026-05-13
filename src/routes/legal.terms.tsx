@@ -10,7 +10,10 @@ export const Route = createFileRoute("/legal/terms")({
       { name: "description", content: "Terms and conditions for using FlowyBookings." },
       { property: "og:title", content: "Terms & Conditions — FlowyBookings" },
       { property: "og:description", content: "Terms and conditions for using FlowyBookings." },
+      { property: "og:url", content: "https://www.flowybookings.com/legal/terms" },
+      { property: "og:type", content: "article" },
     ],
+    links: [{ rel: "canonical", href: "https://www.flowybookings.com/legal/terms" }],
   }),
   component: TermsPage,
 });
