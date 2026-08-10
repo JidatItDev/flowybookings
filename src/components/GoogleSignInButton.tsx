@@ -1,35 +1,17 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
-import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 
 /**
- * Single Google OAuth entrypoint using Lovable managed auth.
- *
- * Stability fixes:
- * - Pin the OAuth flow to ONE canonical host (www.flowybookings.com) so the
- *   `state` cookie set before the broker hop is readable on the same host
- *   when the user returns. Apex ↔ www mismatch was the root cause of the
- *   raw "State verification failed" page on oauth.lovable.app.
- * - Clear any stale Supabase session before starting (prevents duplicate /
- *   loop sessions on retry).
- * - On failure we redirect back to /login?auth_error=1 so the branded error
- *   state is shown instead of a toast with raw provider text.
+ * Google OAuth via native Supabase Auth.
+ * On failure redirects to /login?auth_error=1 for the branded error state.
  */
-
-const CANONICAL_HOST = "www.flowybookings.com";
 
 function buildLoginRedirect(redirect?: string): string {
   if (typeof window === "undefined") return "/login";
-  const origin = window.location.origin;
-  // Force canonical www host on production so the OAuth state cookie is
-  // written + read on the same origin. Preview / lovable.app domains and
-  // localhost are left untouched.
-  const isProd = /(^|\.)flowybookings\.com$/i.test(window.location.hostname);
-  const baseOrigin = isProd ? `https://${CANONICAL_HOST}` : origin;
-  const url = new URL(`${baseOrigin}/login`);
+  const url = new URL(`${window.location.origin}/login`);
   if (redirect) url.searchParams.set("redirect", redirect);
   return url.toString();
 }
@@ -41,36 +23,27 @@ export function GoogleSignInButton({ redirect }: { redirect?: string }) {
   const handleClick = async () => {
     setLoading(true);
     try {
-      // If we're on the apex (flowybookings.com) bounce to the canonical www
-      // host BEFORE starting OAuth — the package uses window.location.origin
-      // as the broker target host, so we need to be on www first to keep the
-      // state cookie scoped consistently.
-      if (
-        typeof window !== "undefined" &&
-        /^flowybookings\.com$/i.test(window.location.hostname)
-      ) {
-        const target = new URL(`https://${CANONICAL_HOST}${window.location.pathname}${window.location.search}`);
-        window.location.replace(target.toString());
-        return;
-      }
-
       // Clear any stale local session so a retry never collides with a
       // half-finished previous attempt.
-      try { await supabase.auth.signOut({ scope: "local" }); } catch { /* ignore */ }
+      try {
+        await supabase.auth.signOut({ scope: "local" });
+      } catch {
+        /* ignore */
+      }
 
-      const redirectUri = buildLoginRedirect(redirect);
+      const redirectTo = buildLoginRedirect(redirect);
 
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: redirectUri,
-        extraParams: { prompt: "select_account" },
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+          queryParams: { prompt: "select_account" },
+        },
       });
 
-      if (result.redirected) return;
-      if (result.error) throw result.error;
-      setLoading(false);
+      if (error) throw error;
+      // Browser navigates to Google; keep spinner until that happens.
     } catch {
-      // Never surface raw OAuth/provider error text to the user. Hand off to
-      // the branded error state on /login.
       const url = new URL(buildLoginRedirect(redirect));
       url.searchParams.set("auth_error", "1");
       window.location.replace(url.toString());
