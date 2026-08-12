@@ -5,7 +5,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { ShopOnboarding } from "@/components/ShopOnboarding";
-import { RequireAuth } from "@/components/RouteGuard";
+import { RequireAuth, FullPageLoader } from "@/components/RouteGuard";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { useAuth } from "@/lib/auth-context";
 
@@ -23,17 +23,25 @@ function ShopOnboardingPage() {
 }
 
 function OnboardingInner() {
-  const { shops, loading, isSuperAdmin } = useAuth();
+  const { shops, loading, shopsLoading, isSuperAdmin } = useAuth();
   const navigate = useNavigate();
 
   // If the user already has a shop (or is a super_admin), don't keep them
   // stuck on onboarding — bounce to the dashboard.
   useEffect(() => {
-    if (loading) return;
+    if (loading || shopsLoading) return;
     if (isSuperAdmin || shops.length > 0) {
       navigate({ to: "/shop", replace: true });
     }
-  }, [loading, isSuperAdmin, shops, navigate]);
+  }, [loading, shopsLoading, isSuperAdmin, shops, navigate]);
+
+  if (loading || shopsLoading) {
+    return <FullPageLoader />;
+  }
+
+  if (isSuperAdmin || shops.length > 0) {
+    return <FullPageLoader label="Redirecting…" />;
+  }
 
   return (
     <div className="min-h-screen bg-background">

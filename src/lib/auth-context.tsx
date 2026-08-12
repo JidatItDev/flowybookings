@@ -41,6 +41,7 @@ interface AuthContextValue {
   loading: boolean;
   roles: AppRole[];
   rolesLoading: boolean;
+  shopsLoading: boolean;
   isSuperAdmin: boolean;
   isPlatformAdmin: boolean;
   isAdminWriter: boolean;
@@ -166,7 +167,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // active shops publicly for the booking pages) — otherwise demo shops would
   // leak into the dashboard context. We explicitly resolve membership via
   // owner_id + user_roles, so a brand-new signup never lands in a demo shop.
-  const { data: shops = [] } = useQuery({
+  const { data: shops = [], isLoading: shopsQueryLoading, isFetching: shopsFetching } = useQuery({
     queryKey: ["auth", "shops", userId],
     enabled: !!userId,
     queryFn: async (): Promise<ShopRow[]> => {
@@ -217,6 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return rows as ShopRow[];
     },
   });
+  const shopsLoading = !!userId && (shopsQueryLoading || shopsFetching);
 
   // Hydrate active shop id from localStorage, but ONLY if the stored id is in
   // the user's resolved shops. Otherwise pick the first (= own non-demo) shop.
@@ -275,6 +277,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       roles,
       rolesLoading,
+      shopsLoading,
       isSuperAdmin,
       isPlatformAdmin,
       isAdminWriter,
@@ -290,7 +293,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut,
       refreshShops,
     };
-  }, [session, loading, roles, rolesLoading, shops, activeShopId, qc]);
+  }, [session, loading, roles, rolesLoading, shopsLoading, shops, activeShopId, qc]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -1176,6 +1176,9 @@ export const nl: Record<string, string> = {
   "settings.logoHint": "PNG of SVG · max 2MB.",
   "settings.brandColor": "Merkkleur",
   "settings.businessHours": "Openingstijden",
+  "settings.businessHoursMissingTitle": "Openingstijden zijn niet ingesteld",
+  "settings.businessHoursMissingBody":
+    "Online boekingen blijven niet beschikbaar tot je openingstijden opslaat. Controleer het schema hieronder en klik op Opslaan.",
   "settings.closed": "Gesloten",
   "settings.bookingRules": "Boekingsregels",
   "settings.minNotice": "Min. vooraankondiging (uren)",
@@ -1293,6 +1296,18 @@ export const nl: Record<string, string> = {
   "book.bookingRef": "Referentie",
   "book.notFound": "Boeking niet gevonden",
   "book.notFoundSub": "Deze boekingsreferentie bestaat niet of is verlopen.",
+  "book.linkNotFound": "Boekingslink niet gevonden",
+  "book.linkNotFoundSub": "Deze link hoort bij geen salon. Controleer de URL of neem contact op met de zaak.",
+  "book.shopInactive": "Deze salon is niet beschikbaar",
+  "book.shopInactiveSub": "{shop} accepteert momenteel geen online boekingen.",
+  "book.shopInactiveSubGeneric": "Deze salon accepteert momenteel geen online boekingen.",
+  "book.shopUnavailable": "Boekingen tijdelijk niet mogelijk",
+  "book.shopUnavailableSub": "{shop} accepteert momenteel geen nieuwe afspraken. Probeer het later opnieuw.",
+  "book.noServices": "Geen diensten gevonden voor deze salon",
+  "book.noServicesSub": "Kom later terug of neem contact op met de salon.",
+  "book.noStaff": "Geen teamleden gevonden voor deze salon",
+  "book.noStaffSub": "Kom later terug of neem contact op met de salon.",
+  "book.noTimes": "Geen beschikbare tijden op deze dag.",
 
   // ── Booking confirmation ──
   "confirmation.title": "Je bent ingeboekt!",

@@ -67,11 +67,11 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { shops, loading, user, signOut, isSuperAdmin, isShopOwner, isStaff, activeShop } = useAuth();
+  const { shops, loading, shopsLoading, user, signOut, isSuperAdmin, isShopOwner, isStaff, activeShop } = useAuth();
   const { t } = useT();
   const isStaffOnly = isStaff && !isShopOwner && !isSuperAdmin;
   const visibleNav = nav.filter((n) => !n.ownerOnly || !isStaffOnly);
-  const needsOnboarding = !loading && shops.length === 0 && !isSuperAdmin;
+  const needsOnboarding = !loading && !shopsLoading && shops.length === 0 && !isSuperAdmin;
   const displayName =
     (user?.user_metadata?.full_name as string | undefined)?.trim() ||
     user?.email ||
@@ -104,6 +104,10 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
       navigate({ to: "/shop/onboarding", replace: true });
     }
   }, [needsOnboarding, location.pathname, navigate]);
+
+  if (loading || shopsLoading) {
+    return null;
+  }
 
   if (needsOnboarding) {
     return null;

@@ -1,9 +1,34 @@
-// Dynamische OG-image voor /book?shop=<id>
+// Dynamische OG-image voor /book?shop=<uuid-or-slug> or /book/<slug>
 // Renders een SVG (1200x630) met shop-logo + naam + branding van FlowyBookings.
 // SVG werkt op WhatsApp, Twitter/X, LinkedIn en Slack als preview.
 
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { isUuid } from "@/lib/public-booking-shop";
+
+async function resolveShopForOg(ref: string) {
+  const trimmed = ref.trim();
+  if (!trimmed) return null;
+
+  const select = "name, logo_url, address";
+  if (isUuid(trimmed)) {
+    const { data } = await supabaseAdmin
+      .from("shops")
+      .select(select)
+      .eq("id", trimmed)
+      .eq("status", "active")
+      .maybeSingle();
+    return data;
+  }
+
+  const { data } = await supabaseAdmin
+    .from("shops")
+    .select(select)
+    .eq("slug", trimmed)
+    .eq("status", "active")
+    .maybeSingle();
+  return data;
+}
 
 function escapeXml(input: string): string {
   return input
@@ -95,19 +120,14 @@ export const Route = createFileRoute("/api/og/book")({
     handlers: {
       GET: async ({ request }) => {
         const url = new URL(request.url);
-        const shopId = url.searchParams.get("shop");
+        const shopRef = url.searchParams.get("shop") ?? url.searchParams.get("slug");
 
         let name = "Boek je afspraak";
         let tagline = "Kies een dienst, tijd en bevestig in seconden.";
         let logoUrl: string | null = null;
 
-        if (shopId) {
-          const { data } = await supabaseAdmin
-            .from("shops")
-            .select("name, logo_url, address")
-            .eq("id", shopId)
-            .eq("status", "active")
-            .maybeSingle();
+        if (shopRef) {
+          const data = await resolveShopForOg(shopRef);
           if (data) {
             name = data.name ?? name;
             tagline = data.address ? `${data.address}` : "Boek direct online";

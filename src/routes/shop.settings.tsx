@@ -25,6 +25,7 @@ import { usePlanPricing, formatPlanPrice } from "@/lib/use-plan-pricing";
 import { usePendingBilling } from "@/lib/use-pending-billing";
 import { useSearch, useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
+import { DEFAULT_SHOP_BUSINESS_HOURS } from "@/lib/staff-availability";
 
 export const Route = createFileRoute("/shop/settings")({
   head: () => ({ meta: [{ title: "Settings — FlowyBookings" }] }),
@@ -44,16 +45,22 @@ type BusinessHours = Record<DayKey, DayHours>;
 type BookingRules = { minNoticeHours: number; maxWindowDays: number; slotIntervalMin: number; defaultDepositPct: number };
 type Branding = { color?: string };
 
-const DEFAULT_HOURS: BusinessHours = {
-  mon: { open: "09:00", close: "18:00", closed: false },
-  tue: { open: "09:00", close: "18:00", closed: false },
-  wed: { open: "09:00", close: "18:00", closed: false },
-  thu: { open: "09:00", close: "18:00", closed: false },
-  fri: { open: "09:00", close: "18:00", closed: false },
-  sat: { open: "10:00", close: "16:00", closed: false },
-  sun: { open: "10:00", close: "16:00", closed: true },
-};
+const DEFAULT_HOURS: BusinessHours = DEFAULT_SHOP_BUSINESS_HOURS;
 const DEFAULT_RULES: BookingRules = { minNoticeHours: 2, maxWindowDays: 60, slotIntervalMin: 15, defaultDepositPct: 20 };
+
+/** True when DB has no usable business_hours (empty `{}` or missing day open/close). */
+function isBusinessHoursUnset(raw: unknown): boolean {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return true;
+  const o = raw as Record<string, unknown>;
+  if (Object.keys(o).length === 0) return true;
+  return !DAY_KEYS.some((d) => {
+    const day = o[d];
+    if (!day || typeof day !== "object" || Array.isArray(day)) return false;
+    const dh = day as { open?: unknown; close?: unknown; closed?: unknown };
+    if (dh.closed === true) return true; // at least one day explicitly configured
+    return typeof dh.open === "string" && typeof dh.close === "string" && !!dh.open && !!dh.close;
+  });
+}
 
 function SettingsPage() {
   const shopId = useActiveShopId();
@@ -97,7 +104,8 @@ function SettingsPage() {
     setRules({ ...DEFAULT_RULES, ...(b.rules ?? {}) });
     const h = (shop.business_hours ?? {}) as Partial<BusinessHours>;
     setHours({ ...DEFAULT_HOURS, ...h });
-    setDirty(false);
+    // Empty DB hours look filled via defaults — keep Save enabled so owners can persist them.
+    setDirty(isBusinessHoursUnset(shop.business_hours));
   }, [shop]);
 
   const save = useMutation({
@@ -288,6 +296,15 @@ function SettingsPage() {
           </Card>
 
           <Card title={t("settings.businessHours")} className="lg:col-span-2">
+            {isBusinessHoursUnset(shop?.business_hours) && (
+              <div className="mb-4 flex items-start gap-2.5 rounded-xl border border-peach/60 bg-peach/30 p-3 text-sm text-foreground">
+                <AlertTriangle className="mt-0.5 h-4 w-4 flex-none text-peach-foreground" />
+                <div className="min-w-0">
+                  <p className="font-medium">{t("settings.businessHoursMissingTitle")}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{t("settings.businessHoursMissingBody")}</p>
+                </div>
+              </div>
+            )}
             <div className="space-y-2">
               {DAY_KEYS.map((d) => (
                 <div key={d} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border px-3 py-2">

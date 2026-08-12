@@ -9,14 +9,20 @@ import { useT } from "@/lib/i18n";
 
 export const Route = createFileRoute("/book/confirmation/$bookingId")({
   loader: async ({ params }) => {
-    const { data: booking } = await supabase
-      .from("bookings")
-      .select("starts_at, ends_at, shop_id, service_id")
-      .eq("id", params.bookingId)
-      .maybeSingle();
-    if (!booking) return { shopName: null as string | null, serviceName: null as string | null, dateLabel: null as string | null };
+    const { data: rows, error } = await supabase.rpc("get_public_booking_confirmation", {
+      _booking_id: params.bookingId,
+    });
+    if (error || !rows?.length) {
+      return {
+        shopName: null as string | null,
+        shopSlug: null as string | null,
+        serviceName: null as string | null,
+        dateLabel: null as string | null,
+      };
+    }
+    const booking = rows[0];
     const [{ data: shop }, { data: service }] = await Promise.all([
-      supabase.from("shops").select("name").eq("id", booking.shop_id).maybeSingle(),
+      supabase.from("shops").select("name, slug").eq("id", booking.shop_id).maybeSingle(),
       booking.service_id
         ? supabase.from("services").select("name").eq("id", booking.service_id).maybeSingle()
         : Promise.resolve({ data: null as { name: string } | null }),
@@ -27,6 +33,7 @@ export const Route = createFileRoute("/book/confirmation/$bookingId")({
     }).format(start);
     return {
       shopName: shop?.name ?? null,
+      shopSlug: shop?.slug ?? null,
       serviceName: service?.name ?? null,
       dateLabel,
     };
@@ -68,15 +75,15 @@ function ConfirmationPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["booking-confirmation", bookingId],
     queryFn: async () => {
-      const { data: booking, error: bErr } = await supabase
-        .from("bookings")
-        .select("id, starts_at, ends_at, status, price_cents, deposit_cents, currency, shop_id, service_id, staff_id")
-        .eq("id", bookingId).maybeSingle();
+      const { data: rows, error: bErr } = await supabase.rpc("get_public_booking_confirmation", {
+        _booking_id: bookingId,
+      });
       if (bErr) throw bErr;
+      const booking = rows?.[0];
       if (!booking) return null;
 
       const [{ data: shop }, { data: service }, { data: staff }] = await Promise.all([
-        supabase.from("shops").select("name, address, is_demo").eq("id", booking.shop_id).maybeSingle(),
+        supabase.from("shops").select("name, slug, address, is_demo").eq("id", booking.shop_id).maybeSingle(),
         booking.service_id
           ? supabase.from("services").select("name").eq("id", booking.service_id).maybeSingle()
           : Promise.resolve({ data: null }),
@@ -103,7 +110,7 @@ function ConfirmationPage() {
           <h1 className="text-xl font-semibold">{t("book.notFound")}</h1>
           <p className="mt-2 text-sm text-muted-foreground">{t("book.notFoundSub")}</p>
           <Button asChild variant="hero" className="mt-6">
-            <Link to="/book">{t("book.bookAnother")} <ArrowRight className="h-4 w-4" /></Link>
+            <Link to="/">{t("book.backHome")} <ArrowRight className="h-4 w-4" /></Link>
           </Button>
         </div>
       </div>
@@ -166,9 +173,13 @@ function ConfirmationPage() {
               <CalendarPlus className="h-4 w-4" /> {t("book.addToCalendar")}
             </a>
           </Button>
-          <Button asChild variant="outline">
-            <Link to="/book">{t("book.bookAnother")} <ArrowRight className="h-4 w-4" /></Link>
-          </Button>
+          {shop?.slug ? (
+            <Button asChild variant="outline">
+              <Link to="/book/$slug" params={{ slug: shop.slug }}>
+                {t("book.bookAnother")} <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          ) : null}
           <Button asChild variant="outline">
             <Link to="/">{t("book.backHome")}</Link>
           </Button>

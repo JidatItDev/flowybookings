@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { getBookingUrl } from "@/lib/booking-url";
+import { DEFAULT_SHOP_BUSINESS_HOURS } from "@/lib/staff-availability";
 
 function slugify(s: string) {
   return s
@@ -89,7 +91,14 @@ export function ShopOnboarding() {
       const finalSlug = slug || slugify(name);
       const { data: shop, error } = await supabase
         .from("shops")
-        .insert({ name: name.trim(), slug: finalSlug, owner_id: user.id, status: "active", plan: "trial" })
+        .insert({
+          name: name.trim(),
+          slug: finalSlug,
+          owner_id: user.id,
+          status: "active",
+          plan: "trial",
+          business_hours: DEFAULT_SHOP_BUSINESS_HOURS,
+        })
         .select("id, slug")
         .single();
       if (error) {
@@ -99,7 +108,6 @@ export function ShopOnboarding() {
         }
         throw error;
       }
-      await supabase.from("user_roles").insert({ user_id: user.id, role: "shop_owner", shop_id: shop.id });
       return shop;
     },
     onSuccess: (shop) => {
@@ -125,7 +133,7 @@ export function ShopOnboarding() {
   const total = 3;
   const progress = ((step + 1) / total) * 100;
 
-  const bookingUrl = createdSlug ? `${typeof window !== "undefined" ? window.location.origin : "https://flowybookings.com"}/book` : "";
+  const bookingUrl = createdSlug ? getBookingUrl(createdSlug, { external: true }) : "";
 
   const copyLink = async () => {
     if (!bookingUrl) return;

@@ -19,6 +19,20 @@ export type DayKey = (typeof DAY_KEYS)[number];
 export type DayHours = { open?: string; close?: string; closed?: boolean };
 export type BusinessHours = Partial<Record<DayKey, DayHours>>;
 
+/** Same defaults shown in Shop Settings — persisted on shop create. */
+export const DEFAULT_SHOP_BUSINESS_HOURS: Record<
+  DayKey,
+  { open: string; close: string; closed: boolean }
+> = {
+  mon: { open: "09:00", close: "18:00", closed: false },
+  tue: { open: "09:00", close: "18:00", closed: false },
+  wed: { open: "09:00", close: "18:00", closed: false },
+  thu: { open: "09:00", close: "18:00", closed: false },
+  fri: { open: "09:00", close: "18:00", closed: false },
+  sat: { open: "10:00", close: "16:00", closed: false },
+  sun: { open: "10:00", close: "16:00", closed: true },
+};
+
 /** Per-staff per-day hours, optionally with breaks. */
 export type StaffDayHours = DayHours & { breaks?: Array<{ start?: string; end?: string }> };
 export type StaffWorkingHours = Partial<Record<DayKey, StaffDayHours>> & {

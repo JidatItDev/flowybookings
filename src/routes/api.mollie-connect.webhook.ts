@@ -12,6 +12,7 @@ import {
   getActiveMollieAccessToken,
 } from "@/lib/mollie-connect";
 import { enqueueBookingEmail } from "@/lib/email/enqueue-booking-email";
+import { getBookingUrl } from "@/lib/booking-url";
 
 type MolliePayment = {
   id: string;
@@ -176,8 +177,7 @@ async function sendPaymentFailedEmail(bookingId: string, paymentId: string) {
     const amountLabel = cents > 0
       ? `${currency === "EUR" ? "€" : currency + " "}${(cents / 100).toFixed(2).replace(".", ",")}`
       : undefined;
-    const appUrl = process.env.APP_URL ?? "https://www.flowybookings.com";
-    const retryUrl = shop?.slug ? `${appUrl}/book?shop=${shop.slug}` : `${appUrl}/book`;
+    const retryUrl = getBookingUrl(shop?.slug ?? null, { external: true });
 
     await enqueueBookingEmail({
       templateName: "booking-payment-failed",

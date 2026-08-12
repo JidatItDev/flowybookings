@@ -1162,6 +1162,9 @@ export const en: Record<string, string> = {
   "settings.logoHint": "PNG or SVG · max 2MB.",
   "settings.brandColor": "Brand color",
   "settings.businessHours": "Business hours",
+  "settings.businessHoursMissingTitle": "Business hours are not set",
+  "settings.businessHoursMissingBody":
+    "Online bookings stay unavailable until you save opening hours. Review the schedule below and click Save.",
   "settings.closed": "Closed",
   "settings.bookingRules": "Booking rules",
   "settings.minNotice": "Min. notice (hours)",
@@ -1277,6 +1280,18 @@ export const en: Record<string, string> = {
   "book.bookingRef": "Reference",
   "book.notFound": "Booking not found",
   "book.notFoundSub": "This booking reference does not exist or has expired.",
+  "book.linkNotFound": "Booking link not found",
+  "book.linkNotFoundSub": "This link doesn't match any shop. Check the URL or contact the business directly.",
+  "book.shopInactive": "This shop is not available",
+  "book.shopInactiveSub": "{shop} is not accepting online bookings at the moment.",
+  "book.shopInactiveSubGeneric": "This shop is not accepting online bookings at the moment.",
+  "book.shopUnavailable": "Bookings temporarily unavailable",
+  "book.shopUnavailableSub": "{shop} is temporarily not accepting new appointments. Please try again later.",
+  "book.noServices": "No services found for this shop",
+  "book.noServicesSub": "Please check back later or contact the shop.",
+  "book.noStaff": "No team members found for this shop",
+  "book.noStaffSub": "Please check back later or contact the shop.",
+  "book.noTimes": "No available times on this day.",
 
   // ── Booking confirmation ──
   "confirmation.title": "You're booked in!",

@@ -1240,6 +1240,10 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      find_public_customer_id_by_email: {
+        Args: { _email: string; _shop_id: string }
+        Returns: string
+      }
       get_default_shop_id: { Args: { _user_id: string }; Returns: string }
       get_public_app_settings: {
         Args: never
@@ -1249,6 +1253,49 @@ export type Database = {
           public_booking_on_demo_shops_enabled: boolean
           seeded_demo_data_visible: boolean
         }[]
+      }
+      get_public_booking_confirmation: {
+        Args: { _booking_id: string }
+        Returns: {
+          currency: string
+          deposit_cents: number
+          ends_at: string
+          id: string
+          price_cents: number
+          service_id: string
+          shop_id: string
+          staff_id: string
+          starts_at: string
+          status: Database["public"]["Enums"]["booking_status"]
+        }[]
+      }
+      resolve_public_booking_shop: {
+        Args: { _ref: string }
+        Returns: {
+          block_reason: string | null
+          found: boolean
+          logo_url: string | null
+          name: string | null
+          shop_id: string | null
+          slug: string | null
+        }[]
+      }
+      get_public_bookings_for_availability: {
+        Args: {
+          _range_end: string
+          _range_start: string
+          _shop_id: string
+        }
+        Returns: {
+          ends_at: string
+          staff_id: string
+          starts_at: string
+          status: Database["public"]["Enums"]["booking_status"]
+        }[]
+      }
+      get_public_busy_staff_ids: {
+        Args: { _ends_at: string; _shop_id: string; _starts_at: string }
+        Returns: string[]
       }
       get_shop_feature_access: {
         Args: { _feature_slug: string; _shop_id: string }
@@ -1283,6 +1330,15 @@ export type Database = {
           source_queue: string
         }
         Returns: number
+      }
+      public_booking_staff_has_conflict: {
+        Args: {
+          _ends_at: string
+          _shop_id: string
+          _staff_id: string
+          _starts_at: string
+        }
+        Returns: boolean
       }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }

@@ -3,6 +3,7 @@ import {
   Body, Button, Container, Head, Heading, Html, Preview, Section, Text,
 } from '@react-email/components'
 import type { TemplateEntry } from './registry'
+import { getBookingUrl } from '@/lib/booking-url'
 
 interface BookingPaymentFailedProps {
   customerName?: string
@@ -80,7 +81,7 @@ export const template = {
     serviceName: 'Knippen & stylen',
     whenLabel: 'vr 21 mrt · 14:30',
     amountLabel: '€10,00',
-    retryUrl: 'https://www.flowybookings.com/book/aurora',
+    retryUrl: getBookingUrl('aurora', { external: true }),
   },
 } satisfies TemplateEntry
 

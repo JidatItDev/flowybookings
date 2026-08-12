@@ -28,6 +28,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
+async function confirmBookingIfPending(bookingId: string, currentStatus: string) {
+  if (currentStatus === "confirmed") return;
+  await supabaseAdmin
+    .from("bookings")
+    .update({ status: "confirmed" })
+    .eq("id", bookingId)
+    .eq("status", "pending");
+}
+
 export const Route = createFileRoute("/api/bookings/checkout")({
   server: {
     handlers: {
@@ -49,14 +58,16 @@ export const Route = createFileRoute("/api/bookings/checkout")({
             .maybeSingle();
           if (bookErr || !booking) return json({ error: "booking_not_found" }, 404);
 
-          // Skip when there's nothing to charge — booking is confirmed in the UI.
+          // Skip when there's nothing to charge — confirm server-side (anon cannot UPDATE bookings).
           if (!booking.deposit_cents || booking.deposit_cents <= 0) {
+            await confirmBookingIfPending(booking.id, booking.status);
             return json({ ok: true, skipped: true, reason: "no_deposit" });
           }
 
           // Resolve a usable (decrypted, refreshed-if-needed) access token.
           const tokenInfo = await getActiveMollieAccessToken(booking.shop_id);
           if (!tokenInfo) {
+            await confirmBookingIfPending(booking.id, booking.status);
             return json({ ok: true, skipped: true, reason: "no_mollie_connection" });
           }
 

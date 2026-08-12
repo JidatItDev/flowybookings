@@ -41,8 +41,12 @@ function DemoEntry() {
 
   // Auto-redirect when only one demo shop exists
   useEffect(() => {
-    if (demoShops.data && demoShops.data.length === 1) {
-      navigate({ to: "/book", search: { shop: demoShops.data[0].id } as never, replace: true });
+    if (demoShops.data && demoShops.data.length === 1 && demoShops.data[0].slug) {
+      navigate({
+        to: "/book/$slug",
+        params: { slug: demoShops.data[0].slug },
+        replace: true,
+      });
     }
   }, [demoShops.data, navigate]);
 
@@ -62,7 +66,7 @@ function DemoEntry() {
           <h1 className="text-xl font-semibold">{t("demo.notReady")}</h1>
           <p className="mt-2 text-sm text-muted-foreground">{t("demo.notReadySub")}</p>
           <Button asChild variant="hero" className="mt-6">
-            <Link to="/book">{t("demo.openBooking")} <ArrowRight className="h-4 w-4" /></Link>
+            <Link to="/">{t("book.backHome")} <ArrowRight className="h-4 w-4" /></Link>
           </Button>
         </div>
       </div>
@@ -100,8 +104,8 @@ function DemoEntry() {
             return (
               <Link
                 key={s.id}
-                to="/book"
-                search={{ shop: s.id } as never}
+                to="/book/$slug"
+                params={{ slug: s.slug }}
                 className="group rounded-3xl border border-border bg-card p-6 text-left shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-elevated"
               >
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-warm text-pink-foreground">

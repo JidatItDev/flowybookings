@@ -20,6 +20,7 @@ import { useT } from "@/lib/i18n";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { shopFullQuery, shopKeys } from "@/lib/queries";
+import { getBookingUrl } from "@/lib/booking-url";
 
 type Props = {
   shopId: string;
@@ -57,10 +58,7 @@ export function OnboardingChecklist({
   const shareSkipped = !!onboarding.shareSkipped;
 
   const bookingUrl = useMemo(
-    () =>
-      shopSlug && typeof window !== "undefined"
-        ? `${window.location.origin}/book?shop=${shopSlug}`
-        : "",
+    () => (shopSlug ? getBookingUrl(shopSlug, { external: true }) : ""),
     [shopSlug],
   );
 

@@ -6,7 +6,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { Loader2 } from "lucide-react";
 
-function FullPageLoader({ label = "Loading…" }: { label?: string }) {
+export function FullPageLoader({ label = "Loading…" }: { label?: string }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="flex items-center gap-3 text-muted-foreground">
@@ -58,7 +58,7 @@ export function RequireSuperAdmin({ children }: { children: ReactNode }) {
 
 /** Requires shop access (owner, staff, or super admin). */
 export function RequireShopAccess({ children }: { children: ReactNode }) {
-  const { session, loading, isSuperAdmin, isShopOwner, isStaff } = useAuth();
+  const { session, loading, shopsLoading, rolesLoading, isSuperAdmin, isShopOwner, isStaff } = useAuth();
   const navigate = useNavigate();
   const allowed = isSuperAdmin || isShopOwner || isStaff;
 
@@ -69,7 +69,7 @@ export function RequireShopAccess({ children }: { children: ReactNode }) {
     }
   }, [session, loading, navigate]);
 
-  if (loading || !session) return <FullPageLoader />;
+  if (loading || shopsLoading || rolesLoading || !session) return <FullPageLoader />;
   // No linked shop yet → send them to the branded onboarding flow
   // instead of a dead-end screen. ShopOnboarding handles shop creation,
   // owner role assignment, and trial start (via DB trigger).

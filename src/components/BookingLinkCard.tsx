@@ -30,7 +30,7 @@ export function BookingLinkCard({ slug, shopName, logoUrl, compact = false }: Pr
   const [qrOpen, setQrOpen] = useState(false);
   const [posterLoading, setPosterLoading] = useState(false);
 
-  const canonicalUrl = getBookingUrl(slug, true); // altijd de productie-URL voor delen
+  const canonicalUrl = getBookingUrl(slug, { external: true });
   const displayUrl = getBookingUrlDisplay(slug);
 
   const copy = async () => {

@@ -17,6 +17,7 @@ import { Route as DemoRouteImport } from './routes/demo'
 import { Route as BookRouteImport } from './routes/book'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShopIndexRouteImport } from './routes/shop.index'
+import { Route as BookIndexRouteImport } from './routes/book.index'
 import { Route as ShopUpgradeRouteImport } from './routes/shop.upgrade'
 import { Route as ShopStaffRouteImport } from './routes/shop.staff'
 import { Route as ShopSettingsRouteImport } from './routes/shop.settings'
@@ -39,6 +40,7 @@ import { Route as HooksExpireCancelledSubscriptionsRouteImport } from './routes/
 import { Route as HooksBookingConfirmationRouteImport } from './routes/hooks/booking-confirmation'
 import { Route as HooksBookingAutomationsRouteImport } from './routes/hooks/booking-automations'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
+import { Route as BookSlugRouteImport } from './routes/book.$slug'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth.reset-password'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
 import { Route as BeheerDashboardIndexRouteImport } from './routes/beheer.dashboard.index'
@@ -124,6 +126,11 @@ const ShopIndexRoute = ShopIndexRouteImport.update({
   id: '/shop/',
   path: '/shop/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const BookIndexRoute = BookIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => BookRoute,
 } as any)
 const ShopUpgradeRoute = ShopUpgradeRouteImport.update({
   id: '/shop/upgrade',
@@ -237,6 +244,11 @@ const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
   id: '/email/unsubscribe',
   path: '/email/unsubscribe',
   getParentRoute: () => rootRouteImport,
+} as any)
+const BookSlugRoute = BookSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => BookRoute,
 } as any)
 const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
   id: '/auth/reset-password',
@@ -484,6 +496,7 @@ export interface FileRoutesByFullPath {
   '/support': typeof SupportRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/book/$slug': typeof BookSlugRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
@@ -506,6 +519,7 @@ export interface FileRoutesByFullPath {
   '/shop/settings': typeof ShopSettingsRoute
   '/shop/staff': typeof ShopStaffRoute
   '/shop/upgrade': typeof ShopUpgradeRoute
+  '/book/': typeof BookIndexRoute
   '/shop/': typeof ShopIndexRoute
   '/api/billing/expire-sweep': typeof ApiBillingExpireSweepRoute
   '/api/billing/plan-cancel': typeof ApiBillingPlanCancelRoute
@@ -553,7 +567,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/book': typeof BookRouteWithChildren
   '/demo': typeof DemoRoute
   '/login': typeof LoginRoute
   '/signup': typeof SignupRoute
@@ -561,6 +574,7 @@ export interface FileRoutesByTo {
   '/support': typeof SupportRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/book/$slug': typeof BookSlugRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
@@ -583,6 +597,7 @@ export interface FileRoutesByTo {
   '/shop/settings': typeof ShopSettingsRoute
   '/shop/staff': typeof ShopStaffRoute
   '/shop/upgrade': typeof ShopUpgradeRoute
+  '/book': typeof BookIndexRoute
   '/shop': typeof ShopIndexRoute
   '/api/billing/expire-sweep': typeof ApiBillingExpireSweepRoute
   '/api/billing/plan-cancel': typeof ApiBillingPlanCancelRoute
@@ -639,6 +654,7 @@ export interface FileRoutesById {
   '/support': typeof SupportRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/book/$slug': typeof BookSlugRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
@@ -661,6 +677,7 @@ export interface FileRoutesById {
   '/shop/settings': typeof ShopSettingsRoute
   '/shop/staff': typeof ShopStaffRoute
   '/shop/upgrade': typeof ShopUpgradeRoute
+  '/book/': typeof BookIndexRoute
   '/shop/': typeof ShopIndexRoute
   '/api/billing/expire-sweep': typeof ApiBillingExpireSweepRoute
   '/api/billing/plan-cancel': typeof ApiBillingPlanCancelRoute
@@ -718,6 +735,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/auth/forgot-password'
     | '/auth/reset-password'
+    | '/book/$slug'
     | '/email/unsubscribe'
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
@@ -740,6 +758,7 @@ export interface FileRouteTypes {
     | '/shop/settings'
     | '/shop/staff'
     | '/shop/upgrade'
+    | '/book/'
     | '/shop/'
     | '/api/billing/expire-sweep'
     | '/api/billing/plan-cancel'
@@ -787,7 +806,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/book'
     | '/demo'
     | '/login'
     | '/signup'
@@ -795,6 +813,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/auth/forgot-password'
     | '/auth/reset-password'
+    | '/book/$slug'
     | '/email/unsubscribe'
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
@@ -817,6 +836,7 @@ export interface FileRouteTypes {
     | '/shop/settings'
     | '/shop/staff'
     | '/shop/upgrade'
+    | '/book'
     | '/shop'
     | '/api/billing/expire-sweep'
     | '/api/billing/plan-cancel'
@@ -872,6 +892,7 @@ export interface FileRouteTypes {
     | '/support'
     | '/auth/forgot-password'
     | '/auth/reset-password'
+    | '/book/$slug'
     | '/email/unsubscribe'
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
@@ -894,6 +915,7 @@ export interface FileRouteTypes {
     | '/shop/settings'
     | '/shop/staff'
     | '/shop/upgrade'
+    | '/book/'
     | '/shop/'
     | '/api/billing/expire-sweep'
     | '/api/billing/plan-cancel'
@@ -1073,6 +1095,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShopIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/book/': {
+      id: '/book/'
+      path: '/'
+      fullPath: '/book/'
+      preLoaderRoute: typeof BookIndexRouteImport
+      parentRoute: typeof BookRoute
+    }
     '/shop/upgrade': {
       id: '/shop/upgrade'
       path: '/shop/upgrade'
@@ -1226,6 +1255,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/email/unsubscribe'
       preLoaderRoute: typeof EmailUnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/book/$slug': {
+      id: '/book/$slug'
+      path: '/$slug'
+      fullPath: '/book/$slug'
+      preLoaderRoute: typeof BookSlugRouteImport
+      parentRoute: typeof BookRoute
     }
     '/auth/reset-password': {
       id: '/auth/reset-password'
@@ -1546,10 +1582,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface BookRouteChildren {
+  BookSlugRoute: typeof BookSlugRoute
+  BookIndexRoute: typeof BookIndexRoute
   BookConfirmationBookingIdRoute: typeof BookConfirmationBookingIdRoute
 }
 
 const BookRouteChildren: BookRouteChildren = {
+  BookSlugRoute: BookSlugRoute,
+  BookIndexRoute: BookIndexRoute,
   BookConfirmationBookingIdRoute: BookConfirmationBookingIdRoute,
 }
 
