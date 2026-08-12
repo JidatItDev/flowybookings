@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/button";
 
 /**
  * Google OAuth via native Supabase Auth.
+ * Success lands on /shop (shared gate → onboarding if no shop).
  * On failure redirects to /login?auth_error=1 for the branded error state.
  */
 
-function buildLoginRedirect(redirect?: string): string {
-  if (typeof window === "undefined") return "/login";
+function buildLoginErrorUrl(redirect?: string): string {
+  if (typeof window === "undefined") return "/login?auth_error=1";
   const url = new URL(`${window.location.origin}/login`);
+  url.searchParams.set("auth_error", "1");
   if (redirect) url.searchParams.set("redirect", redirect);
   return url.toString();
 }
@@ -31,7 +33,7 @@ export function GoogleSignInButton({ redirect }: { redirect?: string }) {
         /* ignore */
       }
 
-      const redirectTo = buildLoginRedirect(redirect);
+      const redirectTo = `${window.location.origin}/shop`;
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -44,9 +46,7 @@ export function GoogleSignInButton({ redirect }: { redirect?: string }) {
       if (error) throw error;
       // Browser navigates to Google; keep spinner until that happens.
     } catch {
-      const url = new URL(buildLoginRedirect(redirect));
-      url.searchParams.set("auth_error", "1");
-      window.location.replace(url.toString());
+      window.location.replace(buildLoginErrorUrl(redirect));
     }
   };
 

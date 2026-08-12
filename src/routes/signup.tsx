@@ -1,9 +1,17 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Sparkle, Loader2, CheckCircle2, ArrowRight } from "lucide-react";
+import {
+  Sparkle,
+  Loader2,
+  CheckCircle2,
+  ArrowRight,
+  Mail,
+  Eye,
+  EyeOff,
+  AlertCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth-context";
 import { useT } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
@@ -11,7 +19,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { recordConsent } from "@/lib/legal-consent";
-import { logActivity } from "@/lib/activity-log";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { useGoogleAuthAvailable } from "@/lib/use-google-auth-available";
 
@@ -20,140 +27,125 @@ export const Route = createFileRoute("/signup")({
   component: SignupPage,
 });
 
-const CATEGORIES = [
-  { value: "kapper", label: "Kapper" },
-  { value: "barber", label: "Barber" },
-  { value: "nails", label: "Nagelsalon" },
-  { value: "beauty", label: "Beauty / Schoonheid" },
-  { value: "tattoo", label: "Tattoo / Piercing" },
-  { value: "trimsalon", label: "Trimsalon" },
-  { value: "massage", label: "Massage / Wellness" },
-  { value: "other", label: "Anders" },
-];
+type SignupStatus = "form" | "check_email" | "account_exists";
 
-function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 48) || "salon";
+function isDuplicateSignupError(error: { message?: string; code?: string }): boolean {
+  const msg = (error.message || "").toLowerCase();
+  const code = (error.code || "").toLowerCase();
+  return (
+    code === "user_already_exists" ||
+    code === "email_exists" ||
+    msg.includes("already registered") ||
+    msg.includes("already exists") ||
+    msg.includes("user already") ||
+    msg.includes("duplicate")
+  );
 }
 
-async function uniqueSlug(base: string): Promise<string> {
-  let candidate = base;
-  for (let i = 0; i < 6; i++) {
-    const { data } = await supabase.from("shops").select("id").eq("slug", candidate).maybeSingle();
-    if (!data) return candidate;
-    candidate = `${base}-${Math.random().toString(36).slice(2, 6)}`;
-  }
-  return `${base}-${Date.now().toString(36)}`;
+/**
+ * With "Confirm email" enabled, Supabase does not throw for an existing
+ * confirmed user — it returns a fake user with an empty identities array.
+ * See: https://supabase.com/docs/reference/javascript/auth-signup
+ */
+function isObfuscatedExistingUser(user: { identities?: unknown[] | null } | null): boolean {
+  return !!user && Array.isArray(user.identities) && user.identities.length === 0;
 }
 
 function SignupPage() {
   const navigate = useNavigate();
-  const { session, loading, refreshShops, setActiveShopId } = useAuth();
   const { t } = useT();
   const [fullName, setFullName] = useState("");
-  const [businessName, setBusinessName] = useState("");
-  const [category, setCategory] = useState("kapper");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [status, setStatus] = useState<SignupStatus>("form");
   const googleAvailable = useGoogleAuthAvailable();
 
-  // Don't auto-redirect after signup; we navigate explicitly to the new shop.
-  useEffect(() => { if (!loading && session && !submitting) {/* idle */} }, [session, loading, submitting]);
+  const showAccountExists = () => {
+    setStatus("account_exists");
+    toast.error(t("auth.emailExistsTitle"), {
+      description: t("auth.emailExistsBody"),
+      action: {
+        label: t("auth.goToLogin"),
+        onClick: () => navigate({ to: "/login", search: { redirect: undefined } }),
+      },
+      duration: 10000,
+    });
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!agreed) { toast.error(t("auth.mustAgree")); return; }
-    if (!businessName.trim()) { toast.error("Bedrijfsnaam is verplicht"); return; }
+    if (!agreed) {
+      toast.error(t("auth.mustAgree"));
+      return;
+    }
 
     setSubmitting(true);
     try {
       const { data, error } = await supabase.auth.signUp({
-        email, password,
-        options: { emailRedirectTo: `${window.location.origin}/shop`, data: { full_name: fullName } },
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/shop`,
+          data: { full_name: fullName },
+        },
       });
       if (error) {
-        // Detect duplicate-email error coming back from Supabase auth.
-        const msg = (error.message || "").toLowerCase();
-        const isDuplicate =
-          msg.includes("already registered") ||
-          msg.includes("already exists") ||
-          msg.includes("user already") ||
-          msg.includes("duplicate");
-        if (isDuplicate) {
-          toast.error(t("auth.emailExistsTitle"), {
-            description: t("auth.emailExistsBody"),
-            action: {
-              label: t("auth.goToLogin"),
-              onClick: () => navigate({ to: "/login", search: { redirect: undefined } }),
-            },
-            duration: 10000,
-          });
+        if (isDuplicateSignupError(error)) {
+          showAccountExists();
           return;
         }
         throw error;
       }
+
+      // Confirmed account already exists — obfuscated success payload.
+      if (isObfuscatedExistingUser(data.user)) {
+        showAccountExists();
+        return;
+      }
+
       const userId = data.user?.id;
       if (!userId) throw new Error("Account aanmaken mislukt");
 
-      // Record consent (best-effort)
+      // Best-effort consent stamp (may fail without a session when confirm-email is on).
       void (async () => {
         for (let i = 0; i < 5; i++) {
-          try { await recordConsent(userId); break; } catch { await new Promise((r) => setTimeout(r, 250)); }
+          try {
+            await recordConsent(userId);
+            break;
+          } catch {
+            await new Promise((r) => setTimeout(r, 250));
+          }
         }
       })();
 
-      // Create the user's own shop. Demo shops are seeded separately and must
-      // never be used for new signups.
-      const baseSlug = slugify(businessName);
-      const slug = await uniqueSlug(baseSlug);
-      const trialEnd = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
-
-      const { data: shop, error: shopErr } = await supabase
-        .from("shops")
-        .insert({
-          owner_id: userId,
-          name: businessName.trim(),
-          slug,
-          plan: "trial",
-          status: "active",
-          plan_expires_at: trialEnd,
-          subscription_status: "trial",
-          category,
-          is_demo: false,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Amsterdam",
-        })
-        .select("id")
-        .single();
-      if (shopErr) throw shopErr;
-
-      // Make sure the user has the shop_owner role.
-      await supabase.from("user_roles").insert({ user_id: userId, role: "shop_owner", shop_id: shop.id });
-
-      // Admin onboarding-funnel: log shop_created.
-      void logActivity({
-        entity: "shop",
-        action: "shop_created",
-        shopId: shop.id,
-        metadata: { shop_name: businessName.trim(), category, plan: "trial" },
-      });
-
-      // Clear any stale active-shop pointer (e.g. demo shop from prior session
-      // in this browser) before locking in the brand-new shop.
-      try { window.localStorage.removeItem("flowybookings:active-shop-id"); } catch { /* ignore */ }
-      refreshShops();
-      setActiveShopId(shop.id);
-      toast.success(t("auth.accountCreated"));
-      navigate({ to: "/shop" });
+      // New signup or unconfirmed account (confirmation email sent / resent).
+      setStatus("check_email");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Aanmelden mislukt");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!email.trim() || resending) return;
+    setResending(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: email.trim(),
+        options: { emailRedirectTo: `${window.location.origin}/shop` },
+      });
+      if (error) throw error;
+      toast.success(t("auth.checkEmailResent"));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Aanmelden mislukt");
+    } finally {
+      setResending(false);
     }
   };
 
@@ -171,87 +163,191 @@ function SignupPage() {
         </div>
 
         <div className="rounded-3xl border border-border bg-card p-8 shadow-elevated">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary">
-            <Sparkle className="h-3.5 w-3.5" />
-            {t("auth.trialBadge")}
-          </div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("auth.startTrialTitle")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t("auth.trialLine")}</p>
+          {status === "check_email" ? (
+            <>
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft text-primary">
+                <Mail className="h-6 w-6" />
+              </div>
+              <h1 className="text-2xl font-semibold tracking-tight">{t("auth.checkEmailTitle")}</h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {t("auth.checkEmailBody", { email })}
+              </p>
+              <div className="mt-6 flex items-start gap-3 rounded-xl border border-border bg-muted/40 p-4">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                <p className="text-sm text-muted-foreground">{t("auth.checkEmailHint")}</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-4 w-full"
+                disabled={resending}
+                onClick={handleResend}
+              >
+                {resending && <Loader2 className="h-4 w-4 animate-spin" />}
+                {resending ? t("auth.checkEmailResending") : t("auth.checkEmailResend")}
+              </Button>
+              <Link
+                to="/login"
+                className="mt-4 inline-flex w-full items-center justify-center gap-1 text-sm font-medium text-primary hover:underline"
+              >
+                {t("auth.backToSignIn")} <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </>
+          ) : status === "account_exists" ? (
+            <>
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+                <AlertCircle className="h-6 w-6" />
+              </div>
+              <h1 className="text-2xl font-semibold tracking-tight">
+                {t("auth.accountExistsTitle")}
+              </h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {t("auth.accountExistsBody", { email })}
+              </p>
+              <Button
+                type="button"
+                variant="hero"
+                className="mt-6 w-full"
+                onClick={() => navigate({ to: "/login", search: { redirect: undefined } })}
+              >
+                {t("auth.goToLogin")} <ArrowRight className="h-4 w-4" />
+              </Button>
+              <Link
+                to="/auth/forgot-password"
+                className="mt-3 inline-flex w-full items-center justify-center text-sm font-medium text-muted-foreground hover:text-foreground"
+              >
+                {t("auth.forgotPasswordCta")}
+              </Link>
+              <button
+                type="button"
+                className="mt-4 w-full text-center text-sm text-muted-foreground hover:text-foreground"
+                onClick={() => setStatus("form")}
+              >
+                {t("auth.createAnAccount")}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary">
+                <Sparkle className="h-3.5 w-3.5" />
+                {t("auth.trialBadge")}
+              </div>
+              <h1 className="text-2xl font-semibold tracking-tight">{t("auth.startTrialTitle")}</h1>
+              <p className="mt-1 text-sm text-muted-foreground">{t("auth.trialLine")}</p>
 
-          <ul className="mt-4 space-y-1.5 text-sm text-muted-foreground">
-            <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-success-foreground" /> {t("auth.benefitNoCard")}</li>
-            <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-success-foreground" /> {t("auth.benefitFullAccess")}</li>
-            <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-success-foreground" /> {t("auth.benefitCancelAnytime")}</li>
-          </ul>
+              <ul className="mt-4 space-y-1.5 text-sm text-muted-foreground">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-success-foreground" />{" "}
+                  {t("auth.benefitNoCard")}
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-success-foreground" />{" "}
+                  {t("auth.benefitFullAccess")}
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-success-foreground" />{" "}
+                  {t("auth.benefitCancelAnytime")}
+                </li>
+              </ul>
 
-          {googleAvailable !== false && (
-            <div className="mt-6 space-y-3">
-              <GoogleSignInButton />
-              {googleAvailable && (
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <div className="h-px flex-1 bg-border" />
-                  {t("auth.orContinueWith")}
-                  <div className="h-px flex-1 bg-border" />
+              {googleAvailable !== false && (
+                <div className="mt-6 space-y-3">
+                  <GoogleSignInButton />
+                  {googleAvailable && (
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <div className="h-px flex-1 bg-border" />
+                      {t("auth.orContinueWith")}
+                      <div className="h-px flex-1 bg-border" />
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
+
+              <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="name">{t("auth.fullName")}</Label>
+                  <Input
+                    id="name"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="email">{t("auth.email")}</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="password">{t("auth.password")}</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      required
+                      minLength={8}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground hover:text-foreground"
+                      aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t("auth.minChars")}</p>
+                </div>
+                <label className="flex items-start gap-2.5 text-xs text-muted-foreground">
+                  <Checkbox
+                    checked={agreed}
+                    onCheckedChange={(v) => setAgreed(v === true)}
+                    className="mt-0.5"
+                    aria-label={t("auth.mustAgree")}
+                  />
+                  <span>
+                    {t("auth.agreePrefix")}{" "}
+                    <Link to="/legal/terms" className="font-medium text-primary hover:underline">
+                      {t("auth.termsLink")}
+                    </Link>{" "}
+                    {t("auth.and")}{" "}
+                    <Link to="/legal/privacy" className="font-medium text-primary hover:underline">
+                      {t("auth.privacyLink")}
+                    </Link>
+                  </span>
+                </label>
+                <Button
+                  type="submit"
+                  variant="hero"
+                  className="w-full"
+                  disabled={submitting || !agreed}
+                >
+                  {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {t("auth.createBtn")}
+                </Button>
+              </form>
+
+              <div className="mt-6 flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
+                {t("auth.haveAccount")}{" "}
+                <Link
+                  to="/login"
+                  className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+                >
+                  {t("auth.signIn")} <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </>
           )}
-
-          <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="name">{t("auth.fullName")}</Label>
-              <Input id="name" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="business">Bedrijfsnaam</Label>
-              <Input id="business" required value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Bijv. Salon Bloem" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="category">Type zaak</Label>
-              <select
-                id="category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-              </select>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="email">{t("auth.email")}</Label>
-              <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="password">{t("auth.password")}</Label>
-              <Input id="password" type="password" autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
-              <p className="text-xs text-muted-foreground">{t("auth.minChars")}</p>
-            </div>
-            <label className="flex items-start gap-2.5 text-xs text-muted-foreground">
-              <Checkbox
-                checked={agreed}
-                onCheckedChange={(v) => setAgreed(v === true)}
-                className="mt-0.5"
-                aria-label={t("auth.mustAgree")}
-              />
-              <span>
-                {t("auth.agreePrefix")}{" "}
-                <Link to="/legal/terms" className="font-medium text-primary hover:underline">{t("auth.termsLink")}</Link>{" "}
-                {t("auth.and")}{" "}
-                <Link to="/legal/privacy" className="font-medium text-primary hover:underline">{t("auth.privacyLink")}</Link>
-              </span>
-            </label>
-            <Button type="submit" variant="hero" className="w-full" disabled={submitting || !agreed}>
-              {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              {t("auth.createBtn")}
-            </Button>
-          </form>
-
-          <div className="mt-6 flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
-            {t("auth.haveAccount")}{" "}
-            <Link to="/login" className="inline-flex items-center gap-1 font-medium text-primary hover:underline">
-              {t("auth.signIn")} <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
         </div>
       </div>
     </div>

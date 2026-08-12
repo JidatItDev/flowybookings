@@ -17,7 +17,8 @@ export const nl: Record<string, string> = {
   "landing.badge": "Nieuw: WhatsApp herinneringen → minder no-shows",
   "landing.headline": "Meer boekingen. Minder no-shows.",
   "landing.headlineAccent": "Alles in één systeem.",
-  "landing.sub": "FlowyBookings helpt salons en servicebedrijven om hun agenda, klanten en betalingen te beheren — zonder gedoe.",
+  "landing.sub":
+    "FlowyBookings helpt salons en servicebedrijven om hun agenda, klanten en betalingen te beheren — zonder gedoe.",
   // ── Social proof stats ──
   "landing.proof.title": "Vertrouwd door groeiende salons",
   "landing.proof.sub": "Resultaten die zaken in de Benelux écht voelen.",
@@ -32,7 +33,8 @@ export const nl: Record<string, string> = {
   "landing.proof.stat3.desc": "Eén kalender voor je hele team. Geen losse briefjes meer.",
   // ── Problem → Solution ──
   "landing.ps.title": "Klinkt herkenbaar?",
-  "landing.ps.sub": "We bouwden FlowyBookings om de dagelijkse frustraties van een drukke zaak op te lossen.",
+  "landing.ps.sub":
+    "We bouwden FlowyBookings om de dagelijkse frustraties van een drukke zaak op te lossen.",
   "landing.ps.problemsTitle": "Zonder FlowyBookings",
   "landing.ps.solutionsTitle": "Met FlowyBookings",
   "landing.ps.p1": "No-shows kosten je geld",
@@ -45,29 +47,36 @@ export const nl: Record<string, string> = {
   "landing.ps.s4": "Betalingen direct geregeld via Mollie",
   // ── App feel ──
   "landing.appFeel.title": "Voelt als een app. Werkt overal.",
-  "landing.appFeel.sub": "Gebruik FlowyBookings zoals een echte app — met snelle flows, swipe-interacties en een soepele ervaring op mobiel.",
+  "landing.appFeel.sub":
+    "Gebruik FlowyBookings zoals een echte app — met snelle flows, swipe-interacties en een soepele ervaring op mobiel.",
   "landing.appFeel.b1": "Snelle flows zonder laadschermen",
   "landing.appFeel.b2": "Swipe-vriendelijk op mobiel",
   "landing.appFeel.b3": "Werkt op telefoon, tablet en desktop",
   // ── Transparency ──
   "landing.transparency.title": "Geen verrassingen. Ooit.",
-  "landing.transparency.sub": "Je betaalt alleen voor succesvolle boekingen. Geen verborgen kosten, geen kleine lettertjes.",
+  "landing.transparency.sub":
+    "Je betaalt alleen voor succesvolle boekingen. Geen verborgen kosten, geen kleine lettertjes.",
   "landing.transparency.b1": "Vast maandbedrag",
   "landing.transparency.b2": "Op elk moment opzeggen",
   "landing.transparency.b3": "Geen kosten bij no-shows",
   // ── FAQ ──
   "landing.faq.title": "Veelgestelde vragen",
   "landing.faq.q1": "Kan ik later wisselen van plan?",
-  "landing.faq.a1": "Ja. Je kan op elk moment upgraden of downgraden vanuit je dashboard. De wijziging gaat direct in.",
+  "landing.faq.a1":
+    "Ja. Je kan op elk moment upgraden of downgraden vanuit je dashboard. De wijziging gaat direct in.",
   "landing.faq.q2": "Wat gebeurt er met mijn data?",
-  "landing.faq.a2": "Je data is van jou — gehost binnen de EU. We verkopen nooit klantdata en je kan op elk moment alles exporteren.",
+  "landing.faq.a2":
+    "Je data is van jou — gehost binnen de EU. We verkopen nooit klantdata en je kan op elk moment alles exporteren.",
   "landing.faq.q3": "Zijn er opstartkosten?",
-  "landing.faq.a3": "Nee. Geen setup-kosten, geen contract. Je start met 14 dagen gratis en betaalt daarna per maand.",
+  "landing.faq.a3":
+    "Nee. Geen setup-kosten, geen contract. Je start met 14 dagen gratis en betaalt daarna per maand.",
   "landing.faq.q4": "Werkt het ook op mobiel?",
-  "landing.faq.a4": "Ja. FlowyBookings is volledig mobile-first. Beheer je zaak vanaf je telefoon, of laat klanten boeken via je eigen pagina.",
+  "landing.faq.a4":
+    "Ja. FlowyBookings is volledig mobile-first. Beheer je zaak vanaf je telefoon, of laat klanten boeken via je eigen pagina.",
   // ── Final CTA ──
   "landing.finalCta.title": "Klaar om meer boekingen te krijgen?",
-  "landing.finalCta.sub": "Start vandaag nog gratis — je eerste afspraak komt sneller dan je denkt.",
+  "landing.finalCta.sub":
+    "Start vandaag nog gratis — je eerste afspraak komt sneller dan je denkt.",
   "landing.tryBooking": "Probeer het boekingsproces",
   "landing.seeDashboard": "Bekijk het dashboard",
   "landing.trial": "14 dagen gratis",
@@ -86,12 +95,14 @@ export const nl: Record<string, string> = {
   "demo.bannerTitle": "Je bent in de live demo",
   "demo.bannerSub": "Echte boeking, geen echte betaling.",
   "demo.startTrial": "Start je proefperiode",
-  "demo.paymentNotice": "Demo betaling — geen echte transactie. De boeking wordt opgeslagen zodat je kunt zien hoe het er in jouw dashboard uitziet.",
+  "demo.paymentNotice":
+    "Demo betaling — geen echte transactie. De boeking wordt opgeslagen zodat je kunt zien hoe het er in jouw dashboard uitziet.",
   "demo.convertTitle": "Wil je dit ook voor jouw zaak?",
   "demo.convertSub": "Start 14 dagen gratis met FlowyBookings — geen creditcard nodig.",
   "demo.startTrialCta": "Start gratis proefperiode",
   "demo.viewDashboard": "Bekijk in dashboard",
-  "demo.safeNotice": "Boekingen in deze demo zijn echt opgeslagen, maar er wordt geen echte betaling verwerkt.",
+  "demo.safeNotice":
+    "Boekingen in deze demo zijn echt opgeslagen, maar er wordt geen echte betaling verwerkt.",
   "landing.today": "Vandaag",
   "landing.fromBookings": "Uit {count} bevestigde boekingen",
   "landing.bookingsWeek": "Boekingen deze week",
@@ -101,13 +112,16 @@ export const nl: Record<string, string> = {
 
   // ── Features ──
   "features.title": "Alles wat je zaak nodig heeft, prachtig georganiseerd",
-  "features.sub": "Van de eerste tik tot de laatste fooi — FlowyBookings regelt elk moment van de klantreis.",
+  "features.sub":
+    "Van de eerste tik tot de laatste fooi — FlowyBookings regelt elk moment van de klantreis.",
   "features.smartBookings": "Slimme boekingen",
   "features.smartBookingsDesc": "Dag- en weekkalender, drag-and-drop, conflictdetectie.",
   "features.customerProfiles": "Klantprofielen",
-  "features.customerProfilesDesc": "Notities, voorkeuren, historie en totale besteding in één overzicht.",
+  "features.customerProfilesDesc":
+    "Notities, voorkeuren, historie en totale besteding in één overzicht.",
   "features.payments": "Betalingen & aanbetalingen",
-  "features.paymentsDesc": "Mollie-integratie met iDEAL, Bancontact en creditcard. Volg betaald, onbetaald en terugbetalingen.",
+  "features.paymentsDesc":
+    "Mollie-integratie met iDEAL, Bancontact en creditcard. Volg betaald, onbetaald en terugbetalingen.",
   "features.reminders": "Herinneringen die werken",
   "features.remindersDesc": "E-mail, SMS en WhatsApp op 24u en 2u voor de afspraak.",
   "features.analytics": "Waardevolle statistieken",
@@ -126,23 +140,28 @@ export const nl: Record<string, string> = {
 
   // ── Why us (echte waardepropositie i.p.v. nep-testimonials) ──
   "whyUs.title": "Gemaakt voor de Benelux, niet voor Silicon Valley",
-  "whyUs.sub": "Geen verzonnen reviews. Wel concrete voordelen die je vanaf dag één voelt in je zaak.",
+  "whyUs.sub":
+    "Geen verzonnen reviews. Wel concrete voordelen die je vanaf dag één voelt in je zaak.",
   "whyUs.localTitle": "Lokale betalingen",
-  "whyUs.localDesc": "iDEAL, Bancontact en creditcard via Mollie — geen omslachtige Amerikaanse providers.",
+  "whyUs.localDesc":
+    "iDEAL, Bancontact en creditcard via Mollie — geen omslachtige Amerikaanse providers.",
   "whyUs.noShowTitle": "Minder no-shows",
-  "whyUs.noShowDesc": "Automatische herinneringen 24u en 2u voor de afspraak. Optionele aanbetaling per klant.",
+  "whyUs.noShowDesc":
+    "Automatische herinneringen 24u en 2u voor de afspraak. Optionele aanbetaling per klant.",
   "whyUs.fastTitle": "Boeken in 60 seconden",
   "whyUs.fastDesc": "Mobile-first flow zonder account. Klanten kiezen dienst, tijd en zijn klaar.",
   "whyUs.ownTitle": "Jouw data, jouw klanten",
   "whyUs.ownDesc": "Volledig in de EU gehost. Geen verkoop van klantdata, geen tracking-cookies.",
   "whyUs.transparentTitle": "Transparante tarieven",
-  "whyUs.transparentDesc": "Vast maandbedrag plus een lage transactiefee. Geen verborgen kosten of meerjarige contracten.",
+  "whyUs.transparentDesc":
+    "Vast maandbedrag plus een lage transactiefee. Geen verborgen kosten of meerjarige contracten.",
   "whyUs.supportTitle": "Nederlandstalige support",
   "whyUs.supportDesc": "Echte mensen die je zaak begrijpen — bereikbaar via e-mail en chat.",
 
   // ── Pricing ──
   "pricing.title": "Eerlijke tarieven, vast bedrag per boeking",
-  "pricing.sub": "Geen percentage van je omzet. Eén voorspelbare boekingsfee — onafhankelijk van het bedrag.",
+  "pricing.sub":
+    "Geen percentage van je omzet. Eén voorspelbare boekingsfee — onafhankelijk van het bedrag.",
   "pricing.mostPopular": "Meest gekozen",
   "pricing.transactionFee": "boekingsfee per boeking",
   "pricing.noFee": "Geen boekingsfee",
@@ -175,7 +194,8 @@ export const nl: Record<string, string> = {
   "pricing.compare.toggle.hide": "Verberg vergelijking",
   "pricing.compare.swipeHint": "Veeg horizontaal om alle plannen te zien",
   "pricing.compare.feature": "Functie",
-  "pricing.compare.addonsNote": "Add-ons (paarse badges) zijn binnenkort los bij te boeken bovenop je abonnement.",
+  "pricing.compare.addonsNote":
+    "Add-ons (paarse badges) zijn binnenkort los bij te boeken bovenop je abonnement.",
   "pricing.compare.cat.basic": "Basis",
   "pricing.compare.cat.limits": "Limieten",
   "pricing.compare.cat.communication": "Communicatie",
@@ -212,7 +232,8 @@ export const nl: Record<string, string> = {
   "pricing.compare.val.noFee": "€0",
   "pricing.compare.val.starterFee": "€0,50",
   "pricing.compare.val.proFee": "€0,30",
-  "pricing.footnote": "Vaste boekingsfee per succesvolle boeking — onafhankelijk van het bedrag. Mollie-transactiekosten (bv. €0,29 voor iDEAL) zijn standaard van toepassing en gaan via je eigen Mollie-account. Je geld komt altijd direct op jouw rekening.",
+  "pricing.footnote":
+    "Vaste boekingsfee per succesvolle boeking — onafhankelijk van het bedrag. Mollie-transactiekosten (bv. €0,29 voor iDEAL) zijn standaard van toepassing en gaan via je eigen Mollie-account. Je geld komt altijd direct op jouw rekening.",
 
   // ── CTA ──
   "cta.title": "Klaar om je agenda te vullen?",
@@ -226,13 +247,16 @@ export const nl: Record<string, string> = {
   "auth.fullName": "Volledige naam",
   "auth.email": "E-mail",
   "auth.password": "Wachtwoord",
+  "auth.showPassword": "Wachtwoord tonen",
+  "auth.hidePassword": "Wachtwoord verbergen",
   "auth.minChars": "Minimaal 8 tekens.",
   "auth.createBtn": "Account aanmaken",
   "auth.haveAccount": "Heb je al een account?",
   "auth.signIn": "Inloggen",
   "auth.welcomeBack": "Welkom terug",
   "auth.loginFailedTitle": "Inloggen is niet gelukt",
-  "auth.loginFailedMessage": "Je sessie is verlopen of de login kon niet worden bevestigd. Probeer opnieuw.",
+  "auth.loginFailedMessage":
+    "Je sessie is verlopen of de login kon niet worden bevestigd. Probeer opnieuw.",
   "auth.loginRetry": "Opnieuw inloggen",
   "auth.backToHome": "Terug naar homepage",
   "auth.signInSub": "Log in op je dashboard.",
@@ -245,6 +269,17 @@ export const nl: Record<string, string> = {
   "auth.provisionDemo": "Demo-gebruikers aanmaken",
   "auth.seeding": "Bezig met aanmaken…",
   "auth.accountCreated": "Account aangemaakt — je kunt nu inloggen.",
+  "auth.checkEmailTitle": "Check je e-mail",
+  "auth.checkEmailBody":
+    "We hebben een bevestigingslink gestuurd naar {email}. Klik erop om je account te activeren.",
+  "auth.checkEmailHint": "Na bevestiging stel je je zaak in en start je gratis proefperiode.",
+  "auth.checkEmailResend": "Bevestigingsmail opnieuw versturen",
+  "auth.checkEmailResending": "Bezig met versturen…",
+  "auth.checkEmailResent": "Bevestigingsmail opnieuw verzonden.",
+  "auth.accountExistsTitle": "Account bestaat al",
+  "auth.accountExistsBody":
+    "Er is al een account geregistreerd met {email}. Log in, of reset je wachtwoord als je het vergeten bent.",
+  "auth.forgotPasswordCta": "Wachtwoord vergeten?",
   "auth.agreePrefix": "Ik ga akkoord met de",
   "auth.termsLink": "Voorwaarden",
   "auth.and": "en",
@@ -279,10 +314,12 @@ export const nl: Record<string, string> = {
   "bookingLink.posterPoweredBy": "Mogelijk gemaakt door FlowyBookings",
   "bookingLink.noSlug": "Stel eerst een shop-URL in om je boekingslink te delen.",
   "auth.orContinueWith": "of ga verder met e-mail",
-  "auth.googleNotEnabled": "Google-login is nog niet geactiveerd. Schakel Google in via Authenticatie-instellingen.",
+  "auth.googleNotEnabled":
+    "Google-login is nog niet geactiveerd. Schakel Google in via Authenticatie-instellingen.",
   "auth.googleResetDone": "Google-knop is gereset. Hij verschijnt weer op de inlogpagina.",
   "legal.reconsent.title": "Ons beleid is bijgewerkt",
-  "legal.reconsent.body": "Bekijk en accepteer de nieuwste versies van het onderstaande beleid om FlowyBookings te blijven gebruiken.",
+  "legal.reconsent.body":
+    "Bekijk en accepteer de nieuwste versies van het onderstaande beleid om FlowyBookings te blijven gebruiken.",
   "legal.reconsent.doc.privacy": "Privacybeleid",
   "legal.reconsent.doc.terms": "Algemene voorwaarden",
   "legal.reconsent.doc.refunds": "Restitutiebeleid",
@@ -297,7 +334,8 @@ export const nl: Record<string, string> = {
   "auth.signOut": "Uitloggen",
   "auth.forgotPassword": "Wachtwoord vergeten?",
   "auth.forgotTitle": "Wachtwoord vergeten",
-  "auth.forgotSub": "Vul je e-mail in en we sturen je een link om je wachtwoord opnieuw in te stellen.",
+  "auth.forgotSub":
+    "Vul je e-mail in en we sturen je een link om je wachtwoord opnieuw in te stellen.",
   "auth.sendResetLink": "Stuur reset-link",
   "auth.sending": "Bezig met versturen…",
   "auth.resetEmailSent": "Check je e-mail voor de reset-link.",
@@ -462,7 +500,8 @@ export const nl: Record<string, string> = {
   "checklist.skip": "Overslaan",
   "checklist.successBadge": "Klaar voor boekingen",
   "checklist.successTitle": "Je bent klaar om boekingen te ontvangen 🎉",
-  "checklist.successDesc": "Je shop is volledig ingericht. Maak je eerste afspraak en kom in actie.",
+  "checklist.successDesc":
+    "Je shop is volledig ingericht. Maak je eerste afspraak en kom in actie.",
   "checklist.successCta": "Maak eerste afspraak",
 
   // ── Dashboard insights ──
@@ -542,14 +581,18 @@ export const nl: Record<string, string> = {
   "calendar.dropBlocked": "Verplaatsing geblokkeerd: {reason}",
   "calendar.bookingDeleted": "Boeking verwijderd",
   "calendar.bookingCreated": "Boeking aangemaakt",
-  "calendar.conflictWith": "Conflict: {staff} heeft al een afspraak met {customer} ({service}) van {range}.",
-  "calendar.conflictGeneric": "Deze medewerker heeft al een overlappende afspraak in dit tijdslot. Kies een ander tijdstip of een andere medewerker.",
+  "calendar.conflictWith":
+    "Conflict: {staff} heeft al een afspraak met {customer} ({service}) van {range}.",
+  "calendar.conflictGeneric":
+    "Deze medewerker heeft al een overlappende afspraak in dit tijdslot. Kies een ander tijdstip of een andere medewerker.",
   "bookingError.conflict": "Tijdslot al bezet. Kies een ander tijdstip of een andere medewerker.",
   "bookingError.outsideHours": "Buiten werkuren van deze medewerker.",
-  "bookingError.outsideHoursRange": "Buiten werkuren ({range}). Kies een tijdstip binnen het rooster.",
+  "bookingError.outsideHoursRange":
+    "Buiten werkuren ({range}). Kies een tijdstip binnen het rooster.",
   "bookingError.duringBreak": "Conflict met pauze van deze medewerker.",
   "bookingError.duringBreakRange": "Conflict met pauze ({range}). Kies een ander tijdstip.",
-  "bookingError.closedDay": "Deze medewerker werkt niet op de gekozen dag. Kies een andere dag of medewerker.",
+  "bookingError.closedDay":
+    "Deze medewerker werkt niet op de gekozen dag. Kies een andere dag of medewerker.",
   "calendar.pickCustomer": "Kies klant",
   "calendar.pickService": "Kies dienst",
   "calendar.pickStaff": "Kies medewerker",
@@ -584,7 +627,8 @@ export const nl: Record<string, string> = {
   "customers.editCustomer": "Klant bewerken",
   "customers.newCustomerTitle": "Nieuwe klant",
   "customers.deleteTitle": "{name} verwijderen?",
-  "customers.deleteDesc": "De boekingsgeschiedenis blijft bewaard, maar is niet meer gekoppeld aan een klantprofiel.",
+  "customers.deleteDesc":
+    "De boekingsgeschiedenis blijft bewaard, maar is niet meer gekoppeld aan een klantprofiel.",
   "customers.cancel": "Annuleren",
   "customers.delete": "Verwijderen",
   "customers.deleted": "Klant verwijderd",
@@ -648,7 +692,8 @@ export const nl: Record<string, string> = {
   "customers.notesPlaceholder": "Allergieën, voorkeuren, favoriete drankjes…",
   "customers.saveNotes": "Notities opslaan",
   "customers.preferences": "Voorkeuren",
-  "customers.preferencesHint": "Help je team de klant beter te bedienen — zichtbaar bij elke boeking.",
+  "customers.preferencesHint":
+    "Help je team de klant beter te bedienen — zichtbaar bij elke boeking.",
   "customers.favoriteStaff": "Favoriete medewerker",
   "customers.favoriteStaffNone": "Geen voorkeur",
   "customers.favoriteService": "Favoriete dienst",
@@ -691,8 +736,10 @@ export const nl: Record<string, string> = {
   "customerImport.tabCsv": "CSV / Excel",
   "customerImport.tabPlatform": "Vanuit ander platform",
   "customerImport.tabManual": "Handmatig",
-  "customerImport.csvIntro": "Upload een CSV- of Excel-bestand met je klanten. Wij detecteren de kolommen automatisch.",
-  "customerImport.platformIntro": "Kies waar je vandaan komt voor specifieke instructies en kolom-presets.",
+  "customerImport.csvIntro":
+    "Upload een CSV- of Excel-bestand met je klanten. Wij detecteren de kolommen automatisch.",
+  "customerImport.platformIntro":
+    "Kies waar je vandaan komt voor specifieke instructies en kolom-presets.",
   "customerImport.dropZone": "Sleep een bestand hierheen of klik om te kiezen",
   "customerImport.dropZoneShort": "Klik om te uploaden of sleep hierheen",
   "customerImport.acceptedFormats": ".csv, .xlsx of .xls — max 10 MB",
@@ -745,7 +792,7 @@ export const nl: Record<string, string> = {
   "services.editService": "Dienst bewerken",
   "services.newService": "Nieuwe dienst",
   "services.deleteService": "Dienst verwijderen?",
-  "services.deleteDesc": "\"{name}\" wordt verwijderd. Bestaande boekingen behouden hun prijs.",
+  "services.deleteDesc": '"{name}" wordt verwijderd. Bestaande boekingen behouden hun prijs.',
   "services.cancel": "Annuleren",
   "services.delete": "Verwijderen",
   "services.deleted": "Dienst verwijderd",
@@ -845,7 +892,8 @@ export const nl: Record<string, string> = {
   "payments.stripeNotice": "Stripe & Mollie integratie komt binnenkort",
   "payments.stripeNoticeDesc": "Transactiekosten worden ondersteund op Pro- en Premium-plannen.",
   "payments.noPayments": "Nog geen betalingen",
-  "payments.noPaymentsDesc": "Betalingen verschijnen hier zodra klanten betalen of je een boeking als betaald markeert.",
+  "payments.noPaymentsDesc":
+    "Betalingen verschijnen hier zodra klanten betalen of je een boeking als betaald markeert.",
   "payments.recentTransactions": "Recente transacties",
   "payments.customer": "Klant",
   "payments.booking": "Boeking",
@@ -861,7 +909,8 @@ export const nl: Record<string, string> = {
 
   // ── Mollie Connect ──
   "mollie.title": "Mollie betalingen",
-  "mollie.description": "Koppel je eigen Mollie-account om betalingen te ontvangen. Uitbetalingen gaan rechtstreeks naar jou.",
+  "mollie.description":
+    "Koppel je eigen Mollie-account om betalingen te ontvangen. Uitbetalingen gaan rechtstreeks naar jou.",
   "mollie.connect": "Mollie koppelen",
   "mollie.disconnect": "Ontkoppelen",
   "mollie.pending": "Koppeling in behandeling",
@@ -873,7 +922,8 @@ export const nl: Record<string, string> = {
   "mollie.feeNoFee": "Geen boekingsfee",
   "mollie.payouts": "Uitbetalingen",
   "mollie.payoutsValue": "Direct naar jouw Mollie",
-  "mollie.platformFeeNotice": "FlowyBookings rekent een vaste boekingsfee per succesvolle boeking — onafhankelijk van het bedrag. Klantbetalingen komen rechtstreeks op jouw eigen Mollie-account, nooit op ons platform.",
+  "mollie.platformFeeNotice":
+    "FlowyBookings rekent een vaste boekingsfee per succesvolle boeking — onafhankelijk van het bedrag. Klantbetalingen komen rechtstreeks op jouw eigen Mollie-account, nooit op ons platform.",
   "mollie.status.not_connected": "Niet gekoppeld",
   "mollie.status.pending": "In behandeling",
   "mollie.status.connected": "Gekoppeld",
@@ -884,13 +934,15 @@ export const nl: Record<string, string> = {
   "mollie.onboarding.completed": "Voltooid",
   "mollie.onboarding.rejected": "Afgewezen",
   "mollie.nudge.title": "Sneller betaald worden — koppel Mollie",
-  "mollie.nudge.body": "Accepteer iDEAL, kaarten en Bancontact bij het boeken. Betalingen komen direct op jouw Mollie-account, met aanbetalingen tegen no-shows.",
+  "mollie.nudge.body":
+    "Accepteer iDEAL, kaarten en Bancontact bij het boeken. Betalingen komen direct op jouw Mollie-account, met aanbetalingen tegen no-shows.",
   "mollie.nudge.benefit1": "Directe uitbetalingen",
   "mollie.nudge.benefit2": "Minder no-shows via aanbetaling",
   "mollie.nudge.benefit3": "Lage platformkosten",
   "mollie.nudge.cta": "Mollie koppelen",
   "mollie.nudge.notifTitle": "Koppel Mollie om betalingen te ontvangen",
-  "mollie.nudge.notifMessage": "Je shop heeft nog geen betaalprovider gekoppeld. Koppel Mollie om aanbetalingen te accepteren en no-shows te verminderen.",
+  "mollie.nudge.notifMessage":
+    "Je shop heeft nog geen betaalprovider gekoppeld. Koppel Mollie om aanbetalingen te accepteren en no-shows te verminderen.",
   "mollie.connected": "Mollie succesvol gekoppeld",
   "mollie.connectFailed": "Koppelen met Mollie mislukt",
   "mollie.notConfigured": "Mollie Connect is niet geconfigureerd op het platform",
@@ -898,12 +950,14 @@ export const nl: Record<string, string> = {
 
   // Pre-connect screen
   "mollie.preConnect.title": "Koppel je betalingen",
-  "mollie.preConnect.subtitle": "Eén keer koppelen — daarna ontvang je betalingen direct op je eigen Mollie-account.",
+  "mollie.preConnect.subtitle":
+    "Eén keer koppelen — daarna ontvang je betalingen direct op je eigen Mollie-account.",
   "mollie.preConnect.benefit1": "Ontvang betalingen direct op je eigen rekening",
   "mollie.preConnect.benefit2": "Laat klanten online betalen (iDEAL, kaart, Bancontact)",
   "mollie.preConnect.benefit3": "Minder no-shows door aanbetalingen",
   "mollie.preConnect.warningTitle": "Let op — kies straks het juiste bedrijf in Mollie",
-  "mollie.preConnect.warningBody": "Mollie laat je een organisatie kiezen. Selecteer alleen de organisatie die hoort bij:",
+  "mollie.preConnect.warningBody":
+    "Mollie laat je een organisatie kiezen. Selecteer alleen de organisatie die hoort bij:",
   "mollie.preConnect.cancel": "Annuleren",
   "mollie.preConnect.continue": "Verder naar Mollie",
 
@@ -936,7 +990,8 @@ export const nl: Record<string, string> = {
 
   // ── Admin: Mollie health ──
   "adminMollieHealth.title": "Mollie Connect-gezondheid",
-  "adminMollieHealth.description": "Per shop: koppelstatus, organisatie, token-vervaldatum, laatste verversing en platformkosten (laatste 30 dagen).",
+  "adminMollieHealth.description":
+    "Per shop: koppelstatus, organisatie, token-vervaldatum, laatste verversing en platformkosten (laatste 30 dagen).",
   "adminMollieHealth.empty": "Geen shops met een Mollie-koppeling gevonden.",
   "adminMollieHealth.searchPlaceholder": "Zoek op shop of organisatie…",
   "adminMollieHealth.counts": "{connected} van {total} gekoppeld",
@@ -999,10 +1054,12 @@ export const nl: Record<string, string> = {
   "adminMessages.deliveredTo": "Verstuurd naar {n}",
   "adminMessages.readBy": "{n} gelezen",
   "adminMessages.emailTemplates": "E-mailtemplates",
-  "adminMessages.emailTemplatesSub": "Bekijk hoe automatische e-mails er voor klanten en shop-eigenaren uitzien.",
+  "adminMessages.emailTemplatesSub":
+    "Bekijk hoe automatische e-mails er voor klanten en shop-eigenaren uitzien.",
   "adminMessages.preview": "Preview",
   "adminMessages.previewSubject": "Onderwerp",
-  "adminMessages.previewDescription": "Voorbeeld op basis van demo-data — er wordt niets verstuurd.",
+  "adminMessages.previewDescription":
+    "Voorbeeld op basis van demo-data — er wordt niets verstuurd.",
   "adminMessages.noPreviewData": "Geen previewdata beschikbaar voor deze template.",
 
   // ── Notifications ──
@@ -1016,9 +1073,11 @@ export const nl: Record<string, string> = {
   "notifications.whatsappDesc": "Binnenkort beschikbaar.",
   "notifications.whatsappBadge": "Binnenkort",
   "notifications.whatsappComingTitle": "WhatsApp-herinneringen komen eraan.",
-  "notifications.whatsappComingBody": "We werken aan een officiële WhatsApp Business-koppeling. Voor nu blijft het kanaal uitgeschakeld voor alle plannen — gebruik e-mail of SMS om herinneringen te sturen.",
+  "notifications.whatsappComingBody":
+    "We werken aan een officiële WhatsApp Business-koppeling. Voor nu blijft het kanaal uitgeschakeld voor alle plannen — gebruik e-mail of SMS om herinneringen te sturen.",
   "notifications.whatsappRowTitle": "WhatsApp herinneringen",
-  "notifications.whatsappRowDesc": "Stuur automatische herinneringen via WhatsApp Business — nog in ontwikkeling.",
+  "notifications.whatsappRowDesc":
+    "Stuur automatische herinneringen via WhatsApp Business — nog in ontwikkeling.",
   "notifications.reminderEvents": "Herinneringsgebeurtenissen",
   "notifications.reminderDesc": "Kies welke berichten automatisch worden verzonden.",
   "notifications.confirm": "Boekingsbevestiging",
@@ -1034,7 +1093,8 @@ export const nl: Record<string, string> = {
   "notifications.saved": "Voorkeuren opgeslagen",
   "notifications.unsaved": "Niet-opgeslagen wijzigingen",
   "notifications.depositTitle": "Aanbetalingen (binnenkort)",
-  "notifications.depositSub": "Stel een standaard aanbetalingspercentage in. Wordt gebruikt om aanbetalingen te vragen van klanten met herhaalde no-shows zodra betalingen actief zijn.",
+  "notifications.depositSub":
+    "Stel een standaard aanbetalingspercentage in. Wordt gebruikt om aanbetalingen te vragen van klanten met herhaalde no-shows zodra betalingen actief zijn.",
   "notifications.depositPercent": "Standaard aanbetaling %",
   "notifications.depositSaved": "Aanbetalingsinstellingen opgeslagen",
   "automations.title": "Automatiseringsflows",
@@ -1051,19 +1111,24 @@ export const nl: Record<string, string> = {
   "automations.statusActive": "Actief · cron elke 5 min",
   "automations.poweredBy": "Aangedreven door FlowyBookings e-mail",
   "automations.reminderSms": "Reminder-SMS (2 uur)",
-  "automations.reminderSmsDesc": "Stuur óók een SMS ~2u voor de afspraak. Vereist saldo en telefoonnummer.",
+  "automations.reminderSmsDesc":
+    "Stuur óók een SMS ~2u voor de afspraak. Vereist saldo en telefoonnummer.",
   "automations.smsCreditsTitle": "SMS-saldo",
   "automations.smsCreditsBalance": "Resterend saldo",
   "automations.smsCreditsUsed": "Verbruikt",
   "automations.smsCreditsFree": "Gratis ontvangen",
   "automations.smsCreditsHint": "Elke verzonden reminder-SMS verbruikt 1 credit.",
-  "automations.smsCreditsLow": "Laag saldo — herinneringen worden overgeslagen zodra het saldo 0 is.",
-  "automations.smsCreditsEmpty": "Geen credits — SMS-herinneringen zijn uitgeschakeld tot er nieuwe credits zijn.",
-  "automations.smsProviderPending": "Verzending wordt geactiveerd zodra de SMS-provider gekoppeld is.",
+  "automations.smsCreditsLow":
+    "Laag saldo — herinneringen worden overgeslagen zodra het saldo 0 is.",
+  "automations.smsCreditsEmpty":
+    "Geen credits — SMS-herinneringen zijn uitgeschakeld tot er nieuwe credits zijn.",
+  "automations.smsProviderPending":
+    "Verzending wordt geactiveerd zodra de SMS-provider gekoppeld is.",
   "automations.smsCreditsTopUp": "SMS-tegoed bijvullen",
 
   "smsTopup.title": "SMS-tegoed bijvullen",
-  "smsTopup.subtitle": "Eenmalige betaling via Mollie. Credits worden direct na betaling toegevoegd.",
+  "smsTopup.subtitle":
+    "Eenmalige betaling via Mollie. Credits worden direct na betaling toegevoegd.",
   "smsTopup.popular": "Populair",
   "smsTopup.bestDeal": "Beste deal",
   "smsTopup.credits": "credits",
@@ -1071,7 +1136,8 @@ export const nl: Record<string, string> = {
   "smsTopup.choose": "Kies dit pakket",
   "smsTopup.cancel": "Annuleren",
   "smsTopup.processing": "Bezig met doorsturen…",
-  "smsTopup.successReturn": "Je betaling is verwerkt. Het saldo wordt binnen enkele seconden bijgewerkt.",
+  "smsTopup.successReturn":
+    "Je betaling is verwerkt. Het saldo wordt binnen enkele seconden bijgewerkt.",
   "smsTopup.failedReturn": "Betaling mislukt of geannuleerd. Probeer het opnieuw.",
   "smsTopup.errorGeneric": "Kon de betaling niet starten. Probeer het opnieuw.",
 
@@ -1136,7 +1202,8 @@ export const nl: Record<string, string> = {
   "settings.logoUploaded": "Logo geüpload",
   "settings.logoRemoved": "Logo verwijderd",
   "settings.trialExpiredTitle": "Je proefperiode is verlopen",
-  "settings.trialExpiredBody": "Kies een plan om door te gaan. Nieuwe boekingen via je publieke pagina en de \"Nieuwe afspraak\" knop zijn tijdelijk geblokkeerd.",
+  "settings.trialExpiredBody":
+    'Kies een plan om door te gaan. Nieuwe boekingen via je publieke pagina en de "Nieuwe afspraak" knop zijn tijdelijk geblokkeerd.',
   "settings.trialExpiredCta": "Kies een plan",
 
   // ── Analytics ──
@@ -1153,8 +1220,10 @@ export const nl: Record<string, string> = {
   "analytics.topServices": "Top diensten",
   "analytics.topServicesSub": "Meest geboekt in de laatste 30 dagen",
   "analytics.bookings": "{n} boekingen",
-  "analytics.noData": "Nog geen data om te tonen. Maak je eerste boekingen aan om statistieken te zien.",
-  "analytics.basedOn": "Gebaseerd op {bookings} boekingen, {payments} betalingen, {customers} klanten.",
+  "analytics.noData":
+    "Nog geen data om te tonen. Maak je eerste boekingen aan om statistieken te zien.",
+  "analytics.basedOn":
+    "Gebaseerd op {bookings} boekingen, {payments} betalingen, {customers} klanten.",
 
   // ── Booking flow ──
   "book.title": "Een afspraak boeken",
@@ -1203,7 +1272,8 @@ export const nl: Record<string, string> = {
   "book.durationLabel": "Duur",
   "book.price": "Prijs",
   "book.depositDue": "Aanbetaling verschuldigd",
-  "book.stripeNotice": "Na bevestiging word je doorgestuurd naar de beveiligde aanbetalingsstap (Stripe / Mollie).",
+  "book.stripeNotice":
+    "Na bevestiging word je doorgestuurd naar de beveiligde aanbetalingsstap (Stripe / Mollie).",
   "book.back": "Terug",
   "book.continue": "Doorgaan",
   "book.confirmBooking": "Boeking bevestigen",
@@ -1215,7 +1285,8 @@ export const nl: Record<string, string> = {
   "book.slotTaken": "Dit tijdslot is helaas net bezet. Kies een ander moment.",
   "book.failed": "Boeking mislukt. Probeer het opnieuw.",
   "book.youreBooked": "Je bent ingeboekt!",
-  "book.confirmationSentSub": "Een bevestiging is verstuurd naar je e-mail. Herinnering volgt 24u en 2u voor de afspraak.",
+  "book.confirmationSentSub":
+    "Een bevestiging is verstuurd naar je e-mail. Herinnering volgt 24u en 2u voor de afspraak.",
   "book.bookAnother": "Nog een boeking",
   "book.addToCalendar": "Toevoegen aan agenda",
   "book.backHome": "Terug naar home",
@@ -1225,7 +1296,8 @@ export const nl: Record<string, string> = {
 
   // ── Booking confirmation ──
   "confirmation.title": "Je bent ingeboekt!",
-  "confirmation.sub": "Een bevestiging is verstuurd naar je e-mail. We hebben ook een herinnering ingepland op 24u en 2u voor de afspraak.",
+  "confirmation.sub":
+    "Een bevestiging is verstuurd naar je e-mail. We hebben ook een herinnering ingepland op 24u en 2u voor de afspraak.",
   "confirmation.bookAnother": "Nog een boeking",
   "confirmation.backHome": "Terug naar home",
 
@@ -1366,7 +1438,8 @@ export const nl: Record<string, string> = {
 
   // ── Admin payments ──
   "adminPayments.title": "Betalingen & omzet",
-  "adminPayments.description": "Transactie-omzet, platformkosten en terugbetalingen over alle winkels.",
+  "adminPayments.description":
+    "Transactie-omzet, platformkosten en terugbetalingen over alle winkels.",
   "adminPayments.totalRevenue": "Totale omzet",
   "adminPayments.platformFees": "Platformkosten",
   "adminPayments.totalTransactions": "Totaal transacties",
@@ -1383,7 +1456,8 @@ export const nl: Record<string, string> = {
 
   // ── Admin logs ──
   "adminLogs.title": "Activiteitenlog",
-  "adminLogs.description": "Recente platformactiviteit over winkels, boekingen, betalingen en gebruikers.",
+  "adminLogs.description":
+    "Recente platformactiviteit over winkels, boekingen, betalingen en gebruikers.",
   "adminLogs.noActivity": "Nog geen activiteit.",
 
   // ── Admin plans ──
@@ -1431,12 +1505,15 @@ export const nl: Record<string, string> = {
 
   // ── Platformbetalingen (admin Mollie voor FlowyBookings abonnementen) ──
   "platformBilling.title": "Abonnementen-betaalprovider",
-  "platformBilling.subtitle": "Beheer de eigen Mollie-koppeling van FlowyBookings voor abonnementsbetalingen",
+  "platformBilling.subtitle":
+    "Beheer de eigen Mollie-koppeling van FlowyBookings voor abonnementsbetalingen",
   "platformBilling.adminOnly": "Alleen verborgen admin — nooit zichtbaar voor shopeigenaren",
   "platformBilling.sectionA": "Abonnementsbetalingen",
-  "platformBilling.sectionADesc": "De eigen Mollie-account van FlowyBookings voor Starter / Pro / Premium-betalingen. Hier geconfigureerd.",
+  "platformBilling.sectionADesc":
+    "De eigen Mollie-account van FlowyBookings voor Starter / Pro / Premium-betalingen. Hier geconfigureerd.",
   "platformBilling.sectionB": "Boekingsbetaalproviders",
-  "platformBilling.sectionBDesc": "De eigen Mollie Connect-account van elke shop voor boekingsaanbetalingen. Per shop beheerd, overzicht onder Providers.",
+  "platformBilling.sectionBDesc":
+    "De eigen Mollie Connect-account van elke shop voor boekingsaanbetalingen. Per shop beheerd, overzicht onder Providers.",
   "platformBilling.runCheck": "Statuscontrole uitvoeren",
   "platformBilling.readiness": "Klaar voor platformbetalingen",
   "platformBilling.statusReady": "Klaar",
@@ -1464,7 +1541,8 @@ export const nl: Record<string, string> = {
   "platformBilling.lastError": "Laatst bekende billing-fout",
   "platformBilling.manageSecrets": "Beheer Mollie-sleutels",
   "platformBilling.manageSecretsTitle": "Mollie-abonnementssleutels beheren",
-  "platformBilling.manageSecretsIntro": "Deze geheimen gebruiken we voor de eigen abonnementsbetalingen van FlowyBookings. Ze worden veilig in Lovable Secrets bewaard en zijn nooit zichtbaar in de admin-UI. Open Lovable Cloud → Instellingen → Secrets om een waarde toe te voegen of te wijzigen, met de namen hieronder.",
+  "platformBilling.manageSecretsIntro":
+    "Deze geheimen gebruiken we voor de eigen abonnementsbetalingen van FlowyBookings. Ze worden veilig in Lovable Secrets bewaard en zijn nooit zichtbaar in de admin-UI. Open Lovable Cloud → Instellingen → Secrets om een waarde toe te voegen of te wijzigen, met de namen hieronder.",
   "platformBilling.openSecrets": "Open Secrets-beheer",
   "platformBilling.copyName": "Naam kopiëren",
   "platformBilling.editMode": "Modus aanpassen",
@@ -1473,7 +1551,8 @@ export const nl: Record<string, string> = {
   "platformBilling.modeSaved": "Modus opgeslagen",
   "platformBilling.lastUpdated": "Laatst bijgewerkt",
   "platformBilling.required": "Vereist",
-  "platformBilling.optional": "Optioneel (Mollie Connect — nog niet gebruikt door abonnementsbetalingen)",
+  "platformBilling.optional":
+    "Optioneel (Mollie Connect — nog niet gebruikt door abonnementsbetalingen)",
   "platformBilling.lastChecked": "Laatst gecontroleerd",
 
   // ── Booking confirmation templates ──
@@ -1520,8 +1599,8 @@ export const nl: Record<string, string> = {
   "upgrade.cycle.yearly": "Jaarlijks",
   "upgrade.cycle.save": "−2 mnd",
   "upgrade.cycle.savingHint": "Bespaar {months} maanden bij jaarlijkse betaling",
- "upgrade.basic": "Starter",
- "upgrade.basicTagline": "Alles wat je nodig hebt om te beginnen",
+  "upgrade.basic": "Starter",
+  "upgrade.basicTagline": "Alles wat je nodig hebt om te beginnen",
   "upgrade.pro": "Pro",
   "upgrade.proTagline": "Groei sneller met automatisering",
   "upgrade.premium": "Premium",
@@ -1546,24 +1625,27 @@ export const nl: Record<string, string> = {
   "upgrade.feat.multiloc": "Meerdere locaties",
   "upgrade.feat.priority": "Voorrang in support",
   "upgrade.feat.api": "API toegang",
- "upgrade.guarantee": "Direct actief na upgrade · Geen opstartkosten · Opzegbaar op elk moment",
- "upgrade.startTrial": "Start 14 dagen gratis",
- "upgrade.toastSoon": "Checkout komt binnenkort — je interesse is genoteerd.",
- "upgrade.compareTitle": "Waarom zaken upgraden",
- "upgrade.faqTitle": "Veelgestelde vragen",
- "upgrade.faq1q": "Kan ik later wisselen?",
- "upgrade.faq1a": "Ja — upgrades zijn direct actief, downgrades gaan in na je huidige periode. Geen verlies van data of boekingen.",
- "upgrade.faq2q": "Wat gebeurt er met mijn data?",
- "upgrade.faq2a": "Je boekingen, klanten en historie blijven veilig op elk plan.",
- "upgrade.faq3q": "Zijn er opstartkosten?",
- "upgrade.faq3a": "Nooit. Geen opstartkosten, geen verborgen kosten. Opzegbaar op elk moment.",
+  "upgrade.guarantee": "Direct actief na upgrade · Geen opstartkosten · Opzegbaar op elk moment",
+  "upgrade.startTrial": "Start 14 dagen gratis",
+  "upgrade.toastSoon": "Checkout komt binnenkort — je interesse is genoteerd.",
+  "upgrade.compareTitle": "Waarom zaken upgraden",
+  "upgrade.faqTitle": "Veelgestelde vragen",
+  "upgrade.faq1q": "Kan ik later wisselen?",
+  "upgrade.faq1a":
+    "Ja — upgrades zijn direct actief, downgrades gaan in na je huidige periode. Geen verlies van data of boekingen.",
+  "upgrade.faq2q": "Wat gebeurt er met mijn data?",
+  "upgrade.faq2a": "Je boekingen, klanten en historie blijven veilig op elk plan.",
+  "upgrade.faq3q": "Zijn er opstartkosten?",
+  "upgrade.faq3a": "Nooit. Geen opstartkosten, geen verborgen kosten. Opzegbaar op elk moment.",
 
   // ── Upgrade nudges (in-dashboard triggers) ──
   "nudge.noShowsTitle": "No-shows kosten je omzet",
-  "nudge.noShowsBody": "{count} no-shows in de laatste 7 dagen. Pro voegt automatische aanbetalingen en SMS-herinneringen toe — tot 71% minder no-shows.",
+  "nudge.noShowsBody":
+    "{count} no-shows in de laatste 7 dagen. Pro voegt automatische aanbetalingen en SMS-herinneringen toe — tot 71% minder no-shows.",
   "nudge.noShowsCta": "Bekijk wat Pro doet",
   "nudge.staffLimitTitle": "Je hebt je teamlimiet bereikt",
-  "nudge.staffLimitBody": "Je abonnement staat {limit} teamleden toe. Upgrade om je hele team toe te voegen.",
+  "nudge.staffLimitBody":
+    "Je abonnement staat {limit} teamleden toe. Upgrade om je hele team toe te voegen.",
   "nudge.staffLimitCta": "Upgrade abonnement",
   "nudge.premiumLockedTitle": "Dit is een {plan} functie",
   "nudge.premiumLockedBody": "Schakel {feature} en meer vrij op {plan}.",
@@ -1577,14 +1659,16 @@ export const nl: Record<string, string> = {
 
   // ── Admin demo controls ──
   "adminDemo.title": "Demo-instellingen",
-  "adminDemo.description": "Beheer demo-modus, demo-logins, publieke boekingen op demo-shops en zichtbaarheid van seed-data.",
+  "adminDemo.description":
+    "Beheer demo-modus, demo-logins, publieke boekingen op demo-shops en zichtbaarheid van seed-data.",
   "adminDemo.flagsTitle": "Platform-flags",
   "adminDemo.modeTitle": "Demo-modus",
   "adminDemo.modeDesc": "Hoofdschakelaar. Indien uit, is alle demo-functionaliteit verborgen.",
   "adminDemo.loginsTitle": "Demo-logins",
   "adminDemo.loginsDesc": "Toon demo-accounts op de inlogpagina.",
   "adminDemo.publicBookingTitle": "Publiek boeken op demo-shops",
-  "adminDemo.publicBookingDesc": "Sta anonieme bezoekers toe te boeken op shops die als demo zijn gemarkeerd.",
+  "adminDemo.publicBookingDesc":
+    "Sta anonieme bezoekers toe te boeken op shops die als demo zijn gemarkeerd.",
   "adminDemo.dataTitle": "Zichtbaarheid seed-data",
   "adminDemo.dataDesc": "Toon geseede demo-shops in publieke lijsten.",
   "adminDemo.shopsTitle": "Markeer shops als demo",
@@ -1592,25 +1676,29 @@ export const nl: Record<string, string> = {
   "adminDemo.demoBadge": "Demo",
   "adminDemo.noShops": "Nog geen shops.",
   "adminDemo.reseedTitle": "Demo-accounts opnieuw aanmaken",
-  "adminDemo.reseedDesc": "Maakt de drie demo-gebruikers (super admin, eigenaar, staff) opnieuw aan met het standaard wachtwoord.",
+  "adminDemo.reseedDesc":
+    "Maakt de drie demo-gebruikers (super admin, eigenaar, staff) opnieuw aan met het standaard wachtwoord.",
   "adminDemo.reseedCta": "Demo-gebruikers reseed",
   "adminDemo.saved": "Instellingen opgeslagen",
   "adminDemo.shopUpdated": "Shop bijgewerkt",
   "adminDemo.reseeded": "Demo-gebruikers opnieuw aangemaakt",
   "adminDemo.warningTitle": "Demo-modus is UIT",
-  "adminDemo.warningDesc": "Demo-accounts worden geblokkeerd en demo-shops zijn verborgen van publieke boekingen.",
- // ── Plan / upgrade extras ──
- "upgrade.youAreOn": "Je gebruikt",
- "upgrade.toastApplied": "Plan gewijzigd naar {plan}",
- "upgrade.toastUpgraded": "Je upgrade naar {plan} is direct actief",
- "upgrade.toastDowngradeScheduled": "Downgrade gepland — je {plan} blijft actief tot je volgende factuurdatum",
- "upgrade.cta.downgrade": "Wissel naar {plan}",
- "upgrade.cta.upgradeShort": "Start met {plan} →",
- "upgrade.cta.upgradePremium": "Upgrade naar Premium →",
- "upgrade.confirmDowngrade": "Downgraden naar {plan}? Je huidige plan blijft actief tot je volgende factuurdatum — daarna gaat de wijziging in.",
- "upgrade.confirmUpgradeFromTrial": "Je upgrade start direct en je proefperiode stopt. Doorgaan?",
- "upgrade.billingNotice": "Betalingen verlopen veilig via Mollie · iDEAL, creditcard & Bancontact",
- "upgrade.instantNote": "Direct actief na upgrade · Geen onderbreking in boekingen of data",
+  "adminDemo.warningDesc":
+    "Demo-accounts worden geblokkeerd en demo-shops zijn verborgen van publieke boekingen.",
+  // ── Plan / upgrade extras ──
+  "upgrade.youAreOn": "Je gebruikt",
+  "upgrade.toastApplied": "Plan gewijzigd naar {plan}",
+  "upgrade.toastUpgraded": "Je upgrade naar {plan} is direct actief",
+  "upgrade.toastDowngradeScheduled":
+    "Downgrade gepland — je {plan} blijft actief tot je volgende factuurdatum",
+  "upgrade.cta.downgrade": "Wissel naar {plan}",
+  "upgrade.cta.upgradeShort": "Start met {plan} →",
+  "upgrade.cta.upgradePremium": "Upgrade naar Premium →",
+  "upgrade.confirmDowngrade":
+    "Downgraden naar {plan}? Je huidige plan blijft actief tot je volgende factuurdatum — daarna gaat de wijziging in.",
+  "upgrade.confirmUpgradeFromTrial": "Je upgrade start direct en je proefperiode stopt. Doorgaan?",
+  "upgrade.billingNotice": "Betalingen verlopen veilig via Mollie · iDEAL, creditcard & Bancontact",
+  "upgrade.instantNote": "Direct actief na upgrade · Geen onderbreking in boekingen of data",
 
   // ── Admin plans extras ──
   "adminPlans.shopUpdated": "Shopabonnement bijgewerkt",
@@ -1667,14 +1755,17 @@ export const nl: Record<string, string> = {
   "adminBilling.grant90": "Geef 90d",
   "adminBilling.notesFor": "Admin notities ·",
   "adminBilling.notesDesc": "Alleen interne context — niet zichtbaar voor de shop.",
-  "adminBilling.notesPlaceholder": "Noteer uitzonderingen, support-context, redenen voor overrides…",
+  "adminBilling.notesPlaceholder":
+    "Noteer uitzonderingen, support-context, redenen voor overrides…",
   "adminBilling.noteSaved": "Notitie opgeslagen",
   "adminBilling.runSweep": "Verlopen-check nu uitvoeren",
   "adminBilling.runningSweep": "Bezig met controle…",
   "adminBilling.sweepDone": "Controle klaar: {downgraded} van {checked} shop(s) gedowngraded",
   "adminBilling.sweepConfirmTitle": "Verlopen-check uitvoeren?",
-  "adminBilling.sweepConfirmBody": "{count} shop(s) hebben momenteel een verlopen betaald abonnement. De controle zet ze terug naar Starter, logt de wijziging en stuurt elke eigenaar een melding.",
-  "adminBilling.sweepConfirmNone": "Er zijn op dit moment geen shops met een verlopen abonnement. De controle uitvoeren is veilig — er wordt simpelweg bevestigd dat er niets te downgraden valt.",
+  "adminBilling.sweepConfirmBody":
+    "{count} shop(s) hebben momenteel een verlopen betaald abonnement. De controle zet ze terug naar Starter, logt de wijziging en stuurt elke eigenaar een melding.",
+  "adminBilling.sweepConfirmNone":
+    "Er zijn op dit moment geen shops met een verlopen abonnement. De controle uitvoeren is veilig — er wordt simpelweg bevestigd dat er niets te downgraden valt.",
   "adminBilling.sweepConfirmRun": "Controle uitvoeren",
   "adminBilling.sweepConfirmCancel": "Annuleren",
   "adminPayments.searchShop": "Zoek shop…",
@@ -1692,7 +1783,8 @@ export const nl: Record<string, string> = {
   "shopBilling.payNow": "Doorgaan naar betalen",
   "shopBilling.mockPay": "Bevestig testbetaling",
   "shopBilling.mockFail": "Simuleer mislukking",
-  "shopBilling.mockBanner": "Mollie-sleutels zijn nog niet ingesteld — testmodus actief. Gebruik de knoppen om de uitkomst te simuleren.",
+  "shopBilling.mockBanner":
+    "Mollie-sleutels zijn nog niet ingesteld — testmodus actief. Gebruik de knoppen om de uitkomst te simuleren.",
   "shopBilling.openingCheckout": "Checkout openen…",
   "shopBilling.confirmingPayment": "Betaling bevestigen…",
   "shopBilling.cycle.monthly": "Maandelijks",
@@ -1706,10 +1798,12 @@ export const nl: Record<string, string> = {
 
   // ── Shop /payments (booking payments only) ──
   "shopPayments.title": "Klantbetalingen",
-  "shopPayments.description": "Betalingen van je klanten aan je shop. Direct uitbetaald naar je eigen Mollie-account.",
+  "shopPayments.description":
+    "Betalingen van je klanten aan je shop. Direct uitbetaald naar je eigen Mollie-account.",
   "shopPayments.notSubscription": "Op zoek naar je software-abonnement? Open Abonnement →",
   "shopPayments.notSubscriptionTitle": "Dit is geen software-abonnement.",
-  "shopPayments.notSubscriptionBody": "Je beheert hier klantbetalingen via Mollie. Je FlowyBookings-plan beheer je apart.",
+  "shopPayments.notSubscriptionBody":
+    "Je beheert hier klantbetalingen via Mollie. Je FlowyBookings-plan beheer je apart.",
   "shopPayments.openBilling": "Beheer abonnement",
   "shopPayments.providerEmpty": "Koppel hieronder Mollie om klantbetalingen te accepteren.",
   "shopPayments.providerEmptyTitle": "Nog geen betaalprovider gekoppeld",
@@ -1717,7 +1811,8 @@ export const nl: Record<string, string> = {
 
   // ── Mollie Connect inkomende boekingsbetalingen ──
   "mollieConnect.payments.title": "Mollie Connect-betalingen",
-  "mollieConnect.payments.description": "Aanbetalingen die direct op je eigen Mollie-account binnenkomen.",
+  "mollieConnect.payments.description":
+    "Aanbetalingen die direct op je eigen Mollie-account binnenkomen.",
   "mollieConnect.payments.empty": "Nog geen Mollie Connect-betalingen ontvangen.",
   "mollieConnect.payments.customer": "Klant",
   "mollieConnect.payments.amount": "Bedrag",
@@ -1728,7 +1823,8 @@ export const nl: Record<string, string> = {
   "mollieConnect.payments.refund": "Terugbetalen",
   "mollieConnect.payments.refunding": "Bezig…",
   "mollieConnect.payments.refundConfirmTitle": "Volledig terugbetalen?",
-  "mollieConnect.payments.refundConfirmDesc": "Dit boekt {amount} terug naar de klant via Mollie. Deze actie kan niet ongedaan worden gemaakt.",
+  "mollieConnect.payments.refundConfirmDesc":
+    "Dit boekt {amount} terug naar de klant via Mollie. Deze actie kan niet ongedaan worden gemaakt.",
   "mollieConnect.payments.refundConfirm": "Ja, terugbetalen",
   "mollieConnect.payments.refundCancel": "Annuleren",
   "mollieConnect.payments.refundSuccess": "Terugbetaling gestart",
@@ -1736,18 +1832,21 @@ export const nl: Record<string, string> = {
 
   // ── Admin: Booking Payment Providers ──
   "adminProvidersPage.title": "Klantbetaling-providers",
-  "adminProvidersPage.description": "Mollie Connect-status, onboarding en platformkosten per shop. Abonnementen staan apart onder Platform billing.",
+  "adminProvidersPage.description":
+    "Mollie Connect-status, onboarding en platformkosten per shop. Abonnementen staan apart onder Platform billing.",
   "adminProvidersPage.connected": "Gekoppeld",
   "adminProvidersPage.pending": "In behandeling",
   "adminProvidersPage.notConnected": "Niet gekoppeld",
   "adminProvidersPage.errors": "Fouten",
   "adminProvidersPage.searchPlaceholder": "Zoek shop of e-mail van eigenaar…",
   "adminProvidersPage.shopsTitle": "Shops & providers",
-  "adminProvidersPage.shopsDesc": "Eén regel per shop. Abonnementsstatus staat NIET hier — open Platform billing.",
+  "adminProvidersPage.shopsDesc":
+    "Eén regel per shop. Abonnementsstatus staat NIET hier — open Platform billing.",
   "adminProvidersPage.empty": "Geen shops voldoen aan deze filter.",
   "adminProvidersPage.onboarding": "Onboarding",
   "adminProvidersPage.connectedAt": "gekoppeld",
-  "adminProvidersPage.scopeHint": "Alleen klantbetalingen. Voor abonnementen ga je naar Platform billing.",
+  "adminProvidersPage.scopeHint":
+    "Alleen klantbetalingen. Voor abonnementen ga je naar Platform billing.",
 
   // ── Admin nav additions ──
   "adminNav.providers": "Providers",
@@ -1774,15 +1873,19 @@ export const nl: Record<string, string> = {
 
   // ── Support FAQ ──
   "support.faq.payments.q": "Hoe ontvang ik betalingen?",
-  "support.faq.payments.a": "Betalingen worden via Mollie verwerkt en rechtstreeks uitbetaald naar je gekoppelde rekening.",
+  "support.faq.payments.a":
+    "Betalingen worden via Mollie verwerkt en rechtstreeks uitbetaald naar je gekoppelde rekening.",
   "support.faq.connect.q": "Hoe koppel ik Mollie?",
   "support.faq.connect.a": "Ga in je dashboard naar Betalingen → Koppel Mollie en volg de stappen.",
   "support.faq.payouts.q": "Wanneer word ik uitbetaald?",
-  "support.faq.payouts.a": "Uitbetalingen worden door Mollie verzorgd en zijn afhankelijk van je accountinstellingen.",
+  "support.faq.payouts.a":
+    "Uitbetalingen worden door Mollie verzorgd en zijn afhankelijk van je accountinstellingen.",
   "support.faq.cancel.q": "Kunnen klanten boekingen annuleren?",
-  "support.faq.cancel.a": "Ja, afhankelijk van het annuleringsbeleid dat door de shop is ingesteld.",
+  "support.faq.cancel.a":
+    "Ja, afhankelijk van het annuleringsbeleid dat door de shop is ingesteld.",
   "support.faq.refunds.q": "Hoe werken restituties?",
-  "support.faq.refunds.a": "Restituties worden door de shop afgehandeld. FlowyBookings verwerkt geen restituties.",
+  "support.faq.refunds.a":
+    "Restituties worden door de shop afgehandeld. FlowyBookings verwerkt geen restituties.",
 
   // ── Juridisch: gedeeld ──
   "legal.contact": "Contact",
@@ -1795,7 +1898,8 @@ export const nl: Record<string, string> = {
   // ── Juridisch: Privacy ──
   "legal.privacy.title": "Privacybeleid",
   "legal.privacy.metaDesc": "Hoe FlowyBookings je gegevens verzamelt, gebruikt en beschermt.",
-  "legal.privacy.intro": "FlowyBookings respecteert je privacy. We verzamelen alleen de gegevens die nodig zijn om onze boekings- en betaaldiensten te leveren.",
+  "legal.privacy.intro":
+    "FlowyBookings respecteert je privacy. We verzamelen alleen de gegevens die nodig zijn om onze boekings- en betaaldiensten te leveren.",
   "legal.privacy.collectHeading": "Welke gegevens we verzamelen",
   "legal.privacy.collect1": "Accountgegevens (naam, e-mail)",
   "legal.privacy.collect2": "Boekingsgegevens",
@@ -1805,7 +1909,8 @@ export const nl: Record<string, string> = {
   "legal.privacy.use2": "Boekingen en betalingen te verwerken",
   "legal.privacy.use3": "Met gebruikers te communiceren",
   "legal.privacy.shareHeading": "Delen",
-  "legal.privacy.share": "We verkopen of delen je gegevens niet met derden, behalve waar nodig voor betalingsverwerking (Mollie).",
+  "legal.privacy.share":
+    "We verkopen of delen je gegevens niet met derden, behalve waar nodig voor betalingsverwerking (Mollie).",
 
   // ── Juridisch: Voorwaarden ──
   "legal.terms.title": "Algemene voorwaarden",
@@ -1813,22 +1918,26 @@ export const nl: Record<string, string> = {
   "legal.terms.intro": "Door FlowyBookings te gebruiken ga je akkoord met het volgende:",
   "legal.terms.point1": "Je bent verantwoordelijk voor de informatie die je aanlevert",
   "legal.terms.point2": "Shops zijn verantwoordelijk voor hun diensten en boekingen",
-  "legal.terms.point3": "FlowyBookings is niet aansprakelijk voor geschillen tussen klanten en shops",
+  "legal.terms.point3":
+    "FlowyBookings is niet aansprakelijk voor geschillen tussen klanten en shops",
   "legal.terms.point4": "Betalingen worden verwerkt via Mollie",
   "legal.terms.suspend": "We behouden ons het recht voor om accounts bij misbruik op te schorten.",
 
   // ── Juridisch: Restituties ──
   "legal.refunds.title": "Restitutiebeleid",
   "legal.refunds.metaDesc": "Hoe restituties worden afgehandeld op FlowyBookings.",
-  "legal.refunds.line1": "Restituties worden door de individuele shop afgehandeld, tenzij anders vermeld.",
-  "legal.refunds.line2": "FlowyBookings verwerkt geen restituties rechtstreeks, omdat betalingen via Mollie en de shop verlopen.",
+  "legal.refunds.line1":
+    "Restituties worden door de individuele shop afgehandeld, tenzij anders vermeld.",
+  "legal.refunds.line2":
+    "FlowyBookings verwerkt geen restituties rechtstreeks, omdat betalingen via Mollie en de shop verlopen.",
   "legal.refunds.subHeading": "Voor abonnementen",
 
   // ── Admin: Revenue ──
   "adminNav.revenue": "Inkomsten",
   "adminNav.customers": "Klanten",
   "adminRevenue.title": "Inkomsten",
-  "adminRevenue.description": "Hoeveel jouw platform deze maand verdient — abonnementen + transactie-fees per shop.",
+  "adminRevenue.description":
+    "Hoeveel jouw platform deze maand verdient — abonnementen + transactie-fees per shop.",
   "adminRevenue.exportCsv": "Exporteer CSV",
   "adminRevenue.totalThisMonth": "Totaal deze maand",
   "adminRevenue.subscriptionRevenue": "Abonnementen deze maand",
@@ -1904,8 +2013,10 @@ export const nl: Record<string, string> = {
   "featureLock.titleLimit": "Je {feature}-limiet is bereikt",
   "featureLock.titlePlan": "{feature} — beschikbaar vanaf {plan}",
   "featureLock.titlePlanWithPrice": "{feature} — beschikbaar vanaf {plan} ({price})",
-  "featureLock.descLimit": "Je hebt {used}/{limit} {feature} gebruikt deze maand. Upgrade voor meer of wacht tot volgende maand.",
-  "featureLock.descPlan": "Deze functie zit niet in je huidige plan ({plan}). Upgrade om hem te activeren.",
+  "featureLock.descLimit":
+    "Je hebt {used}/{limit} {feature} gebruikt deze maand. Upgrade voor meer of wacht tot volgende maand.",
+  "featureLock.descPlan":
+    "Deze functie zit niet in je huidige plan ({plan}). Upgrade om hem te activeren.",
   "feature.bookings": "boekingen",
   "feature.staff": "medewerkers",
   "feature.smsReminders": "SMS herinneringen",
@@ -1915,16 +2026,20 @@ export const nl: Record<string, string> = {
   "feature.advancedAnalytics": "Geavanceerde statistieken",
 
   // ── Staff page (extra) ──
-  "staff.limitTooltip": "Je plan ondersteunt maximaal {limit} medewerker. Upgrade om meer toe te voegen.",
-  "staff.limitTooltipPlural": "Je plan ondersteunt maximaal {limit} medewerkers. Upgrade om meer toe te voegen.",
+  "staff.limitTooltip":
+    "Je plan ondersteunt maximaal {limit} medewerker. Upgrade om meer toe te voegen.",
+  "staff.limitTooltipPlural":
+    "Je plan ondersteunt maximaal {limit} medewerkers. Upgrade om meer toe te voegen.",
 
   // ── Calendar page (extra) ──
   "calendar.amount": "Bedrag",
   "calendar.today": "Vandaag",
   "calendar.appointment": "afspraak",
   "calendar.appointments": "afspraken",
-  "calendar.trialExpiredBookingTitle": "Je proefperiode is verlopen — kies een plan om nieuwe afspraken aan te maken.",
-  "calendar.bookingLimitReached": "Je hebt het maximum aantal boekingen bereikt ({used}/{limit}). Kies een plan om door te gaan.",
+  "calendar.trialExpiredBookingTitle":
+    "Je proefperiode is verlopen — kies een plan om nieuwe afspraken aan te maken.",
+  "calendar.bookingLimitReached":
+    "Je hebt het maximum aantal boekingen bereikt ({used}/{limit}). Kies een plan om door te gaan.",
   "calendar.workingToday": "Vandaag aan het werk",
   "calendar.dayOff": "Vrij vandaag",
   "calendar.firstAvailableSlot": "Eerstvolgende vrije slot",
@@ -1943,9 +2058,11 @@ export const nl: Record<string, string> = {
   "calendar.releaseToRefresh": "Loslaten om te vernieuwen",
   "calendar.refreshing": "Vernieuwen…",
   "billing.trialExpiredTitle": "Je gratis proefperiode is verlopen",
-  "billing.trialExpiredSub": "Je kunt geen nieuwe afspraken meer aanmaken. Bestaande gegevens blijven zichtbaar. Kies een plan om door te gaan.",
+  "billing.trialExpiredSub":
+    "Je kunt geen nieuwe afspraken meer aanmaken. Bestaande gegevens blijven zichtbaar. Kies een plan om door te gaan.",
   "billing.trialDaysLeft": "Nog {{days}} dagen in je gratis proefperiode",
-  "billing.trialDaysLeftSub": "Kies een plan voordat je trial verloopt om afspraken te kunnen blijven aannemen.",
+  "billing.trialDaysLeftSub":
+    "Kies een plan voordat je trial verloopt om afspraken te kunnen blijven aannemen.",
   "billing.trialActiveTitle": "Je gratis proefperiode is actief (14 dagen)",
   "billing.trialActiveSub": "Geen kosten tot {{date}} — alle functies werken gewoon door.",
   "billing.trialEndingTitle": "Je proefperiode eindigt over {{days}} dagen",
@@ -1955,13 +2072,18 @@ export const nl: Record<string, string> = {
   "shopBilling.cycle.short.monthly": "per maand",
   "shopBilling.cycle.short.yearly": "per jaar",
   "billing.paymentFailedTitle": "Betaling mislukt — werk je betaalmethode bij",
-  "billing.paymentFailedSub": "We konden je laatste betaling niet verwerken. Je hebt nog {{days}} dagen voordat nieuwe boekingen worden geblokkeerd.",
-  "billing.paymentFailedBlockedTitle": "Boekingen geblokkeerd — betaling al meer dan 7 dagen mislukt",
-  "billing.paymentFailedBlockedSub": "Werk je betaalmethode bij om weer afspraken te kunnen aannemen. Bestaande data blijft zichtbaar.",
+  "billing.paymentFailedSub":
+    "We konden je laatste betaling niet verwerken. Je hebt nog {{days}} dagen voordat nieuwe boekingen worden geblokkeerd.",
+  "billing.paymentFailedBlockedTitle":
+    "Boekingen geblokkeerd — betaling al meer dan 7 dagen mislukt",
+  "billing.paymentFailedBlockedSub":
+    "Werk je betaalmethode bij om weer afspraken te kunnen aannemen. Bestaande data blijft zichtbaar.",
   "billing.cancelledTitle": "Abonnement opgezegd",
-  "billing.cancelledSub": "Je plan blijft actief tot {{date}}. Daarna ga je automatisch terug naar de gratis trial.",
+  "billing.cancelledSub":
+    "Je plan blijft actief tot {{date}}. Daarna ga je automatisch terug naar de gratis trial.",
   "billing.planActiveUntilTitle": "Je {{plan}} plan loopt tot {{date}}",
-  "billing.planActiveUntilSub": "Je behoudt alle functies tot die datum. Reactiveer wanneer je wil — je verliest niets.",
+  "billing.planActiveUntilSub":
+    "Je behoudt alle functies tot die datum. Reactiveer wanneer je wil — je verliest niets.",
   "calendar.upcomingSuffix": "aankomend",
   "calendar.todaySuffix": "vandaag",
   "calendar.zeroToday": "Geen afspraken vandaag",
@@ -1977,7 +2099,8 @@ export const nl: Record<string, string> = {
   "billing.updatePayment": "Betaalmethode bijwerken",
   "billing.reactivate": "Reactiveer",
   "billing.cancel": "Abonnement opzeggen",
-  "billing.cancelConfirm": "Weet je zeker dat je je abonnement wilt opzeggen? Je plan blijft actief tot het einde van de huidige periode.",
+  "billing.cancelConfirm":
+    "Weet je zeker dat je je abonnement wilt opzeggen? Je plan blijft actief tot het einde van de huidige periode.",
   "billing.cancelSuccess": "Abonnement opgezegd. Actief tot einde periode.",
   "billing.statusCancelled": "Opgezegd",
   "billing.statusPaymentFailed": "Betaling mislukt",
@@ -1998,16 +2121,20 @@ export const nl: Record<string, string> = {
   "fees.statPerBooking": "Per betaalde boeking",
   "fees.statPaidThisMonth": "Betaalde boekingen deze maand",
   "fees.statTotalThisMonth": "Totaal deze maand",
-  "fees.explainer.starter": "Je betaalt €0,50 per betaalde boeking op Starter. Alleen succesvolle betalingen tellen mee. Geannuleerde of mislukte betalingen worden niet gerekend.",
-  "fees.explainer.pro": "Je betaalt €0,30 per betaalde boeking op Pro. Alleen succesvolle betalingen tellen mee. Geannuleerde of mislukte betalingen worden niet gerekend.",
-  "fees.explainer.premium": "Geen transactiekosten per boeking. Op Premium betaal je 0% over je omzet uit boekingen.",
-  "fees.explainer.trial": "Tijdens je gratis proefperiode betaal je geen transactiekosten. Na je upgrade zie je hier exact wat je per boeking betaalt.",
+  "fees.explainer.starter":
+    "Je betaalt €0,50 per betaalde boeking op Starter. Alleen succesvolle betalingen tellen mee. Geannuleerde of mislukte betalingen worden niet gerekend.",
+  "fees.explainer.pro":
+    "Je betaalt €0,30 per betaalde boeking op Pro. Alleen succesvolle betalingen tellen mee. Geannuleerde of mislukte betalingen worden niet gerekend.",
+  "fees.explainer.premium":
+    "Geen transactiekosten per boeking. Op Premium betaal je 0% over je omzet uit boekingen.",
+  "fees.explainer.trial":
+    "Tijdens je gratis proefperiode betaal je geen transactiekosten. Na je upgrade zie je hier exact wat je per boeking betaalt.",
   "fees.trust.noHidden": "Geen verborgen kosten",
   "fees.trust.onlyPaid": "Alleen betaalde boekingen tellen mee",
   "fees.trust.alwaysClear": "Altijd duidelijk waarvoor je betaalt",
   "fees.recentTitle": "Laatste 10 boekingen met fee",
-  "fees.recentEmpty": "Nog geen betaalde boekingen — zodra een klant betaalt zie je het hier verschijnen.",
+  "fees.recentEmpty":
+    "Nog geen betaalde boekingen — zodra een klant betaalt zie je het hier verschijnen.",
   "fees.itemBooking": "boeking",
   "fees.itemFee": "fee",
 };
-

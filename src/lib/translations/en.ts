@@ -17,7 +17,8 @@ export const en: Record<string, string> = {
   "landing.badge": "New: WhatsApp reminders → fewer no-shows",
   "landing.headline": "More bookings. Fewer no-shows.",
   "landing.headlineAccent": "All in one system.",
-  "landing.sub": "FlowyBookings helps salons and service businesses manage their calendar, customers and payments — without the hassle.",
+  "landing.sub":
+    "FlowyBookings helps salons and service businesses manage their calendar, customers and payments — without the hassle.",
   "landing.proof.title": "Trusted by growing salons",
   "landing.proof.sub": "Real results that businesses across the Benelux feel from day one.",
   "landing.proof.stat1.value": "+32%",
@@ -42,24 +43,30 @@ export const en: Record<string, string> = {
   "landing.ps.s3": "Online bookings, 24/7",
   "landing.ps.s4": "Payments handled via Mollie",
   "landing.appFeel.title": "Feels like an app. Works everywhere.",
-  "landing.appFeel.sub": "Use FlowyBookings like a real app — fast flows, swipe interactions and a smooth mobile experience.",
+  "landing.appFeel.sub":
+    "Use FlowyBookings like a real app — fast flows, swipe interactions and a smooth mobile experience.",
   "landing.appFeel.b1": "Fast flows, no loading screens",
   "landing.appFeel.b2": "Swipe-friendly on mobile",
   "landing.appFeel.b3": "Works on phone, tablet and desktop",
   "landing.transparency.title": "No surprises. Ever.",
-  "landing.transparency.sub": "You only pay for successful bookings. No hidden fees, no fine print.",
+  "landing.transparency.sub":
+    "You only pay for successful bookings. No hidden fees, no fine print.",
   "landing.transparency.b1": "Flat monthly price",
   "landing.transparency.b2": "Cancel anytime",
   "landing.transparency.b3": "No charge for no-shows",
   "landing.faq.title": "Frequently asked questions",
   "landing.faq.q1": "Can I switch plans later?",
-  "landing.faq.a1": "Yes. Upgrade or downgrade anytime from your dashboard — the change is instant.",
+  "landing.faq.a1":
+    "Yes. Upgrade or downgrade anytime from your dashboard — the change is instant.",
   "landing.faq.q2": "What happens to my data?",
-  "landing.faq.a2": "Your data is yours — hosted in the EU. We never sell customer data and you can export everything at any time.",
+  "landing.faq.a2":
+    "Your data is yours — hosted in the EU. We never sell customer data and you can export everything at any time.",
   "landing.faq.q3": "Are there setup fees?",
-  "landing.faq.a3": "No. No setup fees, no contracts. Start with a 14-day free trial and then pay monthly.",
+  "landing.faq.a3":
+    "No. No setup fees, no contracts. Start with a 14-day free trial and then pay monthly.",
   "landing.faq.q4": "Does it work on mobile?",
-  "landing.faq.a4": "Yes. FlowyBookings is fully mobile-first. Run your shop from your phone, or let customers book through your own page.",
+  "landing.faq.a4":
+    "Yes. FlowyBookings is fully mobile-first. Run your shop from your phone, or let customers book through your own page.",
   "landing.finalCta.title": "Ready to get more bookings?",
   "landing.finalCta.sub": "Start today for free — your next booking is closer than you think.",
   "landing.tryBooking": "Try the booking flow",
@@ -80,7 +87,8 @@ export const en: Record<string, string> = {
   "demo.bannerTitle": "You're in the live demo",
   "demo.bannerSub": "Real booking, no real payment.",
   "demo.startTrial": "Start your trial",
-  "demo.paymentNotice": "Demo payment — no real transaction. The booking is saved so you can see how it looks in your dashboard.",
+  "demo.paymentNotice":
+    "Demo payment — no real transaction. The booking is saved so you can see how it looks in your dashboard.",
   "demo.convertTitle": "Want this for your own business?",
   "demo.convertSub": "Start 14 days free with FlowyBookings — no credit card required.",
   "demo.startTrialCta": "Start free trial",
@@ -95,13 +103,15 @@ export const en: Record<string, string> = {
 
   // ── Features ──
   "features.title": "Everything your shop needs, beautifully organized",
-  "features.sub": "From the first tap to the final tip — FlowyBookings handles every moment of the customer journey.",
+  "features.sub":
+    "From the first tap to the final tip — FlowyBookings handles every moment of the customer journey.",
   "features.smartBookings": "Smart bookings",
   "features.smartBookingsDesc": "Daily and weekly calendar, drag-and-drop, conflict detection.",
   "features.customerProfiles": "Customer profiles",
   "features.customerProfilesDesc": "Notes, preferences, history and lifetime spend in one view.",
   "features.payments": "Payments & deposits",
-  "features.paymentsDesc": "Mollie integration with iDEAL, Bancontact and credit card. Track paid, unpaid and refunds.",
+  "features.paymentsDesc":
+    "Mollie integration with iDEAL, Bancontact and credit card. Track paid, unpaid and refunds.",
   "features.reminders": "Reminders that work",
   "features.remindersDesc": "Email, SMS and WhatsApp at 24h and 2h before the slot.",
   "features.analytics": "Insightful analytics",
@@ -124,19 +134,23 @@ export const en: Record<string, string> = {
   "whyUs.localTitle": "Local payments",
   "whyUs.localDesc": "iDEAL, Bancontact and credit card via Mollie — no clunky US-only providers.",
   "whyUs.noShowTitle": "Fewer no-shows",
-  "whyUs.noShowDesc": "Automatic reminders 24h and 2h before the slot. Optional deposit per customer.",
+  "whyUs.noShowDesc":
+    "Automatic reminders 24h and 2h before the slot. Optional deposit per customer.",
   "whyUs.fastTitle": "Book in 60 seconds",
-  "whyUs.fastDesc": "Mobile-first flow with no account required. Customers pick a service, a time, and they're done.",
+  "whyUs.fastDesc":
+    "Mobile-first flow with no account required. Customers pick a service, a time, and they're done.",
   "whyUs.ownTitle": "Your data, your customers",
   "whyUs.ownDesc": "Fully EU-hosted. We never sell customer data and use no tracking cookies.",
   "whyUs.transparentTitle": "Transparent pricing",
-  "whyUs.transparentDesc": "Flat monthly fee plus a low transaction fee. No hidden costs or multi-year contracts.",
+  "whyUs.transparentDesc":
+    "Flat monthly fee plus a low transaction fee. No hidden costs or multi-year contracts.",
   "whyUs.supportTitle": "Dutch-speaking support",
   "whyUs.supportDesc": "Real humans who understand your business — reachable by email and chat.",
 
   // ── Pricing ──
   "pricing.title": "Fair pricing, fixed fee per booking",
-  "pricing.sub": "No percentage of your revenue. One predictable booking fee — regardless of the amount.",
+  "pricing.sub":
+    "No percentage of your revenue. One predictable booking fee — regardless of the amount.",
   "pricing.mostPopular": "Most chosen",
   "pricing.transactionFee": "booking fee per booking",
   "pricing.noFee": "No booking fee",
@@ -169,7 +183,8 @@ export const en: Record<string, string> = {
   "pricing.compare.toggle.hide": "Hide comparison",
   "pricing.compare.swipeHint": "Swipe horizontally to see all plans",
   "pricing.compare.feature": "Feature",
-  "pricing.compare.addonsNote": "Add-ons (purple badges) will soon be available as separate upgrades on top of your plan.",
+  "pricing.compare.addonsNote":
+    "Add-ons (purple badges) will soon be available as separate upgrades on top of your plan.",
   "pricing.compare.cat.basic": "Basics",
   "pricing.compare.cat.limits": "Limits",
   "pricing.compare.cat.communication": "Communication",
@@ -206,7 +221,8 @@ export const en: Record<string, string> = {
   "pricing.compare.val.noFee": "€0",
   "pricing.compare.val.starterFee": "€0.50",
   "pricing.compare.val.proFee": "€0.30",
-  "pricing.footnote": "Fixed booking fee per successful booking — regardless of the amount. Standard Mollie transaction fees (e.g. €0.29 for iDEAL) still apply and run through your own Mollie account. Your money always lands directly in your account.",
+  "pricing.footnote":
+    "Fixed booking fee per successful booking — regardless of the amount. Standard Mollie transaction fees (e.g. €0.29 for iDEAL) still apply and run through your own Mollie account. Your money always lands directly in your account.",
 
   // ── CTA ──
   "cta.title": "Ready to fill your calendar?",
@@ -220,13 +236,16 @@ export const en: Record<string, string> = {
   "auth.fullName": "Full name",
   "auth.email": "Email",
   "auth.password": "Password",
+  "auth.showPassword": "Show password",
+  "auth.hidePassword": "Hide password",
   "auth.minChars": "At least 8 characters.",
   "auth.createBtn": "Create account",
   "auth.haveAccount": "Already have an account?",
   "auth.signIn": "Sign in",
   "auth.welcomeBack": "Welcome back",
   "auth.loginFailedTitle": "Sign-in didn't go through",
-  "auth.loginFailedMessage": "Your session expired or the sign-in couldn't be confirmed. Please try again.",
+  "auth.loginFailedMessage":
+    "Your session expired or the sign-in couldn't be confirmed. Please try again.",
   "auth.loginRetry": "Sign in again",
   "auth.backToHome": "Back to homepage",
   "auth.signInSub": "Sign in to your dashboard.",
@@ -239,6 +258,17 @@ export const en: Record<string, string> = {
   "auth.provisionDemo": "Provision demo users",
   "auth.seeding": "Seeding…",
   "auth.accountCreated": "Account created — you can sign in now.",
+  "auth.checkEmailTitle": "Check your email",
+  "auth.checkEmailBody":
+    "We sent a confirmation link to {email}. Click it to activate your account.",
+  "auth.checkEmailHint": "After confirming, you'll set up your shop and start your free trial.",
+  "auth.checkEmailResend": "Resend confirmation email",
+  "auth.checkEmailResending": "Sending…",
+  "auth.checkEmailResent": "Confirmation email sent again.",
+  "auth.accountExistsTitle": "Account already exists",
+  "auth.accountExistsBody":
+    "An account with {email} is already registered. Sign in instead, or reset your password if you forgot it.",
+  "auth.forgotPasswordCta": "Forgot password?",
   "auth.agreePrefix": "I agree to the",
   "auth.termsLink": "Terms",
   "auth.and": "and",
@@ -246,7 +276,8 @@ export const en: Record<string, string> = {
   "auth.mustAgree": "Please agree to the Terms & Privacy Policy to continue.",
   "auth.continueWithGoogle": "Continue with Google",
   "auth.orContinueWith": "or continue with email",
-  "auth.googleNotEnabled": "Google login isn't enabled yet. Turn on Google in Authentication settings.",
+  "auth.googleNotEnabled":
+    "Google login isn't enabled yet. Turn on Google in Authentication settings.",
   "auth.googleResetDone": "Google button reset. It will reappear on the login page.",
   // ── Booking link widget ──
   "bookingLink.title": "Share your booking link",
@@ -276,7 +307,8 @@ export const en: Record<string, string> = {
   "bookingLink.posterPoweredBy": "Powered by FlowyBookings",
   "bookingLink.noSlug": "Set a shop URL first to share your booking link.",
   "legal.reconsent.title": "Our policies have been updated",
-  "legal.reconsent.body": "Please review and accept the latest versions of the policies below to continue using FlowyBookings.",
+  "legal.reconsent.body":
+    "Please review and accept the latest versions of the policies below to continue using FlowyBookings.",
   "legal.reconsent.doc.privacy": "Privacy Policy",
   "legal.reconsent.doc.terms": "Terms of Service",
   "legal.reconsent.doc.refunds": "Refund Policy",
@@ -456,7 +488,8 @@ export const en: Record<string, string> = {
   "checklist.skip": "Skip",
   "checklist.successBadge": "Ready for bookings",
   "checklist.successTitle": "You're ready to take bookings 🎉",
-  "checklist.successDesc": "Your shop is fully set up. Create your first appointment and start earning.",
+  "checklist.successDesc":
+    "Your shop is fully set up. Create your first appointment and start earning.",
   "checklist.successCta": "Create first booking",
 
   // ── Dashboard insights ──
@@ -536,14 +569,18 @@ export const en: Record<string, string> = {
   "calendar.dropBlocked": "Move blocked: {reason}",
   "calendar.bookingDeleted": "Booking deleted",
   "calendar.bookingCreated": "Booking created",
-  "calendar.conflictWith": "Conflict: {staff} already has a booking with {customer} ({service}) from {range}.",
-  "calendar.conflictGeneric": "This staff member already has an overlapping booking in this time slot. Pick another time or staff member.",
+  "calendar.conflictWith":
+    "Conflict: {staff} already has a booking with {customer} ({service}) from {range}.",
+  "calendar.conflictGeneric":
+    "This staff member already has an overlapping booking in this time slot. Pick another time or staff member.",
   "bookingError.conflict": "Time slot already taken. Pick another time or staff member.",
   "bookingError.outsideHours": "Outside this staff member's working hours.",
-  "bookingError.outsideHoursRange": "Outside working hours ({range}). Pick a time within the schedule.",
+  "bookingError.outsideHoursRange":
+    "Outside working hours ({range}). Pick a time within the schedule.",
   "bookingError.duringBreak": "Conflicts with this staff member's break.",
   "bookingError.duringBreakRange": "Conflicts with break ({range}). Pick another time.",
-  "bookingError.closedDay": "Staff is not available on the selected day. Pick another day or staff member.",
+  "bookingError.closedDay":
+    "Staff is not available on the selected day. Pick another day or staff member.",
   "calendar.pickCustomer": "Pick customer",
   "calendar.pickService": "Pick service",
   "calendar.pickStaff": "Pick staff",
@@ -578,7 +615,8 @@ export const en: Record<string, string> = {
   "customers.editCustomer": "Edit customer",
   "customers.newCustomerTitle": "New customer",
   "customers.deleteTitle": "Delete {name}?",
-  "customers.deleteDesc": "Their booking history will be kept but no longer linked to a customer profile.",
+  "customers.deleteDesc":
+    "Their booking history will be kept but no longer linked to a customer profile.",
   "customers.cancel": "Cancel",
   "customers.delete": "Delete",
   "customers.deleted": "Customer deleted",
@@ -642,7 +680,8 @@ export const en: Record<string, string> = {
   "customers.notesPlaceholder": "Allergies, preferences, favourite drinks…",
   "customers.saveNotes": "Save notes",
   "customers.preferences": "Preferences",
-  "customers.preferencesHint": "Help your team serve this customer better — visible on every booking.",
+  "customers.preferencesHint":
+    "Help your team serve this customer better — visible on every booking.",
   "customers.favoriteStaff": "Favourite staff member",
   "customers.favoriteStaffNone": "No preference",
   "customers.favoriteService": "Favourite service",
@@ -685,8 +724,10 @@ export const en: Record<string, string> = {
   "customerImport.tabCsv": "CSV / Excel",
   "customerImport.tabPlatform": "From another platform",
   "customerImport.tabManual": "Manually",
-  "customerImport.csvIntro": "Upload a CSV or Excel file with your customers. We auto-detect the columns.",
-  "customerImport.platformIntro": "Pick where you're coming from for specific instructions and column presets.",
+  "customerImport.csvIntro":
+    "Upload a CSV or Excel file with your customers. We auto-detect the columns.",
+  "customerImport.platformIntro":
+    "Pick where you're coming from for specific instructions and column presets.",
   "customerImport.dropZone": "Drag a file here or click to choose",
   "customerImport.dropZoneShort": "Click to upload or drag here",
   "customerImport.acceptedFormats": ".csv, .xlsx or .xls — max 10 MB",
@@ -739,7 +780,7 @@ export const en: Record<string, string> = {
   "services.editService": "Edit service",
   "services.newService": "New service",
   "services.deleteService": "Delete service?",
-  "services.deleteDesc": "\"{name}\" will be removed. Existing bookings keep their pricing.",
+  "services.deleteDesc": '"{name}" will be removed. Existing bookings keep their pricing.',
   "services.cancel": "Cancel",
   "services.delete": "Delete",
   "services.deleted": "Service deleted",
@@ -837,9 +878,11 @@ export const en: Record<string, string> = {
   "payments.refunds": "Refunds",
   "payments.avgTransaction": "Avg. transaction",
   "payments.stripeNotice": "Stripe & Mollie integration coming soon",
-  "payments.stripeNoticeDesc": "Application fees per transaction will be supported on Pro and Premium plans.",
+  "payments.stripeNoticeDesc":
+    "Application fees per transaction will be supported on Pro and Premium plans.",
   "payments.noPayments": "No payments yet",
-  "payments.noPaymentsDesc": "Payments appear here once customers pay or you mark a booking as paid.",
+  "payments.noPaymentsDesc":
+    "Payments appear here once customers pay or you mark a booking as paid.",
   "payments.recentTransactions": "Recent transactions",
   "payments.customer": "Customer",
   "payments.booking": "Booking",
@@ -855,7 +898,8 @@ export const en: Record<string, string> = {
 
   // ── Mollie Connect ──
   "mollie.title": "Mollie payments",
-  "mollie.description": "Connect your own Mollie account to accept payments. Payouts go directly to you.",
+  "mollie.description":
+    "Connect your own Mollie account to accept payments. Payouts go directly to you.",
   "mollie.connect": "Connect Mollie",
   "mollie.disconnect": "Disconnect",
   "mollie.pending": "Connection pending",
@@ -867,7 +911,8 @@ export const en: Record<string, string> = {
   "mollie.feeNoFee": "No booking fee",
   "mollie.payouts": "Payouts",
   "mollie.payoutsValue": "Direct to your Mollie",
-  "mollie.platformFeeNotice": "FlowyBookings charges a fixed booking fee per successful booking — regardless of the amount. Customer funds settle directly into your own Mollie account, never on our platform.",
+  "mollie.platformFeeNotice":
+    "FlowyBookings charges a fixed booking fee per successful booking — regardless of the amount. Customer funds settle directly into your own Mollie account, never on our platform.",
   "mollie.status.not_connected": "Not connected",
   "mollie.status.pending": "Pending",
   "mollie.status.connected": "Connected",
@@ -878,13 +923,15 @@ export const en: Record<string, string> = {
   "mollie.onboarding.completed": "Completed",
   "mollie.onboarding.rejected": "Rejected",
   "mollie.nudge.title": "Get paid faster — connect Mollie",
-  "mollie.nudge.body": "Accept iDEAL, cards, and Bancontact at checkout. Funds settle directly into your own Mollie account, with deposits to reduce no-shows.",
+  "mollie.nudge.body":
+    "Accept iDEAL, cards, and Bancontact at checkout. Funds settle directly into your own Mollie account, with deposits to reduce no-shows.",
   "mollie.nudge.benefit1": "Direct payouts to you",
   "mollie.nudge.benefit2": "Fewer no-shows with deposits",
   "mollie.nudge.benefit3": "Low platform fee",
   "mollie.nudge.cta": "Connect Mollie",
   "mollie.nudge.notifTitle": "Connect Mollie to accept payments",
-  "mollie.nudge.notifMessage": "Your shop hasn't connected a payment provider yet. Connect Mollie to take deposits and reduce no-shows.",
+  "mollie.nudge.notifMessage":
+    "Your shop hasn't connected a payment provider yet. Connect Mollie to take deposits and reduce no-shows.",
   "mollie.connected": "Mollie connected successfully",
   "mollie.connectFailed": "Failed to connect Mollie",
   "mollie.notConfigured": "Mollie Connect is not configured on the platform",
@@ -892,12 +939,14 @@ export const en: Record<string, string> = {
 
   // Pre-connect screen
   "mollie.preConnect.title": "Connect your payments",
-  "mollie.preConnect.subtitle": "Connect once — then you'll receive payments directly into your own Mollie account.",
+  "mollie.preConnect.subtitle":
+    "Connect once — then you'll receive payments directly into your own Mollie account.",
   "mollie.preConnect.benefit1": "Receive payments directly to your own account",
   "mollie.preConnect.benefit2": "Let customers pay online (iDEAL, card, Bancontact)",
   "mollie.preConnect.benefit3": "Fewer no-shows thanks to deposits",
   "mollie.preConnect.warningTitle": "Heads up — pick the right organisation in Mollie",
-  "mollie.preConnect.warningBody": "Mollie will ask you to choose an organisation. Select only the organisation that matches:",
+  "mollie.preConnect.warningBody":
+    "Mollie will ask you to choose an organisation. Select only the organisation that matches:",
   "mollie.preConnect.cancel": "Cancel",
   "mollie.preConnect.continue": "Continue to Mollie",
 
@@ -930,7 +979,8 @@ export const en: Record<string, string> = {
 
   // ── Admin: Mollie health ──
   "adminMollieHealth.title": "Mollie Connect health",
-  "adminMollieHealth.description": "Per shop: connection status, organization, token expiry, last refresh and platform fees (last 30 days).",
+  "adminMollieHealth.description":
+    "Per shop: connection status, organization, token expiry, last refresh and platform fees (last 30 days).",
   "adminMollieHealth.empty": "No shops with a Mollie connection found.",
   "adminMollieHealth.searchPlaceholder": "Search by shop or organization…",
   "adminMollieHealth.counts": "{connected} of {total} connected",
@@ -993,7 +1043,8 @@ export const en: Record<string, string> = {
   "adminMessages.deliveredTo": "Sent to {n}",
   "adminMessages.readBy": "{n} read",
   "adminMessages.emailTemplates": "Email templates",
-  "adminMessages.emailTemplatesSub": "Preview how automated emails look for customers and shop owners.",
+  "adminMessages.emailTemplatesSub":
+    "Preview how automated emails look for customers and shop owners.",
   "adminMessages.preview": "Preview",
   "adminMessages.previewSubject": "Subject",
   "adminMessages.previewDescription": "Rendered from demo data — nothing is sent.",
@@ -1010,9 +1061,11 @@ export const en: Record<string, string> = {
   "notifications.whatsappDesc": "Coming soon.",
   "notifications.whatsappBadge": "Coming soon",
   "notifications.whatsappComingTitle": "WhatsApp reminders are on the way.",
-  "notifications.whatsappComingBody": "We're building an official WhatsApp Business integration. For now this channel stays off on every plan — use email or SMS to send reminders.",
+  "notifications.whatsappComingBody":
+    "We're building an official WhatsApp Business integration. For now this channel stays off on every plan — use email or SMS to send reminders.",
   "notifications.whatsappRowTitle": "WhatsApp reminders",
-  "notifications.whatsappRowDesc": "Send automated reminders via WhatsApp Business — still in development.",
+  "notifications.whatsappRowDesc":
+    "Send automated reminders via WhatsApp Business — still in development.",
   "notifications.reminderEvents": "Reminder events",
   "notifications.reminderDesc": "Pick which messages go out automatically.",
   "notifications.confirm": "Booking confirmation",
@@ -1028,7 +1081,8 @@ export const en: Record<string, string> = {
   "notifications.saved": "Preferences saved",
   "notifications.unsaved": "Unsaved changes",
   "notifications.depositTitle": "Deposits (coming soon)",
-  "notifications.depositSub": "Set a default deposit percent. Used to require deposits from repeat no-show customers when payments go live.",
+  "notifications.depositSub":
+    "Set a default deposit percent. Used to require deposits from repeat no-show customers when payments go live.",
   "notifications.depositPercent": "Default deposit %",
   "notifications.depositSaved": "Deposit settings saved",
   "automations.title": "Automation flows",
@@ -1045,14 +1099,17 @@ export const en: Record<string, string> = {
   "automations.statusActive": "Active · cron every 5 min",
   "automations.poweredBy": "Powered by FlowyBookings email",
   "automations.reminderSms": "Reminder SMS (2 hours)",
-  "automations.reminderSmsDesc": "Also send an SMS ~2h before the appointment. Requires credits and a phone number.",
+  "automations.reminderSmsDesc":
+    "Also send an SMS ~2h before the appointment. Requires credits and a phone number.",
   "automations.smsCreditsTitle": "SMS balance",
   "automations.smsCreditsBalance": "Remaining balance",
   "automations.smsCreditsUsed": "Used",
   "automations.smsCreditsFree": "Granted free",
   "automations.smsCreditsHint": "Each reminder SMS uses 1 credit.",
-  "automations.smsCreditsLow": "Low balance — reminders will be skipped once the balance reaches 0.",
-  "automations.smsCreditsEmpty": "No credits — SMS reminders are disabled until new credits are added.",
+  "automations.smsCreditsLow":
+    "Low balance — reminders will be skipped once the balance reaches 0.",
+  "automations.smsCreditsEmpty":
+    "No credits — SMS reminders are disabled until new credits are added.",
   "automations.smsProviderPending": "Sending will be activated once the SMS provider is connected.",
   "automations.smsCreditsTopUp": "Top up SMS credits",
 
@@ -1065,7 +1122,8 @@ export const en: Record<string, string> = {
   "smsTopup.choose": "Choose this pack",
   "smsTopup.cancel": "Cancel",
   "smsTopup.processing": "Redirecting…",
-  "smsTopup.successReturn": "Your payment was processed. Your balance will update in a few seconds.",
+  "smsTopup.successReturn":
+    "Your payment was processed. Your balance will update in a few seconds.",
   "smsTopup.failedReturn": "Payment failed or cancelled. Please try again.",
   "smsTopup.errorGeneric": "Could not start payment. Please try again.",
 
@@ -1130,7 +1188,8 @@ export const en: Record<string, string> = {
   "settings.logoUploaded": "Logo uploaded",
   "settings.logoRemoved": "Logo removed",
   "settings.trialExpiredTitle": "Your trial has expired",
-  "settings.trialExpiredBody": "Pick a plan to continue. New bookings via your public page and the \"New appointment\" button are temporarily blocked.",
+  "settings.trialExpiredBody":
+    'Pick a plan to continue. New bookings via your public page and the "New appointment" button are temporarily blocked.',
   "settings.trialExpiredCta": "Pick a plan",
 
   // ── Analytics ──
@@ -1197,7 +1256,8 @@ export const en: Record<string, string> = {
   "book.durationLabel": "Duration",
   "book.price": "Price",
   "book.depositDue": "Deposit due",
-  "book.stripeNotice": "After confirming you'll be sent to the secure deposit step (Stripe / Mollie).",
+  "book.stripeNotice":
+    "After confirming you'll be sent to the secure deposit step (Stripe / Mollie).",
   "book.back": "Back",
   "book.continue": "Continue",
   "book.confirmBooking": "Confirm booking",
@@ -1209,7 +1269,8 @@ export const en: Record<string, string> = {
   "book.slotTaken": "This time slot was just taken. Please pick another.",
   "book.failed": "Booking failed. Please try again.",
   "book.youreBooked": "You're booked in!",
-  "book.confirmationSentSub": "A confirmation has been sent to your email. Reminders will follow 24h and 2h before the appointment.",
+  "book.confirmationSentSub":
+    "A confirmation has been sent to your email. Reminders will follow 24h and 2h before the appointment.",
   "book.bookAnother": "Book another",
   "book.addToCalendar": "Add to calendar",
   "book.backHome": "Back to home",
@@ -1219,7 +1280,8 @@ export const en: Record<string, string> = {
 
   // ── Booking confirmation ──
   "confirmation.title": "You're booked in!",
-  "confirmation.sub": "A confirmation has been sent to your email. We've also scheduled a 24h and 2h reminder.",
+  "confirmation.sub":
+    "A confirmation has been sent to your email. We've also scheduled a 24h and 2h reminder.",
   "confirmation.bookAnother": "Book another",
   "confirmation.backHome": "Back to home",
 
@@ -1347,7 +1409,8 @@ export const en: Record<string, string> = {
 
   // ── Admin bookings ──
   "adminBookings.title": "All bookings",
-  "adminBookings.description": "Investigate disputes, no-shows and cancellations across every shop.",
+  "adminBookings.description":
+    "Investigate disputes, no-shows and cancellations across every shop.",
   "adminBookings.searchPlaceholder": "Search bookings…",
   "adminBookings.booking": "Booking",
   "adminBookings.shop": "Shop",
@@ -1428,9 +1491,11 @@ export const en: Record<string, string> = {
   "platformBilling.subtitle": "Manage FlowyBookings' own Mollie connection for plan payments",
   "platformBilling.adminOnly": "Hidden admin only — never visible to shop owners",
   "platformBilling.sectionA": "Subscription Billing",
-  "platformBilling.sectionADesc": "FlowyBookings' own Mollie account for Starter / Pro / Premium plan payments. Configured here.",
+  "platformBilling.sectionADesc":
+    "FlowyBookings' own Mollie account for Starter / Pro / Premium plan payments. Configured here.",
   "platformBilling.sectionB": "Booking Payment Providers",
-  "platformBilling.sectionBDesc": "Each shop's own Mollie Connect account for booking deposits. Managed per shop, overviewed under Providers.",
+  "platformBilling.sectionBDesc":
+    "Each shop's own Mollie Connect account for booking deposits. Managed per shop, overviewed under Providers.",
   "platformBilling.runCheck": "Run health check",
   "platformBilling.readiness": "Platform billing readiness",
   "platformBilling.statusReady": "Ready",
@@ -1458,7 +1523,8 @@ export const en: Record<string, string> = {
   "platformBilling.lastError": "Last known billing error",
   "platformBilling.manageSecrets": "Manage Mollie keys",
   "platformBilling.manageSecretsTitle": "Manage Mollie subscription keys",
-  "platformBilling.manageSecretsIntro": "These secrets power FlowyBookings' own subscription billing. They are stored securely in Lovable Secrets and are never visible in the admin UI. To add or rotate a value, open Lovable Cloud → Settings → Secrets and use the secret names below.",
+  "platformBilling.manageSecretsIntro":
+    "These secrets power FlowyBookings' own subscription billing. They are stored securely in Lovable Secrets and are never visible in the admin UI. To add or rotate a value, open Lovable Cloud → Settings → Secrets and use the secret names below.",
   "platformBilling.openSecrets": "Open secrets manager",
   "platformBilling.copyName": "Copy name",
   "platformBilling.editMode": "Edit mode",
@@ -1514,8 +1580,8 @@ export const en: Record<string, string> = {
   "upgrade.cycle.yearly": "Yearly",
   "upgrade.cycle.save": "−2 mo",
   "upgrade.cycle.savingHint": "Save {months} months when billed yearly",
- "upgrade.basic": "Starter",
- "upgrade.basicTagline": "Everything you need to get going",
+  "upgrade.basic": "Starter",
+  "upgrade.basicTagline": "Everything you need to get going",
   "upgrade.pro": "Pro",
   "upgrade.proTagline": "Grow faster with automation",
   "upgrade.premium": "Premium",
@@ -1546,7 +1612,8 @@ export const en: Record<string, string> = {
   "upgrade.compareTitle": "Why shops upgrade",
   "upgrade.faqTitle": "Common questions",
   "upgrade.faq1q": "Can I switch plans later?",
-  "upgrade.faq1a": "Yes — upgrades go live immediately, downgrades take effect at the end of your current billing cycle. No data or booking loss.",
+  "upgrade.faq1a":
+    "Yes — upgrades go live immediately, downgrades take effect at the end of your current billing cycle. No data or booking loss.",
   "upgrade.faq2q": "What happens to my data?",
   "upgrade.faq2a": "Your bookings, customers and history stay safe on every plan.",
   "upgrade.faq3q": "Is there a setup fee?",
@@ -1554,7 +1621,8 @@ export const en: Record<string, string> = {
 
   // ── Upgrade nudges (in-dashboard triggers) ──
   "nudge.noShowsTitle": "No-shows are eating into your revenue",
-  "nudge.noShowsBody": "{count} no-shows in the last 7 days. Pro adds automatic deposits and SMS reminders that cut no-shows by up to 71%.",
+  "nudge.noShowsBody":
+    "{count} no-shows in the last 7 days. Pro adds automatic deposits and SMS reminders that cut no-shows by up to 71%.",
   "nudge.noShowsCta": "See how Pro helps",
   "nudge.staffLimitTitle": "You've reached your staff limit",
   "nudge.staffLimitBody": "Your plan supports {limit} staff. Upgrade to add the whole team.",
@@ -1571,7 +1639,8 @@ export const en: Record<string, string> = {
 
   // ── Admin demo controls ──
   "adminDemo.title": "Demo controls",
-  "adminDemo.description": "Toggle demo mode, demo logins, public booking on demo shops and seeded data visibility.",
+  "adminDemo.description":
+    "Toggle demo mode, demo logins, public booking on demo shops and seeded data visibility.",
   "adminDemo.flagsTitle": "Platform flags",
   "adminDemo.modeTitle": "Demo mode",
   "adminDemo.modeDesc": "Master switch. When off, all demo behavior is hidden.",
@@ -1586,24 +1655,30 @@ export const en: Record<string, string> = {
   "adminDemo.demoBadge": "Demo",
   "adminDemo.noShops": "No shops yet.",
   "adminDemo.reseedTitle": "Reseed demo accounts",
-  "adminDemo.reseedDesc": "Recreates the three demo users (super admin, owner, staff) with the standard password.",
+  "adminDemo.reseedDesc":
+    "Recreates the three demo users (super admin, owner, staff) with the standard password.",
   "adminDemo.reseedCta": "Reseed demo users",
   "adminDemo.saved": "Settings saved",
   "adminDemo.shopUpdated": "Shop updated",
   "adminDemo.reseeded": "Demo users reseeded",
   "adminDemo.warningTitle": "Demo mode is OFF",
-  "adminDemo.warningDesc": "Demo accounts are blocked and demo shops are hidden from public booking.",
+  "adminDemo.warningDesc":
+    "Demo accounts are blocked and demo shops are hidden from public booking.",
   // ── Plan / upgrade extras ──
   "upgrade.youAreOn": "You're on",
   "upgrade.toastApplied": "Plan changed to {plan}",
   "upgrade.toastUpgraded": "Your upgrade to {plan} is active immediately",
-  "upgrade.toastDowngradeScheduled": "Downgrade scheduled — your {plan} stays active until your next billing date",
+  "upgrade.toastDowngradeScheduled":
+    "Downgrade scheduled — your {plan} stays active until your next billing date",
   "upgrade.cta.downgrade": "Switch to {plan}",
   "upgrade.cta.upgradeShort": "Start with {plan} →",
   "upgrade.cta.upgradePremium": "Upgrade to Premium →",
-  "upgrade.confirmDowngrade": "Downgrade to {plan}? Your current plan stays active until your next billing date — the change takes effect after that.",
-  "upgrade.confirmUpgradeFromTrial": "Your upgrade starts immediately and your trial will end. Continue?",
-  "upgrade.billingNotice": "Payments are securely processed by Mollie · iDEAL, credit card & Bancontact",
+  "upgrade.confirmDowngrade":
+    "Downgrade to {plan}? Your current plan stays active until your next billing date — the change takes effect after that.",
+  "upgrade.confirmUpgradeFromTrial":
+    "Your upgrade starts immediately and your trial will end. Continue?",
+  "upgrade.billingNotice":
+    "Payments are securely processed by Mollie · iDEAL, credit card & Bancontact",
   "upgrade.instantNote": "Active immediately after upgrade · No interruption to bookings or data",
 
   // ── Admin plans extras ──
@@ -1661,14 +1736,17 @@ export const en: Record<string, string> = {
   "adminBilling.grant90": "Grant 90d",
   "adminBilling.notesFor": "Admin notes ·",
   "adminBilling.notesDesc": "Internal context only — not visible to the shop owner.",
-  "adminBilling.notesPlaceholder": "Add billing exceptions, support context, manual override reasons…",
+  "adminBilling.notesPlaceholder":
+    "Add billing exceptions, support context, manual override reasons…",
   "adminBilling.noteSaved": "Note saved",
   "adminBilling.runSweep": "Run expire sweep now",
   "adminBilling.runningSweep": "Running sweep…",
   "adminBilling.sweepDone": "Sweep complete: {downgraded} of {checked} shop(s) downgraded",
   "adminBilling.sweepConfirmTitle": "Run expire sweep?",
-  "adminBilling.sweepConfirmBody": "{count} shop(s) currently have an expired paid plan. Running the sweep will downgrade them to Starter, log the change, and notify each owner.",
-  "adminBilling.sweepConfirmNone": "No shops are currently past their expiry date. Running the sweep is safe — it will simply confirm there is nothing to downgrade.",
+  "adminBilling.sweepConfirmBody":
+    "{count} shop(s) currently have an expired paid plan. Running the sweep will downgrade them to Starter, log the change, and notify each owner.",
+  "adminBilling.sweepConfirmNone":
+    "No shops are currently past their expiry date. Running the sweep is safe — it will simply confirm there is nothing to downgrade.",
   "adminBilling.sweepConfirmRun": "Run sweep",
   "adminBilling.sweepConfirmCancel": "Cancel",
   "adminPayments.searchShop": "Search shop…",
@@ -1686,7 +1764,8 @@ export const en: Record<string, string> = {
   "shopBilling.payNow": "Continue to checkout",
   "shopBilling.mockPay": "Confirm test payment",
   "shopBilling.mockFail": "Simulate failure",
-  "shopBilling.mockBanner": "Mollie keys are not configured — using test mode. Use the buttons below to simulate the payment outcome.",
+  "shopBilling.mockBanner":
+    "Mollie keys are not configured — using test mode. Use the buttons below to simulate the payment outcome.",
   "shopBilling.openingCheckout": "Opening checkout…",
   "shopBilling.confirmingPayment": "Confirming payment…",
   "shopBilling.cycle.monthly": "Monthly",
@@ -1700,10 +1779,12 @@ export const en: Record<string, string> = {
 
   // ── Shop /payments page (booking payments only) ──
   "shopPayments.title": "Booking payments",
-  "shopPayments.description": "Payments your customers make to your shop. Settled directly into your own Mollie account.",
+  "shopPayments.description":
+    "Payments your customers make to your shop. Settled directly into your own Mollie account.",
   "shopPayments.notSubscription": "Looking for your software plan? Open Subscription billing →",
   "shopPayments.notSubscriptionTitle": "This isn't your software subscription.",
-  "shopPayments.notSubscriptionBody": "This page handles customer payments via Mollie. Your FlowyBookings plan is managed separately.",
+  "shopPayments.notSubscriptionBody":
+    "This page handles customer payments via Mollie. Your FlowyBookings plan is managed separately.",
   "shopPayments.openBilling": "Manage subscription",
   "shopPayments.providerEmpty": "Connect Mollie below to start accepting customer payments.",
   "shopPayments.providerEmptyTitle": "No payment provider connected yet",
@@ -1722,7 +1803,8 @@ export const en: Record<string, string> = {
   "mollieConnect.payments.refund": "Refund",
   "mollieConnect.payments.refunding": "Working…",
   "mollieConnect.payments.refundConfirmTitle": "Refund the full amount?",
-  "mollieConnect.payments.refundConfirmDesc": "This refunds {amount} to the customer via Mollie. This action cannot be undone.",
+  "mollieConnect.payments.refundConfirmDesc":
+    "This refunds {amount} to the customer via Mollie. This action cannot be undone.",
   "mollieConnect.payments.refundConfirm": "Yes, refund",
   "mollieConnect.payments.refundCancel": "Cancel",
   "mollieConnect.payments.refundSuccess": "Refund initiated",
@@ -1730,18 +1812,21 @@ export const en: Record<string, string> = {
 
   // ── Admin: Booking Payment Providers (separate page) ──
   "adminProvidersPage.title": "Booking payment providers",
-  "adminProvidersPage.description": "Mollie Connect status, onboarding state, and platform fee config for every shop. Subscription billing lives separately under Platform billing.",
+  "adminProvidersPage.description":
+    "Mollie Connect status, onboarding state, and platform fee config for every shop. Subscription billing lives separately under Platform billing.",
   "adminProvidersPage.connected": "Connected",
   "adminProvidersPage.pending": "Pending",
   "adminProvidersPage.notConnected": "Not connected",
   "adminProvidersPage.errors": "Errors",
   "adminProvidersPage.searchPlaceholder": "Search shop or owner email…",
   "adminProvidersPage.shopsTitle": "Shops & providers",
-  "adminProvidersPage.shopsDesc": "One row per shop. Subscription state is NOT shown here — open Platform billing for that.",
+  "adminProvidersPage.shopsDesc":
+    "One row per shop. Subscription state is NOT shown here — open Platform billing for that.",
   "adminProvidersPage.empty": "No shops match this filter.",
   "adminProvidersPage.onboarding": "Onboarding",
   "adminProvidersPage.connectedAt": "connected",
-  "adminProvidersPage.scopeHint": "Booking payments only. For subscription plans go to Platform billing.",
+  "adminProvidersPage.scopeHint":
+    "Booking payments only. For subscription plans go to Platform billing.",
 
   // ── Admin nav additions ──
   "adminNav.providers": "Booking providers",
@@ -1768,7 +1853,8 @@ export const en: Record<string, string> = {
 
   // ── Support FAQ ──
   "support.faq.payments.q": "How do I receive payments?",
-  "support.faq.payments.a": "Payments are processed through Mollie and paid directly to your connected account.",
+  "support.faq.payments.a":
+    "Payments are processed through Mollie and paid directly to your connected account.",
   "support.faq.connect.q": "How do I connect Mollie?",
   "support.faq.connect.a": "Go to your dashboard → Payments → Connect Mollie and follow the steps.",
   "support.faq.payouts.q": "When do I get paid?",
@@ -1776,7 +1862,8 @@ export const en: Record<string, string> = {
   "support.faq.cancel.q": "Can customers cancel bookings?",
   "support.faq.cancel.a": "Yes, depending on your cancellation policy set by the shop.",
   "support.faq.refunds.q": "How do refunds work?",
-  "support.faq.refunds.a": "Refunds are handled by the shop. FlowyBookings does not process refunds directly.",
+  "support.faq.refunds.a":
+    "Refunds are handled by the shop. FlowyBookings does not process refunds directly.",
 
   // ── Legal: shared ──
   "legal.contact": "Contact",
@@ -1789,7 +1876,8 @@ export const en: Record<string, string> = {
   // ── Legal: Privacy ──
   "legal.privacy.title": "Privacy Policy",
   "legal.privacy.metaDesc": "How FlowyBookings collects, uses, and protects your data.",
-  "legal.privacy.intro": "FlowyBookings respects your privacy. We collect only the data necessary to provide our booking and payment services.",
+  "legal.privacy.intro":
+    "FlowyBookings respects your privacy. We collect only the data necessary to provide our booking and payment services.",
   "legal.privacy.collectHeading": "Data we collect",
   "legal.privacy.collect1": "Account information (name, email)",
   "legal.privacy.collect2": "Booking data",
@@ -1799,7 +1887,8 @@ export const en: Record<string, string> = {
   "legal.privacy.use2": "Process bookings and payments",
   "legal.privacy.use3": "Communicate with users",
   "legal.privacy.shareHeading": "Sharing",
-  "legal.privacy.share": "We do not sell or share your data with third parties, except where necessary for payment processing (Mollie).",
+  "legal.privacy.share":
+    "We do not sell or share your data with third parties, except where necessary for payment processing (Mollie).",
 
   // ── Legal: Terms ──
   "legal.terms.title": "Terms & Conditions",
@@ -1815,14 +1904,16 @@ export const en: Record<string, string> = {
   "legal.refunds.title": "Refund Policy",
   "legal.refunds.metaDesc": "How refunds are handled on FlowyBookings.",
   "legal.refunds.line1": "Refunds are handled by the individual shop unless stated otherwise.",
-  "legal.refunds.line2": "FlowyBookings does not process refunds directly, as payments are handled via Mollie and the shop.",
+  "legal.refunds.line2":
+    "FlowyBookings does not process refunds directly, as payments are handled via Mollie and the shop.",
   "legal.refunds.subHeading": "For subscription plans",
 
   // ── Admin: Revenue ──
   "adminNav.revenue": "Revenue",
   "adminNav.customers": "Customers",
   "adminRevenue.title": "Revenue",
-  "adminRevenue.description": "What your platform earned this month — subscriptions + transaction fees per shop.",
+  "adminRevenue.description":
+    "What your platform earned this month — subscriptions + transaction fees per shop.",
   "adminRevenue.exportCsv": "Export CSV",
   "adminRevenue.totalThisMonth": "Total this month",
   "adminRevenue.subscriptionRevenue": "Subscriptions this month",
@@ -1898,8 +1989,10 @@ export const en: Record<string, string> = {
   "featureLock.titleLimit": "Your {feature} limit has been reached",
   "featureLock.titlePlan": "{feature} — available from {plan}",
   "featureLock.titlePlanWithPrice": "{feature} — available from {plan} ({price})",
-  "featureLock.descLimit": "You've used {used}/{limit} {feature} this month. Upgrade for more or wait until next month.",
-  "featureLock.descPlan": "This feature isn't in your current plan ({plan}). Upgrade to activate it.",
+  "featureLock.descLimit":
+    "You've used {used}/{limit} {feature} this month. Upgrade for more or wait until next month.",
+  "featureLock.descPlan":
+    "This feature isn't in your current plan ({plan}). Upgrade to activate it.",
   "feature.bookings": "bookings",
   "feature.staff": "staff",
   "feature.smsReminders": "SMS reminders",
@@ -1910,15 +2003,18 @@ export const en: Record<string, string> = {
 
   // ── Staff page (extra) ──
   "staff.limitTooltip": "Your plan supports up to {limit} staff member. Upgrade to add more.",
-  "staff.limitTooltipPlural": "Your plan supports up to {limit} staff members. Upgrade to add more.",
+  "staff.limitTooltipPlural":
+    "Your plan supports up to {limit} staff members. Upgrade to add more.",
 
   // ── Calendar page (extra) ──
   "calendar.amount": "Amount",
   "calendar.today": "Today",
   "calendar.appointment": "appointment",
   "calendar.appointments": "appointments",
-  "calendar.trialExpiredBookingTitle": "Your trial has expired — pick a plan to create new appointments.",
-  "calendar.bookingLimitReached": "You've reached the maximum number of bookings ({used}/{limit}). Pick a plan to continue.",
+  "calendar.trialExpiredBookingTitle":
+    "Your trial has expired — pick a plan to create new appointments.",
+  "calendar.bookingLimitReached":
+    "You've reached the maximum number of bookings ({used}/{limit}). Pick a plan to continue.",
   "calendar.workingToday": "Working today",
   "calendar.dayOff": "Off today",
   "calendar.firstAvailableSlot": "Next available slot",
@@ -1937,9 +2033,11 @@ export const en: Record<string, string> = {
   "calendar.releaseToRefresh": "Release to refresh",
   "calendar.refreshing": "Refreshing…",
   "billing.trialExpiredTitle": "Your free trial has expired",
-  "billing.trialExpiredSub": "You can no longer create new appointments. Existing data stays visible. Pick a plan to continue.",
+  "billing.trialExpiredSub":
+    "You can no longer create new appointments. Existing data stays visible. Pick a plan to continue.",
   "billing.trialDaysLeft": "{{days}} days left in your free trial",
-  "billing.trialDaysLeftSub": "Pick a plan before your trial expires to keep accepting appointments.",
+  "billing.trialDaysLeftSub":
+    "Pick a plan before your trial expires to keep accepting appointments.",
   "billing.trialActiveTitle": "Your free trial is active (14 days)",
   "billing.trialActiveSub": "No charges until {{date}} — every feature stays unlocked.",
   "billing.trialEndingTitle": "Your trial ends in {{days}} days",
@@ -1949,13 +2047,17 @@ export const en: Record<string, string> = {
   "shopBilling.cycle.short.monthly": "per month",
   "shopBilling.cycle.short.yearly": "per year",
   "billing.paymentFailedTitle": "Payment failed — update your payment method",
-  "billing.paymentFailedSub": "We couldn't process your last payment. You have {{days}} days before new bookings are blocked.",
+  "billing.paymentFailedSub":
+    "We couldn't process your last payment. You have {{days}} days before new bookings are blocked.",
   "billing.paymentFailedBlockedTitle": "Bookings blocked — payment failed for over 7 days",
-  "billing.paymentFailedBlockedSub": "Update your payment method to start accepting appointments again. Existing data stays visible.",
+  "billing.paymentFailedBlockedSub":
+    "Update your payment method to start accepting appointments again. Existing data stays visible.",
   "billing.cancelledTitle": "Subscription cancelled",
-  "billing.cancelledSub": "Your plan stays active until {{date}}. After that you'll be moved back to the free trial.",
+  "billing.cancelledSub":
+    "Your plan stays active until {{date}}. After that you'll be moved back to the free trial.",
   "billing.planActiveUntilTitle": "Your {{plan}} plan runs until {{date}}",
-  "billing.planActiveUntilSub": "You keep every feature until that date. Reactivate any time — nothing is lost.",
+  "billing.planActiveUntilSub":
+    "You keep every feature until that date. Reactivate any time — nothing is lost.",
   "calendar.upcomingSuffix": "upcoming",
   "calendar.todaySuffix": "today",
   "calendar.zeroToday": "No appointments today",
@@ -1971,7 +2073,8 @@ export const en: Record<string, string> = {
   "billing.updatePayment": "Update payment method",
   "billing.reactivate": "Reactivate",
   "billing.cancel": "Cancel subscription",
-  "billing.cancelConfirm": "Are you sure you want to cancel? Your plan stays active until the end of the current period.",
+  "billing.cancelConfirm":
+    "Are you sure you want to cancel? Your plan stays active until the end of the current period.",
   "billing.cancelSuccess": "Subscription cancelled. Active until end of period.",
   "billing.statusCancelled": "Cancelled",
   "billing.statusPaymentFailed": "Payment failed",
@@ -1992,10 +2095,14 @@ export const en: Record<string, string> = {
   "fees.statPerBooking": "Per paid booking",
   "fees.statPaidThisMonth": "Paid bookings this month",
   "fees.statTotalThisMonth": "Total this month",
-  "fees.explainer.starter": "You pay €0.50 per paid booking on Starter. Only successful payments count. Cancelled or failed payments are never charged.",
-  "fees.explainer.pro": "You pay €0.30 per paid booking on Pro. Only successful payments count. Cancelled or failed payments are never charged.",
-  "fees.explainer.premium": "No transaction fees per booking. On Premium you pay 0% on your booking revenue.",
-  "fees.explainer.trial": "No transaction fees during your free trial. After upgrading you'll see exactly what you pay per booking here.",
+  "fees.explainer.starter":
+    "You pay €0.50 per paid booking on Starter. Only successful payments count. Cancelled or failed payments are never charged.",
+  "fees.explainer.pro":
+    "You pay €0.30 per paid booking on Pro. Only successful payments count. Cancelled or failed payments are never charged.",
+  "fees.explainer.premium":
+    "No transaction fees per booking. On Premium you pay 0% on your booking revenue.",
+  "fees.explainer.trial":
+    "No transaction fees during your free trial. After upgrading you'll see exactly what you pay per booking here.",
   "fees.trust.noHidden": "No hidden fees",
   "fees.trust.onlyPaid": "Only paid bookings count",
   "fees.trust.alwaysClear": "Always clear what you pay for",
@@ -2004,4 +2111,3 @@ export const en: Record<string, string> = {
   "fees.itemBooking": "booking",
   "fees.itemFee": "fee",
 };
-

@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Sparkle, Loader2 } from "lucide-react";
+import { Sparkle, Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -34,10 +34,11 @@ const DEMO_PASSWORD = "Demo1234!";
 function LoginPage() {
   const navigate = useNavigate();
   const { redirect, auth_error } = Route.useSearch();
-  const { session, loading, rolesLoading, isPlatformAdmin, isShopOwner, isStaff } = useAuth();
+  const { session, loading, rolesLoading, isPlatformAdmin } = useAuth();
   const { t } = useT();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const { data: appSettings } = useQuery(publicAppSettingsQuery());
@@ -55,9 +56,9 @@ function LoginPage() {
       navigate({ to: redirect, replace: true });
       return;
     }
-    if (isShopOwner || isStaff) navigate({ to: "/shop", replace: true });
-    else navigate({ to: "/", replace: true });
-  }, [session, loading, rolesLoading, isPlatformAdmin, isShopOwner, isStaff, redirect, navigate]);
+    // Shared post-auth landing: /shop gate sends zero-shop users to onboarding.
+    navigate({ to: "/shop", replace: true });
+  }, [session, loading, rolesLoading, isPlatformAdmin, redirect, navigate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -177,7 +178,25 @@ function LoginPage() {
                   {t("auth.forgotPassword")}
                 </Link>
               </div>
-              <Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-muted-foreground hover:text-foreground"
+                  aria-label={showPassword ? t("auth.hidePassword") : t("auth.showPassword")}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
             <Button type="submit" variant="hero" className="w-full" disabled={submitting}>
               {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
