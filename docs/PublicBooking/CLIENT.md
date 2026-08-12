@@ -21,6 +21,7 @@ This note summarizes customer-facing changes on the public booking link (`/book/
   - the shop’s opening hours, and  
   - the selected person’s working hours (or at least one person, if “Any available”),  
   - excluding breaks.
+- All times mean **the shop’s local timezone** (default Europe/Amsterdam), not the customer’s phone timezone.
 - Days with no possible overlap (shop closed, or nobody working) are greyed out on the calendar.
 - If a day has no bookable times, customers see: **“No available times on this day.”**
 - Busy times (already booked) stay visible but disabled.
@@ -38,4 +39,4 @@ For customers to see real times, the shop should have:
 3. Shop opening hours  
 4. Working hours set per team member  
 
-If hours are missing on older shops, that day/person is treated as not bookable. **New shops** get default opening hours on create (same as Settings defaults: Mon–Fri 09:00–18:00, Sat 10:00–16:00, Sun closed).
+If hours are missing on older shops, that day/person is treated as not bookable. **New shops** get default opening hours on create, and pick **timezone + business category** during onboarding (timezone prefills from the owner’s device).

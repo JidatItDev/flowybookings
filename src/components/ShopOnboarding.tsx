@@ -9,9 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { cn } from "@/lib/utils";
 import { getBookingUrl } from "@/lib/booking-url";
 import { DEFAULT_SHOP_BUSINESS_HOURS } from "@/lib/staff-availability";
+import {
+  DEFAULT_SHOP_TIMEZONE,
+  detectBrowserTimezone,
+  shopTimezoneSelectOptions,
+} from "@/lib/shop-timezone";
 
 function slugify(s: string) {
   return s
@@ -27,6 +33,9 @@ function slugify(s: string) {
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,58}[a-z0-9])?$/;
 const RESERVED = new Set(["admin", "api", "app", "auth", "book", "beheer", "shop", "login", "signup", "support", "legal", "demo", "www"]);
+
+/** Shop-level categories (aligned with service category chips). */
+const SHOP_CATEGORIES = ["Hair", "Barber", "Nails", "Beauty", "Tattoo", "Pet"] as const;
 
 function randomSuffix() {
   return Math.random().toString(36).slice(2, 6);
@@ -47,6 +56,15 @@ export function ShopOnboarding() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [nameWarning, setNameWarning] = useState(false);
   const [createdSlug, setCreatedSlug] = useState<string | null>(null);
+  const [timezone, setTimezone] = useState(DEFAULT_SHOP_TIMEZONE);
+  const [category, setCategory] = useState("");
+
+  const timezoneOptions = useMemo(() => shopTimezoneSelectOptions(timezone), [timezone]);
+
+  // Prefill shop timezone from the owner's device (editable).
+  useEffect(() => {
+    setTimezone(detectBrowserTimezone());
+  }, []);
 
   const slugValidFormat = useMemo(() => SLUG_RE.test(slug) && !RESERVED.has(slug), [slug]);
 
@@ -98,6 +116,8 @@ export function ShopOnboarding() {
           status: "active",
           plan: "trial",
           business_hours: DEFAULT_SHOP_BUSINESS_HOURS,
+          timezone: timezone.trim() || DEFAULT_SHOP_TIMEZONE,
+          category: category.trim() || null,
         })
         .select("id, slug")
         .single();
@@ -123,6 +143,14 @@ export function ShopOnboarding() {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+    if (!category.trim()) {
+      toast.error(t("onboarding.categoryRequired"));
+      return;
+    }
+    if (!timezone.trim()) {
+      toast.error(t("onboarding.timezoneRequired"));
+      return;
+    }
     if (!slugValidFormat) { toast.error("Ongeldige URL — alleen kleine letters, cijfers en streepjes."); return; }
     if (slugState === "taken" || slugState === "reserved" || slugState === "checking") return;
     createShop.mutate();
@@ -150,19 +178,36 @@ export function ShopOnboarding() {
     !name.trim() ||
     !slug ||
     !slugValidFormat ||
+    !category.trim() ||
+    !timezone.trim() ||
     slugState === "taken" ||
     slugState === "reserved" ||
     slugState === "invalid" ||
     slugState === "checking";
 
+  const categoryLabel = (c: string) => {
+    const map: Record<string, string> = {
+      Hair: t("onboarding.categoryHair"),
+      Barber: t("onboarding.categoryBarber"),
+      Nails: t("onboarding.categoryNails"),
+      Beauty: t("onboarding.categoryBeauty"),
+      Tattoo: t("onboarding.categoryTattoo"),
+      Pet: t("onboarding.categoryPet"),
+    };
+    return map[c] ?? c;
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-hero px-4 py-12">
       <div className="w-full max-w-xl">
-        <div className="mb-6 flex items-center justify-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-brand">
-            <Sparkle className="h-4 w-4 text-primary-foreground" />
+        <div className="mb-6 flex items-center justify-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-brand">
+              <Sparkle className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <span className="text-lg font-semibold tracking-tight">FlowyBookings</span>
           </div>
-          <span className="text-lg font-semibold tracking-tight">FlowyBookings</span>
+          <LanguageSwitcher />
         </div>
 
         <div className="rounded-3xl border border-border bg-card p-6 shadow-elevated sm:p-8">
@@ -293,6 +338,36 @@ export function ShopOnboarding() {
                       ))}
                     </div>
                   )}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="category">{t("onboarding.category")}</Label>
+                  <select
+                    id="category"
+                    required
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <option value="">{t("onboarding.categoryPlaceholder")}</option>
+                    {SHOP_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>{categoryLabel(c)}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="timezone">{t("onboarding.timezone")}</Label>
+                  <select
+                    id="timezone"
+                    required
+                    value={timezone}
+                    onChange={(e) => setTimezone(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {timezoneOptions.map((tz) => (
+                      <option key={tz} value={tz}>{tz}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground">{t("onboarding.timezoneHint")}</p>
                 </div>
                 <div className="flex items-center gap-2 pt-2">
                   <Button type="button" variant="ghost" onClick={() => setStep(0)} disabled={createShop.isPending}>

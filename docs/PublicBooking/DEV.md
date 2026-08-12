@@ -10,11 +10,29 @@ Implementation lives primarily in `src/components/PublicBookingFlow.tsx`, used b
 | Slot window | **Intersection**: shop `business_hours` ∩ staff `working_hours` − breaks − bookings |
 | Any available | Slot OK if **≥1** eligible staff is in hours and free |
 | Missing shop hours | Treat as closed / not bookable |
-| New shop create | Persist `DEFAULT_SHOP_BUSINESS_HOURS` (`src/lib/staff-availability.ts`) — same defaults as Settings UI |
+| New shop create | Persist default business hours; **timezone + category chosen on onboarding** (TZ prefilled from browser, fallback `Europe/Amsterdam`) |
 | Missing staff structured hours | That staff not bookable that day |
 | Empty times copy | Generic `book.noTimes` (“No available times on this day.”) |
 | Calendar greying | Disable day if shop closed/missing **or** no selected/any-eligible staff has a bookable intersection window |
-| Approach | Client-only; reuse `@/lib/staff-availability` |
+| Wall-clock meaning | Always **shop local** (`shops.timezone`), never customer browser TZ |
+| Default IANA TZ | `Europe/Amsterdam` (`DEFAULT_SHOP_TIMEZONE`) |
+| Payments / Mollie | **Out of scope this week** (Week 3) |
+
+## Timezone (source of truth)
+
+Library: **`date-fns-tz`** (paired with existing `date-fns`).
+
+Helpers in `src/lib/shop-timezone.ts`:
+
+| Helper | Role |
+|---|---|
+| `shopLocalToUtc(dateYmd, hhmm, shopTz)` | Slot / submit → UTC instant |
+| `utcToShopLocal(utc, shopTz)` | Display / validation parts |
+| `shopLocalDayBoundsUtc(dateYmd, shopTz)` | Inclusive UTC range for availability RPCs |
+| `shopTodayYmd(shopTz)` | “Today” / past-day greying in shop TZ |
+| `formatInShopTz` / `civilDateYmd` / `dayKeyFromYmd` | Display + weekday |
+
+Staff helpers (`src/lib/staff-availability.ts`) use these — no `getUTCHours` / UTC-noon weekday tricks for public booking.
 
 ## Data sources
 
@@ -24,44 +42,50 @@ Implementation lives primarily in `src/components/PublicBookingFlow.tsx`, used b
 | Staff | `staffQuery(shopId)` (`select *` includes `working_hours`) |
 | Staff ↔ service | `staff_services` (fallback: all active staff if no mappings) |
 | Shop hours | `shops.business_hours` |
-| Existing bookings | RPC `get_public_bookings_for_availability` |
-| Staff hours helper | `resolveStaffAvailability` from `@/lib/staff-availability` |
+| Shop TZ | `shops.timezone` (fallback `Europe/Amsterdam`) |
+| Existing bookings | RPC `get_public_bookings_for_availability` with **shop-local day bounds** as UTC |
+| Staff hours helper | `resolveStaffAvailabilityForDayKey` |
 
 ## Slot algorithm (client)
 
-1. Resolve shop open/close for the calendar day (`shopHoursForDay`). No open/close → no slots.
-2. Build 30-minute candidates from shop open → close that fit service duration.
-3. Clamp each candidate staff’s `working_hours` to the shop window via `resolveStaffAvailability(..., shopOpen, shopClose)`.
-4. Keep a time only if ≥1 candidate fully fits a working window and does not overlap breaks.
-5. Mark `available: false` when in the past or overlapping that staff’s bookings (“any” = any in-hours staff free).
+1. Civil date from the picker → `civilDateYmd` (the day the customer clicked).
+2. Shop open/close for that YMD via `dayKeyFromYmd` + `business_hours`.
+3. 30-minute candidates in **shop-local minutes**; each candidate → `shopLocalToUtc` for past/conflict checks.
+4. Clamp staff hours with `resolveStaffAvailabilityForDayKey`.
+5. Bookings query uses `shopLocalDayBoundsUtc` → RPC timestamptz range.
 
-Calendar `disabled` uses the same shop∩staff window check (`isDayBookable`), plus past / +90 days.
+## Public booking RPCs — audit (already shipped)
 
-## Empty / UX states already in this pass
+Implemented in `supabase/migrations/20260812071513_shop_owner_role_and_public_booking_rpcs.sql`:
 
-- Services: `EmptyState` + `book.noServices` / `book.noServicesSub`
-- Staff: `EmptyState` + `book.noStaff` / `book.noStaffSub`
-- Times: `book.noTimes` when `slots.length === 0`
-- Preset shop (`presetShopId`): Back disabled on service step (`logicalStep === 1`)
+| RPC | Params | TZ awareness |
+|---|---|---|
+| `get_public_bookings_for_availability` | `_shop_id`, `_range_start timestamptz`, `_range_end timestamptz` | **Already correct** if client passes shop-local day bounds as UTC (now done via `shopLocalDayBoundsUtc`) |
+| `get_public_busy_staff_ids` | `_shop_id`, `_starts_at`, `_ends_at` timestamptz | Absolute interval — **no change**; client must pass shop-local→UTC instants (now done on submit) |
+| `public_booking_staff_has_conflict` | same | Absolute interval — **no change**; same as above |
 
-## i18n keys
+### Follow-up patch (optional, not required for this fix)
 
-- `book.noServices`, `book.noServicesSub`
-- `book.noStaff`, `book.noStaffSub`
-- `book.noTimes`
+No RPC signature change is required for correctness. Optional later improvements:
 
-(EN + NL in `src/lib/translations/en.ts` / `nl.ts`)
+1. Accept `_date_ymd date` + resolve bounds inside SQL with `shops.timezone` (server-enforced day window; harder to misuse from clients).
+2. Document that callers **must not** build `_range_start`/`_range_end` with browser-local `new Date('YYYY-MM-DDT00:00:00')`.
 
-## Authority / caveats
+Do **not** silently rework these RPCs in this slice — client now supplies correct UTC bounds/instants.
 
-- DB triggers (e.g. outside staff hours) remain authoritative on insert.
-- Public slot math is advisory UI aligned with shop calendar helpers; timezone edge cases still use local calendar day + UTC-noon weekday trick for `resolveStaffAvailability`.
-- No new RPC in this slice. A dedicated public availability RPC remains a possible follow-up.
+## Shop calendar note
+
+In-app `DayTimeGrid` / `WeekTimeGrid` still model wall-clock as UTC (legacy). Their `validateBookingSlot(..., "UTC")` calls preserve that until a dedicated calendar TZ migration. Public booking does **not** use that path.
+
+## Empty / UX states
+
+- Services / staff empty states + `book.noTimes`
+- Preset shop: Back disabled on service step
 
 ## Related files
 
-- `src/components/PublicBookingFlow.tsx` — wizard UI + slot engine
-- `src/components/EmptyState.tsx` — shared empty UI
-- `src/lib/staff-availability.ts` — working hours / breaks
-- `src/routes/book.tsx`, `book.$slug.tsx`, `book.index.tsx` — routes
+- `src/lib/shop-timezone.ts` — TZ SSOT
+- `src/lib/staff-availability.ts` — hours / breaks
+- `src/components/PublicBookingFlow.tsx` — wizard
+- `src/routes/book.confirmation.$bookingId.tsx` — shop-local display
 - `docs/PublicBooking/CLIENT.md` — client-facing summary

@@ -1309,6 +1309,19 @@ export const en: Record<string, string> = {
   "onboarding.slugHint": "Only lowercase letters, numbers and dashes.",
   "onboarding.createBtn": "Create shop",
   "onboarding.created": "Shop created — welcome aboard!",
+  "onboarding.category": "Business type",
+  "onboarding.categoryPlaceholder": "Select a category",
+  "onboarding.categoryRequired": "Please select a business type.",
+  "onboarding.categoryHair": "Hair",
+  "onboarding.categoryBarber": "Barber",
+  "onboarding.categoryNails": "Nails",
+  "onboarding.categoryBeauty": "Beauty",
+  "onboarding.categoryTattoo": "Tattoo",
+  "onboarding.categoryPet": "Pet grooming",
+  "onboarding.timezone": "Timezone",
+  "onboarding.timezoneHint":
+    "Booking times use this shop clock. Prefills from your device — change if the salon is elsewhere.",
+  "onboarding.timezoneRequired": "Please select a timezone.",
 
   // ── Empty states ──
   "empty.noShop": "No shop selected",

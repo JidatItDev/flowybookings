@@ -1196,7 +1196,7 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
     const startUtc = new Date(form.starts_at + "Z");
     if (Number.isNaN(startUtc.getTime())) return null;
     const ends = new Date(startUtc.getTime() + form.duration * 60000);
-    const result = validateBookingSlot(startUtc, ends, wh);
+    const result = validateBookingSlot(startUtc, ends, wh, "UTC");
     if (result.kind === "ok" || result.kind === "no_data") return null;
     if (result.kind === "closed_day") return { message: t("bookingError.closedDay") };
     if (result.kind === "break") {
@@ -1357,7 +1357,7 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
                     const start = cursor;
                     const end = new Date(start.getTime() + durMs);
                     // Working-hours check (advisory; bij no_data slaan we deze over).
-                    const v = validateBookingSlot(start, end, wh);
+                    const v = validateBookingSlot(start, end, wh, "UTC");
                     const whOk = v.kind === "ok" || v.kind === "no_data";
                     // Conflict check.
                     const sTs = start.getTime();

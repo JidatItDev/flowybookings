@@ -18,7 +18,6 @@ import {
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
 import { nl as nlLocale } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -29,10 +28,20 @@ import { useT } from "@/lib/i18n";
 import { getTrialState } from "@/lib/trial";
 import { classifyBookingError, bookingErrorToast } from "@/lib/booking-errors";
 import {
-  resolveStaffAvailability,
+  resolveStaffAvailabilityForDayKey,
   type StaffAvailability,
   type StaffWorkingHours,
+  type DayKey,
 } from "@/lib/staff-availability";
+import {
+  civilDateYmd,
+  dayKeyFromYmd,
+  formatInShopTz,
+  resolveShopTimezone,
+  shopLocalDayBoundsUtc,
+  shopLocalToUtc,
+  shopTodayYmd,
+} from "@/lib/shop-timezone";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/utils";
@@ -43,9 +52,8 @@ export type PublicBookingFlowProps = {
 
 // JSON shape voor shops.business_hours: { mon: { open: "09:00", close: "18:00", closed: false }, ... }
 type DayHours = { open?: string; close?: string; closed?: boolean };
-type BusinessHours = Partial<Record<"mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun", DayHours>>;
+type BusinessHours = Partial<Record<DayKey, DayHours>>;
 
-const DAY_KEYS: Array<keyof BusinessHours> = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 const SLOT_MINUTES = 30; // raster van 30 min
 
 function toMin(hhmm: string): number {
@@ -62,16 +70,11 @@ function emailValid(e: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
 }
 
-/** UTC noon for a calendar date so weekday matches local day in resolveStaffAvailability. */
-function asUtcNoon(d: Date): Date {
-  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0));
-}
-
-function shopHoursForDay(
+function shopHoursForYmd(
   businessHours: BusinessHours,
-  day: Date,
+  dateYmd: string,
 ): { openMin: number; closeMin: number } | null {
-  const hours = businessHours[DAY_KEYS[day.getDay()]];
+  const hours = businessHours[dayKeyFromYmd(dateYmd)];
   if (!hours || hours.closed || !hours.open || !hours.close) return null;
   const openMin = toMin(hours.open);
   const closeMin = toMin(hours.close);
@@ -79,15 +82,15 @@ function shopHoursForDay(
   return { openMin, closeMin };
 }
 
-/** Shop∩staff window for a day. Missing/unstructured staff hours → not bookable (B1). */
+/** Shop∩staff window for a civil day. Missing/unstructured staff hours → not bookable (B1). */
 function staffAvailabilityForShopDay(
-  day: Date,
+  dateYmd: string,
   workingHours: unknown,
   shopOpenMin: number,
   shopCloseMin: number,
 ): StaffAvailability {
-  return resolveStaffAvailability(
-    asUtcNoon(day),
+  return resolveStaffAvailabilityForDayKey(
+    dayKeyFromYmd(dateYmd) as DayKey,
     (workingHours ?? undefined) as StaffWorkingHours | undefined,
     shopOpenMin,
     shopCloseMin,
@@ -202,6 +205,9 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
   });
 
   const selectedShop = shopsQ.data?.find((s) => s.id === shopId) ?? presetShopQ.data ?? null;
+  const shopTimezone = resolveShopTimezone(
+    (selectedShop as { timezone?: string | null } | null)?.timezone,
+  );
   const isDemoShop = !!selectedShop?.is_demo;
   // Shared trial-state covers trial expiry AND payment_failed grace.
   const shopBookingState = getTrialState(selectedShop as never);
@@ -209,30 +215,29 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
   const selectedService = servicesQ.data?.find((s) => s.id === serviceId);
   const selectedStaff = staffQ.data?.find((s) => s.id === staffId);
   const activeServices = (servicesQ.data ?? []).filter((s) => s.is_active);
+  const selectedDateYmd = date ? civilDateYmd(date) : null;
 
-  // Bestaande bookings voor de gekozen dag (om bezette slots te bepalen)
-  const dayKey = date ? format(date, "yyyy-MM-dd") : null;
+  // Existing bookings for the chosen shop-local day (conflict checks)
   const bookingsQ = useQuery({
-    queryKey: ["public", "bookings", shopId, dayKey, staffId],
-    enabled: !!shopId && !!dayKey,
+    queryKey: ["public", "bookings", shopId, selectedDateYmd, shopTimezone, staffId],
+    enabled: !!shopId && !!selectedDateYmd,
     queryFn: async () => {
-      const dayStart = new Date(`${dayKey}T00:00:00`);
-      const dayEnd = new Date(`${dayKey}T23:59:59`);
+      const { rangeStart, rangeEnd } = shopLocalDayBoundsUtc(selectedDateYmd!, shopTimezone);
       const { data, error } = await supabase.rpc("get_public_bookings_for_availability", {
         _shop_id: shopId!,
-        _range_start: dayStart.toISOString(),
-        _range_end: dayEnd.toISOString(),
+        _range_start: rangeStart.toISOString(),
+        _range_end: rangeEnd.toISOString(),
       });
       if (error) throw error;
       return data ?? [];
     },
   });
 
-  // Slots = shop business_hours ∩ staff working_hours − breaks − bookings
+  // Slots = shop business_hours ∩ staff working_hours − breaks − bookings (all in shop TZ)
   const slots = useMemo(() => {
-    if (!date || !selectedShop || !selectedService) return [];
+    if (!selectedDateYmd || !selectedShop || !selectedService) return [];
     const businessHours = (selectedShop.business_hours ?? {}) as BusinessHours;
-    const shopDay = shopHoursForDay(businessHours, date);
+    const shopDay = shopHoursForYmd(businessHours, selectedDateYmd);
     if (!shopDay) return [];
 
     const { openMin, closeMin } = shopDay;
@@ -249,19 +254,17 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
     const availabilityByStaff = new Map(
       candidates.map((s) => [
         s.id,
-        staffAvailabilityForShopDay(date, s.working_hours, openMin, closeMin),
+        staffAvailabilityForShopDay(selectedDateYmd, s.working_hours, openMin, closeMin),
       ]),
     );
 
     const list: Array<{ time: string; available: boolean }> = [];
     for (let m = openMin; m + dur <= closeMin; m += SLOT_MINUTES) {
       const endMin = m + dur;
-      const slotStart = new Date(date);
-      slotStart.setHours(0, 0, 0, 0);
-      slotStart.setMinutes(m);
+      const hhmm = fromMin(m);
+      const slotStart = shopLocalToUtc(selectedDateYmd, hhmm, shopTimezone);
       const slotEnd = new Date(slotStart.getTime() + dur * 60_000);
 
-      // Only list times that fit shop∩staff (− breaks) for at least one candidate.
       const inHoursStaff = candidates.filter((s) => {
         const av = availabilityByStaff.get(s.id);
         return av ? intervalFitsStaff(m, endMin, av) : false;
@@ -269,7 +272,7 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
       if (inHoursStaff.length === 0) continue;
 
       if (slotStart < now) {
-        list.push({ time: fromMin(m), available: false });
+        list.push({ time: hhmm, available: false });
         continue;
       }
 
@@ -282,22 +285,30 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
         });
       });
 
-      list.push({ time: fromMin(m), available: someoneFree });
+      list.push({ time: hhmm, available: someoneFree });
     }
 
     return list;
-  }, [date, selectedShop, selectedService, staffId, bookingsQ.data, eligibleStaff]);
+  }, [
+    selectedDateYmd,
+    selectedShop,
+    selectedService,
+    staffId,
+    bookingsQ.data,
+    eligibleStaff,
+    shopTimezone,
+  ]);
 
   const isDayBookable = (d: Date): boolean => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (d < today) return false;
+    const ymd = civilDateYmd(d);
+    const todayYmd = shopTodayYmd(shopTimezone);
+    if (ymd < todayYmd) return false;
     const max = new Date();
     max.setDate(max.getDate() + 90);
-    if (d > max) return false;
+    if (ymd > civilDateYmd(max)) return false;
 
     const businessHours = (selectedShop?.business_hours ?? {}) as BusinessHours;
-    const shopDay = shopHoursForDay(businessHours, d);
+    const shopDay = shopHoursForYmd(businessHours, ymd);
     if (!shopDay) return false;
 
     const realStaffId = staffId === "any" ? null : staffId;
@@ -309,7 +320,7 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
 
     return candidates.some((s) =>
       staffHasBookableWindow(
-        staffAvailabilityForShopDay(d, s.working_hours, shopDay.openMin, shopDay.closeMin),
+        staffAvailabilityForShopDay(ymd, s.working_hours, shopDay.openMin, shopDay.closeMin),
       ),
     );
   };
@@ -328,11 +339,10 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
   const back = () => (step > 0 ? setStep(step - 1) : navigate({ to: "/" }));
 
   const handleSubmit = async () => {
-    if (!shopId || !serviceId || !selectedService || !date || !time) return;
+    if (!shopId || !serviceId || !selectedService || !selectedDateYmd || !time) return;
     setSubmitting(true);
     try {
-      const dateStr = format(date, "yyyy-MM-dd");
-      const startsAt = new Date(`${dateStr}T${time}:00`);
+      const startsAt = shopLocalToUtc(selectedDateYmd, time, shopTimezone);
       const endsAt = new Date(startsAt.getTime() + selectedService.duration_minutes * 60_000);
       // Auto-assign for "Eerste beschikbare": deterministically pick the first
       // eligible+free staff member. Tie-break: order from staffQuery (created_at asc).
@@ -600,7 +610,7 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
               <SummaryRow label={t("book.shop")} value={selectedShop?.name ?? "—"} />
               <SummaryRow label={t("book.service")} value={selectedService?.name ?? "—"} />
               <SummaryRow label={t("book.with")} value={staffId === "any" ? `${t("book.anyAvailable")} · wordt toegewezen` : selectedStaff?.full_name ?? "—"} />
-              <SummaryRow label={t("book.date")} value={date ? format(date, "EEE d MMM", { locale: nlLocale }) : "—"} />
+              <SummaryRow label={t("book.date")} value={selectedDateYmd ? formatInShopTz(shopLocalToUtc(selectedDateYmd, time ?? "12:00", shopTimezone), shopTimezone, "EEE d MMM") : "—"} />
               <SummaryRow label={t("book.time")} value={time ?? "—"} />
             </div>
             {selectedService && (
@@ -820,7 +830,7 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
                   <Row label={t("book.shop")} value={selectedShop?.name ?? "—"} />
                   <Row label={t("book.service")} value={selectedService?.name ?? "—"} />
                   <Row label={t("book.with")} value={staffId === "any" ? `${t("book.anyAvailable")} · wordt automatisch toegewezen` : selectedStaff?.full_name ?? "—"} />
-                  <Row label={t("book.when")} value={date ? `${format(date, "EEEE d MMMM", { locale: nlLocale })} · ${time ?? "—"}` : "—"} />
+                  <Row label={t("book.when")} value={selectedDateYmd ? `${formatInShopTz(shopLocalToUtc(selectedDateYmd, time ?? "12:00", shopTimezone), shopTimezone, "EEEE d MMMM")} · ${time ?? "—"}` : "—"} />
                   <Row label={t("book.customerLabel")} value={`${name} · ${phone}`} />
                   {selectedService && (
                     <>

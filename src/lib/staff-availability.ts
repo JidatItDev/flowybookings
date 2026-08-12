@@ -7,11 +7,21 @@
  * Used by:
  *  - `DayTimeGrid` (visual overlay of unavailable zones)
  *  - `BookingFormDialog` (client-side pre-validation before insert)
- *  - any future server-fn that wants to mirror the DB-trigger logic
+ *  - Public booking slot intersection
  *
  * The DB trigger remains the source of truth — these helpers only avoid
  * unnecessary round-trips and surface a friendly warning to the user.
+ *
+ * Minutes-of-day and weekday are evaluated in **shop local time** via
+ * `@/lib/shop-timezone` (date-fns-tz). Do not use getUTCHours / UTC-noon tricks.
  */
+
+import {
+  DEFAULT_SHOP_TIMEZONE,
+  civilDateYmd,
+  dayKeyFromYmd,
+  utcToShopLocal,
+} from "@/lib/shop-timezone";
 
 const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 export type DayKey = (typeof DAY_KEYS)[number];
@@ -67,16 +77,17 @@ export function formatMinutesOfDay(mins: number): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
+/** @deprecated Prefer dayKeyFromYmd / resolveStaffAvailabilityForDayKey */
 export function dayKeyForUtcDate(d: Date): DayKey {
-  return DAY_KEYS[d.getUTCDay()];
+  return dayKeyFromYmd(civilDateYmd(d));
 }
 
 /**
- * Compute structured availability for one staff member on a specific day,
- * clamped to the optional [windowStartMin, windowEndMin] view-window.
+ * Compute structured availability for one weekday key, clamped to the optional
+ * [windowStartMin, windowEndMin] view-window (shop-local minutes).
  */
-export function resolveStaffAvailability(
-  day: Date,
+export function resolveStaffAvailabilityForDayKey(
+  dayKey: DayKey,
   wh: StaffWorkingHours | undefined,
   windowStartMin = 0,
   windowEndMin = 24 * 60,
@@ -88,7 +99,7 @@ export function resolveStaffAvailability(
     hasStructuredData: false,
   };
   if (!wh) return empty;
-  const dh = wh[dayKeyForUtcDate(day)];
+  const dh = wh[dayKey];
   if (!dh) return empty; // no per-day data → treat as no overlay (legacy)
   if (dh.closed) {
     return { working: [], breaks: [], dayClosed: true, hasStructuredData: true };
@@ -111,6 +122,29 @@ export function resolveStaffAvailability(
   return { working, breaks, dayClosed: false, hasStructuredData: true };
 }
 
+/**
+ * Compute structured availability for one staff member on a specific civil day.
+ * When `timeZone` is set, the day's weekday is taken from that zone; otherwise
+ * from the Date's local civil Y-M-D (owner calendar).
+ */
+export function resolveStaffAvailability(
+  day: Date,
+  wh: StaffWorkingHours | undefined,
+  windowStartMin = 0,
+  windowEndMin = 24 * 60,
+  timeZone?: string | null,
+): StaffAvailability {
+  const ymd = timeZone
+    ? utcToShopLocal(day, timeZone).dateYmd
+    : civilDateYmd(day);
+  return resolveStaffAvailabilityForDayKey(
+    dayKeyFromYmd(ymd) as DayKey,
+    wh,
+    windowStartMin,
+    windowEndMin,
+  );
+}
+
 export type SlotValidation =
   | { kind: "ok" }
   | { kind: "no_data" } // no structured working_hours → defer to server
@@ -119,33 +153,26 @@ export type SlotValidation =
   | { kind: "break"; window: AvailabilityWindow };
 
 /**
- * Validate a [startsAt, endsAt) interval against a staff member's working hours.
- * Mirrors the server-side trigger but stays advisory — server is authoritative.
- *
- * NOTE: uses UTC minutes-of-day to stay in sync with the trigger and the grid.
+ * Validate a [startsAt, endsAt) UTC interval against a staff member's working hours
+ * interpreted in the shop timezone (defaults to Europe/Amsterdam).
  */
 export function validateBookingSlot(
   startsAt: Date,
   endsAt: Date,
   workingHours: StaffWorkingHours | undefined,
+  timeZone: string | null | undefined = DEFAULT_SHOP_TIMEZONE,
 ): SlotValidation {
   if (!workingHours) return { kind: "no_data" };
-  const av = resolveStaffAvailability(startsAt, workingHours);
+  const start = utcToShopLocal(startsAt, timeZone);
+  const end = utcToShopLocal(endsAt, timeZone);
+  const av = resolveStaffAvailabilityForDayKey(start.dayKey as DayKey, workingHours);
   if (!av.hasStructuredData) return { kind: "no_data" };
   if (av.dayClosed) return { kind: "closed_day" };
 
-  const startMin = startsAt.getUTCHours() * 60 + startsAt.getUTCMinutes();
-  // Use ceil-style: if the booking spans into the next day, treat as out-of-hours.
-  const sameDay =
-    startsAt.getUTCFullYear() === endsAt.getUTCFullYear() &&
-    startsAt.getUTCMonth() === endsAt.getUTCMonth() &&
-    startsAt.getUTCDate() === endsAt.getUTCDate();
-  const endMin = sameDay
-    ? endsAt.getUTCHours() * 60 + endsAt.getUTCMinutes()
-    : 24 * 60;
+  const startMin = start.minutesOfDay;
+  const sameDay = start.dateYmd === end.dateYmd;
+  const endMin = sameDay ? end.minutesOfDay : 24 * 60;
 
-  // Break overlap takes precedence over off-hours so the user sees the
-  // most specific reason ("Conflict met pauze 12:00–13:00").
   for (const br of av.breaks) {
     if (startMin < br.endMin && endMin > br.startMin) {
       return { kind: "break", window: br };

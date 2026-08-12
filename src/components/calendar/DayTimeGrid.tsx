@@ -539,7 +539,7 @@ export function DayTimeGrid({
                     }
                     // 2) Werkuren/pauze van doel-medewerker (alleen als nog geen conflict).
                     if (!invalid && c.workingHours) {
-                      const v = validateBookingSlot(slotStart, slotEnd, c.workingHours);
+                      const v = validateBookingSlot(slotStart, slotEnd, c.workingHours, "UTC");
                       if (v.kind === "closed_day") {
                         invalid = true;
                         reason = dropInvalidLabels.closedDay;
@@ -645,7 +645,7 @@ export function DayTimeGrid({
                   }
                   // Werkuren/pauze
                   if (c.workingHours) {
-                    const v = validateBookingSlot(newStart, slotEnd, c.workingHours);
+                    const v = validateBookingSlot(newStart, slotEnd, c.workingHours, "UTC");
                     if (v.kind === "closed_day") {
                       onDropBlocked?.(dropInvalidLabels.closedDay);
                       return;
@@ -980,7 +980,7 @@ export function DayTimeGrid({
                             }
                             // 2) Werkuren/pauze
                             if (!targetCol.workingHours) return { invalid: false };
-                            const v = validateBookingSlot(slotStart, slotEnd, targetCol.workingHours);
+                            const v = validateBookingSlot(slotStart, slotEnd, targetCol.workingHours, "UTC");
                             if (v.kind === "ok" || v.kind === "no_data") return { invalid: false };
                             if (v.kind === "closed_day") {
                               return { invalid: true, reason: dropInvalidLabels.closedDay };
@@ -1162,7 +1162,7 @@ export function DayTimeGrid({
                               }
                             }
                             if (!invalid && targetCol.workingHours) {
-                              const v = validateBookingSlot(newStart, slotEnd, targetCol.workingHours);
+                              const v = validateBookingSlot(newStart, slotEnd, targetCol.workingHours, "UTC");
                               if (v.kind === "closed_day") { invalid = true; reason = dropInvalidLabels.closedDay; }
                               else if (v.kind === "off_hours") {
                                 invalid = true;
@@ -1279,7 +1279,7 @@ export function DayTimeGrid({
                             }
                           }
                           if (!wh) return { invalid: false };
-                          const v = validateBookingSlot(start, slotEnd, wh);
+                          const v = validateBookingSlot(start, slotEnd, wh, "UTC");
                           if (v.kind === "ok" || v.kind === "no_data") return { invalid: false };
                           if (v.kind === "closed_day") {
                             return { invalid: true, reason: dropInvalidLabels.closedDay };

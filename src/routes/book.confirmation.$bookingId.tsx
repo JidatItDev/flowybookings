@@ -6,6 +6,7 @@ import { CheckCircle2, Calendar, MapPin, ArrowRight, Loader2, LayoutDashboard, S
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useT } from "@/lib/i18n";
+import { formatInShopTz, resolveShopTimezone } from "@/lib/shop-timezone";
 
 export const Route = createFileRoute("/book/confirmation/$bookingId")({
   loader: async ({ params }) => {
@@ -22,15 +23,14 @@ export const Route = createFileRoute("/book/confirmation/$bookingId")({
     }
     const booking = rows[0];
     const [{ data: shop }, { data: service }] = await Promise.all([
-      supabase.from("shops").select("name, slug").eq("id", booking.shop_id).maybeSingle(),
+      supabase.from("shops").select("name, slug, timezone").eq("id", booking.shop_id).maybeSingle(),
       booking.service_id
         ? supabase.from("services").select("name").eq("id", booking.service_id).maybeSingle()
         : Promise.resolve({ data: null as { name: string } | null }),
     ]);
     const start = new Date(booking.starts_at);
-    const dateLabel = new Intl.DateTimeFormat("nl-NL", {
-      weekday: "long", day: "numeric", month: "long",
-    }).format(start);
+    const tz = resolveShopTimezone(shop?.timezone);
+    const dateLabel = formatInShopTz(start, tz, "EEEE d MMMM");
     return {
       shopName: shop?.name ?? null,
       shopSlug: shop?.slug ?? null,
@@ -83,7 +83,7 @@ function ConfirmationPage() {
       if (!booking) return null;
 
       const [{ data: shop }, { data: service }, { data: staff }] = await Promise.all([
-        supabase.from("shops").select("name, slug, address, is_demo").eq("id", booking.shop_id).maybeSingle(),
+        supabase.from("shops").select("name, slug, address, is_demo, timezone").eq("id", booking.shop_id).maybeSingle(),
         booking.service_id
           ? supabase.from("services").select("name").eq("id", booking.service_id).maybeSingle()
           : Promise.resolve({ data: null }),
@@ -120,8 +120,9 @@ function ConfirmationPage() {
   const { booking, shop, service, staff } = data;
   const startsAt = new Date(booking.starts_at);
   const endsAt = new Date(booking.ends_at);
-  const dateLabel = startsAt.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
-  const timeLabel = `${startsAt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })} — ${endsAt.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}`;
+  const shopTz = resolveShopTimezone((shop as { timezone?: string | null } | null)?.timezone);
+  const dateLabel = formatInShopTz(startsAt, shopTz, "EEEE d MMMM");
+  const timeLabel = `${formatInShopTz(startsAt, shopTz, "HH:mm")} — ${formatInShopTz(endsAt, shopTz, "HH:mm")}`;
   const staffLabel = staff?.full_name ?? "Wordt toegewezen door de salon";
 
   return (

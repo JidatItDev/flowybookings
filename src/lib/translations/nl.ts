@@ -1325,6 +1325,19 @@ export const nl: Record<string, string> = {
   "onboarding.slugHint": "Alleen kleine letters, cijfers en streepjes.",
   "onboarding.createBtn": "Winkel aanmaken",
   "onboarding.created": "Winkel aangemaakt — welkom aan boord!",
+  "onboarding.category": "Type zaak",
+  "onboarding.categoryPlaceholder": "Kies een categorie",
+  "onboarding.categoryRequired": "Kies een type zaak.",
+  "onboarding.categoryHair": "Haar",
+  "onboarding.categoryBarber": "Barber",
+  "onboarding.categoryNails": "Nagels",
+  "onboarding.categoryBeauty": "Beauty",
+  "onboarding.categoryTattoo": "Tattoo",
+  "onboarding.categoryPet": "Huisdierverzorging",
+  "onboarding.timezone": "Tijdzone",
+  "onboarding.timezoneHint":
+    "Boekingstijden gebruiken deze klok van de zaak. Vooraf ingevuld vanaf je apparaat — pas aan als de salon elders zit.",
+  "onboarding.timezoneRequired": "Kies een tijdzone.",
 
   // ── Empty states ──
   "empty.noShop": "Geen winkel geselecteerd",

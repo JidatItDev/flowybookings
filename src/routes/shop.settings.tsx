@@ -26,6 +26,7 @@ import { usePendingBilling } from "@/lib/use-pending-billing";
 import { useSearch, useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { DEFAULT_SHOP_BUSINESS_HOURS } from "@/lib/staff-availability";
+import { DEFAULT_SHOP_TIMEZONE } from "@/lib/shop-timezone";
 
 export const Route = createFileRoute("/shop/settings")({
   head: () => ({ meta: [{ title: "Settings — FlowyBookings" }] }),
@@ -90,7 +91,7 @@ function SettingsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.billing, shopId]);
 
-  const [profile, setProfile] = useState({ name: "", phone: "", email: "", timezone: "Europe/Berlin", address: "" });
+  const [profile, setProfile] = useState({ name: "", phone: "", email: "", timezone: DEFAULT_SHOP_TIMEZONE, address: "" });
   const [branding, setBranding] = useState<Branding>({ color: "#7C5CFA" });
   const [hours, setHours] = useState<BusinessHours>(DEFAULT_HOURS);
   const [rules, setRules] = useState<BookingRules>(DEFAULT_RULES);
@@ -98,7 +99,7 @@ function SettingsPage() {
 
   useEffect(() => {
     if (!shop) return;
-    setProfile({ name: shop.name ?? "", phone: shop.phone ?? "", email: shop.email ?? "", timezone: shop.timezone ?? "Europe/Berlin", address: shop.address ?? "" });
+    setProfile({ name: shop.name ?? "", phone: shop.phone ?? "", email: shop.email ?? "", timezone: shop.timezone ?? DEFAULT_SHOP_TIMEZONE, address: shop.address ?? "" });
     const b = (shop.branding ?? {}) as { color?: string; rules?: Partial<BookingRules> };
     setBranding({ color: b.color ?? "#7C5CFA" });
     setRules({ ...DEFAULT_RULES, ...(b.rules ?? {}) });
@@ -117,7 +118,7 @@ function SettingsPage() {
         name: profile.name.trim(),
         phone: profile.phone.trim() || null,
         email: profile.email.trim() || null,
-        timezone: profile.timezone.trim() || "UTC",
+          timezone: profile.timezone.trim() || DEFAULT_SHOP_TIMEZONE,
         address: profile.address.trim() || null,
         branding: newBranding,
         business_hours: hours,

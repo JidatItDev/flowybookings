@@ -435,7 +435,7 @@ export function WeekTimeGrid({
                         const stf = src.staff_id ? staffById.get(src.staff_id) : undefined;
                         const wh = stf?.working_hours as StaffWorkingHours | undefined;
                         if (wh) {
-                          const v = validateBookingSlot(slotStart, slotEnd, wh);
+                          const v = validateBookingSlot(slotStart, slotEnd, wh, "UTC");
                           if (v.kind === "closed_day") {
                             invalid = true;
                             reason = dropInvalidLabels.closedDay;
@@ -539,7 +539,7 @@ export function WeekTimeGrid({
                     const stfDrop = src.staff_id ? staffById.get(src.staff_id) : undefined;
                     const whDrop = stfDrop?.working_hours as StaffWorkingHours | undefined;
                     if (whDrop) {
-                      const v = validateBookingSlot(newStart, slotEnd, whDrop);
+                      const v = validateBookingSlot(newStart, slotEnd, whDrop, "UTC");
                       if (v.kind === "closed_day") {
                         onDropBlocked?.(dropInvalidLabels.closedDay);
                         return;
@@ -773,7 +773,7 @@ export function WeekTimeGrid({
                             }
                             const wh = stf?.working_hours as StaffWorkingHours | undefined;
                             if (!invalid && wh) {
-                              const v = validateBookingSlot(newStart, slotEnd, wh);
+                              const v = validateBookingSlot(newStart, slotEnd, wh, "UTC");
                               if (v.kind === "closed_day") { invalid = true; reason = dropInvalidLabels.closedDay; }
                               else if (v.kind === "off_hours") {
                                 invalid = true;
@@ -921,7 +921,7 @@ export function WeekTimeGrid({
                             // 2) Werkuren/pauze
                             const wh = stf?.working_hours as StaffWorkingHours | undefined;
                             if (!wh) return { invalid: false };
-                            const v = validateBookingSlot(slotStart, slotEnd, wh);
+                            const v = validateBookingSlot(slotStart, slotEnd, wh, "UTC");
                             if (v.kind === "ok" || v.kind === "no_data") return { invalid: false };
                             if (v.kind === "closed_day") {
                               return { invalid: true, reason: dropInvalidLabels.closedDay };
@@ -1158,7 +1158,7 @@ export function WeekTimeGrid({
                             }
                           }
                           if (!wh) return { invalid: false };
-                          const v = validateBookingSlot(start, newEnd, wh);
+                          const v = validateBookingSlot(start, newEnd, wh, "UTC");
                           if (v.kind === "ok" || v.kind === "no_data") return { invalid: false };
                           if (v.kind === "closed_day") {
                             return { invalid: true, reason: dropInvalidLabels.closedDay };
