@@ -90,10 +90,10 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
     exact ? location.pathname === to : location.pathname === to || location.pathname.startsWith(to + "/");
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
+    <div className="flex h-svh w-full overflow-hidden bg-background">
+      <aside className="z-20 hidden h-full w-64 shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar lg:flex">
         <Header />
-        <nav className="flex-1 space-y-1 px-3 pb-6">
+        <nav className="flex-1 space-y-1 px-3 pb-6 pt-4">
           {nav.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.to, item.exact);
@@ -131,7 +131,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
           <div className="absolute inset-0 bg-foreground/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
           <aside className="relative flex h-full w-72 flex-col bg-sidebar">
             <Header onClose={() => setOpen(false)} />
-            <nav className="flex-1 space-y-1 px-3 pb-6">
+            <nav className="flex-1 space-y-1 px-3 pb-6 pt-4">
               {nav.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.to, item.exact);
@@ -157,8 +157,8 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur sm:px-6">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="z-30 flex h-16 shrink-0 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur sm:px-6">
           <Button
             variant="ghost"
             size="icon"
@@ -221,7 +221,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             </DropdownMenu>
           </div>
         </header>
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-auto px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>
     </div>
   );
@@ -230,12 +230,15 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
 function Header({ onClose }: { onClose?: () => void }) {
   const { t } = useT();
   return (
-    <div className="flex h-16 items-center justify-between gap-2 px-5">
-      <Link to="/" className="flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-brand">
+    <div className="flex h-16 shrink-0 items-center justify-between gap-2 px-5">
+      <Link to="/" className="flex min-w-0 items-center gap-2">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-brand">
           <ShieldCheck className="h-4 w-4 text-primary-foreground" />
         </div>
-        <span className="text-base font-semibold tracking-tight">FlowyBookings Admin</span>
+        <span className="min-w-0 leading-tight">
+          <span className="block truncate text-base font-semibold tracking-tight">FlowyBookings</span>
+          <span className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Admin</span>
+        </span>
       </Link>
       {onClose && (
         <Button variant="ghost" size="icon" onClick={onClose} aria-label={t("a11y.closeMenu")}>
