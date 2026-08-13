@@ -7,9 +7,9 @@ import {
 } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
-import { AuthProvider } from "@/lib/auth-context";
-import { I18nProvider, type Locale } from "@/lib/i18n";
-import { getLocaleCookie } from "@/lib/locale-cookie";
+import { AuthProvider } from "@/auth/lib/auth-context";
+import { I18nProvider, type Locale } from "@/shared/lib/i18n";
+import { getLocaleCookie } from "@/shared/lib/locale-cookie";
 
 import appCss from "../styles.css?url";
 

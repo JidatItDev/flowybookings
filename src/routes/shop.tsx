@@ -3,7 +3,7 @@
 // the chrome — it must not hit ShopLayout's empty-shops redirect loop.
 
 import { Outlet, createFileRoute, useRouterState } from "@tanstack/react-router";
-import { ShopLayout } from "@/components/ShopLayout";
+import { ShopLayout } from "@/shop/shell/ShopLayout";
 
 export const Route = createFileRoute("/shop")({
   component: ShopRouteLayout,
