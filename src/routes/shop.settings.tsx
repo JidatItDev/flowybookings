@@ -3,7 +3,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { CreditCard, Lock, Crown, Upload, X, AlertTriangle } from "lucide-react";
-import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -181,7 +180,7 @@ function SettingsPage() {
   };
 
   return (
-    <ShopLayout>
+    <>
       <PageHeader
         title={t("settings.title")}
         description={t("settings.description")}
@@ -371,7 +370,7 @@ function SettingsPage() {
           </div>
         </div>
       )}
-    </ShopLayout>
+    </>
   );
 }
 

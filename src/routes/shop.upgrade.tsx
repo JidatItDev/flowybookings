@@ -3,7 +3,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Check, Sparkles, ShieldCheck, TrendingUp, AlertTriangle, ArrowRight, Loader2, Lock } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
@@ -145,19 +144,19 @@ function UpgradePage() {
 
   if (isStaffOnly) {
     return (
-      <ShopLayout>
+      <>
         <PageHeader title={t("upgrade.pageTitle")} description={t("upgrade.pageSub")} />
         <div className="rounded-3xl border border-border bg-card p-8 text-center shadow-soft">
           <Lock className="mx-auto h-8 w-8 text-muted-foreground" />
           <h2 className="mt-3 text-base font-semibold">{t("perm.staffNoBillingTitle")}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{t("perm.staffNoBillingDesc")}</p>
         </div>
-      </ShopLayout>
+      </>
     );
   }
 
   return (
-    <ShopLayout>
+    <>
       <PageHeader title={t("upgrade.pageTitle")} description={t("upgrade.pageSub")} />
 
       {/* Current plan summary */}
@@ -346,6 +345,6 @@ function UpgradePage() {
           ))}
         </div>
       </div>
-    </ShopLayout>
+    </>
   );
 }

@@ -3,7 +3,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Mail, Phone, Pencil, Trash2, Users, AlertTriangle, ShieldAlert, Upload, SlidersHorizontal, Sparkles, Crown } from "lucide-react";
 import { toast } from "sonner";
-import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -136,7 +135,7 @@ function CustomersPage() {
   }
 
   return (
-    <ShopLayout>
+    <>
       <PageHeader
         title={t("customers.title")}
         description={t("customers.description")}
@@ -434,7 +433,7 @@ function CustomersPage() {
           ariaLabel={t("customers.newCustomer")}
         />
       )}
-    </ShopLayout>
+    </>
   );
 }
 

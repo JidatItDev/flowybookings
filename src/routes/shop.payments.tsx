@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CircleDollarSign, ArrowDownToLine, RotateCcw, Wallet, CreditCard, Receipt, Landmark, Banknote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { Button } from "@/components/ui/button";
@@ -72,7 +71,7 @@ function PaymentsPage() {
   const avgTx = payments.length > 0 ? Math.round(payments.reduce((s, p) => s + p.amount_cents, 0) / payments.length) : 0;
 
   return (
-    <ShopLayout>
+    <>
       <PageHeader
         title={t("shopPayments.title")}
         description={t("shopPayments.description")}
@@ -289,6 +288,6 @@ function PaymentsPage() {
           )}
         </>
       )}
-    </ShopLayout>
+    </>
   );
 }

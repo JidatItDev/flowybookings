@@ -74,8 +74,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
-      // Reset cached per-user data when auth changes
-      qc.invalidateQueries();
+      // Identity changes only — never TOKEN_REFRESHED (that was remounting the whole shop).
+      // Auth query keys include userId, so a different user is a cache miss and loads fresh.
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+        qc.invalidateQueries({ queryKey: ["auth"] });
+      }
       if (event === "SIGNED_IN" && s?.user?.id) {
         // Stamp activity on fresh sign-in.
         if (typeof window !== "undefined") {
@@ -147,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const userId = session?.user?.id ?? null;
 
   // Roles
-  const { data: roles = [], isLoading: rolesQueryLoading, isFetching: rolesFetching } = useQuery({
+  const { data: roles = [], isLoading: rolesQueryLoading } = useQuery({
     queryKey: ["auth", "roles", userId],
     enabled: !!userId,
     queryFn: async (): Promise<AppRole[]> => {
@@ -159,15 +162,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return (data ?? []).map((r) => r.role as AppRole);
     },
   });
-  // While there's a session, treat roles as "loading" until the query has resolved at least once.
-  const rolesLoading = !!userId && (rolesQueryLoading || rolesFetching);
+  // Initial load only (v5 isLoading = no data yet AND fetching). Background refetch must not gate the UI.
+  const rolesLoading = !!userId && rolesQueryLoading;
 
   // Shops the user can access (owner OR explicit role membership).
   // CRITICAL: do NOT rely on RLS visibility of `shops` (which exposes all
   // active shops publicly for the booking pages) — otherwise demo shops would
   // leak into the dashboard context. We explicitly resolve membership via
   // owner_id + user_roles, so a brand-new signup never lands in a demo shop.
-  const { data: shops = [], isLoading: shopsQueryLoading, isFetching: shopsFetching } = useQuery({
+  const { data: shops = [], isLoading: shopsQueryLoading } = useQuery({
     queryKey: ["auth", "shops", userId],
     enabled: !!userId,
     queryFn: async (): Promise<ShopRow[]> => {
@@ -218,7 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return rows as ShopRow[];
     },
   });
-  const shopsLoading = !!userId && (shopsQueryLoading || shopsFetching);
+  const shopsLoading = !!userId && shopsQueryLoading;
 
   // Hydrate active shop id from localStorage, but ONLY if the stored id is in
   // the user's resolved shops. Otherwise pick the first (= own non-demo) shop.

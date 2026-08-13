@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarCheck, Clock, CircleDollarSign, AlertCircle, Plus, Users, TrendingDown, CalendarClock, XCircle } from "lucide-react";
-import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -14,8 +13,7 @@ import { UpgradeNudge } from "@/components/UpgradeNudge";
 import { OnboardingChecklist } from "@/components/OnboardingChecklist";
 import { BookingLinkCard } from "@/components/BookingLinkCard";
 import { useActiveShopId, useShopContext } from "@/lib/shop-context";
-import { bookingsQuery, customersQuery, servicesQuery, shopFullQuery, staffQuery } from "@/lib/queries";
-import { supabase } from "@/integrations/supabase/client";
+import { bookingsQuery, customersQuery, servicesQuery, shopFullQuery, staffQuery, shopPaymentProvidersStatusQuery } from "@/lib/queries";
 import { formatCents, formatTime, initials } from "@/lib/format";
 import { useT } from "@/lib/i18n";
 import { staffInitials, useStaffColors } from "@/lib/staff-color";
@@ -38,16 +36,8 @@ function ShopDashboard() {
   const { data: staff = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
   const { data: shopFull } = useQuery({ ...shopFullQuery(shopId ?? ""), enabled: !!shopId });
   const { data: paymentProviders = [] } = useQuery({
-    queryKey: ["shop", shopId ?? "", "payment-providers-onboarding"],
+    ...shopPaymentProvidersStatusQuery(shopId ?? ""),
     enabled: !!shopId,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("shop_payment_providers")
-        .select("connection_status")
-        .eq("shop_id", shopId!);
-      if (error) throw error;
-      return data ?? [];
-    },
   });
   const colors = useStaffColors(shopId);
 
@@ -90,7 +80,7 @@ function ShopDashboard() {
   const trial = getTrialState(activeShop as never);
 
   return (
-    <ShopLayout>
+    <>
       <PageHeader
         title={activeShop ? t("dashboard.welcomeBack", { name: activeShop.name }) : t("dashboard.title")}
         description={activeShop ? t("dashboard.subWithShop", { name: activeShop.name }) : t("dashboard.subNoShop")}
@@ -219,7 +209,7 @@ function ShopDashboard() {
           </div>
         </>
       )}
-    </ShopLayout>
+    </>
   );
 }
 

@@ -3,7 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, CalendarRange, Pencil, Trash2, UserCog, Check, Palette, RotateCcw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +17,7 @@ import { UpgradeNudge } from "@/components/UpgradeNudge";
 import { FeatureLock } from "@/components/FeatureLock";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { useActiveShopId, useShopContext } from "@/lib/shop-context";
-import { staffQuery, servicesQuery, shopKeys } from "@/lib/queries";
+import { staffQuery, servicesQuery, shopKeys, staffServicesQuery } from "@/lib/queries";
 import type { StaffWorkingHours, StaffDayHours } from "@/components/calendar/DayTimeGrid";
 import { supabase } from "@/integrations/supabase/client";
 import { initials } from "@/lib/format";
@@ -245,7 +244,7 @@ function StaffPage() {
   const [deleting, setDeleting] = useState<StaffRow | null>(null);
   const { data: staff = [], isLoading } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
-  const { data: links = [] } = useQuery({ queryKey: ["staff_services", shopId], queryFn: async () => { const { data, error } = await supabase.from("staff_services").select("*"); if (error) throw error; return data ?? []; }, enabled: !!shopId });
+  const { data: links = [] } = useQuery({ ...staffServicesQuery(shopId ?? ""), enabled: !!shopId });
   const colors = useStaffColors(shopId);
   const atOrOverLimit = staffAccess.data ? !staffAccess.data.allowed : (Number.isFinite(planLimit) && staff.length >= planLimit);
 
@@ -262,7 +261,7 @@ function StaffPage() {
   const serviceNamesFor = (staffId: string) => { const ids = new Set(links.filter((l) => l.staff_id === staffId).map((l) => l.service_id)); return services.filter((s) => ids.has(s.id)).map((s) => s.name); };
 
   return (
-    <ShopLayout>
+    <>
       <PageHeader
         title={t("staff.title")}
         description={t("staff.description")}
@@ -362,7 +361,7 @@ function StaffPage() {
           <AlertDialogFooter><AlertDialogCancel>{t("staff.cancel")}</AlertDialogCancel><AlertDialogAction onClick={() => deleting && remove.mutate(deleting.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{t("staff.remove")}</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </ShopLayout>
+    </>
   );
 }
 
@@ -417,8 +416,10 @@ function StaffFormDialog({ open, onClose, member, shopId, services, links }: { o
     onSuccess: () => {
       toast.success(member ? t("staff.updated") : t("staff.added"));
       onClose();
-      if (shopId) qc.invalidateQueries({ queryKey: shopKeys.staff(shopId) });
-      qc.invalidateQueries({ queryKey: ["staff_services", shopId] });
+      if (shopId) {
+        qc.invalidateQueries({ queryKey: shopKeys.staff(shopId) });
+        qc.invalidateQueries({ queryKey: shopKeys.staffServices(shopId) });
+      }
     },
     onError: (e: Error) => toast.error(e.message),
   });

@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { TrendingUp, Users, CalendarCheck, Repeat } from "lucide-react";
-import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { NoShopState } from "@/components/EmptyState";
@@ -81,7 +80,7 @@ function AnalyticsPage() {
   const hasAdvancedAnalytics = analyticsAccess.data?.allowed ?? true;
 
   return (
-    <ShopLayout>
+    <>
       <PageHeader title={t("analytics.title")} description={t("analytics.description")} />
       {!shopId ? <NoShopState /> : !hasAdvancedAnalytics ? (
         <>
@@ -164,7 +163,7 @@ function AnalyticsPage() {
           )}
         </>
       )}
-    </ShopLayout>
+    </>
   );
 }
 

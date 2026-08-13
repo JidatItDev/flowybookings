@@ -19,7 +19,6 @@ import {
   Heart,
 } from "lucide-react";
 import { toast } from "sonner";
-import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +35,16 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { NoShopState } from "@/components/EmptyState";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { useActiveShopId } from "@/lib/shop-context";
-import { bookingsQuery, servicesQuery, staffQuery, shopKeys } from "@/lib/queries";
+import {
+  bookingsQuery,
+  servicesQuery,
+  staffQuery,
+  shopKeys,
+  customerDetailQuery,
+  customerPaymentsQuery,
+  type CustomerDetail,
+  type CustomerPreferences,
+} from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCents, formatDateTime, initials, relativeFromNow } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -47,32 +55,7 @@ export const Route = createFileRoute("/shop/customers/$customerId")({
   component: CustomerProfilePage,
 });
 
-type CustomerPreferences = {
-  favorite_staff_id?: string | null;
-  favorite_service_id?: string | null;
-  allergies?: string;
-  communication?: "email" | "sms" | "any" | "none";
-  language?: "nl" | "en" | "any";
-  notes?: string;
-};
-
-type CustomerRow = {
-  id: string;
-  shop_id: string;
-  full_name: string;
-  email: string | null;
-  phone: string | null;
-  notes: string | null;
-  total_spent_cents: number;
-  last_visit_at: string | null;
-  no_show_count: number;
-  requires_deposit: boolean;
-  tags: string[] | null;
-  preferences: CustomerPreferences | null;
-  created_at: string;
-  import_source: string | null;
-  imported_at: string | null;
-};
+type CustomerRow = CustomerDetail;
 
 const SUGGESTED_TAGS = ["VIP", "New", "Risky", "Loyal", "Walk-in"];
 
@@ -86,17 +69,8 @@ function CustomerProfilePage() {
   const roTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
 
   const customerQuery = useQuery({
-    queryKey: ["customer", customerId],
+    ...customerDetailQuery(shopId ?? "", customerId),
     enabled: !!shopId && !!customerId,
-    queryFn: async (): Promise<CustomerRow | null> => {
-      const { data, error } = await supabase
-        .from("customers")
-        .select("*")
-        .eq("id", customerId)
-        .maybeSingle();
-      if (error) throw error;
-      return data as CustomerRow | null;
-    },
   });
 
   const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
@@ -113,22 +87,12 @@ function CustomerProfilePage() {
 
   const serviceMap = useMemo(() => Object.fromEntries(services.map((s) => [s.id, s])), [services]);
 
-  // All payments for this customer's bookings (for the unified timeline).
-  const customerBookingIds = useMemo(() => customerBookings.map((b) => b.id), [customerBookings]);
-  const paymentsQuery = useQuery({
-    queryKey: ["customer-payments", customerId, customerBookingIds],
-    enabled: !!shopId && customerBookingIds.length > 0,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("payments")
-        .select("id, booking_id, amount_cents, currency, status, provider, provider_payment_id, created_at, metadata")
-        .in("booking_id", customerBookingIds)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
-    },
+  // Stable key (shop + customer) — booking IDs resolved inside the factory queryFn.
+  const customerPaymentsResult = useQuery({
+    ...customerPaymentsQuery(shopId ?? "", customerId),
+    enabled: !!shopId && !!customerId,
   });
-  const customerPayments = paymentsQuery.data ?? [];
+  const customerPayments = customerPaymentsResult.data ?? [];
 
   // Unified, sorted timeline (newest first) of bookings + payments.
   type TimelineItem =
@@ -198,7 +162,7 @@ function CustomerProfilePage() {
     },
     onSuccess: () => {
       toast.success(t("customers.updated"));
-      qc.invalidateQueries({ queryKey: ["customer", customerId] });
+      qc.invalidateQueries({ queryKey: shopKeys.customer(shopId!, customerId) });
       if (shopId) qc.invalidateQueries({ queryKey: shopKeys.customers(shopId) });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -233,26 +197,26 @@ function CustomerProfilePage() {
     update.mutate({ tags: next });
   };
 
-  if (!shopId) return <ShopLayout><NoShopState /></ShopLayout>;
+  if (!shopId) return <NoShopState />;
 
   if (customerQuery.isLoading) {
     return (
-      <ShopLayout>
+      <>
         <div className="h-72 animate-pulse rounded-2xl border border-border bg-card" />
-      </ShopLayout>
+      </>
     );
   }
 
   if (!customer) {
     return (
-      <ShopLayout>
+      <>
         <div className="rounded-2xl border border-border bg-card p-8 text-center">
           <p className="text-sm text-muted-foreground">{t("customers.profileNotFound")}</p>
           <Button variant="outline" className="mt-4" onClick={() => navigate({ to: "/shop/customers" })}>
             <ArrowLeft className="h-4 w-4" /> {t("customers.backToList")}
           </Button>
         </div>
-      </ShopLayout>
+      </>
     );
   }
 
@@ -271,7 +235,7 @@ function CustomerProfilePage() {
     : t("customers.sourceManual");
 
   return (
-    <ShopLayout>
+    <>
       <div className="mb-4">
         <Link
           to="/shop/customers"
@@ -714,7 +678,7 @@ function CustomerProfilePage() {
           </div>
         </div>
       </div>
-    </ShopLayout>
+    </>
   );
 }
 

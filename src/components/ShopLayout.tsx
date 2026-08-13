@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -30,6 +31,13 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { usePendingBilling } from "@/lib/use-pending-billing";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
+  bookingsQuery,
+  customersQuery,
+  servicesQuery,
+  staffQuery,
+  staffServicesQuery,
+} from "@/lib/queries";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -55,6 +63,35 @@ const nav: NavItem[] = [
   { to: "/support", labelKey: "shopNav.support", icon: LifeBuoy },
 ];
 
+/** Intent prefetch for the heaviest shop destinations. */
+function prefetchShopNav(qc: ReturnType<typeof useQueryClient>, shopId: string | undefined, to: string) {
+  if (!shopId) return;
+  if (to === "/shop/calendar") {
+    void qc.prefetchQuery(bookingsQuery(shopId));
+    void qc.prefetchQuery(customersQuery(shopId));
+    void qc.prefetchQuery(servicesQuery(shopId));
+    void qc.prefetchQuery(staffQuery(shopId));
+    return;
+  }
+  if (to === "/shop/customers") {
+    void qc.prefetchQuery(customersQuery(shopId));
+    void qc.prefetchQuery(bookingsQuery(shopId));
+    return;
+  }
+  if (to === "/shop/services") {
+    void qc.prefetchQuery(servicesQuery(shopId));
+    void qc.prefetchQuery(staffQuery(shopId));
+    void qc.prefetchQuery(staffServicesQuery(shopId));
+    void qc.prefetchQuery(bookingsQuery(shopId));
+    return;
+  }
+  if (to === "/shop/staff") {
+    void qc.prefetchQuery(staffQuery(shopId));
+    void qc.prefetchQuery(servicesQuery(shopId));
+    void qc.prefetchQuery(staffServicesQuery(shopId));
+  }
+}
+
 export function ShopLayout({ children }: { children: React.ReactNode }) {
   return (
     <RequireShopAccess>
@@ -67,7 +104,9 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const { shops, loading, shopsLoading, user, signOut, isSuperAdmin, isShopOwner, isStaff, activeShop } = useAuth();
+  const shopId = activeShop?.id;
   const { t } = useT();
   const isStaffOnly = isStaff && !isShopOwner && !isSuperAdmin;
   const visibleNav = nav.filter((n) => !n.ownerOnly || !isStaffOnly);
@@ -117,10 +156,10 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
     exact ? location.pathname === to : location.pathname === to || location.pathname.startsWith(to + "/");
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-background">
+    <div className="flex h-svh w-full flex-col overflow-hidden bg-background">
       <ImpersonationBanner />
-      <div className="flex min-h-0 w-full flex-1">
-      <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
+      <div className="flex min-h-0 min-w-0 w-full flex-1 overflow-hidden">
+      <aside className="z-20 hidden h-full w-64 shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar lg:flex">
         <SidebarHeader />
         <nav className="flex-1 space-y-1 px-3 pb-6">
           {visibleNav.map((item) => {
@@ -130,6 +169,8 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.to}
                 to={item.to}
+                onMouseEnter={() => prefetchShopNav(qc, shopId, item.to)}
+                onFocus={() => prefetchShopNav(qc, shopId, item.to)}
                 className={cn(
                   "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                   active
@@ -163,6 +204,8 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
                     key={item.to}
                     to={item.to}
                     onClick={() => setOpen(false)}
+                    onMouseEnter={() => prefetchShopNav(qc, shopId, item.to)}
+                    onFocus={() => prefetchShopNav(qc, shopId, item.to)}
                     className={cn(
                       "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium",
                       active
@@ -181,8 +224,8 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur sm:px-6">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="z-30 flex h-16 shrink-0 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur sm:px-6">
           <Button
             variant="ghost"
             size="icon"
@@ -232,9 +275,9 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-auto px-4 py-6 sm:px-6 lg:px-8">
           <TrialBanner />
-          {children}
+          <div className="min-w-0 w-full">{children}</div>
         </main>
       </div>
       </div>

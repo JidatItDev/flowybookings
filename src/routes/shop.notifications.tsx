@@ -6,7 +6,6 @@ import { createFileRoute, useSearch } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Inbox, Mail, MessageSquare, Plus, Settings as SettingsIcon, Smartphone } from "lucide-react";
 import { toast } from "sonner";
-import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { NoShopState } from "@/components/EmptyState";
@@ -15,7 +14,7 @@ import { NotificationsInbox } from "@/components/NotificationsInbox";
 import { SmsTopUpDialog } from "@/components/SmsTopUpDialog";
 import { FeatureLock } from "@/components/FeatureLock";
 import { useActiveShopId, useShopContext } from "@/lib/shop-context";
-import { shopFullQuery, shopKeys } from "@/lib/queries";
+import { shopFullQuery, shopKeys, shopAutomationsQuery, shopSmsCreditsQuery, SHOP_AUTOMATION_DEFAULTS, type ShopAutomationSettings } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
@@ -66,10 +65,10 @@ function NotificationsPage() {
     if (!shopId) return;
     if (search.topup === "return" || search.topup === "mock") {
       toast.success(t("smsTopup.successReturn"));
-      qc.invalidateQueries({ queryKey: ["shop_sms_credits", shopId] });
+      qc.invalidateQueries({ queryKey: shopKeys.smsCredits(shopId) });
       // Also poll briefly: webhook may take a few seconds.
       const timer = setTimeout(() => {
-        qc.invalidateQueries({ queryKey: ["shop_sms_credits", shopId] });
+        qc.invalidateQueries({ queryKey: shopKeys.smsCredits(shopId) });
       }, 3500);
       setTab("settings");
       return () => clearTimeout(timer);
@@ -81,7 +80,7 @@ function NotificationsPage() {
   }, [search.topup, shopId, qc, t]);
 
   return (
-    <ShopLayout>
+    <>
       <PageHeader title={t("notifications.title")} description={t("inbox.pageDescription")} />
       {!shopId ? (
         <NoShopState />
@@ -98,7 +97,7 @@ function NotificationsPage() {
           {tab === "inbox" ? <NotificationsInbox shopId={shopId} /> : <SettingsPanel shopId={shopId} />}
         </>
       )}
-    </ShopLayout>
+    </>
   );
 }
 
@@ -320,27 +319,9 @@ function DepositSettings({ shopId, shop }: { shopId: string; shop: { default_dep
   );
 }
 
-type AutomationRow = {
-  confirmation_enabled: boolean;
-  reminder_24h_enabled: boolean;
-  reminder_2h_enabled: boolean;
-  reminder_sms_enabled: boolean;
-  followup_enabled: boolean;
-};
+type AutomationRow = ShopAutomationSettings;
 
-const AUTO_DEFAULTS: AutomationRow = {
-  confirmation_enabled: true,
-  reminder_24h_enabled: true,
-  reminder_2h_enabled: true,
-  reminder_sms_enabled: false,
-  followup_enabled: false,
-};
-
-type SmsCreditsRow = {
-  balance: number;
-  total_used: number;
-  free_credits_granted: number;
-};
+const AUTO_DEFAULTS: AutomationRow = SHOP_AUTOMATION_DEFAULTS;
 
 function AutomationSettings({ shopId }: { shopId: string }) {
   const qc = useQueryClient();
@@ -351,33 +332,8 @@ function AutomationSettings({ shopId }: { shopId: string }) {
   const [dirty, setDirty] = useState(false);
   const [topUpOpen, setTopUpOpen] = useState(false);
 
-  const q = useQuery({
-    queryKey: ["shop_automations", shopId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("shop_automations")
-        .select("confirmation_enabled, reminder_24h_enabled, reminder_2h_enabled, reminder_sms_enabled, followup_enabled")
-        .eq("shop_id", shopId)
-        .maybeSingle();
-      if (error) throw error;
-      return data ?? AUTO_DEFAULTS;
-    },
-    enabled: !!shopId,
-  });
-
-  const credits = useQuery({
-    queryKey: ["shop_sms_credits", shopId],
-    queryFn: async (): Promise<SmsCreditsRow> => {
-      const { data, error } = await supabase
-        .from("shop_sms_credits")
-        .select("balance, total_used, free_credits_granted")
-        .eq("shop_id", shopId)
-        .maybeSingle();
-      if (error) throw error;
-      return data ?? { balance: 0, total_used: 0, free_credits_granted: 0 };
-    },
-    enabled: !!shopId,
-  });
+  const q = useQuery({ ...shopAutomationsQuery(shopId), enabled: !!shopId });
+  const credits = useQuery({ ...shopSmsCreditsQuery(shopId), enabled: !!shopId });
 
   useEffect(() => {
     if (q.data) {
@@ -397,7 +353,7 @@ function AutomationSettings({ shopId }: { shopId: string }) {
     onSuccess: () => {
       toast.success(t("automations.saved"));
       setDirty(false);
-      qc.invalidateQueries({ queryKey: ["shop_automations", shopId] });
+      qc.invalidateQueries({ queryKey: shopKeys.automations(shopId) });
     },
     onError: (e: Error) => toast.error(e.message),
   });

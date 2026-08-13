@@ -3,7 +3,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Sparkles, Search, Users, Clock, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
-import { ShopLayout } from "@/components/ShopLayout";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +19,7 @@ import { MobileActionSheet, useStandardRowActions } from "@/components/MobileAct
 import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/components/ImpersonationBanner";
 import { useActiveShopId } from "@/lib/shop-context";
-import { servicesQuery, staffQuery, bookingsQuery, shopKeys } from "@/lib/queries";
+import { servicesQuery, staffQuery, bookingsQuery, shopKeys, staffServicesQuery } from "@/lib/queries";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCents } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -31,7 +30,6 @@ export const Route = createFileRoute("/shop/services")({ head: () => ({ meta: [{
 
 const categoryColors: Record<string, string> = { Hair: "bg-primary-soft text-primary", Nails: "bg-pink text-pink-foreground", Beauty: "bg-peach text-peach-foreground", Tattoo: "bg-info/15 text-info-foreground", Pet: "bg-mint text-mint-foreground" };
 type ServiceRow = { id: string; name: string; description: string | null; category: string | null; duration_minutes: number; price_cents: number; deposit_cents: number; is_active: boolean; currency: string };
-type StaffServiceLink = { staff_id: string; service_id: string };
 type SortKey = "all" | "popular" | "priceHigh" | "durShort" | "durLong";
 
 function ServicesPage() {
@@ -51,17 +49,11 @@ function ServicesPage() {
   const [cat, setCat] = useState<string>("__all__");
 
   const { data: services = [], isLoading } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
-  // Reuse existing queries — do NOT duplicate. staffQuery is keyed via shopKeys.staff(shopId);
-  // staff_services uses the same key as src/routes/shop.staff.tsx so the cache is shared.
+  // Reuse shared factories — staffServicesQuery shares cache with shop.staff.tsx.
   const { data: staff = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
   const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
-  const { data: staffLinks = [] } = useQuery<StaffServiceLink[]>({
-    queryKey: ["staff_services", shopId],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("staff_services").select("staff_id,service_id");
-      if (error) throw error;
-      return (data ?? []) as StaffServiceLink[];
-    },
+  const { data: staffLinks = [] } = useQuery({
+    ...staffServicesQuery(shopId ?? ""),
     enabled: !!shopId,
   });
 
@@ -130,7 +122,7 @@ function ServicesPage() {
   });
 
   return (
-    <ShopLayout>
+    <>
       <PageHeader title={t("services.title")} description={t("services.description")} actions={<Button variant="hero" onClick={() => setCreating(true)} disabled={!shopId || readOnly} title={roTitle} className="hidden sm:inline-flex"><Plus className="h-4 w-4" /> {t("services.addService")}</Button>} />
 
       {/* Sticky search + filter row — reuses Input/Select primitives. */}
@@ -295,7 +287,7 @@ function ServicesPage() {
           ariaLabel={t("services.addService")}
         />
       )}
-    </ShopLayout>
+    </>
   );
 }
 
@@ -304,13 +296,8 @@ function ServiceFormDialog({ open, onClose, service, duplicateOf, shopId }: { op
   const [form, setForm] = useState({ name: "", category: "", duration_minutes: 30, price: 0, deposit: 0, is_active: true, description: "" });
   // Reuse the shared staff + staff_services caches — no new queries.
   const { data: allStaff = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId && open });
-  const { data: allLinks = [] } = useQuery<StaffServiceLink[]>({
-    queryKey: ["staff_services", shopId],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("staff_services").select("staff_id,service_id");
-      if (error) throw error;
-      return (data ?? []) as StaffServiceLink[];
-    },
+  const { data: allLinks = [] } = useQuery({
+    ...staffServicesQuery(shopId ?? ""),
     enabled: !!shopId && open,
   });
   const [staffIds, setStaffIds] = useState<string[]>([]);
@@ -395,7 +382,7 @@ function ServiceFormDialog({ open, onClose, service, duplicateOf, shopId }: { op
       onClose();
       if (shopId) {
         qc.invalidateQueries({ queryKey: shopKeys.services(shopId) });
-        qc.invalidateQueries({ queryKey: ["staff_services", shopId] });
+        qc.invalidateQueries({ queryKey: shopKeys.staffServices(shopId) });
       }
     },
     onError: (e: Error) => toast.error(e.message),

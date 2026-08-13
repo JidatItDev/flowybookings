@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SupportRouteImport } from './routes/support'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as ShopRouteImport } from './routes/shop'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as BookRouteImport } from './routes/book'
@@ -102,6 +103,11 @@ const SignupRoute = SignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShopRoute = ShopRouteImport.update({
+  id: '/shop',
+  path: '/shop',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -123,9 +129,9 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShopIndexRoute = ShopIndexRouteImport.update({
-  id: '/shop/',
-  path: '/shop/',
-  getParentRoute: () => rootRouteImport,
+  id: '/',
+  path: '/',
+  getParentRoute: () => ShopRoute,
 } as any)
 const BookIndexRoute = BookIndexRouteImport.update({
   id: '/',
@@ -133,59 +139,59 @@ const BookIndexRoute = BookIndexRouteImport.update({
   getParentRoute: () => BookRoute,
 } as any)
 const ShopUpgradeRoute = ShopUpgradeRouteImport.update({
-  id: '/shop/upgrade',
-  path: '/shop/upgrade',
-  getParentRoute: () => rootRouteImport,
+  id: '/upgrade',
+  path: '/upgrade',
+  getParentRoute: () => ShopRoute,
 } as any)
 const ShopStaffRoute = ShopStaffRouteImport.update({
-  id: '/shop/staff',
-  path: '/shop/staff',
-  getParentRoute: () => rootRouteImport,
+  id: '/staff',
+  path: '/staff',
+  getParentRoute: () => ShopRoute,
 } as any)
 const ShopSettingsRoute = ShopSettingsRouteImport.update({
-  id: '/shop/settings',
-  path: '/shop/settings',
-  getParentRoute: () => rootRouteImport,
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => ShopRoute,
 } as any)
 const ShopServicesRoute = ShopServicesRouteImport.update({
-  id: '/shop/services',
-  path: '/shop/services',
-  getParentRoute: () => rootRouteImport,
+  id: '/services',
+  path: '/services',
+  getParentRoute: () => ShopRoute,
 } as any)
 const ShopPaymentsRoute = ShopPaymentsRouteImport.update({
-  id: '/shop/payments',
-  path: '/shop/payments',
-  getParentRoute: () => rootRouteImport,
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => ShopRoute,
 } as any)
 const ShopOnboardingRoute = ShopOnboardingRouteImport.update({
-  id: '/shop/onboarding',
-  path: '/shop/onboarding',
-  getParentRoute: () => rootRouteImport,
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => ShopRoute,
 } as any)
 const ShopNotificationsRoute = ShopNotificationsRouteImport.update({
-  id: '/shop/notifications',
-  path: '/shop/notifications',
-  getParentRoute: () => rootRouteImport,
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => ShopRoute,
 } as any)
 const ShopCustomersRoute = ShopCustomersRouteImport.update({
-  id: '/shop/customers',
-  path: '/shop/customers',
-  getParentRoute: () => rootRouteImport,
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => ShopRoute,
 } as any)
 const ShopCalendarRoute = ShopCalendarRouteImport.update({
-  id: '/shop/calendar',
-  path: '/shop/calendar',
-  getParentRoute: () => rootRouteImport,
+  id: '/calendar',
+  path: '/calendar',
+  getParentRoute: () => ShopRoute,
 } as any)
 const ShopBillingRoute = ShopBillingRouteImport.update({
-  id: '/shop/billing',
-  path: '/shop/billing',
-  getParentRoute: () => rootRouteImport,
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => ShopRoute,
 } as any)
 const ShopAnalyticsRoute = ShopAnalyticsRouteImport.update({
-  id: '/shop/analytics',
-  path: '/shop/analytics',
-  getParentRoute: () => rootRouteImport,
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => ShopRoute,
 } as any)
 const LegalTermsRoute = LegalTermsRouteImport.update({
   id: '/legal/terms',
@@ -491,6 +497,7 @@ export interface FileRoutesByFullPath {
   '/book': typeof BookRouteWithChildren
   '/demo': typeof DemoRoute
   '/login': typeof LoginRoute
+  '/shop': typeof ShopRouteWithChildren
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/support': typeof SupportRoute
@@ -649,6 +656,7 @@ export interface FileRoutesById {
   '/book': typeof BookRouteWithChildren
   '/demo': typeof DemoRoute
   '/login': typeof LoginRoute
+  '/shop': typeof ShopRouteWithChildren
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/support': typeof SupportRoute
@@ -730,6 +738,7 @@ export interface FileRouteTypes {
     | '/book'
     | '/demo'
     | '/login'
+    | '/shop'
     | '/signup'
     | '/sitemap.xml'
     | '/support'
@@ -887,6 +896,7 @@ export interface FileRouteTypes {
     | '/book'
     | '/demo'
     | '/login'
+    | '/shop'
     | '/signup'
     | '/sitemap.xml'
     | '/support'
@@ -967,6 +977,7 @@ export interface RootRouteChildren {
   BookRoute: typeof BookRouteWithChildren
   DemoRoute: typeof DemoRoute
   LoginRoute: typeof LoginRoute
+  ShopRoute: typeof ShopRouteWithChildren
   SignupRoute: typeof SignupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SupportRoute: typeof SupportRoute
@@ -983,18 +994,6 @@ export interface RootRouteChildren {
   LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalRefundsRoute: typeof LegalRefundsRoute
   LegalTermsRoute: typeof LegalTermsRoute
-  ShopAnalyticsRoute: typeof ShopAnalyticsRoute
-  ShopBillingRoute: typeof ShopBillingRoute
-  ShopCalendarRoute: typeof ShopCalendarRoute
-  ShopCustomersRoute: typeof ShopCustomersRouteWithChildren
-  ShopNotificationsRoute: typeof ShopNotificationsRoute
-  ShopOnboardingRoute: typeof ShopOnboardingRoute
-  ShopPaymentsRoute: typeof ShopPaymentsRoute
-  ShopServicesRoute: typeof ShopServicesRoute
-  ShopSettingsRoute: typeof ShopSettingsRoute
-  ShopStaffRoute: typeof ShopStaffRoute
-  ShopUpgradeRoute: typeof ShopUpgradeRoute
-  ShopIndexRoute: typeof ShopIndexRoute
   ApiBillingExpireSweepRoute: typeof ApiBillingExpireSweepRoute
   ApiBillingPlanCancelRoute: typeof ApiBillingPlanCancelRoute
   ApiBillingPlanCheckoutRoute: typeof ApiBillingPlanCheckoutRoute
@@ -1060,6 +1059,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shop': {
+      id: '/shop'
+      path: '/shop'
+      fullPath: '/shop'
+      preLoaderRoute: typeof ShopRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -1090,10 +1096,10 @@ declare module '@tanstack/react-router' {
     }
     '/shop/': {
       id: '/shop/'
-      path: '/shop'
+      path: '/'
       fullPath: '/shop/'
       preLoaderRoute: typeof ShopIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ShopRoute
     }
     '/book/': {
       id: '/book/'
@@ -1104,80 +1110,80 @@ declare module '@tanstack/react-router' {
     }
     '/shop/upgrade': {
       id: '/shop/upgrade'
-      path: '/shop/upgrade'
+      path: '/upgrade'
       fullPath: '/shop/upgrade'
       preLoaderRoute: typeof ShopUpgradeRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ShopRoute
     }
     '/shop/staff': {
       id: '/shop/staff'
-      path: '/shop/staff'
+      path: '/staff'
       fullPath: '/shop/staff'
       preLoaderRoute: typeof ShopStaffRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ShopRoute
     }
     '/shop/settings': {
       id: '/shop/settings'
-      path: '/shop/settings'
+      path: '/settings'
       fullPath: '/shop/settings'
       preLoaderRoute: typeof ShopSettingsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ShopRoute
     }
     '/shop/services': {
       id: '/shop/services'
-      path: '/shop/services'
+      path: '/services'
       fullPath: '/shop/services'
       preLoaderRoute: typeof ShopServicesRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ShopRoute
     }
     '/shop/payments': {
       id: '/shop/payments'
-      path: '/shop/payments'
+      path: '/payments'
       fullPath: '/shop/payments'
       preLoaderRoute: typeof ShopPaymentsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ShopRoute
     }
     '/shop/onboarding': {
       id: '/shop/onboarding'
-      path: '/shop/onboarding'
+      path: '/onboarding'
       fullPath: '/shop/onboarding'
       preLoaderRoute: typeof ShopOnboardingRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ShopRoute
     }
     '/shop/notifications': {
       id: '/shop/notifications'
-      path: '/shop/notifications'
+      path: '/notifications'
       fullPath: '/shop/notifications'
       preLoaderRoute: typeof ShopNotificationsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ShopRoute
     }
     '/shop/customers': {
       id: '/shop/customers'
-      path: '/shop/customers'
+      path: '/customers'
       fullPath: '/shop/customers'
       preLoaderRoute: typeof ShopCustomersRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ShopRoute
     }
     '/shop/calendar': {
       id: '/shop/calendar'
-      path: '/shop/calendar'
+      path: '/calendar'
       fullPath: '/shop/calendar'
       preLoaderRoute: typeof ShopCalendarRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ShopRoute
     }
     '/shop/billing': {
       id: '/shop/billing'
-      path: '/shop/billing'
+      path: '/billing'
       fullPath: '/shop/billing'
       preLoaderRoute: typeof ShopBillingRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ShopRoute
     }
     '/shop/analytics': {
       id: '/shop/analytics'
-      path: '/shop/analytics'
+      path: '/analytics'
       fullPath: '/shop/analytics'
       preLoaderRoute: typeof ShopAnalyticsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ShopRoute
     }
     '/legal/terms': {
       id: '/legal/terms'
@@ -1607,6 +1613,38 @@ const ShopCustomersRouteWithChildren = ShopCustomersRoute._addFileChildren(
   ShopCustomersRouteChildren,
 )
 
+interface ShopRouteChildren {
+  ShopAnalyticsRoute: typeof ShopAnalyticsRoute
+  ShopBillingRoute: typeof ShopBillingRoute
+  ShopCalendarRoute: typeof ShopCalendarRoute
+  ShopCustomersRoute: typeof ShopCustomersRouteWithChildren
+  ShopNotificationsRoute: typeof ShopNotificationsRoute
+  ShopOnboardingRoute: typeof ShopOnboardingRoute
+  ShopPaymentsRoute: typeof ShopPaymentsRoute
+  ShopServicesRoute: typeof ShopServicesRoute
+  ShopSettingsRoute: typeof ShopSettingsRoute
+  ShopStaffRoute: typeof ShopStaffRoute
+  ShopUpgradeRoute: typeof ShopUpgradeRoute
+  ShopIndexRoute: typeof ShopIndexRoute
+}
+
+const ShopRouteChildren: ShopRouteChildren = {
+  ShopAnalyticsRoute: ShopAnalyticsRoute,
+  ShopBillingRoute: ShopBillingRoute,
+  ShopCalendarRoute: ShopCalendarRoute,
+  ShopCustomersRoute: ShopCustomersRouteWithChildren,
+  ShopNotificationsRoute: ShopNotificationsRoute,
+  ShopOnboardingRoute: ShopOnboardingRoute,
+  ShopPaymentsRoute: ShopPaymentsRoute,
+  ShopServicesRoute: ShopServicesRoute,
+  ShopSettingsRoute: ShopSettingsRoute,
+  ShopStaffRoute: ShopStaffRoute,
+  ShopUpgradeRoute: ShopUpgradeRoute,
+  ShopIndexRoute: ShopIndexRoute,
+}
+
+const ShopRouteWithChildren = ShopRoute._addFileChildren(ShopRouteChildren)
+
 interface BeheerDashboardShopsRouteChildren {
   BeheerDashboardShopsShopIdRoute: typeof BeheerDashboardShopsShopIdRoute
 }
@@ -1623,6 +1661,7 @@ const rootRouteChildren: RootRouteChildren = {
   BookRoute: BookRouteWithChildren,
   DemoRoute: DemoRoute,
   LoginRoute: LoginRoute,
+  ShopRoute: ShopRouteWithChildren,
   SignupRoute: SignupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SupportRoute: SupportRoute,
@@ -1640,18 +1679,6 @@ const rootRouteChildren: RootRouteChildren = {
   LegalPrivacyRoute: LegalPrivacyRoute,
   LegalRefundsRoute: LegalRefundsRoute,
   LegalTermsRoute: LegalTermsRoute,
-  ShopAnalyticsRoute: ShopAnalyticsRoute,
-  ShopBillingRoute: ShopBillingRoute,
-  ShopCalendarRoute: ShopCalendarRoute,
-  ShopCustomersRoute: ShopCustomersRouteWithChildren,
-  ShopNotificationsRoute: ShopNotificationsRoute,
-  ShopOnboardingRoute: ShopOnboardingRoute,
-  ShopPaymentsRoute: ShopPaymentsRoute,
-  ShopServicesRoute: ShopServicesRoute,
-  ShopSettingsRoute: ShopSettingsRoute,
-  ShopStaffRoute: ShopStaffRoute,
-  ShopUpgradeRoute: ShopUpgradeRoute,
-  ShopIndexRoute: ShopIndexRoute,
   ApiBillingExpireSweepRoute: ApiBillingExpireSweepRoute,
   ApiBillingPlanCancelRoute: ApiBillingPlanCancelRoute,
   ApiBillingPlanCheckoutRoute: ApiBillingPlanCheckoutRoute,
