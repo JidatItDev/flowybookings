@@ -29,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatCents, initials, relativeFromNow } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/lib/i18n";
+import { entityInUseFromBookings, entityHasOpenFutureBookings, isEntityInUseError, isUniqueViolation } from "@/shop/shared/entity-in-use";
 
 type FilterKey = "all" | "new" | "top" | "risk" | "recent";
 const NEW_CUSTOMER_DAYS = 30;
@@ -85,10 +86,17 @@ export function CustomersPage() {
   );
 
   const remove = useMutation({
-    mutationFn: async (id: string) => { assertNotImpersonating(); const { error } = await supabase.from("customers").delete().eq("id", id); if (error) throw error; },
+    mutationFn: async (id: string) => {
+      assertNotImpersonating();
+      if (await entityHasOpenFutureBookings("customer", id)) {
+        throw new Error("ENTITY_IN_USE: cannot delete customer with upcoming bookings");
+      }
+      const { error } = await supabase.from("customers").delete().eq("id", id); if (error) throw error;
+    },
     onSuccess: () => { toast.success(t("customers.deleted")); setDeleting(null); if (shopId) qc.invalidateQueries({ queryKey: shopKeys.customers(shopId) }); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(isEntityInUseError(e) ? t("customers.deleteBlocked") : e.message),
   });
+  const deletingInUse = deleting ? entityInUseFromBookings(bookings, "customer", deleting.id) : false;
 
   const list = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -403,11 +411,15 @@ export function CustomersPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("customers.deleteTitle", { name: deleting?.full_name ?? "" })}</AlertDialogTitle>
-            <AlertDialogDescription>{t("customers.deleteDesc")}</AlertDialogDescription>
+            <AlertDialogDescription>
+              {deletingInUse ? t("customers.deleteBlocked") : t("customers.deleteDesc")}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("customers.cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleting && remove.mutate(deleting.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{t("customers.delete")}</AlertDialogAction>
+            {!deletingInUse && (
+              <AlertDialogAction onClick={() => deleting && remove.mutate(deleting.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{t("customers.delete")}</AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -446,8 +458,19 @@ function CustomerFormDialog({ open, onClose, customer, shopId }: { open: boolean
       assertNotImpersonating();
       if (!shopId) throw new Error(t("errors.noActiveShop"));
       const payload = { shop_id: shopId, full_name: form.full_name.trim(), email: form.email.trim() || null, phone: form.phone.trim() || null, notes: form.notes.trim() || null, requires_deposit: form.requires_deposit };
-      if (customer) { const { error } = await supabase.from("customers").update(payload).eq("id", customer.id); if (error) throw error; }
-      else { const { error } = await supabase.from("customers").insert(payload); if (error) throw error; }
+      if (payload.email) {
+        const { data: existingId, error: lookupErr } = await supabase.rpc("find_public_customer_id_by_email", {
+          _shop_id: shopId,
+          _email: payload.email,
+        });
+        if (lookupErr) throw lookupErr;
+        if (existingId && existingId !== customer?.id) {
+          const { data: existing } = await supabase.from("customers").select("full_name").eq("id", existingId).maybeSingle();
+          throw new Error(t("customers.duplicateEmail", { name: existing?.full_name ?? payload.email }));
+        }
+      }
+      if (customer) { const { error } = await supabase.from("customers").update(payload).eq("id", customer.id); if (error) { if (isUniqueViolation(error)) throw new Error(t("customers.duplicateEmailGeneric")); throw error; } }
+      else { const { error } = await supabase.from("customers").insert(payload); if (error) { if (isUniqueViolation(error)) throw new Error(t("customers.duplicateEmailGeneric")); throw error; } }
     },
     onSuccess: () => { toast.success(customer ? t("customers.updated") : t("customers.added")); onClose(); if (shopId) qc.invalidateQueries({ queryKey: shopKeys.customers(shopId) }); },
     onError: (e: Error) => toast.error(e.message),

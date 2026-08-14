@@ -17,7 +17,7 @@ import { UpgradeNudge } from "@/shop/shared/UpgradeNudge";
 import { FeatureLock } from "@/shop/shared/FeatureLock";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/admin/impersonation/ImpersonationBanner";
 import { useActiveShopId, useShopContext } from "@/shop/shared/shop-context";
-import { staffQuery, servicesQuery, shopKeys, staffServicesQuery } from "@/shop/shared/queries-barrel";
+import { staffQuery, servicesQuery, bookingsQuery, shopKeys, staffServicesQuery } from "@/shop/shared/queries-barrel";
 import type { StaffWorkingHours, StaffDayHours } from "@/shop/calendar/components/DayTimeGrid";
 import { supabase } from "@/integrations/supabase/client";
 import { initials } from "@/shared/lib/format";
@@ -30,8 +30,9 @@ import {
 } from "@/shop/calendar/staff-color";
 import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/lib/i18n";
-import { useFeatureAccess } from "@/shop/billing/use-feature-access";
+import { useFeatureAccess, featureAccessKeys } from "@/shop/billing/use-feature-access";
 import { logActivity } from "@/shared/lib/activity-log";
+import { entityInUseFromBookings, entityHasOpenFutureBookings, isEntityInUseError, isStaffPlanLimitError } from "@/shop/shared/entity-in-use";
 
 // ─── Working-hours helpers (gedeelde shape met DayTimeGrid) ───────────────────
 
@@ -244,19 +245,39 @@ export function StaffPage() {
   const { data: staff = [], isLoading } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
   const { data: links = [] } = useQuery({ ...staffServicesQuery(shopId ?? ""), enabled: !!shopId });
+  const { data: bookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
   const colors = useStaffColors(shopId);
   const atOrOverLimit = staffAccess.data ? !staffAccess.data.allowed : (Number.isFinite(planLimit) && staff.length >= planLimit);
 
   const toggleActive = useMutation({
     mutationFn: async (s: StaffRow) => { assertNotImpersonating(); const { error } = await supabase.from("staff").update({ is_active: !s.is_active }).eq("id", s.id); if (error) throw error; },
-    onSuccess: () => { if (shopId) qc.invalidateQueries({ queryKey: shopKeys.staff(shopId) }); },
+    onSuccess: () => {
+      if (shopId) {
+        qc.invalidateQueries({ queryKey: shopKeys.staff(shopId) });
+        qc.invalidateQueries({ queryKey: featureAccessKeys.one(shopId, "max_staff") });
+      }
+    },
     onError: (e: Error) => toast.error(e.message),
   });
   const remove = useMutation({
-    mutationFn: async (id: string) => { assertNotImpersonating(); const { error } = await supabase.from("staff").delete().eq("id", id); if (error) throw error; },
-    onSuccess: () => { toast.success(t("staff.removed")); setDeleting(null); if (shopId) qc.invalidateQueries({ queryKey: shopKeys.staff(shopId) }); },
-    onError: (e: Error) => toast.error(e.message),
+    mutationFn: async (id: string) => {
+      assertNotImpersonating();
+      if (await entityHasOpenFutureBookings("staff", id)) {
+        throw new Error("ENTITY_IN_USE: cannot delete staff with upcoming bookings");
+      }
+      const { error } = await supabase.from("staff").delete().eq("id", id); if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(t("staff.removed"));
+      setDeleting(null);
+      if (shopId) {
+        qc.invalidateQueries({ queryKey: shopKeys.staff(shopId) });
+        qc.invalidateQueries({ queryKey: featureAccessKeys.one(shopId, "max_staff") });
+      }
+    },
+    onError: (e: Error) => toast.error(isEntityInUseError(e) ? t("staff.deleteBlocked", { name: deleting?.full_name ?? "" }) : e.message),
   });
+  const deletingInUse = deleting ? entityInUseFromBookings(bookings, "staff", deleting.id) : false;
   const serviceNamesFor = (staffId: string) => { const ids = new Set(links.filter((l) => l.staff_id === staffId).map((l) => l.service_id)); return services.filter((s) => ids.has(s.id)).map((s) => s.name); };
 
   return (
@@ -290,7 +311,7 @@ export function StaffPage() {
         </div>
       )}
       {!shopId ? <NoShopState /> : isLoading ? <LoadingGrid count={4} /> : staff.length === 0 ? (
-        <EmptyState icon={UserCog} title={t("staff.noStaff")} description={t("staff.noStaffDesc")} action={<Button variant="hero" onClick={() => setCreating(true)} disabled={readOnly} title={roTitle}><Plus className="h-4 w-4" /> {t("staff.addStaff")}</Button>} />
+        <EmptyState icon={UserCog} title={t("staff.noStaff")} description={t("staff.noStaffDesc")} action={<Button variant="hero" onClick={() => setCreating(true)} disabled={readOnly || atOrOverLimit} title={readOnly ? roTitle : atOrOverLimit && Number.isFinite(planLimit) ? t(planLimit === 1 ? "staff.limitTooltip" : "staff.limitTooltipPlural", { limit: planLimit }) : undefined}><Plus className="h-4 w-4" /> {t("staff.addStaff")}</Button>} />
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           {staff.map((m) => {
@@ -356,8 +377,32 @@ export function StaffPage() {
       <StaffFormDialog open={creating || !!editing} onClose={() => { setCreating(false); setEditing(null); }} member={editing} shopId={shopId} services={services} links={links} />
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>{t("staff.removeTitle", { name: deleting?.full_name ?? "" })}</AlertDialogTitle><AlertDialogDescription>{t("staff.removeDesc")}</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>{t("staff.cancel")}</AlertDialogCancel><AlertDialogAction onClick={() => deleting && remove.mutate(deleting.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{t("staff.remove")}</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("staff.removeTitle", { name: deleting?.full_name ?? "" })}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deletingInUse
+                ? t(deleting?.is_active ? "staff.deleteBlocked" : "staff.deleteBlockedInactive", { name: deleting?.full_name ?? "" })
+                : t("staff.removeDesc")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("staff.cancel")}</AlertDialogCancel>
+            {deletingInUse ? (
+              deleting?.is_active ? (
+                <AlertDialogAction
+                  onClick={() => {
+                    if (!deleting) return;
+                    toggleActive.mutate(deleting);
+                    setDeleting(null);
+                  }}
+                >
+                  {t("staff.deactivateInstead")}
+                </AlertDialogAction>
+              ) : null
+            ) : (
+              <AlertDialogAction onClick={() => deleting && remove.mutate(deleting.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{t("staff.remove")}</AlertDialogAction>
+            )}
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
@@ -418,9 +463,18 @@ function StaffFormDialog({ open, onClose, member, shopId, services, links }: { o
       if (shopId) {
         qc.invalidateQueries({ queryKey: shopKeys.staff(shopId) });
         qc.invalidateQueries({ queryKey: shopKeys.staffServices(shopId) });
+        qc.invalidateQueries({ queryKey: featureAccessKeys.one(shopId, "max_staff") });
       }
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      if (isStaffPlanLimitError(e)) {
+        const m = e.message.match(/max_staff \((\d+)\)/i);
+        const limit = m ? Number(m[1]) : 0;
+        toast.error(t(limit === 1 ? "staff.limitTooltip" : "staff.limitTooltipPlural", { limit: limit || "" }));
+        return;
+      }
+      toast.error(e.message);
+    },
   });
 
   return (

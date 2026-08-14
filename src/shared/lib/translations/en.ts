@@ -617,6 +617,12 @@ export const en: Record<string, string> = {
   "customers.deleteTitle": "Delete {name}?",
   "customers.deleteDesc":
     "Their booking history will be kept but no longer linked to a customer profile.",
+  "customers.deleteBlocked":
+    "This customer has upcoming bookings, so the profile cannot be deleted. Cancel or complete those bookings first.",
+  "customers.duplicateEmail":
+    "A customer with this email already exists ({name}). Open that profile instead of creating a duplicate.",
+  "customers.duplicateEmailGeneric":
+    "A customer with this email already exists in this shop.",
   "customers.cancel": "Cancel",
   "customers.delete": "Delete",
   "customers.deleted": "Customer deleted",
@@ -781,6 +787,11 @@ export const en: Record<string, string> = {
   "services.newService": "New service",
   "services.deleteService": "Delete service?",
   "services.deleteDesc": '"{name}" will be removed. Existing bookings keep their pricing.',
+  "services.deleteBlocked":
+    '"{name}" has upcoming bookings, so it cannot be deleted. Deactivate it to hide it from new bookings.',
+  "services.deleteBlockedInactive":
+    '"{name}" has upcoming bookings, so it cannot be deleted. Existing bookings keep their pricing.',
+  "services.deactivateInstead": "Deactivate instead",
   "services.cancel": "Cancel",
   "services.delete": "Delete",
   "services.deleted": "Service deleted",
@@ -849,7 +860,13 @@ export const en: Record<string, string> = {
   "staff.editStaff": "Edit staff",
   "staff.addStaffTitle": "Add staff",
   "staff.removeTitle": "Remove {name}?",
-  "staff.removeDesc": "They will no longer be assignable to new bookings.",
+  "staff.removeDesc":
+    "This permanently deletes the staff member. Existing bookings keep their times; the staff link is removed.",
+  "staff.deleteBlocked":
+    "{name} has upcoming bookings, so they cannot be deleted. Deactivate them to hide them from new bookings.",
+  "staff.deleteBlockedInactive":
+    "{name} has upcoming bookings, so they cannot be deleted. Deactivate does not free a plan seat — upgrade or wait until bookings are completed or cancelled.",
+  "staff.deactivateInstead": "Deactivate instead",
   "staff.cancel": "Cancel",
   "staff.removed": "Staff member removed",
   "staff.updated": "Staff updated",

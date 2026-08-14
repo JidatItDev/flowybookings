@@ -27,6 +27,7 @@ import { publicAppSettingsQuery } from "@/shared/lib/app-settings";
 import { useT } from "@/shared/lib/i18n";
 import { getTrialState } from "@/shared/lib/trial";
 import { classifyBookingError, bookingErrorToast } from "@/booking/lib/booking-errors";
+import { isUniqueViolation } from "@/shop/shared/entity-in-use";
 import {
   resolveStaffAvailabilityForDayKey,
   type StaffAvailability,
@@ -388,20 +389,47 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
       }
 
       let customerId: string | null = null;
-      const { data: existingCustomerId, error: custLookupErr } = await supabase.rpc(
-        "find_public_customer_id_by_email",
-        { _shop_id: shopId, _email: email },
-      );
-      if (custLookupErr) throw custLookupErr;
+      const lookupCustomer = async () => {
+        const { data, error } = await supabase.rpc("find_public_customer_id_by_email", {
+          _shop_id: shopId,
+          _email: email,
+        });
+        if (error) throw error;
+        return (data as string | null) ?? null;
+      };
+      const refreshCustomer = async (id: string) => {
+        const { error } = await supabase.rpc("refresh_public_customer_contact", {
+          _id: id,
+          _shop_id: shopId,
+          _full_name: name,
+          _phone: phone,
+        });
+        if (error) throw error;
+      };
+      const existingCustomerId = await lookupCustomer();
       if (existingCustomerId) {
+        await refreshCustomer(existingCustomerId);
         customerId = existingCustomerId;
       } else {
         const { data: newCust, error: custErr } = await supabase
           .from("customers")
           .insert({ shop_id: shopId, full_name: name, email, phone })
           .select("id").single();
-        if (custErr) throw custErr;
-        customerId = newCust.id;
+        if (custErr) {
+          if (isUniqueViolation(custErr)) {
+            const racedId = await lookupCustomer();
+            if (racedId) {
+              await refreshCustomer(racedId);
+              customerId = racedId;
+            } else {
+              throw custErr;
+            }
+          } else {
+            throw custErr;
+          }
+        } else {
+          customerId = newCust.id;
+        }
       }
 
       // Booking starts "pending" only when a deposit will actually be charged

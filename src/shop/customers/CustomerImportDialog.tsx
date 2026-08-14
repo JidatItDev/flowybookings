@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { shopKeys } from "@/shop/shared/queries-barrel";
 import { useT } from "@/shared/lib/i18n";
 import { assertNotImpersonating } from "@/admin/impersonation/ImpersonationBanner";
+import { isUniqueViolation } from "@/shop/shared/entity-in-use";
 import {
   parseFile,
   presetMapping,
@@ -111,32 +112,18 @@ export function CustomerImportDialog({ open, onClose, shopId, onImported }: Prop
       if (!shopId) throw new Error(t("errors.noActiveShop"));
       if (valid.length === 0) throw new Error(t("customerImport.errNoValid"));
 
-      // Fetch existing emails to dedupe
-      const emails = valid.map((v) => v.email).filter((e): e is string => !!e);
-      const phones = valid.map((v) => v.phone).filter((p): p is string => !!p);
       const existingByEmail = new Map<string, string>();
       const existingByPhone = new Map<string, string>();
 
-      if (emails.length > 0) {
-        const { data: existing } = await supabase
-          .from("customers")
-          .select("id, email")
-          .eq("shop_id", shopId)
-          .in("email", emails);
-        (existing ?? []).forEach((c) => {
-          if (c.email) existingByEmail.set(c.email.toLowerCase(), c.id);
-        });
-      }
-      if (phones.length > 0) {
-        const { data: existing } = await supabase
-          .from("customers")
-          .select("id, phone")
-          .eq("shop_id", shopId)
-          .in("phone", phones);
-        (existing ?? []).forEach((c) => {
-          if (c.phone) existingByPhone.set(c.phone, c.id);
-        });
-      }
+      const { data: existingRows, error: existingErr } = await supabase
+        .from("customers")
+        .select("id, email, phone")
+        .eq("shop_id", shopId);
+      if (existingErr) throw existingErr;
+      (existingRows ?? []).forEach((c) => {
+        if (c.email && c.email.trim()) existingByEmail.set(c.email.trim().toLowerCase(), c.id);
+        if (c.phone) existingByPhone.set(c.phone, c.id);
+      });
 
       const now = new Date().toISOString();
       const toInsert: Array<{
@@ -152,10 +139,17 @@ export function CustomerImportDialog({ open, onClose, shopId, onImported }: Prop
       let skipped = 0;
       let withoutEmail = 0;
       const errors: { row: number; reason: string }[] = [...invalid];
+      const seenEmails = new Set<string>();
 
-      valid.forEach((v, idx) => {
+      valid.forEach((v) => {
+        const emailKey = v.email ? v.email.trim().toLowerCase() : null;
+        if (emailKey && seenEmails.has(emailKey)) {
+          skipped += 1;
+          return;
+        }
+        if (emailKey) seenEmails.add(emailKey);
         const dupId =
-          (v.email && existingByEmail.get(v.email)) ||
+          (emailKey && existingByEmail.get(emailKey)) ||
           (v.phone && existingByPhone.get(v.phone)) ||
           null;
         if (!v.email) withoutEmail += 1;
@@ -199,7 +193,20 @@ export function CustomerImportDialog({ open, onClose, shopId, onImported }: Prop
           .from("customers")
           .insert(slice, { count: "exact" });
         if (error) {
-          errors.push({ row: i, reason: error.message });
+          if (isUniqueViolation(error)) {
+            for (const row of slice) {
+              const { error: rowErr } = await supabase.from("customers").insert(row);
+              if (!rowErr) {
+                inserted += 1;
+              } else if (isUniqueViolation(rowErr)) {
+                skipped += 1;
+              } else {
+                errors.push({ row: i, reason: rowErr.message });
+              }
+            }
+          } else {
+            errors.push({ row: i, reason: error.message });
+          }
         } else {
           inserted += count ?? slice.length;
         }
@@ -208,7 +215,14 @@ export function CustomerImportDialog({ open, onClose, shopId, onImported }: Prop
       for (const u of toUpdate) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error } = await supabase.from("customers").update(u.patch as any).eq("id", u.id);
-        if (error) errors.push({ row: 0, reason: `Update ${u.id}: ${error.message}` });
+        if (error) {
+          errors.push({
+            row: 0,
+            reason: isUniqueViolation(error)
+              ? t("customers.duplicateEmailGeneric")
+              : `Update ${u.id}: ${error.message}`,
+          });
+        }
         else updated += 1;
       }
 

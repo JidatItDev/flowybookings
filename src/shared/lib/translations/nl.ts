@@ -629,6 +629,12 @@ export const nl: Record<string, string> = {
   "customers.deleteTitle": "{name} verwijderen?",
   "customers.deleteDesc":
     "De boekingsgeschiedenis blijft bewaard, maar is niet meer gekoppeld aan een klantprofiel.",
+  "customers.deleteBlocked":
+    "Deze klant heeft aankomende boekingen, dus het profiel kan niet worden verwijderd. Annuleer of rond die boekingen eerst af.",
+  "customers.duplicateEmail":
+    "Er bestaat al een klant met dit e-mailadres ({name}). Open dat profiel in plaats van een duplicaat aan te maken.",
+  "customers.duplicateEmailGeneric":
+    "Er bestaat al een klant met dit e-mailadres in deze zaak.",
   "customers.cancel": "Annuleren",
   "customers.delete": "Verwijderen",
   "customers.deleted": "Klant verwijderd",
@@ -793,6 +799,11 @@ export const nl: Record<string, string> = {
   "services.newService": "Nieuwe dienst",
   "services.deleteService": "Dienst verwijderen?",
   "services.deleteDesc": '"{name}" wordt verwijderd. Bestaande boekingen behouden hun prijs.',
+  "services.deleteBlocked":
+    '"{name}" heeft aankomende boekingen en kan niet worden verwijderd. Deactiveer de dienst om die te verbergen voor nieuwe boekingen.',
+  "services.deleteBlockedInactive":
+    '"{name}" heeft aankomende boekingen en kan niet worden verwijderd. Bestaande boekingen behouden hun prijs.',
+  "services.deactivateInstead": "In plaats daarvan deactiveren",
   "services.cancel": "Annuleren",
   "services.delete": "Verwijderen",
   "services.deleted": "Dienst verwijderd",
@@ -861,7 +872,13 @@ export const nl: Record<string, string> = {
   "staff.editStaff": "Personeel bewerken",
   "staff.addStaffTitle": "Personeel toevoegen",
   "staff.removeTitle": "{name} verwijderen?",
-  "staff.removeDesc": "Deze medewerker kan niet meer worden toegewezen aan nieuwe boekingen.",
+  "staff.removeDesc":
+    "Dit verwijdert de medewerker definitief. Bestaande boekingen behouden hun tijden; de personeelskoppeling verdwijnt.",
+  "staff.deleteBlocked":
+    "{name} heeft aankomende boekingen en kan niet worden verwijderd. Deactiveer de medewerker om die te verbergen voor nieuwe boekingen.",
+  "staff.deleteBlockedInactive":
+    "{name} heeft aankomende boekingen en kan niet worden verwijderd. Deactiveren geeft geen extra plek in het abonnement vrij — upgrade of wacht tot boekingen zijn afgerond of geannuleerd.",
+  "staff.deactivateInstead": "In plaats daarvan deactiveren",
   "staff.cancel": "Annuleren",
   "staff.removed": "Medewerker verwijderd",
   "staff.updated": "Personeel bijgewerkt",

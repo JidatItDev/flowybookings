@@ -1240,6 +1240,10 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      entity_has_open_future_bookings: {
+        Args: { _id: string; _kind: string }
+        Returns: boolean
+      }
       find_public_customer_id_by_email: {
         Args: { _email: string; _shop_id: string }
         Returns: string
@@ -1296,6 +1300,15 @@ export type Database = {
       get_public_busy_staff_ids: {
         Args: { _ends_at: string; _shop_id: string; _starts_at: string }
         Returns: string[]
+      }
+      refresh_public_customer_contact: {
+        Args: {
+          _full_name: string
+          _id: string
+          _phone: string
+          _shop_id: string
+        }
+        Returns: undefined
       }
       get_shop_feature_access: {
         Args: { _feature_slug: string; _shop_id: string }

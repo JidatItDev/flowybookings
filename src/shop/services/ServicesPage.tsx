@@ -25,6 +25,7 @@ import { formatCents } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/lib/i18n";
 import { logActivity } from "@/shared/lib/activity-log";
+import { entityInUseFromBookings, entityHasOpenFutureBookings, isEntityInUseError } from "@/shop/shared/entity-in-use";
 
 const categoryColors: Record<string, string> = { Hair: "bg-primary-soft text-primary", Nails: "bg-pink text-pink-foreground", Beauty: "bg-peach text-peach-foreground", Tattoo: "bg-info/15 text-info-foreground", Pet: "bg-mint text-mint-foreground" };
 type ServiceRow = { id: string; name: string; description: string | null; category: string | null; duration_minutes: number; price_cents: number; deposit_cents: number; is_active: boolean; currency: string };
@@ -114,10 +115,17 @@ export function ServicesPage() {
     onError: (e: Error) => toast.error(e.message),
   });
   const remove = useMutation({
-    mutationFn: async (id: string) => { assertNotImpersonating(); const { error } = await supabase.from("services").delete().eq("id", id); if (error) throw error; },
+    mutationFn: async (id: string) => {
+      assertNotImpersonating();
+      if (await entityHasOpenFutureBookings("service", id)) {
+        throw new Error("ENTITY_IN_USE: cannot delete service with upcoming bookings");
+      }
+      const { error } = await supabase.from("services").delete().eq("id", id); if (error) throw error;
+    },
     onSuccess: () => { toast.success(t("services.deleted")); setDeleting(null); if (shopId) qc.invalidateQueries({ queryKey: shopKeys.services(shopId) }); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(isEntityInUseError(e) ? t("services.deleteBlocked", { name: deleting?.name ?? "" }) : e.message),
   });
+  const deletingInUse = deleting ? entityInUseFromBookings(bookings, "service", deleting.id) : false;
 
   return (
     <>
@@ -254,8 +262,32 @@ export function ServicesPage() {
       />
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>{t("services.deleteService")}</AlertDialogTitle><AlertDialogDescription>{t("services.deleteDesc", { name: deleting?.name ?? "" })}</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel>{t("services.cancel")}</AlertDialogCancel><AlertDialogAction onClick={() => deleting && remove.mutate(deleting.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{t("services.delete")}</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("services.deleteService")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deletingInUse
+                ? t(deleting?.is_active ? "services.deleteBlocked" : "services.deleteBlockedInactive", { name: deleting?.name ?? "" })
+                : t("services.deleteDesc", { name: deleting?.name ?? "" })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("services.cancel")}</AlertDialogCancel>
+            {deletingInUse ? (
+              deleting?.is_active ? (
+                <AlertDialogAction
+                  onClick={() => {
+                    if (!deleting) return;
+                    toggleActive.mutate(deleting);
+                    setDeleting(null);
+                  }}
+                >
+                  {t("services.deactivateInstead")}
+                </AlertDialogAction>
+              ) : null
+            ) : (
+              <AlertDialogAction onClick={() => deleting && remove.mutate(deleting.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{t("services.delete")}</AlertDialogAction>
+            )}
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 

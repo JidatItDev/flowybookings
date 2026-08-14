@@ -41,7 +41,7 @@ const TRACKED_FEATURES: { slug: string; label: string; unit?: string }[] = [
   { slug: "max_bookings_per_month", label: "Boekingen", unit: "boekingen" },
   { slug: "sms_reminders", label: "SMS", unit: "berichten" },
   { slug: "whatsapp_reminders", label: "WhatsApp", unit: "berichten" },
-  { slug: "max_staff", label: "Medewerkers", unit: "actief" },
+  { slug: "max_staff", label: "Medewerkers", unit: "totaal" },
   { slug: "marketing_emails", label: "Marketing-e-mails", unit: "verzonden" },
 ];
 
