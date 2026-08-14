@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Sparkle, Loader2, Check, X, ArrowRight, ArrowLeft, CalendarCheck, Bell, Users, BarChart3, Copy, AlertTriangle } from "lucide-react";
+import { Sparkle, Loader2, Check, X, ArrowRight, ArrowLeft, CalendarCheck, Bell, Users, BarChart3, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/auth/lib/auth-context";
 import { useT } from "@/shared/lib/i18n";
@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
+import { FullPageLoader } from "@/auth/components/RouteGuard";
 import { LanguageSwitcher } from "@/shared/components/LanguageSwitcher";
 import { cn } from "@/shared/lib/utils";
-import { getBookingUrl } from "@/shared/lib/booking-url";
 import { DEFAULT_SHOP_BUSINESS_HOURS } from "@/shop/staff/staff-availability";
 import {
   DEFAULT_SHOP_TIMEZONE,
@@ -41,7 +41,7 @@ function randomSuffix() {
   return Math.random().toString(36).slice(2, 6);
 }
 
-type Step = 0 | 1 | 2;
+type Step = 0 | 1;
 type SlugState = "idle" | "checking" | "available" | "taken" | "invalid" | "reserved";
 
 export function ShopOnboarding() {
@@ -55,7 +55,6 @@ export function ShopOnboarding() {
   const [slugState, setSlugState] = useState<SlugState>("idle");
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [nameWarning, setNameWarning] = useState(false);
-  const [createdSlug, setCreatedSlug] = useState<string | null>(null);
   const [timezone, setTimezone] = useState(DEFAULT_SHOP_TIMEZONE);
   const [category, setCategory] = useState("");
 
@@ -130,12 +129,10 @@ export function ShopOnboarding() {
       }
       return shop;
     },
-    onSuccess: (shop) => {
+    onSuccess: () => {
       toast.success(t("onboarding.created"));
-      setCreatedSlug(shop.slug);
       qc.invalidateQueries({ queryKey: ["auth", "shops"] });
       qc.invalidateQueries({ queryKey: ["auth", "roles"] });
-      setStep(2);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -158,20 +155,8 @@ export function ShopOnboarding() {
 
   const pickSuggestion = (s: string) => { setSlug(s); setSlugTouched(true); };
 
-  const total = 3;
+  const total = 2;
   const progress = ((step + 1) / total) * 100;
-
-  const bookingUrl = createdSlug ? getBookingUrl(createdSlug, { external: true }) : "";
-
-  const copyLink = async () => {
-    if (!bookingUrl) return;
-    try {
-      await navigator.clipboard.writeText(bookingUrl);
-      toast.success(t("onboarding.linkCopied"));
-    } catch {
-      /* ignore */
-    }
-  };
 
   const submitDisabled =
     createShop.isPending ||
@@ -197,6 +182,10 @@ export function ShopOnboarding() {
     return map[c] ?? c;
   };
 
+  if (createShop.isSuccess) {
+    return <FullPageLoader label="Redirecting…" />;
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-hero px-4 py-12">
       <div className="w-full max-w-xl">
@@ -215,7 +204,7 @@ export function ShopOnboarding() {
             <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
               <span>{t("onboarding.progress", { current: String(step + 1), total: String(total) })}</span>
               <span className="flex items-center gap-1.5">
-                {[0, 1, 2].map((i) => (
+                {[0, 1].map((i) => (
                   <span
                     key={i}
                     className={cn(
@@ -379,48 +368,6 @@ export function ShopOnboarding() {
                   </Button>
                 </div>
               </form>
-            </div>
-          )}
-
-          {step === 2 && (
-            <div>
-              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-success text-success-foreground">
-                <Check className="h-6 w-6" />
-              </div>
-              <h1 className="text-2xl font-semibold tracking-tight">{t("onboarding.readyTitle")}</h1>
-              <p className="mt-1 text-sm text-muted-foreground">{t("onboarding.readySub")}</p>
-
-              <ul className="mt-5 space-y-2">
-                {["onboarding.next1", "onboarding.next2", "onboarding.next3"].map((k, i) => (
-                  <li key={k} className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-soft text-xs font-semibold text-primary">
-                      {i + 1}
-                    </span>
-                    <p className="text-sm">{t(k)}</p>
-                  </li>
-                ))}
-              </ul>
-
-              {createdSlug && (
-                <div className="mt-5 rounded-xl border border-border bg-muted/40 p-3">
-                  <p className="text-xs font-medium text-muted-foreground">{t("onboarding.shareLink")}</p>
-                  <div className="mt-1.5 flex items-center gap-2">
-                    <code className="min-w-0 flex-1 truncate rounded-lg bg-background px-2 py-1.5 text-xs">{bookingUrl}</code>
-                    <Button type="button" variant="outline" size="sm" onClick={copyLink}>
-                      <Copy className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              <Button
-                variant="hero"
-                className="mt-6 w-full"
-                size="lg"
-                onClick={() => { window.location.href = "/shop"; }}
-              >
-                {t("onboarding.goDashboard")} <ArrowRight className="h-4 w-4" />
-              </Button>
             </div>
           )}
         </div>
