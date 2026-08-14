@@ -159,83 +159,83 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
     <div className="flex h-svh w-full flex-col overflow-hidden bg-background">
       <ImpersonationBanner />
       <div className="flex min-h-0 min-w-0 w-full flex-1 overflow-hidden">
-      <aside className="z-20 hidden h-full w-64 shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar lg:flex">
-        <SidebarHeader />
-        <nav className="flex-1 space-y-1 px-3 pb-6">
-          {visibleNav.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.to, item.exact);
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                onMouseEnter={() => prefetchShopNav(qc, shopId, item.to)}
-                onFocus={() => prefetchShopNav(qc, shopId, item.to)}
-                className={cn(
-                  "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {t(item.labelKey)}
-              </Link>
-            );
-          })}
-        </nav>
-        {!isStaffOnly && <SidebarFooter />}
-      </aside>
+        <aside className="z-20 hidden h-full w-64 shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar lg:flex">
+          <SidebarHeader />
+          <nav className="flex-1 space-y-1 px-3 pb-6">
+            {visibleNav.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(item.to, item.exact);
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onMouseEnter={() => prefetchShopNav(qc, shopId, item.to)}
+                  onFocus={() => prefetchShopNav(qc, shopId, item.to)}
+                  className={cn(
+                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                    active
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  {t(item.labelKey)}
+                </Link>
+              );
+            })}
+          </nav>
+          {!isStaffOnly && <SidebarFooter />}
+        </aside>
 
-      {open && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div
-            className="absolute inset-0 bg-foreground/40 backdrop-blur-sm"
-            onClick={() => setOpen(false)}
-          />
-          <aside className="relative flex h-full w-72 flex-col bg-sidebar">
-            <SidebarHeader onClose={() => setOpen(false)} />
-            <nav className="flex-1 space-y-1 px-3 pb-6">
-              {visibleNav.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.to, item.exact);
-                return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    onClick={() => setOpen(false)}
-                    onMouseEnter={() => prefetchShopNav(qc, shopId, item.to)}
-                    onFocus={() => prefetchShopNav(qc, shopId, item.to)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium",
-                      active
-                        ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                        : "text-sidebar-foreground/80 hover:bg-sidebar-accent",
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {t(item.labelKey)}
-                  </Link>
-                );
-              })}
-            </nav>
-            <SidebarFooter />
-          </aside>
-        </div>
-      )}
+        {open && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <div
+              className="absolute inset-0 bg-foreground/40 backdrop-blur-sm"
+              onClick={() => setOpen(false)}
+            />
+            <aside className="relative flex h-full w-72 flex-col bg-sidebar">
+              <SidebarHeader onClose={() => setOpen(false)} />
+              <nav className="flex-1 space-y-1 px-3 pb-6">
+                {visibleNav.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(item.to, item.exact);
+                  return (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      onClick={() => setOpen(false)}
+                      onMouseEnter={() => prefetchShopNav(qc, shopId, item.to)}
+                      onFocus={() => prefetchShopNav(qc, shopId, item.to)}
+                      className={cn(
+                        "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium",
+                        active
+                          ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                          : "text-sidebar-foreground/80 hover:bg-sidebar-accent",
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {t(item.labelKey)}
+                    </Link>
+                  );
+                })}
+              </nav>
+              <SidebarFooter />
+            </aside>
+          </div>
+        )}
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="z-30 flex h-16 shrink-0 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur sm:px-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden"
-            onClick={() => setOpen(true)}
-            aria-label={t("a11y.openMenu")}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-          <div className="hidden flex-1 items-center md:flex">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+          <header className="z-30 flex h-16 shrink-0 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur sm:px-6">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setOpen(true)}
+              aria-label={t("a11y.openMenu")}
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            {/* <div className="hidden flex-1 items-center md:flex">
             <div className="relative w-full max-w-md">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -243,43 +243,43 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
                 className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm shadow-xs outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
               />
             </div>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <LanguageSwitcher />
-            <NotificationBell />
-            {isSuperAdmin && (
-              <Link
-                to="/beheer/dashboard"
-                className="hidden rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground sm:inline-flex"
-              >
-                {t("shopNav.switchToAdmin")}
-              </Link>
-            )}
-            <div className="w-56">
-              <ShopPicker />
+          </div> */}
+            <div className="ml-auto flex items-center gap-2">
+              <LanguageSwitcher />
+              <NotificationBell />
+              {isSuperAdmin && (
+                <Link
+                  to="/beheer/dashboard"
+                  className="hidden rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground sm:inline-flex"
+                >
+                  {t("shopNav.switchToAdmin")}
+                </Link>
+              )}
+              <div className="w-56">
+                <ShopPicker />
+              </div>
+              <AccountMenu
+                displayName={displayName}
+                initials={initials}
+                shopName={activeShop?.name ?? null}
+                planText={planText}
+                isStaffOnly={isStaffOnly}
+                onNavigate={(to) => navigate({ to })}
+                onSignOut={async () => {
+                  await signOut();
+                  if (typeof window !== "undefined") {
+                    window.location.assign("/");
+                  }
+                }}
+              />
             </div>
-            <AccountMenu
-              displayName={displayName}
-              initials={initials}
-              shopName={activeShop?.name ?? null}
-              planText={planText}
-              isStaffOnly={isStaffOnly}
-              onNavigate={(to) => navigate({ to })}
-              onSignOut={async () => {
-                await signOut();
-                if (typeof window !== "undefined") {
-                  window.location.assign("/");
-                }
-              }}
-            />
-          </div>
-        </header>
+          </header>
 
-        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-auto px-4 py-6 sm:px-6 lg:px-8">
-          <TrialBanner />
-          <div className="min-w-0 w-full">{children}</div>
-        </main>
-      </div>
+          <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-auto px-4 py-6 sm:px-6 lg:px-8">
+            <TrialBanner />
+            <div className="min-w-0 w-full">{children}</div>
+          </main>
+        </div>
       </div>
       <LegalReconsentDialog />
     </div>
