@@ -134,14 +134,14 @@ export async function enqueueBookingEmail(
   })
 
   if (enqueueError) {
-    await supabase.from('email_send_log').insert({
-      message_id: messageId,
-      template_name: params.templateName,
-      recipient_email: recipient,
-      status: 'failed',
-      error_message: 'Failed to enqueue: ' + enqueueError.message,
-      metadata: { idempotency_key: idempotencyKey },
-    })
+    await supabase
+      .from('email_send_log')
+      .update({
+        status: 'failed',
+        error_message: 'Failed to enqueue: ' + enqueueError.message,
+      })
+      .eq('message_id', messageId)
+      .eq('status', 'pending')
     return { success: false, reason: 'error', error: enqueueError.message }
   }
 

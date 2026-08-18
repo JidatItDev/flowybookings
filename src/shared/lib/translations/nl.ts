@@ -1072,12 +1072,26 @@ export const nl: Record<string, string> = {
   "adminMessages.readBy": "{n} gelezen",
   "adminMessages.emailTemplates": "E-mailtemplates",
   "adminMessages.emailTemplatesSub":
-    "Bekijk hoe automatische e-mails er voor klanten en shop-eigenaren uitzien.",
+    "Bewerk notificatie-templates en stuur een test om Resend-levering te controleren.",
   "adminMessages.preview": "Preview",
   "adminMessages.previewSubject": "Onderwerp",
   "adminMessages.previewDescription":
     "Voorbeeld op basis van demo-data — er wordt niets verstuurd.",
   "adminMessages.noPreviewData": "Geen previewdata beschikbaar voor deze template.",
+  "adminMessages.emailVars": "Toegestane variabelen",
+  "adminMessages.emailBodyHtml": "HTML-inhoud",
+  "adminMessages.emailSave": "Template opslaan",
+  "adminMessages.emailSaved": "Template opgeslagen",
+  "adminMessages.emailNoTemplate": "Geen e-mailtemplates gevonden. Voer de email_templates-migratie uit.",
+  "adminMessages.emailTestTo": "Stuur test naar",
+  "adminMessages.emailSendTest": "Verstuur test",
+  "adminMessages.emailTestHint": "Zet een system_test-e-mail in de wachtrij. De worker verstuurt die via Resend.",
+  "adminMessages.emailTestRequired": "Vul een ontvanger-e-mailadres in.",
+  "adminMessages.emailTestUnauth": "Je bent niet ingelogd.",
+  "adminMessages.emailTestFailed": "De test-e-mail kon niet in de wachtrij worden gezet.",
+  "adminMessages.emailTestQueued": "Test-e-mail in de wachtrij gezet.",
+  "adminMessages.emailRecentSends": "Recente testverzendingen",
+  "adminMessages.emailNoSends": "Nog geen testverzendingen.",
 
   // ── Notifications ──
   "notifications.title": "Meldingen",

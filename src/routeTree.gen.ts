@@ -80,6 +80,7 @@ import { Route as ApiBillingPlanConfirmRouteImport } from './routes/api.billing.
 import { Route as ApiBillingPlanCheckoutRouteImport } from './routes/api.billing.plan-checkout'
 import { Route as ApiBillingPlanCancelRouteImport } from './routes/api.billing.plan-cancel'
 import { Route as ApiBillingExpireSweepRouteImport } from './routes/api.billing.expire-sweep'
+import { Route as ApiAdminEmailTestRouteImport } from './routes/api.admin.email-test'
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
@@ -452,6 +453,11 @@ const ApiBillingExpireSweepRoute = ApiBillingExpireSweepRouteImport.update({
   path: '/api/billing/expire-sweep',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminEmailTestRoute = ApiAdminEmailTestRouteImport.update({
+  id: '/api/admin/email-test',
+  path: '/api/admin/email-test',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LovableEmailTransactionalSendRoute =
   LovableEmailTransactionalSendRouteImport.update({
     id: '/lovable/email/transactional/send',
@@ -528,6 +534,7 @@ export interface FileRoutesByFullPath {
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/book/': typeof BookIndexRoute
   '/shop/': typeof ShopIndexRoute
+  '/api/admin/email-test': typeof ApiAdminEmailTestRoute
   '/api/billing/expire-sweep': typeof ApiBillingExpireSweepRoute
   '/api/billing/plan-cancel': typeof ApiBillingPlanCancelRoute
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
@@ -606,6 +613,7 @@ export interface FileRoutesByTo {
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/book': typeof BookIndexRoute
   '/shop': typeof ShopIndexRoute
+  '/api/admin/email-test': typeof ApiAdminEmailTestRoute
   '/api/billing/expire-sweep': typeof ApiBillingExpireSweepRoute
   '/api/billing/plan-cancel': typeof ApiBillingPlanCancelRoute
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
@@ -687,6 +695,7 @@ export interface FileRoutesById {
   '/shop/upgrade': typeof ShopUpgradeRoute
   '/book/': typeof BookIndexRoute
   '/shop/': typeof ShopIndexRoute
+  '/api/admin/email-test': typeof ApiAdminEmailTestRoute
   '/api/billing/expire-sweep': typeof ApiBillingExpireSweepRoute
   '/api/billing/plan-cancel': typeof ApiBillingPlanCancelRoute
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
@@ -769,6 +778,7 @@ export interface FileRouteTypes {
     | '/shop/upgrade'
     | '/book/'
     | '/shop/'
+    | '/api/admin/email-test'
     | '/api/billing/expire-sweep'
     | '/api/billing/plan-cancel'
     | '/api/billing/plan-checkout'
@@ -847,6 +857,7 @@ export interface FileRouteTypes {
     | '/shop/upgrade'
     | '/book'
     | '/shop'
+    | '/api/admin/email-test'
     | '/api/billing/expire-sweep'
     | '/api/billing/plan-cancel'
     | '/api/billing/plan-checkout'
@@ -927,6 +938,7 @@ export interface FileRouteTypes {
     | '/shop/upgrade'
     | '/book/'
     | '/shop/'
+    | '/api/admin/email-test'
     | '/api/billing/expire-sweep'
     | '/api/billing/plan-cancel'
     | '/api/billing/plan-checkout'
@@ -994,6 +1006,7 @@ export interface RootRouteChildren {
   LegalPrivacyRoute: typeof LegalPrivacyRoute
   LegalRefundsRoute: typeof LegalRefundsRoute
   LegalTermsRoute: typeof LegalTermsRoute
+  ApiAdminEmailTestRoute: typeof ApiAdminEmailTestRoute
   ApiBillingExpireSweepRoute: typeof ApiBillingExpireSweepRoute
   ApiBillingPlanCancelRoute: typeof ApiBillingPlanCancelRoute
   ApiBillingPlanCheckoutRoute: typeof ApiBillingPlanCheckoutRoute
@@ -1535,6 +1548,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBillingExpireSweepRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/email-test': {
+      id: '/api/admin/email-test'
+      path: '/api/admin/email-test'
+      fullPath: '/api/admin/email-test'
+      preLoaderRoute: typeof ApiAdminEmailTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/transactional/send': {
       id: '/lovable/email/transactional/send'
       path: '/lovable/email/transactional/send'
@@ -1679,6 +1699,7 @@ const rootRouteChildren: RootRouteChildren = {
   LegalPrivacyRoute: LegalPrivacyRoute,
   LegalRefundsRoute: LegalRefundsRoute,
   LegalTermsRoute: LegalTermsRoute,
+  ApiAdminEmailTestRoute: ApiAdminEmailTestRoute,
   ApiBillingExpireSweepRoute: ApiBillingExpireSweepRoute,
   ApiBillingPlanCancelRoute: ApiBillingPlanCancelRoute,
   ApiBillingPlanCheckoutRoute: ApiBillingPlanCheckoutRoute,

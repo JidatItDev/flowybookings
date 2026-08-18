@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Megaphone, Send } from "lucide-react";
 import { toast } from "sonner";
 import { AdminLayout } from "@/admin/shell/AdminLayout";
-import { EmailTemplatesPreview } from "@/admin/messages/EmailTemplatesPreview";
+import { EmailNotificationPanel } from "@/admin/messages/EmailNotificationPanel";
 import { PageHeader } from "@/shared/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -237,7 +237,7 @@ export function MessagesPage() {
       </div>
 
       <div className="mt-6">
-        <EmailTemplatesPreview />
+        <EmailNotificationPanel />
       </div>
     </AdminLayout>
   );
