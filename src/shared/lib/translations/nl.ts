@@ -1819,7 +1819,7 @@ export const nl: Record<string, string> = {
   "adminBilling.noteSaved": "Notitie opgeslagen",
   "adminBilling.runSweep": "Verlopen-check nu uitvoeren",
   "adminBilling.runningSweep": "Bezig met controle…",
-  "adminBilling.sweepDone": "Controle klaar: {downgraded} van {checked} shop(s) gedowngraded",
+  "adminBilling.sweepDone": "Controle klaar: {expired} verlopen naar Starter, {pending} geplande plan(nen) toegepast",
   "adminBilling.sweepConfirmTitle": "Verlopen-check uitvoeren?",
   "adminBilling.sweepConfirmBody":
     "{count} shop(s) hebben momenteel een verlopen betaald abonnement. De controle zet ze terug naar Starter, logt de wijziging en stuurt elke eigenaar een melding.",

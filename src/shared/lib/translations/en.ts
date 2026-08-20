@@ -1800,7 +1800,7 @@ export const en: Record<string, string> = {
   "adminBilling.noteSaved": "Note saved",
   "adminBilling.runSweep": "Run expire sweep now",
   "adminBilling.runningSweep": "Running sweep…",
-  "adminBilling.sweepDone": "Sweep complete: {downgraded} of {checked} shop(s) downgraded",
+  "adminBilling.sweepDone": "Sweep complete: {expired} expired to Starter, {pending} pending plan(s) applied",
   "adminBilling.sweepConfirmTitle": "Run expire sweep?",
   "adminBilling.sweepConfirmBody":
     "{count} shop(s) currently have an expired paid plan. Running the sweep will downgrade them to Starter, log the change, and notify each owner.",

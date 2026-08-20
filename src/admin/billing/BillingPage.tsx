@@ -203,13 +203,20 @@ export function AdminBillingPage() {
   });
 
   const sweep = useMutation({
-    mutationFn: () => runExpireSweep(),
+    mutationFn: async () => {
+      const { data: sess } = await supabase.auth.getSession();
+      const accessToken = sess.session?.access_token;
+      if (!accessToken) throw new Error("Not signed in");
+      return runExpireSweep({ data: { accessToken } });
+    },
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["admin"] });
+      const expired = res.expired_to_starter.length;
+      const pending = res.pending_applied.length;
       toast.success(
         t("adminBilling.sweepDone")
-          .replace("{downgraded}", String(res.downgraded))
-          .replace("{checked}", String(res.checked)),
+          .replace("{expired}", String(expired))
+          .replace("{pending}", String(pending)),
       );
     },
     onError: (e: Error) => toast.error(e.message),

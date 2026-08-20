@@ -1,6 +1,7 @@
 # Week 2 billing — acceptance checklist
 
-Run after the email-template and cron migrations are applied.
+Run after email-template, Edge email-queue, and **billing `app_url` cron** migrations are applied.
+See also `docs/superpowers/plans/2026-08-20-billing-host-cron-cutover.md`.
 
 ## Shop A — monthly lifecycle
 
@@ -26,3 +27,9 @@ Connect Mollie → subscribe **Pro yearly** → `plan_expires_at` ≈ +12 months
 ## Connect cron
 
 `POST /hooks/mollie-refresh-tokens` with `Authorization: Bearer $CRON_SECRET` → still connected.
+
+## Host / cron cutover
+
+- Vault `app_url` matches production `APP_URL`.
+- `cron.job` for billing-expiry / reconcile / mollie-refresh uses that host (migration `20260820130000`).
+- Admin expire sweep requires super-admin; toast reports `expired` + `pending` counts.
