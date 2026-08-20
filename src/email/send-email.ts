@@ -5,6 +5,7 @@
 //   2. Call sendEmail({ type, to, data, idempotencyKey })
 // The queue worker is unchanged.
 
+import { drainTransactionalEmailQueue } from "@/email/drain-email-queue";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { serverEnv } from "@/server/env";
 
@@ -152,32 +153,8 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
     return { success: false, reason: "error", error: enqueueError.message };
   }
 
-  // Hosted pg_cron POSTs production /lovable/email/queue/process and currently
-  // gets 403 (vault service-role ≠ app key). Drain in-process so pending rows
-  // actually send — same as the admin test path.
-  await drainTransactionalEmailQueue();
+  // Drain via Edge Function so local + prod do not depend on the app URL / cron.
+  // await drainTransactionalEmailQueue();
 
   return { success: true, queued: true, messageId };
-}
-
-async function drainTransactionalEmailQueue() {
-  const serviceKey = serverEnv("SUPABASE_SERVICE_ROLE_KEY");
-  if (!serviceKey) {
-    console.warn("[sendEmail] skip queue drain: SUPABASE_SERVICE_ROLE_KEY missing");
-    return;
-  }
-  try {
-    const { handlers } = await import("@/email/server/queue-process");
-    const drainRes = await handlers.POST({
-      request: new Request("http://local/lovable/email/queue/process", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${serviceKey}` },
-      }),
-    });
-    if (!drainRes.ok) {
-      console.error("[sendEmail] queue drain failed", drainRes.status, await drainRes.text());
-    }
-  } catch (err) {
-    console.error("[sendEmail] queue drain error", err);
-  }
 }

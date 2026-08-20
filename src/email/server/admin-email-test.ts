@@ -1,7 +1,5 @@
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { sendEmail } from "@/email/send-email";
-import { handlers as queueHandlers } from "@/email/server/queue-process";
-import { serverEnv } from "@/server/env";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -44,21 +42,8 @@ export const handlers = {
         return json({ ok: false, ...result }, 400);
       }
 
-      // Drain immediately so a test send does not wait on pg_cron.
-      // Cloud cron cannot reach localhost, and this project had no cron job yet.
-      const serviceKey = serverEnv("SUPABASE_SERVICE_ROLE_KEY");
-      let drained: unknown = null;
-      if (serviceKey) {
-        const drainRes = await queueHandlers.POST({
-          request: new Request("http://local/lovable/email/queue/process", {
-            method: "POST",
-            headers: { Authorization: `Bearer ${serviceKey}` },
-          }),
-        });
-        drained = await drainRes.json().catch(() => null);
-      }
-
-      return json({ ok: true, messageId: result.messageId, drained });
+      // sendEmail already drains the Edge Function; nothing left for a second call.
+      return json({ ok: true, messageId: result.messageId });
     } catch (err) {
       console.error("[admin/email-test]", err);
       const details = err instanceof Error ? err.message : String(err);
