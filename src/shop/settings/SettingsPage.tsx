@@ -67,17 +67,15 @@ export function SettingsPage() {
 
   const { data: shop, isLoading } = useQuery({ ...shopFullQuery(shopId ?? ""), enabled: !!shopId });
 
-  // After returning from Mollie checkout (?billing=success|mock), do ONE
-  // refetch of the auth-shops + shopFull caches and rely on the webhook to
-  // finalize the DB. The optimistic "Activatie loopt…" badge (driven by the
-  // sessionStorage flag set during checkout) bridges the gap until the webhook
-  // arrives — no fragile timed polling loop.
+  // Legacy Mollie redirects that still land on /shop/settings?billing=*
+  // are forwarded to the canonical billing page.
   useEffect(() => {
     if (!search.billing || !shopId) return;
-    qc.invalidateQueries({ queryKey: ["auth", "shops"] });
-    qc.invalidateQueries({ queryKey: shopKeys.shopFull(shopId) });
-    refreshShops?.();
-    navigate({ to: "/shop/settings", search: {}, replace: true });
+    navigate({
+      to: "/shop/billing",
+      search: { billing: search.billing, payment: search.payment },
+      replace: true,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.billing, shopId]);
 
@@ -137,7 +135,7 @@ export function SettingsPage() {
   // fetched shopFullQuery row if activeShop hasn't hydrated yet.
   // Status semantics come from getTrialState(), which reads:
   //   - shop.plan / shop.plan_expires_at  (trial vs paid + expiry)
-  //   - shop.onboarding.subscription_status / payment_failed_at  (Mollie webhook)
+  //   - shop.subscription_status / onboarding.payment_failed_at  (Mollie webhook)
   // Pricing comes from the DB (plan_pricing) via usePlanPricing — never inline.
   const planSource = (activeShop ?? (shop as unknown as typeof activeShop)) ?? null;
   const trialState = getTrialState(planSource as never);

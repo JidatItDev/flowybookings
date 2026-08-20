@@ -1,5 +1,5 @@
 // SMS credit top-up dialog — lets a shop owner buy a pack via Mollie one-off payment.
-// On checkout success, redirects to Mollie. On return (?topup=return|mock) the parent
+// On checkout success, redirects to Mollie. On return (?topup=return) the parent
 // page invalidates the SMS credits query so the new balance shows up.
 
 import { useState } from "react";
@@ -54,15 +54,15 @@ export function SmsTopUpDialog({ shopId, open, onOpenChange }: Props) {
         }),
       });
       const json = (await res.json().catch(() => null)) as
-        | { ok?: boolean; checkout_url?: string; error?: string }
+        | { ok?: boolean; checkout_url?: string; error?: string; details?: string }
         | null;
       if (!res.ok || !json?.ok || !json.checkout_url) {
-        throw new Error(json?.error ?? "checkout_failed");
+        throw new Error(json?.details ?? json?.error ?? "checkout_failed");
       }
       window.location.href = json.checkout_url;
     } catch (err) {
       console.error("[sms-topup] error", err);
-      toast.error(t("smsTopup.errorGeneric"));
+      toast.error(err instanceof Error ? err.message : t("smsTopup.errorGeneric"));
       setPendingId(null);
     }
   };

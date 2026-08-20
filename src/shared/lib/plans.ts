@@ -20,9 +20,7 @@ export function tierOf(plan: DbPlan | string | null | undefined): Tier {
   return "basic"; // trial + starter + unknown
 }
 
-/** Feature flags. Each flag declares the minimum tier required.
- *  IMPORTANT: keep this list in sync with `plan_features` in the DB.
- *  Only list features that are actually built and gated in the UI. */
+/** Feature flags kept only as display fallback. Runtime access uses plan_features via get_shop_feature_access. */
 export const FEATURES = {
   // BASIC
   bookings: "basic",
@@ -61,7 +59,7 @@ export function planLabel(plan: DbPlan | string | null | undefined): string {
 
 export const ALL_DB_PLANS: DbPlan[] = ["trial", "starter", "pro", "premium"];
 
-/** Write a plan change and an audit-log entry in one go. */
+/** Admin-only plan change via audited server path. Owners must never call this. */
 export async function changeShopPlan(opts: {
   shopId: string;
   newPlan: DbPlan;
@@ -69,21 +67,27 @@ export async function changeShopPlan(opts: {
   actorUserId: string | null;
   actorEmail: string | null;
   source: "admin" | "owner_upgrade";
+  reason?: string;
 }) {
-  const { shopId, newPlan, previousPlan, actorUserId, actorEmail, source } = opts;
-  const { error } = await supabase.from("shops").update({ plan: newPlan }).eq("id", shopId);
-  if (error) throw error;
-  // Best-effort audit log; never block the UX if it fails.
-  try {
-    await supabase.from("activity_log").insert({
-      shop_id: shopId,
-      actor_user_id: actorUserId,
-      actor_email: actorEmail,
-      action: source === "admin" ? "plan_changed_by_admin" : "plan_upgraded_by_owner",
-      entity: "shop",
-      metadata: { previous_plan: previousPlan, new_plan: newPlan, source },
-    });
-  } catch {
-    /* ignore */
+  if (opts.source !== "admin") {
+    throw new Error("Owner plan writes are forbidden");
+  }
+  const reason = (opts.reason ?? "").trim() || window.prompt("Reden voor deze planwijziging (verplicht):");
+  if (!reason) throw new Error("reason_required");
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) throw new Error("Not signed in");
+  const res = await fetch("/api/admin/billing/plan-override", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      shop_id: opts.shopId,
+      new_plan: opts.newPlan,
+      reason,
+    }),
+  });
+  if (!res.ok) {
+    const j = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(j.error ?? "plan_override_failed");
   }
 }

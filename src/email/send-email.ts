@@ -56,9 +56,13 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
     .maybeSingle();
 
   if (tplError) {
+    console.error("[sendEmail] template lookup failed", params.type, tplError.message);
     return { success: false, reason: "error", error: tplError.message };
   }
-  if (!template) return { success: false, reason: "unknown_type" };
+  if (!template) {
+    console.error("[sendEmail] unknown_type", params.type);
+    return { success: false, reason: "unknown_type" };
+  }
 
   const messageId = crypto.randomUUID();
   const idempotencyKey = params.idempotencyKey || messageId;
@@ -148,5 +152,32 @@ export async function sendEmail(params: SendEmailParams): Promise<SendEmailResul
     return { success: false, reason: "error", error: enqueueError.message };
   }
 
+  // Hosted pg_cron POSTs production /lovable/email/queue/process and currently
+  // gets 403 (vault service-role ≠ app key). Drain in-process so pending rows
+  // actually send — same as the admin test path.
+  await drainTransactionalEmailQueue();
+
   return { success: true, queued: true, messageId };
+}
+
+async function drainTransactionalEmailQueue() {
+  const serviceKey = serverEnv("SUPABASE_SERVICE_ROLE_KEY");
+  if (!serviceKey) {
+    console.warn("[sendEmail] skip queue drain: SUPABASE_SERVICE_ROLE_KEY missing");
+    return;
+  }
+  try {
+    const { handlers } = await import("@/email/server/queue-process");
+    const drainRes = await handlers.POST({
+      request: new Request("http://local/lovable/email/queue/process", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${serviceKey}` },
+      }),
+    });
+    if (!drainRes.ok) {
+      console.error("[sendEmail] queue drain failed", drainRes.status, await drainRes.text());
+    }
+  } catch (err) {
+    console.error("[sendEmail] queue drain error", err);
+  }
 }

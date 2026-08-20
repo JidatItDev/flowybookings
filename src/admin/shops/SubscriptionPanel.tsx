@@ -32,7 +32,7 @@ type Shop = {
   subscription_notes: string | null;
 };
 
-const STATUSES = ["active", "trial", "expired", "cancelled", "paused", "payment_failed"] as const;
+const STATUSES = ["active", "trial", "expired", "cancelled", "paused", "payment_failed", "none"] as const;
 
 function toDateInputValue(iso: string | null): string {
   if (!iso) return "";

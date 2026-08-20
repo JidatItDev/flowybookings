@@ -1,12 +1,16 @@
 // SMS credit top-up checkout — creates a one-off Mollie payment that, once paid,
 // adds credits to the shop's shop_sms_credits balance via the Mollie webhook.
 //
-// Uses the platform Mollie account (MOLLIE_API_KEY), same as plan-checkout.
-// In dev (no MOLLIE_API_KEY), falls back to "mock mode" returning a fake URL.
+// Uses the platform Mollie account. Missing keys return 503 (no mock checkout).
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { PLATFORM_PROVIDER } from "@/admin/settings/platform-billing";
-import { getMolliePrimaryKey, mollieAuthHeader } from "@/shared/lib/mollie-platform";
+import {
+  getMolliePrimaryKey,
+  mollieAuthHeader,
+  MOLLIE_CONFIG_MISSING,
+  platformMollieWebhookFields,
+} from "@/shared/lib/mollie-platform";
 import { getSmsPackage } from "@/shop/notifications/sms-packages";
 
 const corsHeaders = {
@@ -79,15 +83,28 @@ export const handlers = {
             return json({ error: "could_not_create_payment", details: payErr?.message }, 500);
           }
 
-          // 2) Real Mollie payment, or mock URL.
-          // New one-off payments always go through the primary key.
           const mollieKey = getMolliePrimaryKey();
-          let checkoutUrl: string;
-          let mollieId: string | null = null;
-          let mocked = false;
+          if (!mollieKey) {
+            await supabaseAdmin
+              .from("payments")
+              .update({
+                status: "failed",
+                metadata: { error: MOLLIE_CONFIG_MISSING, kind: "sms_credits", package: pkg.id },
+              })
+              .eq("id", payment.id);
+            return json({
+              error: MOLLIE_CONFIG_MISSING,
+              details: "Server configuration missing",
+            }, 503);
+          }
 
-          if (mollieKey) {
-            const mollieRes = await fetch("https://api.mollie.com/v2/payments", {
+          const { data: billingCfg } = await supabaseAdmin
+            .from("platform_billing_config")
+            .select("webhook_url_override")
+            .eq("id", 1)
+            .maybeSingle();
+
+          const mollieRes = await fetch("https://api.mollie.com/v2/payments", {
               method: "POST",
               headers: {
                 Authorization: mollieAuthHeader(mollieKey),
@@ -97,7 +114,7 @@ export const handlers = {
                 amount: { currency: "EUR", value: (pkg.amountCents / 100).toFixed(2) },
                 description: `FlowyBookings SMS-tegoed — ${pkg.credits} credits`,
                 redirectUrl: `${origin}/shop/notifications?topup=return&payment=${payment.id}`,
-                webhookUrl: `${origin}/api/mollie/webhook`,
+                ...platformMollieWebhookFields(origin, billingCfg?.webhook_url_override),
                 metadata: {
                   payment_id: payment.id,
                   shop_id: shop.id,
@@ -119,30 +136,25 @@ export const handlers = {
               id: string;
               _links?: { checkout?: { href?: string } };
             };
-            mollieId = mollie.id;
-            checkoutUrl =
+            const mollieId = mollie.id;
+            const checkoutUrl =
               mollie._links?.checkout?.href ??
               `${origin}/shop/notifications?topup=return&payment=${payment.id}`;
             await supabaseAdmin
               .from("payments")
               .update({ provider_payment_id: mollie.id })
               .eq("id", payment.id);
-          } else {
-            mocked = true;
-            checkoutUrl = `${origin}/shop/notifications?topup=mock&payment=${payment.id}`;
-          }
 
-          // 3) Audit log
           await supabaseAdmin.from("activity_log").insert({
             entity: "sms_credits",
-            action: mocked ? "topup_mock_created" : "topup_created",
+            action: "topup_created",
             shop_id: shop.id,
             actor_user_id: userId,
             actor_email: userRes.user.email ?? null,
             metadata: { payment_id: payment.id, mollie_id: mollieId, package: pkg.id, credits: pkg.credits, amount_cents: pkg.amountCents },
           });
 
-          return json({ ok: true, payment_id: payment.id, checkout_url: checkoutUrl, mocked });
+          return json({ ok: true, payment_id: payment.id, checkout_url: checkoutUrl });
         } catch (err) {
           console.error("[sms-credits/checkout] error:", err);
           return json({ error: "internal_error", details: (err as Error).message }, 500);

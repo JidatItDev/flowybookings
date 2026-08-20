@@ -28,7 +28,7 @@ export const adminDashboardExtrasQuery = () =>
         supabase
           .from("payments")
           .select("shop_id, amount_cents, status, provider, booking_id, created_at"),
-        supabase.from("shops").select("id, plan, status, plan_expires_at, onboarding"),
+        supabase.from("shops").select("id, plan, status, plan_expires_at, subscription_status"),
       ])
 
       const payments = paymentsRes.data ?? []
@@ -69,7 +69,7 @@ export const adminDashboardExtrasQuery = () =>
       let cancelled = 0
       let activePaid = 0
       for (const s of shops) {
-        const sub = (s.onboarding as Record<string, unknown> | null)?.subscription_status as string | undefined
+        const sub = s.subscription_status as string | undefined
         const isPaidPlan = s.plan !== "trial"
         const expired =
           isPaidPlan &&

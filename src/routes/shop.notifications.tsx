@@ -4,7 +4,7 @@ import { NotificationsPage, type NotificationsSearchParams } from "@/shop/notifi
 export const Route = createFileRoute("/shop/notifications")({
   head: () => ({ meta: [{ title: "Notifications — FlowyBookings" }] }),
   validateSearch: (s: Record<string, unknown>): NotificationsSearchParams => ({
-    topup: s.topup === "return" || s.topup === "mock" || s.topup === "cancel" ? s.topup : undefined,
+    topup: s.topup === "return" || s.topup === "cancel" ? s.topup : undefined,
     payment: typeof s.payment === "string" ? s.payment : undefined,
   }),
   component: NotificationsPage,

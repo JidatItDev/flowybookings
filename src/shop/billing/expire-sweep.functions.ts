@@ -15,12 +15,13 @@ type SweepResult = {
 export const runExpireSweep = createServerFn({ method: "POST" }).handler(
   async (): Promise<SweepResult> => {
     const token =
+      process.env.CRON_SECRET ??
       process.env.SUPABASE_SERVICE_ROLE_KEY ??
       process.env.SUPABASE_ANON_KEY ??
       process.env.SUPABASE_PUBLISHABLE_KEY;
 
     if (!token) {
-      throw new Error("Missing Supabase service/anon key for expire-sweep auth");
+      throw new Error("Missing CRON_SECRET / Supabase key for billing-expiry auth");
     }
 
     // Resolve absolute URL from the incoming request when available.
@@ -33,7 +34,7 @@ export const runExpireSweep = createServerFn({ method: "POST" }).handler(
       origin = process.env.VITE_SUPABASE_URL ? "" : "";
     }
 
-    const url = `${origin}/api/billing/expire-sweep`;
+    const url = `${origin}/hooks/billing-expiry`;
     const res = await fetch(url, {
       method: "POST",
       headers: {

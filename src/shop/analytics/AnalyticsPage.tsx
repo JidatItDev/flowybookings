@@ -71,7 +71,7 @@ export function AnalyticsPage() {
 
   const hasData = bookings.length > 0;
 
-  const hasAdvancedAnalytics = analyticsAccess.data?.allowed ?? true;
+  const hasAdvancedAnalytics = analyticsAccess.data?.allowed ?? false;
 
   return (
     <>

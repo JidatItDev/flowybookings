@@ -1,0 +1,11 @@
+# Copy to `.dev.vars` (gitignored). Used by `vite dev` / wrangler locally.
+# Do not put live_ keys here.
+
+MOLLIE_MODE=test
+MOLLIE_API_KEY_TEST=
+MOLLIE_API_KEY_LIVE=
+
+# Optional. Public https origin (Cloudflare tunnel / ngrok) if you want Mollie to
+# POST live webhooks in local test. If unset or localhost, webhookUrl is omitted
+# and payment status is applied on return via confirm / reconcile.
+# APP_URL=https://your-tunnel.example.com

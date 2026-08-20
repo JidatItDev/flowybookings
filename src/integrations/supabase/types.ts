@@ -970,6 +970,8 @@ export type Database = {
           next_billing_at: string | null
           onboarding: Json
           owner_id: string
+          pending_plan: Database["public"]["Enums"]["subscription_plan"] | null
+          pending_plan_effective_at: string | null
           phone: string | null
           plan: Database["public"]["Enums"]["subscription_plan"]
           plan_billing_cycle: string | null
@@ -1002,6 +1004,8 @@ export type Database = {
           next_billing_at?: string | null
           onboarding?: Json
           owner_id: string
+          pending_plan?: Database["public"]["Enums"]["subscription_plan"] | null
+          pending_plan_effective_at?: string | null
           phone?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
           plan_billing_cycle?: string | null
@@ -1034,6 +1038,8 @@ export type Database = {
           next_billing_at?: string | null
           onboarding?: Json
           owner_id?: string
+          pending_plan?: Database["public"]["Enums"]["subscription_plan"] | null
+          pending_plan_effective_at?: string | null
           phone?: string | null
           plan?: Database["public"]["Enums"]["subscription_plan"]
           plan_billing_cycle?: string | null

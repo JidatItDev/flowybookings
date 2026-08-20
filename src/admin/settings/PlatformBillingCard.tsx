@@ -311,7 +311,9 @@ function StatusGrid({
         label={t("platformBilling.field.apiKey")}
         value={
           <span className="font-mono text-xs">
-            {status.apiKeyPresent ? status.apiKeyMasked : t("platformBilling.notConfigured")}
+            {status.apiKeyPresent
+              ? `${status.apiKeyMasked} (${status.envMode})`
+              : t("platformBilling.notConfigured")}
           </span>
         }
       />
@@ -480,9 +482,19 @@ function ManageSecretsDialog({
   const { t } = useT();
   const rows: Array<{ name: string; present: boolean; required: boolean }> = [
     {
-      name: PLATFORM_BILLING_SECRETS.apiKey,
-      present: !!status?.apiKeyPresent,
+      name: `${PLATFORM_BILLING_SECRETS.mode}=${status?.envMode ?? "test"}`,
+      present: true,
       required: true,
+    },
+    {
+      name: PLATFORM_BILLING_SECRETS.apiKeyTest,
+      present: !!status?.testKeyPresent,
+      required: status?.envMode !== "live",
+    },
+    {
+      name: PLATFORM_BILLING_SECRETS.apiKeyLive,
+      present: !!status?.liveKeyPresent,
+      required: status?.envMode === "live",
     },
     {
       name: PLATFORM_BILLING_SECRETS.clientId,

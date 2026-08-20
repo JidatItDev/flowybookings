@@ -1,49 +1,64 @@
 /**
- * Centralized configuration for the platform Mollie account
- * (FlowyBookings' OWN account used for plan billing, SMS top-ups and the
- * platform-billing webhook). Shop-owned Mollie Connect accounts are NOT
- * handled here — see `src/lib/mollie-connect.ts` for those.
+ * Platform Mollie account (FlowyBookings SaaS billing).
+ * Shop payout accounts use Mollie Connect — see mollie-connect.ts.
  *
- * Why this file exists
- * --------------------
- * To rotate the platform API key safely we must support TWO keys at the
- * same time:
- *   - PRIMARY (`MOLLIE_API_KEY`)        → used for ALL new payments,
- *                                          subscriptions and customers.
- *   - LEGACY  (`MOLLIE_API_KEY_LEGACY`) → optional fallback used only for
- *                                          existing Mollie objects that were
- *                                          created before the rotation
- *                                          (webhooks, refunds on old
- *                                          payments, lookups of pre-rotation
- *                                          subscriptions, …).
- *
- * If `MOLLIE_API_KEY_LEGACY` is unset, behavior is identical to the
- * pre-rotation setup — every call uses the primary key.
- *
- * Mollie objects are tied to the API key that created them, so a fetch
- * with the wrong key returns 401/404. We therefore expose a helper that
- * tries the primary key first and transparently retries with the legacy
- * key for those two status codes only.
+ * Env:
+ *   MOLLIE_MODE=test|live     — which key this process uses
+ *   MOLLIE_API_KEY_TEST       — test_… key (local / staging)
+ *   MOLLIE_API_KEY_LIVE       — live_… key (production)
+ *   MOLLIE_API_KEY            — optional fallback if the mode-specific key is unset
+ *   MOLLIE_API_KEY_LEGACY     — optional rotation fallback for old objects
  */
 
+import { collectServerEnvValues, serverEnv } from "@/server/env";
+
 export type MollieKeyKind = "primary" | "legacy";
+export type MollieEnvMode = "test" | "live";
 
 export type MollieKey = {
   key: string;
   kind: MollieKeyKind;
 };
 
-/** Primary key used for ALL new payments / subscriptions / customers. */
+export function getMollieMode(): MollieEnvMode {
+  const raw = (serverEnv("MOLLIE_MODE") ?? "test").trim().toLowerCase();
+  return raw === "live" ? "live" : "test";
+}
+
+function keyPrefixMode(key: string): MollieEnvMode | "unknown" {
+  if (key.startsWith("test_")) return "test";
+  if (key.startsWith("live_")) return "live";
+  return "unknown";
+}
+
+export function mollieNamedKeyPresent(mode: MollieEnvMode): boolean {
+  const named = mode === "live"
+    ? serverEnv("MOLLIE_API_KEY_LIVE")
+    : serverEnv("MOLLIE_API_KEY_TEST");
+  return Boolean(named?.trim());
+}
+
+function readModeKey(mode: MollieEnvMode): string | null {
+  const named = mode === "live"
+    ? serverEnv("MOLLIE_API_KEY_LIVE")
+    : serverEnv("MOLLIE_API_KEY_TEST");
+  const fallback = serverEnv("MOLLIE_API_KEY");
+  const key = (named ?? fallback)?.trim() || null;
+  if (!key) return null;
+  const prefix = keyPrefixMode(key);
+  if (prefix !== "unknown" && prefix !== mode) return null;
+  return key;
+}
+
+/** Active platform key for this environment. */
 export function getMolliePrimaryKey(): string | null {
-  return process.env.MOLLIE_API_KEY ?? null;
+  return readModeKey(getMollieMode());
 }
 
-/** Optional legacy key — only used to read/cancel pre-rotation objects. */
 export function getMollieLegacyKey(): string | null {
-  return process.env.MOLLIE_API_KEY_LEGACY ?? null;
+  return serverEnv("MOLLIE_API_KEY_LEGACY")?.trim() || null;
 }
 
-/** Returns both configured keys in priority order (primary first). */
 export function getMolliePlatformKeys(): MollieKey[] {
   const out: MollieKey[] = [];
   const primary = getMolliePrimaryKey();
@@ -53,23 +68,82 @@ export function getMolliePlatformKeys(): MollieKey[] {
   return out;
 }
 
-/**
- * Build the Authorization header for a given Mollie API key.
- */
 export function mollieAuthHeader(apiKey: string): string {
   return `Bearer ${apiKey}`;
 }
 
+export const MOLLIE_CONFIG_MISSING = "server_configuration_missing";
+
+const PLATFORM_WEBHOOK_PATH = "/api/mollie/webhook";
+
 /**
- * Fetch helper that targets a known existing Mollie object (payment,
- * subscription, customer) and automatically retries with the legacy key
- * when the primary key returns 401/404 — i.e. the object was created
- * under the previous key.
- *
- * Use this for ALL operations on existing Mollie IDs (webhooks, status
- * lookups, cancellations on pre-rotation subscriptions). Use
- * `getMolliePrimaryKey()` directly when CREATING new objects.
+ * Mollie rejects webhook URLs it cannot reach (localhost, private IPs, http).
+ * Local test payments still succeed without webhookUrl; status is applied on
+ * return via confirm / reconcile (or a tunneled webhook if APP_URL is public https).
  */
+export function isPublicHttpsOrigin(raw: string | undefined | null): boolean {
+  if (!raw?.trim()) return false;
+  try {
+    const u = new URL(raw.includes("://") ? raw.trim() : `https://${raw.trim()}`);
+    if (u.protocol !== "https:") return false;
+    const host = u.hostname.toLowerCase();
+    if (host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]") {
+      return false;
+    }
+    if (host.endsWith(".localhost") || host.endsWith(".local")) return false;
+    if (isPrivateHostname(host)) return false;
+    return Boolean(host);
+  } catch {
+    return false;
+  }
+}
+
+function isPrivateHostname(host: string): boolean {
+  if (host === "0.0.0.0") return true;
+  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) return true;
+  if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(host)) return true;
+  if (/^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(host)) return true;
+  if (/^169\.254\.\d{1,3}\.\d{1,3}$/.test(host)) return true;
+  return false;
+}
+
+function toPlatformWebhookUrl(originOrFull: string): string {
+  const trimmed = originOrFull.trim();
+  if (trimmed.includes(PLATFORM_WEBHOOK_PATH)) return trimmed.replace(/\/$/, "");
+  return `${trimmed.replace(/\/$/, "")}${PLATFORM_WEBHOOK_PATH}`;
+}
+
+/**
+ * URL to send as Mollie `webhookUrl`, or `undefined` to omit the field.
+ *
+ * Priority: public `webhook_url_override` → public APP_URL / PUBLIC_APP_URL / SITE_URL
+ * → public request origin → omit.
+ */
+export function platformMollieWebhookUrl(
+  origin: string,
+  override?: string | null,
+): string | undefined {
+  if (override?.trim() && isPublicHttpsOrigin(override)) {
+    return toPlatformWebhookUrl(override.trim());
+  }
+  for (const name of ["APP_URL", "PUBLIC_APP_URL", "SITE_URL"] as const) {
+    for (const v of collectServerEnvValues(name)) {
+      if (isPublicHttpsOrigin(v)) return toPlatformWebhookUrl(v);
+    }
+  }
+  if (origin && isPublicHttpsOrigin(origin)) return toPlatformWebhookUrl(origin);
+  return undefined;
+}
+
+/** Spread into a Mollie create/update JSON body. Empty when the webhook must be omitted. */
+export function platformMollieWebhookFields(
+  origin: string,
+  override?: string | null,
+): { webhookUrl?: string } {
+  const webhookUrl = platformMollieWebhookUrl(origin, override);
+  return webhookUrl ? { webhookUrl } : {};
+}
+
 export async function mollieFetchWithFallback(
   url: string,
   init: RequestInit = {},
@@ -87,7 +161,6 @@ export async function mollieFetchWithFallback(
       headers.set("Content-Type", "application/json");
     }
     const response = await fetch(url, { ...init, headers });
-    // Only fall back on auth/not-found — those indicate "wrong key for this object".
     if (response.status !== 401 && response.status !== 404) {
       return { response, usedKind: kind };
     }

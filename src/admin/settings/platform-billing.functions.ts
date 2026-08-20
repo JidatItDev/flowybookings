@@ -8,10 +8,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { PLATFORM_PROVIDER, BILLING_ENTITY } from "@/admin/settings/platform-billing";
-import { getMolliePrimaryKey, getMollieLegacyKey, mollieAuthHeader } from "@/shared/lib/mollie-platform";
+import { serverEnv } from "@/server/env";
+import { getMolliePrimaryKey, getMollieLegacyKey, getMollieMode, mollieAuthHeader, mollieNamedKeyPresent, platformMollieWebhookUrl } from "@/shared/lib/mollie-platform";
 
 export type PlatformBillingStatus = {
   // Secret presence (never the raw values).
+  envMode: "test" | "live";
+  testKeyPresent: boolean;
+  liveKeyPresent: boolean;
   apiKeyPresent: boolean;
   apiKeyMode: "test" | "live" | "unknown" | "missing";
   apiKeyMasked: string | null;
@@ -46,7 +50,9 @@ export type PlatformBillingStatus = {
 
 /** Required secret names — surfaced in the admin UI so admins know exactly what to add. */
 export const PLATFORM_BILLING_SECRETS = {
-  apiKey: "MOLLIE_API_KEY",
+  mode: "MOLLIE_MODE",
+  apiKeyTest: "MOLLIE_API_KEY_TEST",
+  apiKeyLive: "MOLLIE_API_KEY_LIVE",
   clientId: "MOLLIE_CLIENT_ID",
   clientSecret: "MOLLIE_CLIENT_SECRET",
   webhookSecret: "MOLLIE_WEBHOOK_SECRET",
@@ -75,12 +81,12 @@ export const getPlatformBillingStatus = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<PlatformBillingStatus> => {
     await assertSuperAdmin(data.accessToken);
 
+    const envMode = getMollieMode();
     const apiKey = getMolliePrimaryKey() ?? undefined;
     const legacyKey = getMollieLegacyKey() ?? undefined;
-    const clientId = process.env.MOLLIE_CLIENT_ID;
-    const clientSecret = process.env.MOLLIE_CLIENT_SECRET;
-    const webhookSecret = process.env.MOLLIE_WEBHOOK_SECRET;
-    const webhookBase = process.env.PUBLIC_APP_URL || process.env.SITE_URL || "";
+    const clientId = serverEnv("MOLLIE_CLIENT_ID");
+    const clientSecret = serverEnv("MOLLIE_CLIENT_SECRET");
+    const webhookSecret = serverEnv("MOLLIE_WEBHOOK_SECRET");
 
     let mode: PlatformBillingStatus["apiKeyMode"] = "missing";
     if (apiKey?.startsWith("test_")) mode = "test";
@@ -140,12 +146,12 @@ export const getPlatformBillingStatus = createServerFn({ method: "POST" })
       .maybeSingle();
 
     const configuredMode: "test" | "live" = cfg?.mode === "live" ? "live" : "test";
-    const baseWebhook = cfg?.webhook_url_override?.trim() || webhookBase;
-    const finalWebhookUrl = baseWebhook
-      ? `${baseWebhook.replace(/\/$/, "")}/api/mollie/webhook`
-      : "/api/mollie/webhook";
+    const finalWebhookUrl = platformMollieWebhookUrl("", cfg?.webhook_url_override) ?? "";
 
     return {
+      envMode,
+      testKeyPresent: mollieNamedKeyPresent("test"),
+      liveKeyPresent: mollieNamedKeyPresent("live"),
       apiKeyPresent: Boolean(apiKey),
       apiKeyMode: mode,
       apiKeyMasked: maskKey(apiKey),
@@ -154,8 +160,8 @@ export const getPlatformBillingStatus = createServerFn({ method: "POST" })
       clientIdPresent: Boolean(clientId),
       clientSecretPresent: Boolean(clientSecret),
       webhookSecretPresent: Boolean(webhookSecret),
-      webhookConfigured: Boolean(baseWebhook),
-      webhookUrl: finalWebhookUrl,
+      webhookConfigured: Boolean(finalWebhookUrl),
+      webhookUrl: finalWebhookUrl || "omitted (not publicly reachable)",
       configuredMode,
       webhookUrlOverride: cfg?.webhook_url_override ?? null,
       configUpdatedAt: cfg?.updated_at ?? null,
@@ -244,12 +250,12 @@ export const runPlatformBillingHealthCheck = createServerFn({ method: "POST" })
         action: "health_check_failed",
         actor_user_id: user.id,
         actor_email: user.email ?? null,
-        metadata: { error: "MOLLIE_API_KEY is not configured" },
+        metadata: { error: "Server configuration missing" },
       });
-      await persistHealth("failed", "MOLLIE_API_KEY is not configured", null);
+      await persistHealth("failed", "Server configuration missing", getMollieMode());
       return {
         ok: false,
-        message: "MOLLIE_API_KEY is not configured",
+        message: "Server configuration missing",
         mollieMode: null,
         checkedAt,
       };

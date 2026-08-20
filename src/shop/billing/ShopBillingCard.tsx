@@ -1,10 +1,8 @@
 // Shop-side platform billing card. Reuses the existing payments table — no new system.
-// Shows current plan, expiry, payment history; provides checkout + mock-confirm buttons.
 
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSearch } from "@tanstack/react-router";
-import { Loader2, Receipt, CalendarClock, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Loader2, Receipt, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,7 +23,6 @@ export function ShopBillingCard() {
   const qc = useQueryClient();
   const readOnly = useImpersonationReadOnly();
   const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
-  const search = useSearch({ strict: false }) as { billing?: string; payment?: string };
 
   const shopId = activeShop?.id ?? null;
   const { data: pricing } = usePlanPricing();
@@ -41,7 +38,7 @@ export function ShopBillingCard() {
         .eq("provider", PLATFORM_PROVIDER)
         .is("booking_id", null)
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(5);
       if (error) throw error;
       return data ?? [];
     },
@@ -58,38 +55,14 @@ export function ShopBillingCard() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ shop_id: shopId, plan, cycle, redirect_origin: window.location.origin }),
       });
-      const data = (await res.json()) as { ok?: boolean; checkout_url?: string; error?: string };
-      if (!res.ok || !data.checkout_url) throw new Error(data.error ?? "checkout_failed");
+      const data = (await res.json()) as { ok?: boolean; checkout_url?: string; error?: string; details?: string };
+      if (!res.ok || !data.checkout_url) throw new Error(data.details ?? data.error ?? "checkout_failed");
       if (shopId) {
         markBillingPending({ shopId, plan, cycle: cycle === "yearly" ? "yearly" : "monthly" });
       }
       return data.checkout_url;
     },
     onSuccess: (url) => { window.location.href = url; },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const confirmMock = useMutation({
-    mutationFn: async ({ paymentId, outcome }: { paymentId: string; outcome: "paid" | "failed" }) => {
-      assertNotImpersonating();
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-      if (!token) throw new Error("Not signed in");
-      const res = await fetch("/api/billing/plan-confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ payment_id: paymentId, outcome }),
-      });
-      if (!res.ok) {
-        const j = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(j.error ?? "confirm_failed");
-      }
-    },
-    onSuccess: (_d, vars) => {
-      toast.success(vars.outcome === "paid" ? "Subscription activated" : "Marked as failed");
-      qc.invalidateQueries({ queryKey: ["shop", "billing-payments", shopId] });
-      qc.invalidateQueries({ queryKey: ["auth", "shops"] });
-    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -119,29 +92,31 @@ export function ShopBillingCard() {
 
   const expiry = (activeShop as unknown as { plan_expires_at?: string | null })?.plan_expires_at ?? null;
   const cycle = (activeShop as unknown as { plan_billing_cycle?: string | null })?.plan_billing_cycle ?? null;
-  const onboarding = (activeShop as unknown as { onboarding?: Record<string, unknown> })?.onboarding ?? {};
-  const subscriptionStatus = (onboarding.subscription_status as string | undefined) ?? null;
+  const subscriptionStatus = (activeShop as unknown as { subscription_status?: string | null })?.subscription_status ?? null;
   const expiresDate = expiry ? new Date(expiry) : null;
   const isExpired = !!expiresDate && expiresDate.getTime() < Date.now();
   const canCancel = activeShop?.plan && activeShop.plan !== "trial" && subscriptionStatus !== "cancelled";
-
-  // "Next payment" line — only for actief betaald abonnement (geen trial,
-  // niet opgezegd, niet vervallen). Hergebruikt de bestaande pricing-hook.
+  const scheduledPlan = (activeShop as unknown as { pending_plan?: string | null })?.pending_plan ?? null;
+  const scheduledAt = (activeShop as unknown as { pending_plan_effective_at?: string | null })?.pending_plan_effective_at ?? null;
   const isPaidActive =
     !!activeShop?.plan &&
     activeShop.plan !== "trial" &&
     !isExpired &&
     subscriptionStatus !== "cancelled";
+  const statusBadge =
+    subscriptionStatus === "cancelled"
+      ? `Cancelled — access until ${expiresDate ? expiresDate.toLocaleDateString() : "—"}`
+      : subscriptionStatus === "payment_failed"
+        ? "Payment failed"
+        : isPaidActive
+          ? "Active"
+          : null;
+
   const nextPaymentAmount = useMemo(() => {
     if (!isPaidActive) return null;
     const priceLabel = formatPlanPrice(pricing, activeShop?.plan, cycle === "yearly" ? "yearly" : "monthly");
     return priceLabel || null;
   }, [isPaidActive, pricing, activeShop?.plan, cycle]);
-
-  const mockPaymentId = useMemo(() => {
-    if (search?.billing !== "mock" || !search?.payment) return null;
-    return search.payment;
-  }, [search]);
 
   if (!activeShop) return null;
 
@@ -155,6 +130,16 @@ export function ShopBillingCard() {
           <p className="mt-1 text-sm text-muted-foreground">
             {t("shopBilling.currentPlan")}: <span className="font-medium text-foreground">{pending && activeShop?.id === pending.shopId ? planLabel(pending.plan) : planLabel(activeShop!.plan)}</span>
             {cycle ? ` · ${t(`shopBilling.cycle.${cycle === "yearly" ? "yearly" : "monthly"}`)}` : ""}
+            {statusBadge ? (
+              <span className="ml-2 inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {statusBadge}
+              </span>
+            ) : null}
+            {scheduledPlan && scheduledAt ? (
+              <span className="ml-2 text-xs text-muted-foreground">
+                Scheduled: {planLabel(scheduledPlan)} on {new Date(scheduledAt).toLocaleDateString()}
+              </span>
+            ) : null}
             {pending && activeShop?.id === pending.shopId && activeShop?.plan !== pending.plan ? (
               <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary">
                 <Loader2 className="h-3 w-3 animate-spin" /> {t("billing.activating")}
@@ -190,21 +175,6 @@ export function ShopBillingCard() {
         </p>
       )}
       <p className="mt-1 text-xs text-muted-foreground">{t("billing.securePayments")}</p>
-
-      {mockPaymentId && (
-        <div className="mt-4 rounded-2xl border border-peach/60 bg-peach/30 p-3 text-xs text-foreground">
-          <p className="flex items-center gap-2 font-medium"><AlertTriangle className="h-4 w-4" />{t("shopBilling.mockBanner")}</p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => confirmMock.mutate({ paymentId: mockPaymentId, outcome: "paid" })} disabled={confirmMock.isPending || readOnly} title={readOnlyTitle}>
-              {confirmMock.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-              {t("shopBilling.mockPay")}
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => confirmMock.mutate({ paymentId: mockPaymentId, outcome: "failed" })} disabled={confirmMock.isPending || readOnly} title={readOnlyTitle}>
-              {t("shopBilling.mockFail")}
-            </Button>
-          </div>
-        </div>
-      )}
 
       {canCancel && (
         <div className="mt-4 flex justify-end">
@@ -278,8 +248,8 @@ export function usePlanCheckout() {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ shop_id: activeShop.id, plan, cycle, redirect_origin: window.location.origin }),
       });
-      const data = (await res.json()) as { ok?: boolean; checkout_url?: string; error?: string };
-      if (!res.ok || !data.checkout_url) throw new Error(data.error ?? "checkout_failed");
+      const data = (await res.json()) as { ok?: boolean; checkout_url?: string; error?: string; details?: string };
+      if (!res.ok || !data.checkout_url) throw new Error(data.details ?? data.error ?? "checkout_failed");
       // Optimistic UI: mark this shop as pending the requested plan so the
       // header + cards can show "Activatie loopt…" instead of stale TRIAL
       // while the user comes back from Mollie and the webhook fires.

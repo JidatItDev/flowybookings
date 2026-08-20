@@ -40,6 +40,8 @@ import { Route as HooksMollieRefreshTokensRouteImport } from './routes/hooks/mol
 import { Route as HooksExpireCancelledSubscriptionsRouteImport } from './routes/hooks/expire-cancelled-subscriptions'
 import { Route as HooksBookingConfirmationRouteImport } from './routes/hooks/booking-confirmation'
 import { Route as HooksBookingAutomationsRouteImport } from './routes/hooks/booking-automations'
+import { Route as HooksBillingReconcileRouteImport } from './routes/hooks/billing-reconcile'
+import { Route as HooksBillingExpiryRouteImport } from './routes/hooks/billing-expiry'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as BookSlugRouteImport } from './routes/book.$slug'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth.reset-password'
@@ -76,6 +78,8 @@ import { Route as ApiMollieConnectCallbackRouteImport } from './routes/api.molli
 import { Route as ApiMollieConnectAuthorizeRouteImport } from './routes/api.mollie-connect.authorize'
 import { Route as ApiBookingsRefundRouteImport } from './routes/api.bookings.refund'
 import { Route as ApiBookingsCheckoutRouteImport } from './routes/api.bookings.checkout'
+import { Route as ApiBillingPlanSyncRouteImport } from './routes/api.billing.plan-sync'
+import { Route as ApiBillingPlanDowngradeRouteImport } from './routes/api.billing.plan-downgrade'
 import { Route as ApiBillingPlanConfirmRouteImport } from './routes/api.billing.plan-confirm'
 import { Route as ApiBillingPlanCheckoutRouteImport } from './routes/api.billing.plan-checkout'
 import { Route as ApiBillingPlanCancelRouteImport } from './routes/api.billing.plan-cancel'
@@ -88,6 +92,7 @@ import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/em
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as BeheerDashboardShopsShopIdRouteImport } from './routes/beheer.dashboard.shops.$shopId'
 import { Route as ApiBookingBookingIdIcsRouteImport } from './routes/api.booking.$bookingId.ics'
+import { Route as ApiAdminBillingPlanOverrideRouteImport } from './routes/api.admin.billing.plan-override'
 
 const SupportRoute = SupportRouteImport.update({
   id: '/support',
@@ -245,6 +250,16 @@ const HooksBookingConfirmationRoute =
 const HooksBookingAutomationsRoute = HooksBookingAutomationsRouteImport.update({
   id: '/hooks/booking-automations',
   path: '/hooks/booking-automations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HooksBillingReconcileRoute = HooksBillingReconcileRouteImport.update({
+  id: '/hooks/billing-reconcile',
+  path: '/hooks/billing-reconcile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HooksBillingExpiryRoute = HooksBillingExpiryRouteImport.update({
+  id: '/hooks/billing-expiry',
+  path: '/hooks/billing-expiry',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
@@ -433,6 +448,16 @@ const ApiBookingsCheckoutRoute = ApiBookingsCheckoutRouteImport.update({
   path: '/api/bookings/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBillingPlanSyncRoute = ApiBillingPlanSyncRouteImport.update({
+  id: '/api/billing/plan-sync',
+  path: '/api/billing/plan-sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBillingPlanDowngradeRoute = ApiBillingPlanDowngradeRouteImport.update({
+  id: '/api/billing/plan-downgrade',
+  path: '/api/billing/plan-downgrade',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiBillingPlanConfirmRoute = ApiBillingPlanConfirmRouteImport.update({
   id: '/api/billing/plan-confirm',
   path: '/api/billing/plan-confirm',
@@ -497,6 +522,12 @@ const ApiBookingBookingIdIcsRoute = ApiBookingBookingIdIcsRouteImport.update({
   path: '/api/booking/$bookingId/ics',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminBillingPlanOverrideRoute =
+  ApiAdminBillingPlanOverrideRouteImport.update({
+    id: '/api/admin/billing/plan-override',
+    path: '/api/admin/billing/plan-override',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -511,6 +542,8 @@ export interface FileRoutesByFullPath {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/book/$slug': typeof BookSlugRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/hooks/billing-expiry': typeof HooksBillingExpiryRoute
+  '/hooks/billing-reconcile': typeof HooksBillingReconcileRoute
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
   '/hooks/expire-cancelled-subscriptions': typeof HooksExpireCancelledSubscriptionsRoute
@@ -539,6 +572,8 @@ export interface FileRoutesByFullPath {
   '/api/billing/plan-cancel': typeof ApiBillingPlanCancelRoute
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
+  '/api/billing/plan-downgrade': typeof ApiBillingPlanDowngradeRoute
+  '/api/billing/plan-sync': typeof ApiBillingPlanSyncRoute
   '/api/bookings/checkout': typeof ApiBookingsCheckoutRoute
   '/api/bookings/refund': typeof ApiBookingsRefundRoute
   '/api/mollie-connect/authorize': typeof ApiMollieConnectAuthorizeRoute
@@ -571,6 +606,7 @@ export interface FileRoutesByFullPath {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/shop/customers/$customerId': typeof ShopCustomersCustomerIdRoute
   '/beheer/dashboard/': typeof BeheerDashboardIndexRoute
+  '/api/admin/billing/plan-override': typeof ApiAdminBillingPlanOverrideRoute
   '/api/booking/$bookingId/ics': typeof ApiBookingBookingIdIcsRoute
   '/beheer/dashboard/shops/$shopId': typeof BeheerDashboardShopsShopIdRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -590,6 +626,8 @@ export interface FileRoutesByTo {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/book/$slug': typeof BookSlugRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/hooks/billing-expiry': typeof HooksBillingExpiryRoute
+  '/hooks/billing-reconcile': typeof HooksBillingReconcileRoute
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
   '/hooks/expire-cancelled-subscriptions': typeof HooksExpireCancelledSubscriptionsRoute
@@ -618,6 +656,8 @@ export interface FileRoutesByTo {
   '/api/billing/plan-cancel': typeof ApiBillingPlanCancelRoute
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
+  '/api/billing/plan-downgrade': typeof ApiBillingPlanDowngradeRoute
+  '/api/billing/plan-sync': typeof ApiBillingPlanSyncRoute
   '/api/bookings/checkout': typeof ApiBookingsCheckoutRoute
   '/api/bookings/refund': typeof ApiBookingsRefundRoute
   '/api/mollie-connect/authorize': typeof ApiMollieConnectAuthorizeRoute
@@ -650,6 +690,7 @@ export interface FileRoutesByTo {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/shop/customers/$customerId': typeof ShopCustomersCustomerIdRoute
   '/beheer/dashboard': typeof BeheerDashboardIndexRoute
+  '/api/admin/billing/plan-override': typeof ApiAdminBillingPlanOverrideRoute
   '/api/booking/$bookingId/ics': typeof ApiBookingBookingIdIcsRoute
   '/beheer/dashboard/shops/$shopId': typeof BeheerDashboardShopsShopIdRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -672,6 +713,8 @@ export interface FileRoutesById {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/book/$slug': typeof BookSlugRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
+  '/hooks/billing-expiry': typeof HooksBillingExpiryRoute
+  '/hooks/billing-reconcile': typeof HooksBillingReconcileRoute
   '/hooks/booking-automations': typeof HooksBookingAutomationsRoute
   '/hooks/booking-confirmation': typeof HooksBookingConfirmationRoute
   '/hooks/expire-cancelled-subscriptions': typeof HooksExpireCancelledSubscriptionsRoute
@@ -700,6 +743,8 @@ export interface FileRoutesById {
   '/api/billing/plan-cancel': typeof ApiBillingPlanCancelRoute
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
+  '/api/billing/plan-downgrade': typeof ApiBillingPlanDowngradeRoute
+  '/api/billing/plan-sync': typeof ApiBillingPlanSyncRoute
   '/api/bookings/checkout': typeof ApiBookingsCheckoutRoute
   '/api/bookings/refund': typeof ApiBookingsRefundRoute
   '/api/mollie-connect/authorize': typeof ApiMollieConnectAuthorizeRoute
@@ -732,6 +777,7 @@ export interface FileRoutesById {
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/shop/customers/$customerId': typeof ShopCustomersCustomerIdRoute
   '/beheer/dashboard/': typeof BeheerDashboardIndexRoute
+  '/api/admin/billing/plan-override': typeof ApiAdminBillingPlanOverrideRoute
   '/api/booking/$bookingId/ics': typeof ApiBookingBookingIdIcsRoute
   '/beheer/dashboard/shops/$shopId': typeof BeheerDashboardShopsShopIdRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -755,6 +801,8 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/book/$slug'
     | '/email/unsubscribe'
+    | '/hooks/billing-expiry'
+    | '/hooks/billing-reconcile'
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
     | '/hooks/expire-cancelled-subscriptions'
@@ -783,6 +831,8 @@ export interface FileRouteTypes {
     | '/api/billing/plan-cancel'
     | '/api/billing/plan-checkout'
     | '/api/billing/plan-confirm'
+    | '/api/billing/plan-downgrade'
+    | '/api/billing/plan-sync'
     | '/api/bookings/checkout'
     | '/api/bookings/refund'
     | '/api/mollie-connect/authorize'
@@ -815,6 +865,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/shop/customers/$customerId'
     | '/beheer/dashboard/'
+    | '/api/admin/billing/plan-override'
     | '/api/booking/$bookingId/ics'
     | '/beheer/dashboard/shops/$shopId'
     | '/lovable/email/auth/preview'
@@ -834,6 +885,8 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/book/$slug'
     | '/email/unsubscribe'
+    | '/hooks/billing-expiry'
+    | '/hooks/billing-reconcile'
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
     | '/hooks/expire-cancelled-subscriptions'
@@ -862,6 +915,8 @@ export interface FileRouteTypes {
     | '/api/billing/plan-cancel'
     | '/api/billing/plan-checkout'
     | '/api/billing/plan-confirm'
+    | '/api/billing/plan-downgrade'
+    | '/api/billing/plan-sync'
     | '/api/bookings/checkout'
     | '/api/bookings/refund'
     | '/api/mollie-connect/authorize'
@@ -894,6 +949,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/shop/customers/$customerId'
     | '/beheer/dashboard'
+    | '/api/admin/billing/plan-override'
     | '/api/booking/$bookingId/ics'
     | '/beheer/dashboard/shops/$shopId'
     | '/lovable/email/auth/preview'
@@ -915,6 +971,8 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/book/$slug'
     | '/email/unsubscribe'
+    | '/hooks/billing-expiry'
+    | '/hooks/billing-reconcile'
     | '/hooks/booking-automations'
     | '/hooks/booking-confirmation'
     | '/hooks/expire-cancelled-subscriptions'
@@ -943,6 +1001,8 @@ export interface FileRouteTypes {
     | '/api/billing/plan-cancel'
     | '/api/billing/plan-checkout'
     | '/api/billing/plan-confirm'
+    | '/api/billing/plan-downgrade'
+    | '/api/billing/plan-sync'
     | '/api/bookings/checkout'
     | '/api/bookings/refund'
     | '/api/mollie-connect/authorize'
@@ -975,6 +1035,7 @@ export interface FileRouteTypes {
     | '/lovable/email/suppression'
     | '/shop/customers/$customerId'
     | '/beheer/dashboard/'
+    | '/api/admin/billing/plan-override'
     | '/api/booking/$bookingId/ics'
     | '/beheer/dashboard/shops/$shopId'
     | '/lovable/email/auth/preview'
@@ -996,6 +1057,8 @@ export interface RootRouteChildren {
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
+  HooksBillingExpiryRoute: typeof HooksBillingExpiryRoute
+  HooksBillingReconcileRoute: typeof HooksBillingReconcileRoute
   HooksBookingAutomationsRoute: typeof HooksBookingAutomationsRoute
   HooksBookingConfirmationRoute: typeof HooksBookingConfirmationRoute
   HooksExpireCancelledSubscriptionsRoute: typeof HooksExpireCancelledSubscriptionsRoute
@@ -1011,6 +1074,8 @@ export interface RootRouteChildren {
   ApiBillingPlanCancelRoute: typeof ApiBillingPlanCancelRoute
   ApiBillingPlanCheckoutRoute: typeof ApiBillingPlanCheckoutRoute
   ApiBillingPlanConfirmRoute: typeof ApiBillingPlanConfirmRoute
+  ApiBillingPlanDowngradeRoute: typeof ApiBillingPlanDowngradeRoute
+  ApiBillingPlanSyncRoute: typeof ApiBillingPlanSyncRoute
   ApiBookingsCheckoutRoute: typeof ApiBookingsCheckoutRoute
   ApiBookingsRefundRoute: typeof ApiBookingsRefundRoute
   ApiMollieConnectAuthorizeRoute: typeof ApiMollieConnectAuthorizeRoute
@@ -1041,6 +1106,7 @@ export interface RootRouteChildren {
   BeheerDashboardUsersRoute: typeof BeheerDashboardUsersRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   BeheerDashboardIndexRoute: typeof BeheerDashboardIndexRoute
+  ApiAdminBillingPlanOverrideRoute: typeof ApiAdminBillingPlanOverrideRoute
   ApiBookingBookingIdIcsRoute: typeof ApiBookingBookingIdIcsRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
@@ -1266,6 +1332,20 @@ declare module '@tanstack/react-router' {
       path: '/hooks/booking-automations'
       fullPath: '/hooks/booking-automations'
       preLoaderRoute: typeof HooksBookingAutomationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hooks/billing-reconcile': {
+      id: '/hooks/billing-reconcile'
+      path: '/hooks/billing-reconcile'
+      fullPath: '/hooks/billing-reconcile'
+      preLoaderRoute: typeof HooksBillingReconcileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/hooks/billing-expiry': {
+      id: '/hooks/billing-expiry'
+      path: '/hooks/billing-expiry'
+      fullPath: '/hooks/billing-expiry'
+      preLoaderRoute: typeof HooksBillingExpiryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/email/unsubscribe': {
@@ -1520,6 +1600,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBookingsCheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/billing/plan-sync': {
+      id: '/api/billing/plan-sync'
+      path: '/api/billing/plan-sync'
+      fullPath: '/api/billing/plan-sync'
+      preLoaderRoute: typeof ApiBillingPlanSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/billing/plan-downgrade': {
+      id: '/api/billing/plan-downgrade'
+      path: '/api/billing/plan-downgrade'
+      fullPath: '/api/billing/plan-downgrade'
+      preLoaderRoute: typeof ApiBillingPlanDowngradeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/billing/plan-confirm': {
       id: '/api/billing/plan-confirm'
       path: '/api/billing/plan-confirm'
@@ -1602,6 +1696,13 @@ declare module '@tanstack/react-router' {
       path: '/api/booking/$bookingId/ics'
       fullPath: '/api/booking/$bookingId/ics'
       preLoaderRoute: typeof ApiBookingBookingIdIcsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/billing/plan-override': {
+      id: '/api/admin/billing/plan-override'
+      path: '/api/admin/billing/plan-override'
+      fullPath: '/api/admin/billing/plan-override'
+      preLoaderRoute: typeof ApiAdminBillingPlanOverrideRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -1688,6 +1789,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
+  HooksBillingExpiryRoute: HooksBillingExpiryRoute,
+  HooksBillingReconcileRoute: HooksBillingReconcileRoute,
   HooksBookingAutomationsRoute: HooksBookingAutomationsRoute,
   HooksBookingConfirmationRoute: HooksBookingConfirmationRoute,
   HooksExpireCancelledSubscriptionsRoute:
@@ -1704,6 +1807,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBillingPlanCancelRoute: ApiBillingPlanCancelRoute,
   ApiBillingPlanCheckoutRoute: ApiBillingPlanCheckoutRoute,
   ApiBillingPlanConfirmRoute: ApiBillingPlanConfirmRoute,
+  ApiBillingPlanDowngradeRoute: ApiBillingPlanDowngradeRoute,
+  ApiBillingPlanSyncRoute: ApiBillingPlanSyncRoute,
   ApiBookingsCheckoutRoute: ApiBookingsCheckoutRoute,
   ApiBookingsRefundRoute: ApiBookingsRefundRoute,
   ApiMollieConnectAuthorizeRoute: ApiMollieConnectAuthorizeRoute,
@@ -1734,6 +1839,7 @@ const rootRouteChildren: RootRouteChildren = {
   BeheerDashboardUsersRoute: BeheerDashboardUsersRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   BeheerDashboardIndexRoute: BeheerDashboardIndexRoute,
+  ApiAdminBillingPlanOverrideRoute: ApiAdminBillingPlanOverrideRoute,
   ApiBookingBookingIdIcsRoute: ApiBookingBookingIdIcsRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,

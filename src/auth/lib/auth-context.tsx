@@ -30,6 +30,9 @@ export type ShopRow = {
   plan: string;
   plan_expires_at: string | null;
   plan_billing_cycle: string | null;
+  subscription_status: string | null;
+  pending_plan: string | null;
+  pending_plan_effective_at: string | null;
   onboarding: Record<string, unknown> | null;
   policy_accepted_at: string | null;
   policy_version: string | null;
@@ -177,7 +180,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // 1) Own shops (owner_id = user)
       const ownPromise = supabase
         .from("shops")
-        .select("id, name, slug, status, plan, plan_expires_at, plan_billing_cycle, onboarding, policy_accepted_at, policy_version, owner_id, is_demo, created_at")
+        .select("id, name, slug, status, plan, plan_expires_at, plan_billing_cycle, subscription_status, pending_plan, pending_plan_effective_at, onboarding, policy_accepted_at, policy_version, owner_id, is_demo, created_at")
         .eq("owner_id", userId!);
       // 2) Shops the user has an explicit role on
       const rolesPromise = supabase
@@ -199,7 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (roleShopIds.length) {
         const { data, error } = await supabase
           .from("shops")
-          .select("id, name, slug, status, plan, plan_expires_at, plan_billing_cycle, onboarding, policy_accepted_at, policy_version, owner_id, is_demo, created_at")
+          .select("id, name, slug, status, plan, plan_expires_at, plan_billing_cycle, subscription_status, pending_plan, pending_plan_effective_at, onboarding, policy_accepted_at, policy_version, owner_id, is_demo, created_at")
           .in("id", roleShopIds);
         if (error) throw error;
         extra = (data ?? []) as (ShopRow & { owner_id: string; is_demo: boolean; created_at: string })[];

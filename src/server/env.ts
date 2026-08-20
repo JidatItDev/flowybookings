@@ -45,3 +45,22 @@ export function serverEnv(name: string): string | undefined {
   if (fromProcess) return fromProcess;
   return loadDotEnvFiles()[name];
 }
+
+/** Every distinct value for a key across process.env and env files (unmerged). */
+export function collectServerEnvValues(name: string): string[] {
+  const seen = new Set<string>();
+  const add = (v?: string) => {
+    const t = v?.trim();
+    if (t) seen.add(t);
+  };
+  if (typeof process !== "undefined" && process.versions?.node) {
+    const cwd = process.cwd();
+    for (const file of [".dev.vars", ".env.local", ".env"]) {
+      const path = resolve(cwd, file);
+      if (!existsSync(path)) continue;
+      add(parseEnvFile(readFileSync(path, "utf8"))[name]);
+    }
+  }
+  add(typeof process !== "undefined" ? process.env[name] : undefined);
+  return [...seen];
+}

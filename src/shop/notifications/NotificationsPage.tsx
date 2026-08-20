@@ -21,7 +21,7 @@ import { useT } from "@/shared/lib/i18n";
 import { useFeatureAccess } from "@/shop/billing/use-feature-access";
 import { assertNotImpersonating, useImpersonationReadOnly } from "@/admin/impersonation/ImpersonationBanner";
 
-export type NotificationsSearchParams = { topup?: "return" | "mock" | "cancel"; payment?: string };
+export type NotificationsSearchParams = { topup?: "return" | "cancel"; payment?: string };
 
 type ChannelKey = "email" | "sms" | "whatsapp";
 type EventKey = "confirm" | "reminder24" | "reminder2" | "noshow";
@@ -54,7 +54,7 @@ export function NotificationsPage() {
   // After Mollie redirect, refresh credits + show toast.
   useEffect(() => {
     if (!shopId) return;
-    if (search.topup === "return" || search.topup === "mock") {
+    if (search.topup === "return") {
       toast.success(t("smsTopup.successReturn"));
       qc.invalidateQueries({ queryKey: shopKeys.smsCredits(shopId) });
       // Also poll briefly: webhook may take a few seconds.

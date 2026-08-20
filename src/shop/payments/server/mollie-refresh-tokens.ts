@@ -15,11 +15,15 @@ const REFRESH_AHEAD_MS = 6 * 60 * 60 * 1000; // refresh anything expiring in nex
 export const handlers = {
       POST: async ({ request }: { request: Request }) => {
         // Auth: require either Lovable-Context: cron + anon key, or service role.
+        const cronSecret = process.env.CRON_SECRET;
         const auth = request.headers.get("authorization") ?? "";
         const ctx = request.headers.get("lovable-context") ?? "";
-        const expected = `Bearer ${process.env.SUPABASE_PUBLISHABLE_KEY ?? ""}`;
-        const isService = auth === `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY ?? ""}`;
-        if (!isService && (ctx !== "cron" || auth !== expected)) {
+        const token = auth.replace(/^Bearer\s+/i, "").trim();
+        const expectedAnon = process.env.SUPABASE_PUBLISHABLE_KEY ?? "";
+        const isService = token === (process.env.SUPABASE_SERVICE_ROLE_KEY ?? "");
+        const isCronSecret = !!cronSecret && token === cronSecret;
+        const isLegacyCron = ctx === "cron" && expectedAnon && token === expectedAnon;
+        if (!isService && !isCronSecret && !isLegacyCron) {
           return json({ error: "unauthenticated" }, 401);
         }
 

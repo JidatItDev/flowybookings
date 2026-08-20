@@ -1,6 +1,6 @@
 // Trial + subscription state helpers — single source of truth for UI gating.
-// Reads from shops.plan, shops.plan_expires_at, and shops.onboarding (jsonb).
-// The Mollie webhook writes subscription_status + payment_failed_at into onboarding.
+// Reads shops.plan, shops.plan_expires_at, shops.subscription_status,
+// and shops.onboarding.payment_failed_at / subscription_cancelled_at.
 //
 // Booking-block rules (mirrored in DB function shop_can_accept_bookings):
 //   - trial expired                                       → no bookings
@@ -16,6 +16,7 @@ export type SubscriptionStatus =
   | "payment_failed"
   | "cancelled" // sub cancelled but still active until plan_expires_at
   | "expired"
+  | "none"
   | "unknown";
 
 export type TrialState = {
@@ -38,6 +39,7 @@ export type TrialState = {
 export function getTrialState(shop: {
   plan?: string | null;
   plan_expires_at?: string | null;
+  subscription_status?: string | null;
   onboarding?: Record<string, unknown> | null;
 } | null | undefined): TrialState {
   if (!shop) {
@@ -56,7 +58,9 @@ export function getTrialState(shop: {
   const daysLeft = isTrial && expiresAt ? Math.ceil((expiresAt.getTime() - now) / DAY_MS) : null;
 
   const ob = (shop.onboarding ?? {}) as Record<string, unknown>;
+  const fromColumn = shop.subscription_status as string | undefined;
   const fromOb = ob.subscription_status as string | undefined;
+  const statusSource = fromColumn || fromOb;
   const failedAtRaw = ob.payment_failed_at as string | undefined;
   const cancelledAtRaw = ob.subscription_cancelled_at as string | undefined;
 
@@ -81,7 +85,7 @@ export function getTrialState(shop: {
   // any stale onboarding flag — single source of truth is shops.plan + plan_expires_at.
   const subscriptionStatus: SubscriptionStatus = isTrial
     ? (isExpired ? "expired" : "trial")
-    : ((fromOb as SubscriptionStatus) ?? "active");
+    : ((statusSource as SubscriptionStatus) ?? "active");
 
   // Composite booking gate (matches DB shop_can_accept_bookings exactly)
   let canAcceptBookings: boolean;

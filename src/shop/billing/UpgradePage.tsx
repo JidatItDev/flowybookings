@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, getRouteApi } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { Check, Sparkles, ShieldCheck, TrendingUp, AlertTriangle, ArrowRight, Loader2, Lock } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/auth/lib/auth-context";
 import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
-import { changeShopPlan, tierOf, TIER_RANK, type DbPlan } from "@/shared/lib/plans";
+import { supabase } from "@/integrations/supabase/client";
+import { tierOf, TIER_RANK, type DbPlan } from "@/shared/lib/plans";
 import { usePermissions } from "@/shop/billing/use-permissions";
 import { shopKeys } from "@/shop/shared/queries-barrel";
 import { ShopBillingCard, usePlanCheckout } from "@/shop/billing/ShopBillingCard";
@@ -16,13 +17,11 @@ import { TransactionFeesCard } from "@/shop/billing/TransactionFeesCard";
 import { assertNotImpersonating, useImpersonationReadOnly } from "@/admin/impersonation/ImpersonationBanner";
 import { usePlanPricing, planMonthlyAmount } from "@/shop/billing/use-plan-pricing";
 
-const Route = getRouteApi("/shop/upgrade");
-
 type PlanKey = "starter" | "pro" | "premium"; // DB plan values for BASIC/PRO/PREMIUM tiers
 
 export function UpgradePage() {
   const { t } = useT();
-  const { activeShop, user, refreshShops } = useAuth() as ReturnType<typeof useAuth> & { refreshShops?: () => void };
+  const { activeShop, refreshShops } = useAuth() as ReturnType<typeof useAuth> & { refreshShops?: () => void };
   const { canManageBilling, isStaffOnly } = usePermissions();
   const qc = useQueryClient();
   const currentPlan = (activeShop?.plan ?? "trial") as DbPlan;
@@ -30,64 +29,83 @@ export function UpgradePage() {
   const [cycle, setCycle] = useState<"monthly" | "yearly">("monthly");
   const readOnly = useImpersonationReadOnly();
   const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
-  const search = Route.useSearch();
+  const search = useSearch({ strict: false }) as { billing?: string; payment?: string };
   const navigate = useNavigate();
   const { data: pricingMap } = usePlanPricing();
   const priceFor = (plan: DbPlan, fallback: number) => planMonthlyAmount(pricingMap, plan) ?? fallback;
 
   const checkout = usePlanCheckout();
 
-  // After Mollie redirect (?billing=success|mock), do ONE refetch and rely on
-  // the webhook to finalize. The "Activatie loopt…" optimistic badge (set by
-  // checkout into sessionStorage) bridges the gap until the webhook arrives —
-  // no more fragile polling loop.
+  // After Mollie redirect, sync payment status from Mollie (webhooks are often
+  // delayed or blocked on ngrok). Then refetch shops so the plan badge updates.
   useEffect(() => {
     if (!search.billing || !activeShop?.id) return;
-    if (search.billing === "success" || search.billing === "mock") {
-      // Conversion-focused confirmation — directly after Mollie redirect.
-      toast.success(t("upgrade.toastUpgraded", { plan: activeShop?.plan ?? "" }));
-    }
-    qc.invalidateQueries({ queryKey: ["auth", "shops"] });
-    qc.invalidateQueries({ queryKey: shopKeys.shopFull(activeShop.id) });
-    refreshShops?.();
-    navigate({ to: "/shop/upgrade", search: {}, replace: true });
+    const paymentId = search.payment;
+    let cancelled = false;
+    (async () => {
+      if (search.billing === "success" && paymentId) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+        if (token) {
+          const res = await fetch("/api/billing/plan-sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ payment_id: paymentId }),
+          });
+          const data = (await res.json().catch(() => ({}))) as {
+            ok?: boolean;
+            local_status?: string;
+            mollie_status?: string;
+            plan?: string;
+          };
+          if (cancelled) return;
+          if (data.local_status === "paid") {
+            toast.success(t("upgrade.toastUpgraded", { plan: data.plan ?? activeShop.plan ?? "" }));
+          } else if (data.mollie_status === "open" || data.local_status === "unpaid") {
+            toast.error("Payment is not completed yet. In Mollie test checkout choose Paid, not Open.");
+          } else if (data.local_status === "failed") {
+            toast.error("Payment failed");
+          }
+        }
+      } else if (search.billing === "success") {
+        toast.success(t("upgrade.toastUpgraded", { plan: activeShop?.plan ?? "" }));
+      }
+      if (cancelled) return;
+      qc.invalidateQueries({ queryKey: ["auth", "shops"] });
+      qc.invalidateQueries({ queryKey: ["shop", "billing-payments", activeShop.id] });
+      qc.invalidateQueries({ queryKey: shopKeys.shopFull(activeShop.id) });
+      refreshShops?.();
+      navigate({ to: "/shop/billing", search: {}, replace: true });
+    })();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search.billing, activeShop?.id]);
+  }, [search.billing, search.payment, activeShop?.id]);
 
-  // Downgrades don't require payment — keep them as direct plan changes.
+  // Downgrades are scheduled at period end — never write shops.plan from the client.
   const downgrade = useMutation({
     mutationFn: async (newPlan: PlanKey) => {
       assertNotImpersonating();
       if (!activeShop) throw new Error("No active shop");
-      await changeShopPlan({
-        shopId: activeShop.id,
-        newPlan,
-        previousPlan: currentPlan,
-        actorUserId: user?.id ?? null,
-        actorEmail: user?.email ?? null,
-        source: "owner_upgrade",
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Not signed in");
+      const res = await fetch("/api/billing/plan-downgrade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ shop_id: activeShop.id, target_plan: newPlan, cycle }),
       });
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(j.error ?? "downgrade_failed");
+      }
     },
     onSuccess: async (_d, planKey) => {
       toast.success(t("upgrade.toastDowngradeScheduled", { plan: planKey }));
-      if (activeShop) {
-        try {
-          await import("@/integrations/supabase/client").then(({ supabase }) =>
-            supabase.from("notifications").insert({
-              shop_id: activeShop.id,
-              type: "billing",
-              title: `Plan changed to ${planKey}`,
-              message: `Your shop is now on the ${planKey} plan.`,
-              action_url: "/shop/billing",
-              metadata: { kind: "subscription", subkind: "downgrade", plan: planKey },
-            }),
-          );
-        } catch {
-          /* best-effort */
-        }
-      }
       qc.invalidateQueries({ queryKey: ["auth", "shops"] });
       if (activeShop) qc.invalidateQueries({ queryKey: shopKeys.shopFull(activeShop.id) });
+      refreshShops?.();
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -179,7 +197,7 @@ export function UpgradePage() {
         ))}
       </div>
 
-      {/* Billing card (current plan, expiry, payment history, mock-confirm banner) */}
+      {/* Billing card (current plan, expiry, payment history) */}
       <div className="mb-6">
         <ShopBillingCard />
       </div>
@@ -294,7 +312,6 @@ export function UpgradePage() {
                     if (currentPlan === "trial") {
                       if (!window.confirm(t("upgrade.confirmUpgradeFromTrial"))) return;
                     }
-                    // Real upgrade flow → Mollie checkout (or mock checkout in dev).
                     checkout.mutate({ plan: p.key, cycle });
                   }
                 }}

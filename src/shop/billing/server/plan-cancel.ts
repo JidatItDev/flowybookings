@@ -1,14 +1,14 @@
 // Cancel a platform Mollie subscription. The current plan stays active until
-// shops.plan_expires_at — at that point the daily expire-sweep cron flips the
-// shop back to 'trial' (already implemented) and onboarding.subscription_status
-// → "expired". This endpoint marks the cancellation in onboarding so the UI
-// can show "active until X, then trial" and skips the next renewal.
+// shops.plan_expires_at — then the billing-expiry job lands the shop on Starter.
+// This endpoint sets shops.subscription_status = cancelled and clears pending
+// plan changes so the UI can show "active until X".
 //
 // Auth: bearer token, must be shop owner OR super_admin.
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BILLING_ENTITY } from "@/admin/settings/platform-billing";
 import { getMolliePlatformKeys, mollieFetchWithFallback } from "@/shared/lib/mollie-platform";
+import { enqueueSubscriptionEmail } from "@/email/enqueue-subscription-email";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -78,9 +78,11 @@ export const handlers = {
           await supabaseAdmin
             .from("shops")
             .update({
+              subscription_status: "cancelled",
+              pending_plan: null,
+              pending_plan_effective_at: null,
               onboarding: {
                 ...onboarding,
-                subscription_status: "cancelled",
                 subscription_cancelled_at: cancelledAt,
               },
             })
@@ -108,8 +110,20 @@ export const handlers = {
             message: shop.plan_expires_at
               ? `Je abonnement loopt nog tot ${new Date(shop.plan_expires_at).toLocaleDateString("nl-NL")}, daarna stopt het automatisch.`
               : "Je abonnement is opgezegd.",
-            action_url: "/shop/settings",
+            action_url: "/shop/billing",
             metadata: { kind: "subscription", subkind: "cancelled" },
+          });
+
+          await enqueueSubscriptionEmail({
+            type: "subscription_cancelled",
+            shopId: shop.id,
+            idempotencyKey: `subscription_cancelled:${shop.id}:${cancelledAt}`,
+            data: {
+              plan: String(shop.plan),
+              expiresAt: shop.plan_expires_at
+                ? new Date(shop.plan_expires_at).toLocaleDateString("nl-NL")
+                : "—",
+            },
           });
 
           return json({ ok: true, mollie_cancelled: mollieCancelled, expires_at: shop.plan_expires_at });
