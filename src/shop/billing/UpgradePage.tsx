@@ -13,6 +13,7 @@ import { tierOf, TIER_RANK, type DbPlan } from "@/shared/lib/plans";
 import { usePermissions } from "@/shop/billing/use-permissions";
 import { shopKeys } from "@/shop/shared/queries-barrel";
 import { ShopBillingCard, usePlanCheckout } from "@/shop/billing/ShopBillingCard";
+import { clearBillingPending } from "@/shop/billing/use-pending-billing";
 import { TransactionFeesCard } from "@/shop/billing/TransactionFeesCard";
 import { assertNotImpersonating, useImpersonationReadOnly } from "@/admin/impersonation/ImpersonationBanner";
 import { usePlanPricing, planMonthlyAmount } from "@/shop/billing/use-plan-pricing";
@@ -60,11 +61,16 @@ export function UpgradePage() {
           };
           if (cancelled) return;
           if (data.local_status === "paid") {
+            clearBillingPending();
             toast.success(t("upgrade.toastUpgraded", { plan: data.plan ?? activeShop.plan ?? "" }));
-          } else if (data.mollie_status === "open" || data.local_status === "unpaid") {
-            toast.error("Payment is not completed yet. In Mollie test checkout choose Paid, not Open.");
-          } else if (data.local_status === "failed") {
-            toast.error("Payment failed");
+          } else if (data.mollie_status === "failed") {
+            clearBillingPending();
+            toast.error("Payment failed. Your current plan is unchanged.");
+          } else {
+            // canceled / expired / open / pending / unpaid — Mollie cancel and browser-back
+            // often return with status still "open". Do not resume that payment.
+            clearBillingPending();
+            toast.message("Checkout was not completed. Your current plan is unchanged.");
           }
         }
       } else if (search.billing === "success") {

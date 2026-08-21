@@ -1,7 +1,9 @@
 # Week 2 billing — acceptance checklist
 
 Run after email-template, Edge email-queue, and **billing `app_url` cron** migrations are applied.
-See also `docs/superpowers/plans/2026-08-20-billing-host-cron-cutover.md`.
+See also:
+- `docs/superpowers/plans/2026-08-20-billing-host-cron-cutover.md`
+- `docs/superpowers/plans/2026-08-20-billing-e2e-matrix.md` (full edge-case matrix F1/F2/R1/…)
 
 ## Shop A — monthly lifecycle
 
@@ -15,6 +17,10 @@ See also `docs/superpowers/plans/2026-08-20-billing-host-cron-cutover.md`.
 8. `POST /api/billing/plan-confirm` → 410 Gone (mock billing removed).
 9. Add staff past plan max → `STAFF_PLAN_LIMIT`.
 10. Analytics on Starter → locked; on Pro → allowed.
+
+## Failed upgrade (F1/F2) — must pass after edge-case fixes
+
+- Starter → Pro + Mollie **Failed** or cancel: shop stays **Starter / active**; payment row failed; UI must **not** show Pro + activating; `sessionStorage.fb.pendingBilling` cleared.
 
 ## Trial shop — booking cap
 

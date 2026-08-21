@@ -15,8 +15,11 @@ import { enqueueBookingEmail } from "@/email/enqueue-booking-email";
 import {
   getMolliePlatformKeys,
   mollieFetchWithFallback,
-  platformMollieWebhookFields,
 } from "@/shared/lib/mollie-platform";
+import {
+  ensureSinglePlatformSubscription,
+  isoFromMollieDate,
+} from "@/shop/billing/server/mollie-subscriptions";
 
 type MolliePayment = {
   id: string;
@@ -24,7 +27,43 @@ type MolliePayment = {
   metadata?: Record<string, unknown> | null;
   amount?: { currency: string; value: string };
   subscriptionId?: string;
+  /** ISO date (YYYY-MM-DD) when Mollie expects collection / due. */
+  dueDate?: string;
+  details?: {
+    transferDate?: string;
+    dueDate?: string;
+    [key: string]: unknown;
+  } | null;
 };
+
+type MollieSubscription = {
+  id: string;
+  nextPaymentDate?: string | null;
+  status?: string;
+};
+
+/** Best-effort next charge date from a Mollie payment (SEPA uses transferDate). */
+function paymentCollectionAt(mollie: MolliePayment | null | undefined): string | null {
+  if (!mollie) return null;
+  const raw =
+    mollie.dueDate ||
+    mollie.details?.transferDate ||
+    mollie.details?.dueDate ||
+    null;
+  return isoFromMollieDate(raw);
+}
+
+async function fetchMollieSubscriptionNextPayment(
+  customerId: string,
+  subscriptionId: string,
+): Promise<string | null> {
+  const result = await mollieFetchWithFallback(
+    `https://api.mollie.com/v2/customers/${customerId}/subscriptions/${subscriptionId}`,
+  );
+  if (!result?.response.ok) return null;
+  const sub = (await result.response.json()) as MollieSubscription;
+  return isoFromMollieDate(sub.nextPaymentDate);
+}
 
 export const handlers = {
       POST: async ({ request }: { request: Request }) => {
@@ -183,6 +222,7 @@ export async function processMolliePaymentNotification(
         metadata: meta,
         effectiveStatus,
         rawMollieStatus: mollie?.status ?? null,
+        collectionAt: paymentCollectionAt(mollie),
       });
     }
   }
@@ -222,21 +262,44 @@ async function handleSubscriptionLifecycle(opts: {
   metadata: Record<string, unknown>;
   effectiveStatus: string;
   rawMollieStatus?: string | null;
+  collectionAt?: string | null;
 }) {
   const plan = opts.metadata.plan as DbPlan | undefined;
   const cycle = (opts.metadata.cycle as BillingCycle | undefined) ?? "monthly";
   if (!plan || !["starter", "pro", "premium"].includes(plan)) return;
 
-  // Mollie's `canceled` and `expired` on a FIRST payment mean the user
-  // abandoned/timed-out checkout — not a real billing failure. We must NOT
-  // mark the shop as `payment_failed` in that case (would surface a wrong
-  // banner + email). Only `failed` (true decline) or canceled/expired on
-  // RECURRING payments triggers the failed-banner path.
+  // Mollie's `canceled`/`expired` on a FIRST payment, or any failed/canceled/expired
+  // UPGRADE checkout, must NOT mark the shop payment_failed (shop may already have
+  // an active Starter/Pro). Only recurring charge failures flip shop status.
   const raw = opts.rawMollieStatus ?? null;
   const kind = (opts.metadata.kind as string | undefined) ?? null;
   const isAbandonedFirstAttempt =
     (raw === "canceled" || raw === "expired") &&
     (kind === "subscription_first" || kind === "subscription");
+  const isFailedUpgradeCheckout =
+    kind === "subscription_upgrade" && opts.effectiveStatus === "failed";
+
+  // Awaiting / open recurring charge (e.g. SEPA before collection): record when
+  // Mollie will try — do NOT invent plan_expires_at until status is paid.
+  if (opts.effectiveStatus === "unpaid" && kind === "subscription_recurring") {
+    const collectionAt = opts.collectionAt;
+    if (collectionAt) {
+      await supabaseAdmin
+        .from("shops")
+        .update({
+          next_billing_at: collectionAt,
+          subscription_status: "active",
+        })
+        .eq("id", opts.shopId);
+    }
+    console.log("[mollie/webhook] recurring charge awaiting", {
+      shop_id: opts.shopId,
+      payment_id: opts.paymentId,
+      next_billing_at: collectionAt,
+      mollie_status: opts.rawMollieStatus,
+    });
+    return;
+  }
 
   if (opts.effectiveStatus === "paid") {
     const expiry = nextExpiry(new Date(), cycle).toISOString();
@@ -253,65 +316,51 @@ async function handleSubscriptionLifecycle(opts: {
       (onboarding.mollie_customer_id as string | undefined) ??
       null;
 
-    // If this was a sequenceType:first payment, create the actual recurring Subscription on Mollie now.
-    // The customer may live under either platform key — let the helper choose.
+    // Keep exactly one Mollie subscription for this shop (cancel orphans, patch or create).
     let mollieSubscriptionId: string | null = (onboarding.mollie_subscription_id as string | undefined) ?? null;
-    const shouldCreateSub =
+    let nextBillingAt: string | null = null;
+    const needsSubSync =
       hasMollie &&
       mollieCustomerId &&
-      !mollieSubscriptionId &&
       (kind === "subscription_first" ||
         kind === "subscription" ||
         kind === "subscription_upgrade");
-    if (shouldCreateSub) {
+    if (needsSubSync) {
       const amountValue = ((subscriptionAmountCents(plan, cycle)) / 100).toFixed(2);
       const { data: billingCfg } = await supabaseAdmin
         .from("platform_billing_config")
         .select("webhook_url_override")
         .eq("id", 1)
         .maybeSingle();
-      const result = await mollieFetchWithFallback(
-        `https://api.mollie.com/v2/customers/${mollieCustomerId}/subscriptions`,
-        {
-          method: "POST",
-          body: JSON.stringify({
-            amount: { currency: "EUR", value: amountValue },
-            interval: cycle === "yearly" ? "12 months" : "1 month",
-            description: `FlowyBookings ${plan.toUpperCase()} abonnement`,
-            ...platformMollieWebhookFields("", billingCfg?.webhook_url_override),
-            metadata: { shop_id: opts.shopId, plan, cycle, kind: "subscription_recurring" },
-          }),
-        },
-      );
-      if (result?.response.ok) {
-        const sub = (await result.response.json()) as { id: string };
-        mollieSubscriptionId = sub.id;
-      } else if (result) {
-        console.error("[mollie/webhook] subscription_create_failed", await result.response.text());
-      }
-    } else if (
-      hasMollie &&
-      mollieCustomerId &&
-      mollieSubscriptionId &&
-      opts.metadata.kind === "subscription_upgrade"
-    ) {
-      const amountValue = ((subscriptionAmountCents(plan, cycle)) / 100).toFixed(2);
-      const result = await mollieFetchWithFallback(
-        `https://api.mollie.com/v2/customers/${mollieCustomerId}/subscriptions/${mollieSubscriptionId}`,
-        {
-          method: "PATCH",
-          body: JSON.stringify({
-            amount: { currency: "EUR", value: amountValue },
-            interval: cycle === "yearly" ? "12 months" : "1 month",
-            description: `FlowyBookings ${plan.toUpperCase()} abonnement`,
-            metadata: { shop_id: opts.shopId, plan, cycle, kind: "subscription_recurring" },
-          }),
-        },
-      );
-      if (result && !result.response.ok) {
-        console.error("[mollie/webhook] subscription_patch_failed", await result.response.text());
+      const synced = await ensureSinglePlatformSubscription({
+        customerId: mollieCustomerId,
+        shopId: opts.shopId,
+        plan,
+        cycle,
+        amountValue,
+        preferredSubId: mollieSubscriptionId,
+        webhookOverride: billingCfg?.webhook_url_override,
+      });
+      if (synced) {
+        mollieSubscriptionId = synced.subscriptionId;
+        nextBillingAt = synced.nextPaymentDate;
+        if (synced.cancelled.length) {
+          console.log("[mollie/webhook] cancelled orphan subscriptions", synced.cancelled);
+        }
+      } else {
+        console.error("[mollie/webhook] subscription_sync_failed", {
+          shop_id: opts.shopId,
+          customer_id: mollieCustomerId,
+          preferred: mollieSubscriptionId,
+        });
       }
     }
+
+    if (!nextBillingAt && hasMollie && mollieCustomerId && mollieSubscriptionId) {
+      nextBillingAt = await fetchMollieSubscriptionNextPayment(mollieCustomerId, mollieSubscriptionId);
+    }
+    // Fallback: next charge ≈ end of the period we just opened.
+    if (!nextBillingAt) nextBillingAt = expiry;
 
     const activateAction =
       kind === "subscription_recurring"
@@ -326,6 +375,7 @@ async function handleSubscriptionLifecycle(opts: {
         plan,
         plan_expires_at: expiry,
         plan_billing_cycle: cycle,
+        next_billing_at: nextBillingAt,
         pending_plan: null,
         pending_plan_effective_at: null,
         onboarding: {
@@ -363,7 +413,7 @@ async function handleSubscriptionLifecycle(opts: {
       shop_id: opts.shopId,
       type: "billing",
       title: `Plan geactiveerd: ${plan.toUpperCase()}`,
-      message: `Je abonnement is actief. Volgende incasso op ${new Date(expiry).toLocaleDateString("nl-NL")}.`,
+      message: `Je abonnement is actief. Volgende incasso op ${new Date(nextBillingAt).toLocaleDateString("nl-NL")}.`,
       action_url: "/shop/billing",
       metadata: { kind: "subscription", subkind: "activated", plan, cycle },
     });
@@ -387,17 +437,19 @@ async function handleSubscriptionLifecycle(opts: {
       });
       console.log("[mollie/webhook] email subscription_plan_changed", changedMail);
     }
-  } else if (opts.effectiveStatus === "failed" && isAbandonedFirstAttempt) {
-    // User canceled/expired the FIRST checkout attempt → no DB state change,
-    // no banner, no email. Just log it for admin visibility.
-    console.log("[mollie/webhook] subscription_first abandoned", {
-      shop_id: opts.shopId, payment_id: opts.paymentId, raw, plan, cycle,
+  } else if (opts.effectiveStatus === "failed" && (isAbandonedFirstAttempt || isFailedUpgradeCheckout)) {
+    // Abandoned first checkout OR failed/canceled upgrade attempt → payment row
+    // already failed; keep shop plan + subscription_status unchanged.
+    console.log("[mollie/webhook] subscription checkout not completed", {
+      shop_id: opts.shopId, payment_id: opts.paymentId, raw, plan, cycle, kind,
     });
     await supabaseAdmin.from("activity_log").insert({
       entity: BILLING_ENTITY,
-      action: "subscription_checkout_abandoned",
+      action: isFailedUpgradeCheckout
+        ? "subscription_upgrade_checkout_failed"
+        : "subscription_checkout_abandoned",
       shop_id: opts.shopId,
-      metadata: { payment_id: opts.paymentId, plan, cycle, mollie_status: raw },
+      metadata: { payment_id: opts.paymentId, plan, cycle, mollie_status: raw, kind },
     });
   } else if (opts.effectiveStatus === "failed") {
     const { data: prevShop } = await supabaseAdmin
@@ -491,7 +543,11 @@ async function ingestUnknownPlatformPayment(
   mollie: MolliePayment | null,
   mollieId: string,
 ): Promise<boolean> {
-  if (!mollie || mollie.status !== "paid") return false;
+  // Recurring charges often arrive before we have a local payments row — including
+  // SEPA "awaiting" (open/pending). Ingest those so next_billing_at can track Mollie.
+  if (!mollie) return false;
+  const localStatus = mapStatus(mollie.status);
+  if (!localStatus) return false;
   const shopId = await resolveShopFromMolliePayment(mollie);
   if (!shopId) return false;
 
@@ -499,6 +555,7 @@ async function ingestUnknownPlatformPayment(
   const amountCents = mollie.amount?.value
     ? Math.round(Number.parseFloat(mollie.amount.value) * 100)
     : 0;
+  const collectionAt = paymentCollectionAt(mollie);
 
   const { data: inserted, error } = await supabaseAdmin
     .from("payments")
@@ -507,12 +564,13 @@ async function ingestUnknownPlatformPayment(
       booking_id: null,
       amount_cents: amountCents,
       currency: mollie.amount?.currency ?? "EUR",
-      status: "paid",
+      status: localStatus,
       provider: PLATFORM_PROVIDER,
       provider_payment_id: mollieId,
       metadata: {
         ...meta,
         kind: (meta.kind as string | undefined) ?? "subscription_recurring",
+        ...(collectionAt ? { collection_at: collectionAt } : {}),
       },
     })
     .select("id, metadata")
@@ -521,6 +579,28 @@ async function ingestUnknownPlatformPayment(
   if (error) {
     if (error.code === "23505") {
       console.log("[mollie/webhook] already processed", mollieId);
+      // Still refresh next_billing / paid lifecycle on race with an existing row.
+      const { data: existing } = await supabaseAdmin
+        .from("payments")
+        .select("id, metadata, status")
+        .eq("provider_payment_id", mollieId)
+        .maybeSingle();
+      if (existing) {
+        if (localStatus !== existing.status) {
+          await supabaseAdmin
+            .from("payments")
+            .update({ status: localStatus, updated_at: new Date().toISOString() })
+            .eq("id", existing.id);
+        }
+        await handleSubscriptionLifecycle({
+          paymentId: existing.id,
+          shopId,
+          metadata: (existing.metadata ?? meta) as Record<string, unknown>,
+          effectiveStatus: localStatus,
+          rawMollieStatus: mollie.status,
+          collectionAt,
+        });
+      }
       return true;
     }
     console.error("[mollie/webhook] recurring insert failed", error);
@@ -532,8 +612,9 @@ async function ingestUnknownPlatformPayment(
     paymentId: inserted.id,
     shopId,
     metadata: (inserted.metadata ?? meta) as Record<string, unknown>,
-    effectiveStatus: "paid",
+    effectiveStatus: localStatus,
     rawMollieStatus: mollie.status,
+    collectionAt,
   });
   return true;
 }

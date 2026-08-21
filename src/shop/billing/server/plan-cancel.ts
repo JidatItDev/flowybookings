@@ -81,6 +81,7 @@ export const handlers = {
               subscription_status: "cancelled",
               pending_plan: null,
               pending_plan_effective_at: null,
+              next_billing_at: null,
               onboarding: {
                 ...onboarding,
                 subscription_cancelled_at: cancelledAt,

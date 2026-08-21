@@ -88,11 +88,13 @@ export function usePendingBilling(): PendingBilling | null {
     };
   }, []);
 
-  // Auto-clear when DB has caught up.
+  // Auto-clear when DB has caught up, or shop shows payment_failed (stale
+  // optimistic upgrade), so we never stick on "Pro activating…".
   useEffect(() => {
     if (!flag || !activeShop) return;
     if (activeShop.id !== flag.shopId) return;
-    if (activeShop.plan === flag.plan) {
+    const status = (activeShop as { subscription_status?: string | null }).subscription_status;
+    if (activeShop.plan === flag.plan || status === "payment_failed") {
       clearBillingPending();
     }
   }, [flag, activeShop]);

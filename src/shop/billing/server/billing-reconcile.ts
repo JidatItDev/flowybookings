@@ -1,15 +1,16 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { PLATFORM_PROVIDER } from "@/admin/settings/platform-billing";
 import { getMolliePlatformKeys, mollieFetchWithFallback } from "@/shared/lib/mollie-platform";
+import { serverEnv } from "@/server/env";
 
 function cronAuthorized(request: Request): boolean {
-  const cronSecret = process.env.CRON_SECRET;
+  const cronSecret = serverEnv("CRON_SECRET");
   const got = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
   if (cronSecret) return got === cronSecret;
   const allowed = [
-    process.env.SUPABASE_SERVICE_ROLE_KEY,
-    process.env.SUPABASE_ANON_KEY,
-    process.env.SUPABASE_PUBLISHABLE_KEY,
+    serverEnv("SUPABASE_SERVICE_ROLE_KEY"),
+    serverEnv("SUPABASE_ANON_KEY"),
+    serverEnv("SUPABASE_PUBLISHABLE_KEY"),
   ].filter(Boolean) as string[];
   return !!got && allowed.includes(got);
 }

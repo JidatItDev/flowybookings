@@ -1,12 +1,13 @@
 // Schedule a platform-plan downgrade at period end. Local plan stays until
 // pending_plan_effective_at; Mollie subscription is PATCHed now so the next
-// charge uses the lower amount.
+// charge uses the lower amount. Orphan Mollie subscriptions are cancelled first.
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BILLING_ENTITY, priceFor, type BillingCycle } from "@/admin/settings/platform-billing";
-import { getMolliePlatformKeys, mollieFetchWithFallback } from "@/shared/lib/mollie-platform";
+import { getMolliePlatformKeys } from "@/shared/lib/mollie-platform";
 import type { DbPlan } from "@/shared/lib/plans";
 import { enqueueSubscriptionEmail } from "@/email/enqueue-subscription-email";
+import { ensureSinglePlatformSubscription } from "@/shop/billing/server/mollie-subscriptions";
 
 const PLAN_RANK: Record<string, number> = { trial: 0, starter: 1, pro: 2, premium: 3 };
 const ALLOWED_TARGETS = new Set(["starter", "pro", "premium"]);
@@ -71,31 +72,48 @@ export const handlers = {
       if (!effectiveAt) return json({ error: "missing_expiry" }, 400);
 
       const onboarding = (shop.onboarding ?? {}) as Record<string, unknown>;
-      const subId = onboarding.mollie_subscription_id as string | undefined;
-      const customerId = onboarding.mollie_customer_id as string | undefined;
+      const subId = (onboarding.mollie_subscription_id as string | undefined) ?? null;
+      const customerId = (onboarding.mollie_customer_id as string | undefined) ?? null;
       const hasMollie = getMolliePlatformKeys().length > 0;
       const amount = priceFor(targetPlan, cycle);
 
       let molliePatched = false;
-      let mollieError: string | null = null;
-      if (hasMollie && customerId && subId) {
-        const result = await mollieFetchWithFallback(
-          `https://api.mollie.com/v2/customers/${customerId}/subscriptions/${subId}`,
-          {
-            method: "PATCH",
-            body: JSON.stringify({
-              amount: { currency: "EUR", value: (amount / 100).toFixed(2) },
-              interval: cycle === "yearly" ? "12 months" : "1 month",
-              description: `FlowyBookings ${targetPlan.toUpperCase()} abonnement`,
-              metadata: { shop_id: shop.id, plan: targetPlan, cycle, kind: "subscription_recurring" },
-            }),
-          },
-        );
-        if (result?.response.ok) {
-          molliePatched = true;
-        } else if (result) {
-          mollieError = await result.response.text();
-          console.error("[billing/plan-downgrade] mollie patch failed:", mollieError);
+      let mollieSubscriptionId = subId;
+      let cancelledOrphans: string[] = [];
+      if (hasMollie) {
+        if (!customerId) {
+          return json({ error: "mollie_customer_missing" }, 409);
+        }
+        const synced = await ensureSinglePlatformSubscription({
+          customerId,
+          shopId: shop.id,
+          plan: targetPlan,
+          cycle,
+          amountValue: (amount / 100).toFixed(2),
+          preferredSubId: subId,
+        });
+        if (!synced) {
+          return json({ error: "mollie_subscription_sync_failed" }, 502);
+        }
+        molliePatched = true;
+        mollieSubscriptionId = synced.subscriptionId;
+        cancelledOrphans = synced.cancelled;
+        if (synced.subscriptionId !== subId || cancelledOrphans.length) {
+          await supabaseAdmin
+            .from("shops")
+            .update({
+              onboarding: {
+                ...onboarding,
+                mollie_subscription_id: synced.subscriptionId,
+              },
+              ...(synced.nextPaymentDate ? { next_billing_at: synced.nextPaymentDate } : {}),
+            })
+            .eq("id", shop.id);
+        } else if (synced.nextPaymentDate) {
+          await supabaseAdmin
+            .from("shops")
+            .update({ next_billing_at: synced.nextPaymentDate })
+            .eq("id", shop.id);
         }
       }
 
@@ -119,7 +137,8 @@ export const handlers = {
           effective_at: effectiveAt,
           cycle,
           mollie_patched: molliePatched,
-          mollie_error: mollieError,
+          mollie_subscription_id: mollieSubscriptionId,
+          mollie_orphans_cancelled: cancelledOrphans,
         },
       });
 
@@ -148,6 +167,8 @@ export const handlers = {
         pending_plan: targetPlan,
         pending_plan_effective_at: effectiveAt,
         mollie_patched: molliePatched,
+        mollie_subscription_id: mollieSubscriptionId,
+        mollie_orphans_cancelled: cancelledOrphans,
       });
     } catch (err) {
       console.error("[billing/plan-downgrade] error:", err);

@@ -90,35 +90,96 @@ export function ShopBillingCard() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const expiry = (activeShop as unknown as { plan_expires_at?: string | null })?.plan_expires_at ?? null;
-  const cycle = (activeShop as unknown as { plan_billing_cycle?: string | null })?.plan_billing_cycle ?? null;
-  const subscriptionStatus = (activeShop as unknown as { subscription_status?: string | null })?.subscription_status ?? null;
+  const expiry = activeShop?.plan_expires_at ?? null;
+  const cycle = activeShop?.plan_billing_cycle ?? null;
+  const subscriptionStatus = activeShop?.subscription_status ?? null;
+  const nextBillingRaw = activeShop?.next_billing_at ?? null;
   const expiresDate = expiry ? new Date(expiry) : null;
+  const nextBillingDate = nextBillingRaw ? new Date(nextBillingRaw) : null;
   const isExpired = !!expiresDate && expiresDate.getTime() < Date.now();
   const canCancel = activeShop?.plan && activeShop.plan !== "trial" && subscriptionStatus !== "cancelled";
-  const scheduledPlan = (activeShop as unknown as { pending_plan?: string | null })?.pending_plan ?? null;
-  const scheduledAt = (activeShop as unknown as { pending_plan_effective_at?: string | null })?.pending_plan_effective_at ?? null;
+  const scheduledPlan = activeShop?.pending_plan ?? null;
+  const scheduledAt = activeShop?.pending_plan_effective_at ?? null;
+
+  const pendingCharge = useMemo(() => {
+    const rows = payments ?? [];
+    return rows.find((p) => {
+      if (p.status !== "unpaid") return false;
+      const kind = (p.metadata as { kind?: string } | null)?.kind;
+      return kind === "subscription_recurring";
+    }) ?? null;
+  }, [payments]);
+
+  const pendingCollectionDate = useMemo(() => {
+    if (!pendingCharge) return null;
+    const meta = (pendingCharge.metadata ?? {}) as { collection_at?: string };
+    if (meta.collection_at) {
+      const d = new Date(meta.collection_at);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+    return nextBillingDate;
+  }, [pendingCharge, nextBillingDate]);
+
+  // Charge date Mollie will try (preferred) — never invent from a fake renew repair.
+  const chargeDate = pendingCollectionDate ?? nextBillingDate;
   const isPaidActive =
     !!activeShop?.plan &&
     activeShop.plan !== "trial" &&
-    !isExpired &&
-    subscriptionStatus !== "cancelled";
+    subscriptionStatus === "active" &&
+    (!!chargeDate || (!!expiresDate && !isExpired));
   const statusBadge =
     subscriptionStatus === "cancelled"
       ? `Cancelled — access until ${expiresDate ? expiresDate.toLocaleDateString() : "—"}`
       : subscriptionStatus === "payment_failed"
         ? "Payment failed"
-        : isPaidActive
-          ? "Active"
-          : null;
+        : pendingCharge
+          ? "Payment pending"
+          : isPaidActive
+            ? "Active"
+            : null;
 
   const nextPaymentAmount = useMemo(() => {
-    if (!isPaidActive) return null;
-    const priceLabel = formatPlanPrice(pricing, activeShop?.plan, cycle === "yearly" ? "yearly" : "monthly");
+    if (!isPaidActive && !pendingCharge) return null;
+    // When a downgrade is scheduled, Mollie already charges the pending plan amount.
+    const billPlan = scheduledPlan && ["starter", "pro", "premium"].includes(scheduledPlan)
+      ? scheduledPlan
+      : activeShop?.plan;
+    const priceLabel = formatPlanPrice(pricing, billPlan, cycle === "yearly" ? "yearly" : "monthly");
     return priceLabel || null;
-  }, [isPaidActive, pricing, activeShop?.plan, cycle]);
+  }, [isPaidActive, pendingCharge, pricing, activeShop?.plan, cycle, scheduledPlan]);
 
   if (!activeShop) return null;
+
+  const datePill = (() => {
+    if (pendingCharge && chargeDate) {
+      return {
+        className: "bg-amber-500/15 text-amber-800 dark:text-amber-200",
+        label: t("shopBilling.chargesOn") + " " + chargeDate.toLocaleDateString(),
+      };
+    }
+    if (subscriptionStatus === "cancelled" && expiresDate) {
+      return {
+        className: isExpired ? "bg-destructive/15 text-destructive" : "bg-muted text-muted-foreground",
+        label: (isExpired ? t("shopBilling.expiredOn") : t("shopBilling.accessUntil")) + " " + expiresDate.toLocaleDateString(),
+      };
+    }
+    if (chargeDate) {
+      return {
+        className: "bg-mint text-mint-foreground",
+        label: t("shopBilling.chargesOn") + " " + chargeDate.toLocaleDateString(),
+      };
+    }
+    if (expiresDate) {
+      return {
+        className: isExpired ? "bg-destructive/15 text-destructive" : "bg-muted text-muted-foreground",
+        label: (isExpired ? t("shopBilling.expiredOn") : t("shopBilling.accessUntil")) + " " + expiresDate.toLocaleDateString(),
+      };
+    }
+    return {
+      className: "bg-muted text-muted-foreground",
+      label: t("shopBilling.noExpiry"),
+    };
+  })();
 
   return (
     <div className="rounded-3xl border border-border bg-card p-6 shadow-soft">
@@ -149,29 +210,27 @@ export function ShopBillingCard() {
         </div>
         <span className={cn(
           "rounded-full px-2.5 py-1 text-xs font-semibold",
-          isExpired ? "bg-destructive/15 text-destructive"
-            : expiresDate ? "bg-mint text-mint-foreground"
-            : "bg-muted text-muted-foreground",
+          datePill.className,
         )}>
-          {expiresDate ? (
-            <span className="inline-flex items-center gap-1">
-              <CalendarClock className="h-3.5 w-3.5" />
-              {(isExpired ? t("shopBilling.expiredOn") : t("shopBilling.renewsOn")) + " "}
-              {expiresDate.toLocaleDateString()}
-            </span>
-          ) : t("shopBilling.noExpiry")}
+          <span className="inline-flex items-center gap-1">
+            <CalendarClock className="h-3.5 w-3.5" />
+            {datePill.label}
+          </span>
         </span>
       </div>
 
-      {/* Next-payment row + Mollie trust line — alleen tonen bij actief betaald
-          abonnement met een bekende einddatum/bedrag. Geen duplicate billing-
-          logic: alles komt uit `activeShop` en de bestaande pricing-hook. */}
-      {isPaidActive && expiresDate && nextPaymentAmount && (
+      {/* Next-payment row tracks Mollie's charge attempt, not a local invent date. */}
+      {(isPaidActive || pendingCharge) && chargeDate && nextPaymentAmount && (
         <p className="mt-3 text-xs text-muted-foreground">
-          {t("billing.nextPayment", {
-            amount: nextPaymentAmount.replace(/\/(maand|jaar|month|year)$/, ""),
-            date: expiresDate.toLocaleDateString(),
-          })}
+          {pendingCharge
+            ? t("billing.pendingPayment", {
+                amount: nextPaymentAmount.replace(/\/(maand|jaar|month|year)$/, ""),
+                date: chargeDate.toLocaleDateString(),
+              })
+            : t("billing.nextPayment", {
+                amount: nextPaymentAmount.replace(/\/(maand|jaar|month|year)$/, ""),
+                date: chargeDate.toLocaleDateString(),
+              })}
         </p>
       )}
       <p className="mt-1 text-xs text-muted-foreground">{t("billing.securePayments")}</p>
