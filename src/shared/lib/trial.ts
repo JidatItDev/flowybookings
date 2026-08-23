@@ -1,6 +1,6 @@
 // Trial + subscription state helpers — single source of truth for UI gating.
 // Reads shops.plan, shops.plan_expires_at, shops.subscription_status,
-// and shops.onboarding.payment_failed_at / subscription_cancelled_at.
+// and shops.payment_failed_at. cancelledAt is always null (no column).
 //
 // Booking-block rules (mirrored in DB function shop_can_accept_bookings):
 //   - trial expired                                       → no bookings
@@ -40,6 +40,7 @@ export function getTrialState(shop: {
   plan?: string | null;
   plan_expires_at?: string | null;
   subscription_status?: string | null;
+  payment_failed_at?: string | null;
   onboarding?: Record<string, unknown> | null;
 } | null | undefined): TrialState {
   if (!shop) {
@@ -57,17 +58,13 @@ export function getTrialState(shop: {
   const isExpired = isTrial && !!expiresAt && expiresAt.getTime() < now;
   const daysLeft = isTrial && expiresAt ? Math.ceil((expiresAt.getTime() - now) / DAY_MS) : null;
 
-  const ob = (shop.onboarding ?? {}) as Record<string, unknown>;
-  const fromColumn = shop.subscription_status as string | undefined;
-  const fromOb = ob.subscription_status as string | undefined;
-  const statusSource = fromColumn || fromOb;
-  const failedAtRaw = ob.payment_failed_at as string | undefined;
-  const cancelledAtRaw = ob.subscription_cancelled_at as string | undefined;
+  const statusSource = shop.subscription_status;
+  const failedAtRaw = shop.payment_failed_at ?? null;
 
   // Payment-failed fields ONLY apply to paid plans. A trial shop must never
   // surface a "payment failed" banner — trial expiry is the only relevant gate.
   const paymentFailedAt = !isTrial && failedAtRaw ? new Date(failedAtRaw) : null;
-  const cancelledAt = cancelledAtRaw ? new Date(cancelledAtRaw) : null;
+  const cancelledAt = null;
 
   let inPaymentFailedGrace = false;
   let paymentFailedDaysLeft: number | null = null;

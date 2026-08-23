@@ -29,7 +29,9 @@ Use this as the handoff for a new chat/agent. Spec/plans remain authoritative fo
 | `plan_billing_cycle` | `monthly` \| `yearly` |
 | `subscription_status` | `active` \| `cancelled` \| `payment_failed` \| `none` |
 | `pending_plan` + `pending_plan_effective_at` | Scheduled downgrade (local plan stays until effective) |
-| `onboarding.mollie_customer_id` / `mollie_subscription_id` | Mollie ids only — not status |
+| `mollie_customer_id` | Platform Mollie customer id (`cst_…`) — not status |
+| `mollie_subscription_id` | Platform Mollie subscription id (`sub_…`) — not status |
+| `payment_failed_at` | First recurring collection failure; 7-day booking grace starts here |
 
 **Lifecycle rules:**
 
@@ -164,8 +166,7 @@ Optional SQL:
 ```sql
 SELECT plan, subscription_status, plan_expires_at, next_billing_at,
        pending_plan, pending_plan_effective_at,
-       onboarding->>'mollie_customer_id' AS customer,
-       onboarding->>'mollie_subscription_id' AS subscription
+       mollie_customer_id, mollie_subscription_id, payment_failed_at
 FROM shops WHERE id = '4b84f9ab-fa58-4cfc-9184-7b1ec2f184aa';
 ```
 
@@ -173,12 +174,15 @@ FROM shops WHERE id = '4b84f9ab-fa58-4cfc-9184-7b1ec2f184aa';
 
 ## Open / next
 
-1. **Mollie cleanup** for test customer → one active subscription; retest D1 (schedule Starter).
-2. Re-verify SEPA awaiting path: unpaid recurring → `next_billing_at` + “Payment pending”; paid → extend `plan_expires_at`.
-3. Finish remaining E2E matrix rows (cancel, expiry, yearly, Connect cron).
-4. Optional: super-admin Mollie↔shops debug page (discussed, not built).
-5. Production: Render/Node adapter + vault `app_url` cutover (see host-cron doc).
-6. Do not invent paid-through dates in SQL “repairs”; set `next_billing_at` to Mollie’s collection date instead.
+1. **Columns pass landed** (Tasks 1–7): Mollie ids + `payment_failed_at` are `shops` columns; code no longer reads/writes `onboarding` for billing ids.
+2. **User applies migration** `20260821190000_billing_mollie_columns.sql`; **wipe old test shops** (no JSON backfill).
+3. **Smoke: Starter monthly checkout** — expect SQL: `mollie_customer_id` + `mollie_subscription_id` set, `payment_failed_at` null; logs: `checkout_created` → `received` (webhook) → `return_sync_skipped_already_paid` (at most once); admin panel shows both ids.
+4. **Mollie cleanup** for test customer → one active subscription; retest D1 (schedule Starter).
+5. Re-verify SEPA awaiting path: unpaid recurring → `next_billing_at` + “Payment pending”; paid → extend `plan_expires_at`.
+6. Finish remaining E2E matrix rows (cancel, expiry, yearly, Connect cron).
+7. Optional: super-admin Mollie↔shops debug page (discussed, not built).
+8. Production: Render/Node adapter + vault `app_url` cutover (see host-cron doc).
+9. Do not invent paid-through dates in SQL “repairs”; set `next_billing_at` to Mollie’s collection date instead.
 
 ---
 

@@ -20,6 +20,9 @@ import {
   ensureSinglePlatformSubscription,
   isoFromMollieDate,
 } from "@/shop/billing/server/mollie-subscriptions";
+import { createLogger } from "@/server/logger";
+
+const log = createLogger("billing.webhook");
 
 type MolliePayment = {
   id: string;
@@ -80,7 +83,7 @@ export const handlers = {
               request.headers.get("x-webhook-token") ??
               "";
             if (!safeEqual(provided, expectedSecret)) {
-              console.warn("[mollie/webhook] rejected: invalid or missing token");
+              log.warn("rejected_invalid_or_missing_token");
               return new Response(JSON.stringify({ error: "unauthorized" }), {
                 status: 401,
                 headers: { "Content-Type": "application/json" },
@@ -111,7 +114,7 @@ export const handlers = {
             headers: { "Content-Type": "application/json" },
           });
         } catch (err) {
-          console.error("[mollie/webhook] error:", err);
+          log.error("webhook_error", { err });
           return new Response(
             JSON.stringify({ error: "internal_error", message: err instanceof Error ? err.message : String(err) }),
             { status: 500, headers: { "Content-Type": "application/json" } },
@@ -130,6 +133,20 @@ export async function processMolliePaymentNotification(
     .eq("provider_payment_id", mollieId)
     .maybeSingle();
 
+  if (payment?.status === "paid") {
+    log.info("already_paid_skip_mollie", {
+      mollie_id: mollieId,
+      payment_id: payment.id,
+      shop_id: payment.shop_id,
+      source: logAction,
+    });
+    return {
+      ingested: false,
+      local_status: "paid",
+      mollie_status: "paid",
+    };
+  }
+
   const hasMollieKey = getMolliePlatformKeys().length > 0;
   let mollie: MolliePayment | null = null;
   if (hasMollieKey && mollieId.startsWith("tr_")) {
@@ -140,7 +157,7 @@ export async function processMolliePaymentNotification(
   }
 
   const mappedLocalStatus = mapStatus(mollie?.status);
-  console.log("[mollie/webhook]", logAction, {
+  log.info(logAction, {
     mollie_id: mollieId,
     mollie_status: mollie?.status ?? null,
     mapped_local_status: mappedLocalStatus,
@@ -177,14 +194,6 @@ export async function processMolliePaymentNotification(
       .from("payments")
       .update({ status: newStatus, updated_at: new Date().toISOString() })
       .eq("id", payment.id);
-  }
-
-  if (payment.status === "paid" && (newStatus === "paid" || newStatus === null)) {
-    return {
-      ingested: false,
-      local_status: "paid",
-      mollie_status: mollie?.status ?? null,
-    };
   }
 
   const isBookingPayment = payment.booking_id !== null;
@@ -292,7 +301,7 @@ async function handleSubscriptionLifecycle(opts: {
         })
         .eq("id", opts.shopId);
     }
-    console.log("[mollie/webhook] recurring charge awaiting", {
+    log.info("recurring_charge_awaiting", {
       shop_id: opts.shopId,
       payment_id: opts.paymentId,
       next_billing_at: collectionAt,
@@ -305,19 +314,18 @@ async function handleSubscriptionLifecycle(opts: {
     const expiry = nextExpiry(new Date(), cycle).toISOString();
     const { data: prevShop } = await supabaseAdmin
       .from("shops")
-      .select("plan, plan_expires_at, onboarding, name")
+      .select("plan, plan_expires_at, name, mollie_customer_id, mollie_subscription_id, payment_failed_at")
       .eq("id", opts.shopId)
       .maybeSingle();
 
-    const onboarding = ((prevShop?.onboarding ?? {}) as Record<string, unknown>);
     const hasMollie = getMolliePlatformKeys().length > 0;
     const mollieCustomerId =
       (opts.metadata.mollie_customer_id as string | undefined) ??
-      (onboarding.mollie_customer_id as string | undefined) ??
+      prevShop?.mollie_customer_id ??
       null;
 
     // Keep exactly one Mollie subscription for this shop (cancel orphans, patch or create).
-    let mollieSubscriptionId: string | null = (onboarding.mollie_subscription_id as string | undefined) ?? null;
+    let mollieSubscriptionId = prevShop?.mollie_subscription_id ?? null;
     let nextBillingAt: string | null = null;
     const needsSubSync =
       hasMollie &&
@@ -345,10 +353,10 @@ async function handleSubscriptionLifecycle(opts: {
         mollieSubscriptionId = synced.subscriptionId;
         nextBillingAt = synced.nextPaymentDate;
         if (synced.cancelled.length) {
-          console.log("[mollie/webhook] cancelled orphan subscriptions", synced.cancelled);
+          log.info("cancelled_orphan_subscriptions", { cancelled: synced.cancelled });
         }
       } else {
-        console.error("[mollie/webhook] subscription_sync_failed", {
+        log.error("subscription_sync_failed", {
           shop_id: opts.shopId,
           customer_id: mollieCustomerId,
           preferred: mollieSubscriptionId,
@@ -378,14 +386,9 @@ async function handleSubscriptionLifecycle(opts: {
         next_billing_at: nextBillingAt,
         pending_plan: null,
         pending_plan_effective_at: null,
-        onboarding: {
-          ...onboarding,
-          ...(mollieCustomerId ? { mollie_customer_id: mollieCustomerId } : {}),
-          ...(mollieSubscriptionId ? { mollie_subscription_id: mollieSubscriptionId } : {}),
-          payment_failed_at: null,
-          payment_failed_count: 0,
-          subscription_cancelled_at: null,
-        },
+        mollie_customer_id: mollieCustomerId,
+        mollie_subscription_id: mollieSubscriptionId,
+        payment_failed_at: null,
         subscription_status: "active",
       })
       .eq("id", opts.shopId);
@@ -427,7 +430,7 @@ async function handleSubscriptionLifecycle(opts: {
       idempotencyKey: `subscription_payment_received:${opts.paymentId}`,
       data: { plan, amount: amountLabel, cycle: cycleLabel, expiresAt: expiresLabel },
     });
-    console.log("[mollie/webhook] email subscription_payment_received", paymentMail);
+    log.info("email_subscription_payment_received", { ...paymentMail });
     if (kind === "subscription_first" || kind === "subscription" || kind === "subscription_upgrade") {
       const changedMail = await enqueueSubscriptionEmail({
         type: "subscription_plan_changed",
@@ -435,12 +438,12 @@ async function handleSubscriptionLifecycle(opts: {
         idempotencyKey: `subscription_plan_changed:${opts.paymentId}`,
         data: { plan, oldPlan: String(prevShop?.plan ?? ""), cycle: cycleLabel },
       });
-      console.log("[mollie/webhook] email subscription_plan_changed", changedMail);
+      log.info("email_subscription_plan_changed", { ...changedMail });
     }
   } else if (opts.effectiveStatus === "failed" && (isAbandonedFirstAttempt || isFailedUpgradeCheckout)) {
     // Abandoned first checkout OR failed/canceled upgrade attempt → payment row
     // already failed; keep shop plan + subscription_status unchanged.
-    console.log("[mollie/webhook] subscription checkout not completed", {
+    log.info("subscription_checkout_not_completed", {
       shop_id: opts.shopId, payment_id: opts.paymentId, raw, plan, cycle, kind,
     });
     await supabaseAdmin.from("activity_log").insert({
@@ -454,24 +457,18 @@ async function handleSubscriptionLifecycle(opts: {
   } else if (opts.effectiveStatus === "failed") {
     const { data: prevShop } = await supabaseAdmin
       .from("shops")
-      .select("onboarding")
+      .select("payment_failed_at")
       .eq("id", opts.shopId)
       .maybeSingle();
-    const onboarding = ((prevShop?.onboarding ?? {}) as Record<string, unknown>);
-    // Set payment_failed_at on first failure only; subsequent failures bump count but keep
+    // Set payment_failed_at on first failure only; subsequent failures keep
     // the original timestamp so the 7-day grace period starts at the FIRST failure.
-    const existingFailedAt = (onboarding.payment_failed_at as string | undefined) ?? null;
+    const existingFailedAt = prevShop?.payment_failed_at ?? null;
     const failedAt = existingFailedAt ?? new Date().toISOString();
-    const failedCount = ((onboarding.payment_failed_count as number | undefined) ?? 0) + 1;
     await supabaseAdmin
       .from("shops")
       .update({
         subscription_status: "payment_failed",
-        onboarding: {
-          ...onboarding,
-          payment_failed_at: failedAt,
-          payment_failed_count: failedCount,
-        },
+        payment_failed_at: failedAt,
       })
       .eq("id", opts.shopId);
 
@@ -479,7 +476,7 @@ async function handleSubscriptionLifecycle(opts: {
       entity: BILLING_ENTITY,
       action: "subscription_payment_failed",
       shop_id: opts.shopId,
-      metadata: { payment_id: opts.paymentId, plan, cycle, failed_at: failedAt, failure_count: failedCount, mollie_status: raw },
+      metadata: { payment_id: opts.paymentId, plan, cycle, failed_at: failedAt, mollie_status: raw },
     });
     await supabaseAdmin.from("notifications").insert({
       shop_id: opts.shopId,
@@ -507,11 +504,11 @@ async function handleSubscriptionLifecycle(opts: {
         },
       });
     } catch (err) {
-      console.error("[mollie/webhook] platform-payment-failed email error", err);
+      log.error("platform_payment_failed_email_error", { err });
     }
   }
 
-  console.log("[mollie/webhook] subscription_lifecycle done", {
+  log.info("subscription_lifecycle_done", {
     shop_id: opts.shopId,
     payment_id: opts.paymentId,
     effective_status: opts.effectiveStatus,
@@ -531,8 +528,8 @@ async function resolveShopFromMolliePayment(mollie: MolliePayment): Promise<stri
   if (mollie.subscriptionId) {
     const { data } = await supabaseAdmin
       .from("shops")
-      .select("id, onboarding")
-      .contains("onboarding", { mollie_subscription_id: mollie.subscriptionId })
+      .select("id")
+      .eq("mollie_subscription_id", mollie.subscriptionId)
       .maybeSingle();
     if (data?.id) return data.id;
   }
@@ -578,7 +575,7 @@ async function ingestUnknownPlatformPayment(
 
   if (error) {
     if (error.code === "23505") {
-      console.log("[mollie/webhook] already processed", mollieId);
+      log.info("already_processed", { mollie_id: mollieId });
       // Still refresh next_billing / paid lifecycle on race with an existing row.
       const { data: existing } = await supabaseAdmin
         .from("payments")
@@ -603,7 +600,7 @@ async function ingestUnknownPlatformPayment(
       }
       return true;
     }
-    console.error("[mollie/webhook] recurring insert failed", error);
+    log.error("recurring_insert_failed", { error });
     return false;
   }
   if (!inserted) return true;
@@ -766,7 +763,7 @@ async function handleSmsCreditsLifecycle(opts: {
         });
       }
     } catch (err) {
-      console.error("[mollie-webhook] failed to enqueue sms-topup-applied email", err);
+      log.error("sms_topup_email_failed", { err });
     }
   } else if (opts.effectiveStatus === "failed") {
     await supabaseAdmin.from("activity_log").insert({

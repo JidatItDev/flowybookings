@@ -4,6 +4,9 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { PLATFORM_PROVIDER } from "@/admin/settings/platform-billing";
 import { processMolliePaymentNotification } from "@/shop/payments/server/mollie-webhook";
+import { createLogger } from "@/server/logger";
+
+const log = createLogger("billing.sync");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -36,9 +39,6 @@ export const handlers = {
       if (payment.provider !== PLATFORM_PROVIDER || payment.booking_id !== null) {
         return json({ error: "not_platform_payment" }, 400);
       }
-      if (!payment.provider_payment_id) {
-        return json({ error: "missing_mollie_id", local_status: payment.status }, 409);
-      }
 
       const { data: shop } = await supabaseAdmin
         .from("shops")
@@ -55,10 +55,40 @@ export const handlers = {
         if (!isAdmin) return json({ error: "forbidden" }, 403);
       }
 
+      if (payment.status === "paid") {
+        log.info("return_sync_skipped_already_paid", {
+          payment_id: payment.id,
+          shop_id: payment.shop_id,
+        });
+        const { data: shopAfter } = await supabaseAdmin
+          .from("shops")
+          .select("plan, subscription_status, plan_expires_at")
+          .eq("id", shop.id)
+          .maybeSingle();
+        return json({
+          ok: true,
+          local_status: "paid",
+          mollie_status: "paid",
+          plan: shopAfter?.plan ?? shop.plan,
+          subscription_status: shopAfter?.subscription_status ?? null,
+        });
+      }
+
+      if (!payment.provider_payment_id) {
+        return json({ error: "missing_mollie_id", local_status: payment.status }, 409);
+      }
+
       const applied = await processMolliePaymentNotification(
         payment.provider_payment_id,
         "return_sync",
       );
+
+      log.info("return_sync_applied", {
+        payment_id: payment.id,
+        shop_id: payment.shop_id,
+        local_status: applied.local_status,
+        mollie_status: applied.mollie_status,
+      });
 
       const { data: shopAfter } = await supabaseAdmin
         .from("shops")
@@ -74,7 +104,7 @@ export const handlers = {
         subscription_status: shopAfter?.subscription_status ?? null,
       });
     } catch (err) {
-      console.error("[billing/plan-sync] error:", err);
+      log.error("plan_sync_error", { err });
       return json({ error: "internal_error", details: (err as Error).message }, 500);
     }
   },

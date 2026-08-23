@@ -312,6 +312,7 @@ export type AdminShopDetail = {
     booking_fee_cents_override: number | null;
     next_billing_at: string | null;
     mollie_subscription_id: string | null;
+    mollie_customer_id: string | null;
     subscription_notes: string | null;
     category: string | null;
   };
@@ -348,7 +349,7 @@ export const adminShopDetailQuery = (shopId: string) =>
       const { data: shop, error } = await supabase
         .from("shops")
         .select(
-          "id, name, slug, status, plan, owner_id, email, phone, address, timezone, is_demo, admin_notes, created_at, plan_expires_at, plan_billing_cycle, policy_accepted_at, policy_version, subscription_status, booking_fee_cents_override, next_billing_at, mollie_subscription_id, subscription_notes, category",
+          "id, name, slug, status, plan, owner_id, email, phone, address, timezone, is_demo, admin_notes, created_at, plan_expires_at, plan_billing_cycle, policy_accepted_at, policy_version, subscription_status, booking_fee_cents_override, next_billing_at, mollie_subscription_id, mollie_customer_id, subscription_notes, category",
         )
         .eq("id", shopId)
         .maybeSingle();

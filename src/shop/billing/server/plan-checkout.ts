@@ -11,6 +11,9 @@ import {
   platformMollieWebhookFields,
 } from "@/shared/lib/mollie-platform";
 import type { DbPlan } from "@/shared/lib/plans";
+import { createLogger } from "@/server/logger";
+
+const log = createLogger("billing.checkout");
 
 const ALLOWED_PLANS = new Set(["starter", "pro", "premium"]);
 const ALLOWED_CYCLES = new Set(["monthly", "yearly"]);
@@ -49,7 +52,7 @@ export const handlers = {
 
           const { data: shop, error: shopErr } = await supabaseAdmin
             .from("shops")
-            .select("id, name, owner_id, plan, onboarding, plan_billing_cycle, mollie_subscription_id")
+            .select("id, name, owner_id, plan, plan_billing_cycle, mollie_customer_id")
             .eq("id", body.shop_id)
             .maybeSingle();
           if (shopErr || !shop) return json({ error: "shop_not_found" }, 404);
@@ -113,8 +116,7 @@ export const handlers = {
 
           let checkoutUrl: string;
           let mollieId: string | null = null;
-          const onboarding = (shop.onboarding ?? {}) as Record<string, unknown>;
-          let mollieCustomerId = (onboarding.mollie_customer_id as string | undefined) ?? null;
+          let mollieCustomerId = shop.mollie_customer_id ?? null;
 
           if (!mollieCustomerId) {
             const custRes = await fetch("https://api.mollie.com/v2/customers", {
@@ -131,10 +133,12 @@ export const handlers = {
               mollieCustomerId = cust.id;
               await supabaseAdmin
                 .from("shops")
-                .update({ onboarding: { ...onboarding, mollie_customer_id: mollieCustomerId } })
+                .update({ mollie_customer_id: mollieCustomerId })
                 .eq("id", shop.id);
+              log.info("mollie_customer_created", { shop_id: shop.id, mollie_customer_id: mollieCustomerId });
             } else {
               const errText = await custRes.text();
+              log.error("mollie_customer_failed", { shop_id: shop.id, details: errText });
               await supabaseAdmin.from("payments").update({ status: "failed", metadata: { mollie_error: errText, plan, cycle } }).eq("id", payment.id);
               return json({ error: "mollie_customer_failed", details: errText }, 502);
             }
@@ -180,6 +184,16 @@ export const handlers = {
             .update({ provider_payment_id: mollie.id })
             .eq("id", payment.id);
 
+          log.info("checkout_created", {
+            shop_id: shop.id,
+            payment_id: payment.id,
+            mollie_id: mollieId,
+            plan,
+            cycle,
+            kind: paymentKind,
+            amount_cents: amount,
+          });
+
           await supabaseAdmin.from("activity_log").insert({
             entity: BILLING_ENTITY,
             action: "checkout_created",
@@ -191,7 +205,7 @@ export const handlers = {
 
           return json({ ok: true, payment_id: payment.id, checkout_url: checkoutUrl });
         } catch (err) {
-          console.error("[billing/plan-checkout] error:", err);
+          log.error("internal_error", { err });
           return json({ error: "internal_error", details: (err as Error).message }, 500);
         }
       },

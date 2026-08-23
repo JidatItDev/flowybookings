@@ -6,6 +6,9 @@
 
 import { mollieFetchWithFallback, platformMollieWebhookFields } from "@/shared/lib/mollie-platform";
 import type { BillingCycle } from "@/admin/settings/platform-billing";
+import { createLogger } from "@/server/logger";
+
+const log = createLogger("billing.mollie_sub");
 
 export type MollieSubSummary = {
   id: string;
@@ -34,7 +37,7 @@ export async function listMollieSubscriptions(customerId: string): Promise<Molli
   );
   if (!result?.response.ok) {
     if (result) {
-      console.error("[mollie/subs] list failed", await result.response.text());
+      log.error("list_failed", { details: await result.response.text() });
     }
     return [];
   }
@@ -52,7 +55,7 @@ export async function cancelMollieSubscription(
   );
   if (!result) return false;
   if (result.response.ok || result.response.status === 404) return true;
-  console.error("[mollie/subs] cancel failed", subscriptionId, await result.response.text());
+  log.error("cancel_failed", { subscription_id: subscriptionId, details: await result.response.text() });
   return false;
 }
 
@@ -98,7 +101,7 @@ export async function patchMollieSubscription(opts: {
   );
   if (!result?.response.ok) {
     if (result) {
-      console.error("[mollie/subs] patch failed", await result.response.text());
+      log.error("patch_failed", { details: await result.response.text() });
     }
     return null;
   }
@@ -133,7 +136,7 @@ export async function createMollieSubscription(opts: {
   );
   if (!result?.response.ok) {
     if (result) {
-      console.error("[mollie/subs] create failed", await result.response.text());
+      log.error("create_failed", { details: await result.response.text() });
     }
     return null;
   }

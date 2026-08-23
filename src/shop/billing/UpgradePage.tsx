@@ -20,6 +20,8 @@ import { usePlanPricing, planMonthlyAmount } from "@/shop/billing/use-plan-prici
 
 type PlanKey = "starter" | "pro" | "premium"; // DB plan values for BASIC/PRO/PREMIUM tiers
 
+const syncedPayments = new Set<string>();
+
 export function UpgradePage() {
   const { t } = useT();
   const { activeShop, refreshShops } = useAuth() as ReturnType<typeof useAuth> & { refreshShops?: () => void };
@@ -39,10 +41,12 @@ export function UpgradePage() {
 
   // After Mollie redirect, sync payment status from Mollie (webhooks are often
   // delayed or blocked on ngrok). Then refetch shops so the plan badge updates.
+  // Module-level Set is the lock: invalidate/refreshShops must not re-fire sync.
   useEffect(() => {
     if (!search.billing || !activeShop?.id) return;
     const paymentId = search.payment;
-    let cancelled = false;
+    if (paymentId && syncedPayments.has(paymentId)) return;
+    if (paymentId) syncedPayments.add(paymentId);
     (async () => {
       if (search.billing === "success" && paymentId) {
         const { data: { session } } = await supabase.auth.getSession();
@@ -59,7 +63,6 @@ export function UpgradePage() {
             mollie_status?: string;
             plan?: string;
           };
-          if (cancelled) return;
           if (data.local_status === "paid") {
             clearBillingPending();
             toast.success(t("upgrade.toastUpgraded", { plan: data.plan ?? activeShop.plan ?? "" }));
@@ -76,16 +79,12 @@ export function UpgradePage() {
       } else if (search.billing === "success") {
         toast.success(t("upgrade.toastUpgraded", { plan: activeShop?.plan ?? "" }));
       }
-      if (cancelled) return;
       qc.invalidateQueries({ queryKey: ["auth", "shops"] });
       qc.invalidateQueries({ queryKey: ["shop", "billing-payments", activeShop.id] });
       qc.invalidateQueries({ queryKey: shopKeys.shopFull(activeShop.id) });
       refreshShops?.();
       navigate({ to: "/shop/billing", search: {}, replace: true });
     })();
-    return () => {
-      cancelled = true;
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.billing, search.payment, activeShop?.id]);
 
@@ -126,36 +125,36 @@ export function UpgradePage() {
     accent: "neutral" | "primary" | "premium";
     features: string[];
   }> = [
-    {
-      key: "starter",
-      tier: "basic",
-      name: t("upgrade.basic"),
-      tagline: t("upgrade.basicTagline"),
-      price: priceFor("starter", 19),
-      accent: "neutral",
-      features: [t("upgrade.feat.bookings"), t("upgrade.feat.staff3"), t("upgrade.feat.email"), t("upgrade.feat.analytics")],
-    },
-    {
-      key: "pro",
-      tier: "pro",
-      name: t("upgrade.pro"),
-      tagline: t("upgrade.proTagline"),
-      price: priceFor("pro", 49),
-      badge: t("upgrade.mostPopular"),
-      accent: "primary",
-      features: [t("upgrade.feat.bookings"), t("upgrade.feat.staff10"), t("upgrade.feat.sms"), t("upgrade.feat.deposits"), t("upgrade.feat.advAnalytics"), t("upgrade.feat.branding")],
-    },
-    {
-      key: "premium",
-      tier: "premium",
-      name: t("upgrade.premium"),
-      tagline: t("upgrade.premiumTagline"),
-      price: priceFor("premium", 99),
-      badge: t("upgrade.bestValue"),
-      accent: "premium",
-      features: [t("upgrade.feat.bookings"), t("upgrade.feat.staffUnlimited"), t("upgrade.feat.whatsapp"), t("upgrade.feat.multiloc"), t("upgrade.feat.priority"), t("upgrade.feat.api")],
-    },
-  ];
+      {
+        key: "starter",
+        tier: "basic",
+        name: t("upgrade.basic"),
+        tagline: t("upgrade.basicTagline"),
+        price: priceFor("starter", 19),
+        accent: "neutral",
+        features: [t("upgrade.feat.bookings"), t("upgrade.feat.staff3"), t("upgrade.feat.email"), t("upgrade.feat.analytics")],
+      },
+      {
+        key: "pro",
+        tier: "pro",
+        name: t("upgrade.pro"),
+        tagline: t("upgrade.proTagline"),
+        price: priceFor("pro", 49),
+        badge: t("upgrade.mostPopular"),
+        accent: "primary",
+        features: [t("upgrade.feat.bookings"), t("upgrade.feat.staff10"), t("upgrade.feat.sms"), t("upgrade.feat.deposits"), t("upgrade.feat.advAnalytics"), t("upgrade.feat.branding")],
+      },
+      {
+        key: "premium",
+        tier: "premium",
+        name: t("upgrade.premium"),
+        tagline: t("upgrade.premiumTagline"),
+        price: priceFor("premium", 99),
+        badge: t("upgrade.bestValue"),
+        accent: "premium",
+        features: [t("upgrade.feat.bookings"), t("upgrade.feat.staffUnlimited"), t("upgrade.feat.whatsapp"), t("upgrade.feat.multiloc"), t("upgrade.feat.priority"), t("upgrade.feat.api")],
+      },
+    ];
 
   if (isStaffOnly) {
     return (
@@ -326,10 +325,10 @@ export function UpgradePage() {
                 {isCurrent
                   ? t("upgrade.currentPlan")
                   : isDowngrade
-                  ? t("upgrade.cta.downgrade", { plan: p.name })
-                  : p.key === "premium"
-                  ? t("upgrade.cta.upgradePremium")
-                  : t("upgrade.cta.upgradeShort", { plan: p.name })}
+                    ? t("upgrade.cta.downgrade", { plan: p.name })
+                    : p.key === "premium"
+                      ? t("upgrade.cta.upgradePremium")
+                      : t("upgrade.cta.upgradeShort", { plan: p.name })}
                 {!isCurrent && !busy && <ArrowRight className="h-4 w-4" />}
               </Button>
             </div>

@@ -2,6 +2,10 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { PLATFORM_PROVIDER } from "@/admin/settings/platform-billing";
 import { getMolliePlatformKeys, mollieFetchWithFallback } from "@/shared/lib/mollie-platform";
 import { serverEnv } from "@/server/env";
+import { processMolliePaymentNotification } from "@/shop/payments/server/mollie-webhook";
+import { createLogger } from "@/server/logger";
+
+const log = createLogger("billing.reconcile");
 
 function cronAuthorized(request: Request): boolean {
   const cronSecret = serverEnv("CRON_SECRET");
@@ -33,7 +37,7 @@ export const handlers = {
     const horizon = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
     const { data: shops, error } = await supabaseAdmin
       .from("shops")
-      .select("id, plan, plan_expires_at, subscription_status, onboarding")
+      .select("id, plan, plan_expires_at, subscription_status, mollie_customer_id")
       .eq("subscription_status", "active")
       .in("plan", ["starter", "pro", "premium"])
       .not("plan_expires_at", "is", null)
@@ -44,8 +48,7 @@ export const handlers = {
     let replayed = 0;
     let skipped = 0;
     for (const shop of shops ?? []) {
-      const onboarding = (shop.onboarding ?? {}) as Record<string, unknown>;
-      const customerId = onboarding.mollie_customer_id as string | undefined;
+      const customerId = shop.mollie_customer_id;
       if (!customerId) {
         skipped++;
         continue;
@@ -68,12 +71,22 @@ export const handlers = {
           .maybeSingle();
         if (existing) continue;
 
-        const ping = await fetch(new URL("/api/mollie/webhook", process.env.APP_URL ?? "https://www.flowybookings.com"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: p.id }),
-        });
-        if (ping.ok) replayed++;
+        try {
+          const result = await processMolliePaymentNotification(p.id, "received");
+          if (result.ingested === true || result.local_status === "paid") {
+            replayed++;
+            log.info("reconcile_replayed", { shop_id: shop.id, mollie_id: p.id });
+          } else {
+            log.warn("reconcile_skip", {
+              shop_id: shop.id,
+              mollie_id: p.id,
+              ingested: result.ingested,
+              local_status: result.local_status,
+            });
+          }
+        } catch (err) {
+          log.error("reconcile_replay_failed", { shop_id: shop.id, mollie_id: p.id, err });
+        }
       }
     }
 

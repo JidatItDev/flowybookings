@@ -319,6 +319,7 @@ export function ShopDetailPage() {
             booking_fee_cents_override: shop.booking_fee_cents_override,
             next_billing_at: shop.next_billing_at,
             mollie_subscription_id: shop.mollie_subscription_id,
+            mollie_customer_id: shop.mollie_customer_id,
             subscription_notes: shop.subscription_notes,
           }}
         />

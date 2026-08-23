@@ -135,7 +135,7 @@ export function SettingsPage() {
   // fetched shopFullQuery row if activeShop hasn't hydrated yet.
   // Status semantics come from getTrialState(), which reads:
   //   - shop.plan / shop.plan_expires_at  (trial vs paid + expiry)
-  //   - shop.subscription_status / onboarding.payment_failed_at  (Mollie webhook)
+  //   - shop.subscription_status / shop.payment_failed_at  (Mollie webhook)
   // Pricing comes from the DB (plan_pricing) via usePlanPricing — never inline.
   const planSource = (activeShop ?? (shop as unknown as typeof activeShop)) ?? null;
   const trialState = getTrialState(planSource as never);

@@ -8,6 +8,9 @@ import { getMolliePlatformKeys } from "@/shared/lib/mollie-platform";
 import type { DbPlan } from "@/shared/lib/plans";
 import { enqueueSubscriptionEmail } from "@/email/enqueue-subscription-email";
 import { ensureSinglePlatformSubscription } from "@/shop/billing/server/mollie-subscriptions";
+import { createLogger } from "@/server/logger";
+
+const log = createLogger("billing.downgrade");
 
 const PLAN_RANK: Record<string, number> = { trial: 0, starter: 1, pro: 2, premium: 3 };
 const ALLOWED_TARGETS = new Set(["starter", "pro", "premium"]);
@@ -42,7 +45,7 @@ export const handlers = {
 
       const { data: shop } = await supabaseAdmin
         .from("shops")
-        .select("id, name, owner_id, plan, plan_expires_at, plan_billing_cycle, onboarding")
+        .select("id, name, owner_id, plan, plan_expires_at, plan_billing_cycle, mollie_customer_id, mollie_subscription_id")
         .eq("id", body.shop_id)
         .maybeSingle();
       if (!shop) return json({ error: "shop_not_found" }, 404);
@@ -71,9 +74,8 @@ export const handlers = {
       const effectiveAt = shop.plan_expires_at;
       if (!effectiveAt) return json({ error: "missing_expiry" }, 400);
 
-      const onboarding = (shop.onboarding ?? {}) as Record<string, unknown>;
-      const subId = (onboarding.mollie_subscription_id as string | undefined) ?? null;
-      const customerId = (onboarding.mollie_customer_id as string | undefined) ?? null;
+      const subId = shop.mollie_subscription_id ?? null;
+      const customerId = shop.mollie_customer_id ?? null;
       const hasMollie = getMolliePlatformKeys().length > 0;
       const amount = priceFor(targetPlan, cycle);
 
@@ -102,10 +104,7 @@ export const handlers = {
           await supabaseAdmin
             .from("shops")
             .update({
-              onboarding: {
-                ...onboarding,
-                mollie_subscription_id: synced.subscriptionId,
-              },
+              mollie_subscription_id: synced.subscriptionId,
               ...(synced.nextPaymentDate ? { next_billing_at: synced.nextPaymentDate } : {}),
             })
             .eq("id", shop.id);
@@ -162,6 +161,14 @@ export const handlers = {
         },
       });
 
+      log.info("downgrade_scheduled", {
+        shop_id: shop.id,
+        old_plan: currentPlan,
+        pending_plan: targetPlan,
+        effective_at: effectiveAt,
+        mollie_subscription_id: mollieSubscriptionId,
+      });
+
       return json({
         ok: true,
         pending_plan: targetPlan,
@@ -171,7 +178,7 @@ export const handlers = {
         mollie_orphans_cancelled: cancelledOrphans,
       });
     } catch (err) {
-      console.error("[billing/plan-downgrade] error:", err);
+      log.error("internal_error", { err });
       return json({ error: "internal_error", details: (err as Error).message }, 500);
     }
   },

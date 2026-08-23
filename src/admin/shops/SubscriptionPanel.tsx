@@ -1,6 +1,6 @@
 // Admin subscription management for a single shop.
 // Editable: plan, subscription_status, plan_expires_at, booking_fee_cents_override,
-// next_billing_at, mollie_subscription_id (read-only), subscription_notes.
+// next_billing_at, mollie_subscription_id / mollie_customer_id (read-only), subscription_notes.
 // Quick actions: extend trial +7/+14/+30, pause, reactivate, cancel, free month.
 
 import { useState } from "react";
@@ -29,6 +29,7 @@ type Shop = {
   booking_fee_cents_override: number | null;
   next_billing_at: string | null;
   mollie_subscription_id: string | null;
+  mollie_customer_id: string | null;
   subscription_notes: string | null;
 };
 
@@ -145,6 +146,8 @@ export function SubscriptionPanel({ shop }: { shop: Shop }) {
         <div>
           <Label className="text-xs">Mollie subscription ID</Label>
           <Input value={shop.mollie_subscription_id ?? ""} readOnly className="mt-1 bg-muted/30" placeholder="—" />
+          <Label className="mt-3 text-xs">Mollie customer ID</Label>
+          <Input value={shop.mollie_customer_id ?? ""} readOnly className="mt-1 bg-muted/30" placeholder="—" />
         </div>
       </div>
 

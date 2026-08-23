@@ -142,7 +142,7 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shops")
-        .select("id, name, slug, address, is_demo, business_hours, timezone, plan, plan_expires_at, logo_url")
+        .select("id, name, slug, address, is_demo, business_hours, timezone, plan, plan_expires_at, subscription_status, payment_failed_at, logo_url")
         .eq("status", "active");
       if (error) throw error;
       let rows = data ?? [];
@@ -197,7 +197,7 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shops")
-        .select("id, name, slug, address, is_demo, business_hours, timezone, plan, plan_expires_at, onboarding, logo_url")
+        .select("id, name, slug, address, is_demo, business_hours, timezone, plan, plan_expires_at, subscription_status, payment_failed_at, logo_url")
         .eq("id", presetShopId!)
         .maybeSingle();
       if (error) throw error;

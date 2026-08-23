@@ -9,6 +9,9 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BILLING_ENTITY } from "@/admin/settings/platform-billing";
 import { getMolliePlatformKeys, mollieFetchWithFallback } from "@/shared/lib/mollie-platform";
 import { enqueueSubscriptionEmail } from "@/email/enqueue-subscription-email";
+import { createLogger } from "@/server/logger";
+
+const log = createLogger("billing.cancel");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,7 +37,7 @@ export const handlers = {
 
           const { data: shop } = await supabaseAdmin
             .from("shops")
-            .select("id, name, owner_id, plan, plan_expires_at, onboarding")
+            .select("id, name, owner_id, plan, plan_expires_at, mollie_customer_id, mollie_subscription_id")
             .eq("id", body.shop_id)
             .maybeSingle();
           if (!shop) return json({ error: "shop_not_found" }, 404);
@@ -52,9 +55,8 @@ export const handlers = {
             return json({ error: "no_active_subscription" }, 400);
           }
 
-          const onboarding = ((shop.onboarding ?? {}) as Record<string, unknown>);
-          const subId = onboarding.mollie_subscription_id as string | undefined;
-          const customerId = onboarding.mollie_customer_id as string | undefined;
+          const subId = shop.mollie_subscription_id ?? null;
+          const customerId = shop.mollie_customer_id ?? null;
           const hasMollie = getMolliePlatformKeys().length > 0;
 
           let mollieCancelled = false;
@@ -70,7 +72,7 @@ export const handlers = {
               mollieCancelled = true;
             } else if (result) {
               mollieError = await result.response.text();
-              console.error("[billing/plan-cancel] mollie delete failed:", mollieError);
+              log.error("mollie_delete_failed", { shop_id: shop.id, details: mollieError });
             }
           }
 
@@ -82,10 +84,7 @@ export const handlers = {
               pending_plan: null,
               pending_plan_effective_at: null,
               next_billing_at: null,
-              onboarding: {
-                ...onboarding,
-                subscription_cancelled_at: cancelledAt,
-              },
+              mollie_subscription_id: null,
             })
             .eq("id", shop.id);
 
@@ -127,9 +126,16 @@ export const handlers = {
             },
           });
 
+          log.info("subscription_cancelled", {
+            shop_id: shop.id,
+            plan: shop.plan,
+            expires_at: shop.plan_expires_at,
+            mollie_cancelled: mollieCancelled,
+          });
+
           return json({ ok: true, mollie_cancelled: mollieCancelled, expires_at: shop.plan_expires_at });
         } catch (err) {
-          console.error("[billing/plan-cancel] error:", err);
+          log.error("internal_error", { err });
           return json({ error: "internal_error", details: (err as Error).message }, 500);
         }
       },

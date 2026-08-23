@@ -965,7 +965,9 @@ export type Database = {
           id: string
           is_demo: boolean
           logo_url: string | null
+          mollie_customer_id: string | null
           mollie_subscription_id: string | null
+          payment_failed_at: string | null
           name: string
           next_billing_at: string | null
           onboarding: Json
@@ -999,7 +1001,9 @@ export type Database = {
           id?: string
           is_demo?: boolean
           logo_url?: string | null
+          mollie_customer_id?: string | null
           mollie_subscription_id?: string | null
+          payment_failed_at?: string | null
           name: string
           next_billing_at?: string | null
           onboarding?: Json
@@ -1033,7 +1037,9 @@ export type Database = {
           id?: string
           is_demo?: boolean
           logo_url?: string | null
+          mollie_customer_id?: string | null
           mollie_subscription_id?: string | null
+          payment_failed_at?: string | null
           name?: string
           next_billing_at?: string | null
           onboarding?: Json

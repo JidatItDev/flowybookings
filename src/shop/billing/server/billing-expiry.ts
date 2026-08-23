@@ -1,6 +1,9 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BILLING_ENTITY } from "@/admin/settings/platform-billing";
 import { serverEnv } from "@/server/env";
+import { createLogger } from "@/server/logger";
+
+const log = createLogger("billing.expiry");
 
 function cronAuthorized(request: Request): boolean {
   const cronSecret = serverEnv("CRON_SECRET");
@@ -14,9 +17,8 @@ function cronAuthorized(request: Request): boolean {
   return !!got && allowed.includes(got);
 }
 
-function hasLiveMollieSubscription(onboarding: Record<string, unknown> | null | undefined): boolean {
-  const id = onboarding?.mollie_subscription_id;
-  return typeof id === "string" && id.length > 0;
+function hasLiveMollieSubscription(mollie_subscription_id: string | null): boolean {
+  return typeof mollie_subscription_id === "string" && mollie_subscription_id.length > 0;
 }
 
 export const handlers = {
@@ -35,7 +37,7 @@ export const handlers = {
     // paid-through only advances when Mollie reports a paid charge.
     const { data: pendingShops, error: pendingErr } = await supabaseAdmin
       .from("shops")
-      .select("id, plan, pending_plan, pending_plan_effective_at, onboarding, subscription_status")
+      .select("id, plan, pending_plan, pending_plan_effective_at, mollie_subscription_id, subscription_status")
       .not("pending_plan", "is", null)
       .not("pending_plan_effective_at", "is", null)
       .lte("pending_plan_effective_at", nowIso);
@@ -45,8 +47,7 @@ export const handlers = {
     for (const shop of pendingShops ?? []) {
       if (!shop.pending_plan) continue;
       const oldPlan = shop.plan;
-      const onboarding = (shop.onboarding ?? {}) as Record<string, unknown>;
-      const keepActive = hasLiveMollieSubscription(onboarding) || shop.subscription_status === "active";
+      const keepActive = hasLiveMollieSubscription(shop.mollie_subscription_id) || shop.subscription_status === "active";
       const { data: updated } = await supabaseAdmin
         .from("shops")
         .update({
@@ -74,7 +75,7 @@ export const handlers = {
     // live subscription (e.g. SEPA awaiting collection) or a future next_billing_at.
     const { data: expired, error: expErr } = await supabaseAdmin
       .from("shops")
-      .select("id, plan, plan_expires_at, subscription_status, onboarding, next_billing_at")
+      .select("id, plan, plan_expires_at, subscription_status, mollie_subscription_id, next_billing_at")
       .in("plan", ["starter", "pro", "premium"])
       .not("plan_expires_at", "is", null)
       .lt("plan_expires_at", nowIso);
@@ -83,9 +84,9 @@ export const handlers = {
 
     for (const shop of expired ?? []) {
       if (pendingAppliedIds.has(shop.id)) continue;
-      const onboarding = (shop.onboarding ?? {}) as Record<string, unknown>;
       const nextBilling = shop.next_billing_at ? new Date(shop.next_billing_at).getTime() : 0;
-      if (hasLiveMollieSubscription(onboarding) || nextBilling > Date.now()) {
+      if (hasLiveMollieSubscription(shop.mollie_subscription_id) || nextBilling > Date.now()) {
+        log.info("skipped_live_mollie", { shop_id: shop.id });
         results.skipped_live_mollie.push({ shop_id: shop.id });
         continue;
       }
@@ -103,15 +104,12 @@ export const handlers = {
           plan_billing_cycle: null,
           plan_expires_at: null,
           next_billing_at: null,
-          onboarding: {
-            ...onboarding,
-            mollie_subscription_id: null,
-          },
+          mollie_subscription_id: null,
         })
         .eq("id", shop.id)
         .lt("plan_expires_at", nowIso);
       if (updErr) {
-        console.error("[billing-expiry] update failed", shop.id, updErr);
+        log.error("expire_update_failed", { shop_id: shop.id, err: updErr });
         continue;
       }
       await supabaseAdmin.from("activity_log").insert({
@@ -128,6 +126,7 @@ export const handlers = {
         action_url: "/shop/billing",
         metadata: { kind: "subscription", subkind: "expired_to_starter", previous_plan: shop.plan },
       });
+      log.info("expired_to_starter", { shop_id: shop.id, from: shop.plan });
       results.expired_to_starter.push({ shop_id: shop.id, from: shop.plan });
     }
 

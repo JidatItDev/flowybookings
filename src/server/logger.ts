@@ -1,14 +1,3 @@
-### Task 1: Tiny logger
-
-**Files:**
-- Create: `src/server/logger.ts`
-
-**Interfaces:**
-- Produces: `createLogger(scope: string): Logger` with `debug|info|warn|error(msg, ctx?)` and `child(extra)`.
-
-- [ ] **Step 1: Add `src/server/logger.ts`**
-
-```ts
 import { serverEnv } from "@/server/env";
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
@@ -29,7 +18,7 @@ const LEVEL_RANK: Record<LogLevel, number> = {
   error: 40,
 };
 
-const SECRET_KEY = /authorization|access_token|api[_-]?key|webhook_secret|bearer|password|secret/i;
+const SECRET_KEY = /authorization|access[_-]?token|accesstoken|api[_-]?key|apikey|webhook[_-]?secret|webhooksecret|bearer|password|secret/i;
 
 function activeLevel(): LogLevel {
   const raw = (serverEnv("LOG_LEVEL") ?? "").trim().toLowerCase();
@@ -44,6 +33,30 @@ function useJson(): boolean {
   return serverEnv("NODE_ENV") === "production";
 }
 
+function isPlainRecord(v: unknown): v is Record<string, unknown> {
+  return (
+    typeof v === "object" &&
+    v !== null &&
+    !Array.isArray(v) &&
+    !(v instanceof Error) &&
+    !(v instanceof Date)
+  );
+}
+
+function sanitizeValue(v: unknown): unknown {
+  if (v instanceof Error) return { message: v.message, name: v.name };
+  if (Array.isArray(v)) return v.map(sanitizeValue);
+  if (isPlainRecord(v)) {
+    const out: Record<string, unknown> = {};
+    for (const [k, val] of Object.entries(v)) {
+      if (SECRET_KEY.test(k)) continue;
+      out[k] = sanitizeValue(val);
+    }
+    return out;
+  }
+  return v;
+}
+
 function sanitize(ctx: LogCtx | undefined): LogCtx {
   if (!ctx) return {};
   const out: LogCtx = {};
@@ -54,7 +67,7 @@ function sanitize(ctx: LogCtx | undefined): LogCtx {
       out[`${k}_name`] = v.name;
       continue;
     }
-    out[k] = v;
+    out[k] = sanitizeValue(v);
   }
   return out;
 }
@@ -64,7 +77,7 @@ function emit(level: LogLevel, scope: string, msg: string, ctx: LogCtx | undefin
   const safe = sanitize(ctx);
   const ts = new Date().toISOString();
   if (useJson()) {
-    const line = JSON.stringify({ ts, level, scope, msg, ...safe });
+    const line = JSON.stringify({ ...safe, ts, level, scope, msg });
     if (level === "error") console.error(line);
     else if (level === "warn") console.warn(line);
     else console.log(line);
@@ -93,12 +106,3 @@ export function createLogger(scope: string, bound: LogCtx = {}): Logger {
     child: (extra) => createLogger(scope, merge(extra)),
   };
 }
-```
-
-- [ ] **Step 2: Typecheck**
-
-Run: `npx tsc --noEmit --pretty false`
-Expected: no errors from `src/server/logger.ts` (pre-existing errors elsewhere are not this task).
-
----
-
