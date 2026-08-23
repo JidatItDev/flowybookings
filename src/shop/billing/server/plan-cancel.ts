@@ -7,8 +7,10 @@
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BILLING_ENTITY } from "@/admin/settings/platform-billing";
-import { getMolliePlatformKeys, mollieFetchWithFallback } from "@/shared/lib/mollie-platform";
+import { getMolliePlatformKeys } from "@/shared/lib/mollie-platform";
 import { enqueueSubscriptionEmail } from "@/email/enqueue-subscription-email";
+import { cancelMollieSubscription } from "@/shop/billing/server/mollie-subscriptions";
+import { resolveCancelOutcome } from "@/shop/billing/server/cancel-outcome";
 import { createLogger } from "@/server/logger";
 
 const log = createLogger("billing.cancel");
@@ -37,7 +39,7 @@ export const handlers = {
 
           const { data: shop } = await supabaseAdmin
             .from("shops")
-            .select("id, name, owner_id, plan, plan_expires_at, mollie_customer_id, mollie_subscription_id")
+            .select("id, name, owner_id, plan, plan_expires_at, subscription_status, mollie_customer_id, mollie_subscription_id")
             .eq("id", body.shop_id)
             .maybeSingle();
           if (!shop) return json({ error: "shop_not_found" }, 404);
@@ -51,6 +53,11 @@ export const handlers = {
             }
           }
 
+          // Already cancelled — true no-op, don't re-send the email or re-log.
+          if (shop.subscription_status === "cancelled") {
+            return json({ ok: true, already_cancelled: true, expires_at: shop.plan_expires_at });
+          }
+
           if (shop.plan === "trial") {
             return json({ error: "no_active_subscription" }, 400);
           }
@@ -59,23 +66,37 @@ export const handlers = {
           const customerId = shop.mollie_customer_id ?? null;
           const hasMollie = getMolliePlatformKeys().length > 0;
 
-          let mollieCancelled = false;
-          let mollieError: string | null = null;
-          if (hasMollie && customerId && subId) {
-            // Subscription was created on whichever key was active at the time —
-            // the fallback helper transparently retries the legacy key on 401/404.
-            const result = await mollieFetchWithFallback(
-              `https://api.mollie.com/v2/customers/${customerId}/subscriptions/${subId}`,
-              { method: "DELETE" },
-            );
-            if (result?.response.ok) {
-              mollieCancelled = true;
-            } else if (result) {
-              mollieError = await result.response.text();
-              log.error("mollie_delete_failed", { shop_id: shop.id, details: mollieError });
-            }
+          // Subscription was created on whichever key was active at the time —
+          // the fallback helper transparently retries the legacy key on 401/404.
+          const mollieResult =
+            hasMollie && customerId && subId
+              ? await cancelMollieSubscription(customerId, subId)
+              : null;
+          const outcome = resolveCancelOutcome({ hasMollie, customerId, subId, mollieResult });
+
+          if (outcome.kind === "fail") {
+            // Fail closed: never mark the shop cancelled locally while Mollie
+            // still has a live subscription — that would strand it billing
+            // forever with no local trail. Leave state untouched; the DELETE
+            // call is idempotent, so retrying the button is always safe.
+            log.error("mollie_cancel_failed", { shop_id: shop.id, details: outcome.error });
+            await supabaseAdmin.from("activity_log").insert({
+              entity: BILLING_ENTITY,
+              action: "subscription_cancel_failed",
+              shop_id: shop.id,
+              actor_user_id: userId,
+              actor_email: userRes.user.email ?? null,
+              metadata: {
+                plan: shop.plan,
+                mollie_customer_id: customerId,
+                mollie_subscription_id: subId,
+                mollie_error: outcome.error,
+              },
+            });
+            return json({ error: "mollie_cancel_failed", details: outcome.error }, 502);
           }
 
+          const mollieCancelled = outcome.mollieCancelled;
           const cancelledAt = new Date().toISOString();
           await supabaseAdmin
             .from("shops")
@@ -99,7 +120,6 @@ export const handlers = {
               expires_at: shop.plan_expires_at,
               mollie_subscription_id: subId ?? null,
               mollie_cancelled: mollieCancelled,
-              mollie_error: mollieError,
             },
           });
 

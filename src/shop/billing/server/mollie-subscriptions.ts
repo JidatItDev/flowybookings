@@ -45,18 +45,22 @@ export async function listMollieSubscriptions(customerId: string): Promise<Molli
   return body._embedded?.subscriptions ?? [];
 }
 
+export type MollieCancelResult = { ok: boolean; error?: string };
+
+/** Cancelling an already-gone (404) subscription counts as success — it's gone either way. */
 export async function cancelMollieSubscription(
   customerId: string,
   subscriptionId: string,
-): Promise<boolean> {
+): Promise<MollieCancelResult> {
   const result = await mollieFetchWithFallback(
     `https://api.mollie.com/v2/customers/${customerId}/subscriptions/${subscriptionId}`,
     { method: "DELETE" },
   );
-  if (!result) return false;
-  if (result.response.ok || result.response.status === 404) return true;
-  log.error("cancel_failed", { subscription_id: subscriptionId, details: await result.response.text() });
-  return false;
+  if (!result) return { ok: false, error: "no_mollie_response" };
+  if (result.response.ok || result.response.status === 404) return { ok: true };
+  const details = await result.response.text();
+  log.error("cancel_failed", { subscription_id: subscriptionId, details });
+  return { ok: false, error: details };
 }
 
 /** Cancel every active subscription except `keepId` (if set). */
@@ -69,7 +73,7 @@ export async function cancelOrphanMollieSubscriptions(
   for (const sub of subs) {
     if (sub.status !== "active" && sub.status !== "pending") continue;
     if (keepId && sub.id === keepId) continue;
-    if (await cancelMollieSubscription(customerId, sub.id)) cancelled.push(sub.id);
+    if ((await cancelMollieSubscription(customerId, sub.id)).ok) cancelled.push(sub.id);
   }
   return cancelled;
 }
