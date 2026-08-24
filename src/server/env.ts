@@ -1,6 +1,7 @@
 // Server-only env. Do NOT prefix secrets with VITE_ — Vite inlines VITE_* into the browser.
 // Local `vite dev` does not copy non-VITE_ keys into process.env; we read .env ourselves.
-// Cloudflare/wrangler uses process.env from secrets / .dev.vars.
+// In any real deployment (Render included), the host injects real environment
+// variables into process.env directly, so this file-reading fallback never runs there.
 
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -32,9 +33,8 @@ function loadDotEnvFiles(): Record<string, string> {
   cached = {};
   if (typeof process === "undefined" || !process.versions?.node) return cached;
   const cwd = process.cwd();
-  for (const name of [".dev.vars", ".env.local", ".env"]) {
-    const path = resolve(cwd, name);
-    if (!existsSync(path)) continue;
+  const path = resolve(cwd, ".env");
+  if (existsSync(path)) {
     Object.assign(cached, parseEnvFile(readFileSync(path, "utf8")));
   }
   return cached;
@@ -55,9 +55,8 @@ export function collectServerEnvValues(name: string): string[] {
   };
   if (typeof process !== "undefined" && process.versions?.node) {
     const cwd = process.cwd();
-    for (const file of [".dev.vars", ".env.local", ".env"]) {
-      const path = resolve(cwd, file);
-      if (!existsSync(path)) continue;
+    const path = resolve(cwd, ".env");
+    if (existsSync(path)) {
       add(parseEnvFile(readFileSync(path, "utf8"))[name]);
     }
   }

@@ -15,7 +15,6 @@
     "test:integration": "vitest run tests/integration"
   },
   "dependencies": {
-    "@cloudflare/vite-plugin": "^1.25.5",
     "@hookform/resolvers": "^5.2.2",
     "@lovable.dev/cloud-auth-js": "^1.1.1",
     "@lovable.dev/email-js": "^0.0.4",

@@ -17,8 +17,8 @@ dist-ssr
 *.local
 .env
 
-# Wrangler / Cloudflare
-.wrangler/
+# Legacy local file, no longer read by the app (see src/server/env.ts) —
+# still ignored in case a leftover copy exists locally.
 .dev.vars
 
 # Editor directories and files
