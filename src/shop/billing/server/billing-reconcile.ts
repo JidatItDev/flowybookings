@@ -1,23 +1,11 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { PLATFORM_PROVIDER } from "@/admin/settings/platform-billing";
 import { getMolliePlatformKeys, mollieFetchWithFallback } from "@/shared/lib/mollie-platform";
-import { serverEnv } from "@/server/env";
+import { cronAuthorized } from "@/server/cron-auth";
 import { processMolliePaymentNotification } from "@/shop/payments/server/mollie-webhook";
 import { createLogger } from "@/server/logger";
 
 const log = createLogger("billing.reconcile");
-
-function cronAuthorized(request: Request): boolean {
-  const cronSecret = serverEnv("CRON_SECRET");
-  const got = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
-  if (cronSecret) return got === cronSecret;
-  const allowed = [
-    serverEnv("SUPABASE_SERVICE_ROLE_KEY"),
-    serverEnv("SUPABASE_ANON_KEY"),
-    serverEnv("SUPABASE_PUBLISHABLE_KEY"),
-  ].filter(Boolean) as string[];
-  return !!got && allowed.includes(got);
-}
 
 type MollieListPayment = {
   id: string;

@@ -11,13 +11,13 @@ import {
   platformMollieWebhookFields,
 } from "@/shared/lib/mollie-platform";
 import type { DbPlan } from "@/shared/lib/plans";
+import { resolveCheckoutKind } from "@/shop/billing/server/plan-checkout-decision";
 import { createLogger } from "@/server/logger";
 
 const log = createLogger("billing.checkout");
 
 const ALLOWED_PLANS = new Set(["starter", "pro", "premium"]);
 const ALLOWED_CYCLES = new Set(["monthly", "yearly"]);
-const PLAN_RANK: Record<string, number> = { trial: 0, starter: 1, pro: 2, premium: 3 };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -68,9 +68,7 @@ export const handlers = {
 
           const plan = body.plan as Exclude<DbPlan, "trial">;
           const previousPlan = shop.plan as DbPlan;
-          const isUpgrade =
-            previousPlan !== "trial" && (PLAN_RANK[plan] ?? 0) > (PLAN_RANK[previousPlan] ?? 0);
-          const paymentKind = isUpgrade ? "subscription_upgrade" : "subscription_first";
+          const paymentKind = resolveCheckoutKind(previousPlan, plan);
           const amount = priceFor(plan, cycle);
           const origin = body.redirect_origin || new URL(request.url).origin;
 

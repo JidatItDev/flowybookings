@@ -20,6 +20,15 @@ import {
   ensureSinglePlatformSubscription,
   isoFromMollieDate,
 } from "@/shop/billing/server/mollie-subscriptions";
+import {
+  isAbandonedFirstAttempt,
+  isFailedUpgradeCheckout,
+  needsSubscriptionSync,
+} from "@/shop/payments/server/subscription-attempt";
+import {
+  computeSmsTopupResult,
+  isSmsTopupAlreadyApplied,
+} from "@/shop/notifications/server/sms-credits-decision";
 import { createLogger } from "@/server/logger";
 
 const log = createLogger("billing.webhook");
@@ -46,7 +55,7 @@ type MollieSubscription = {
 };
 
 /** Best-effort next charge date from a Mollie payment (SEPA uses transferDate). */
-function paymentCollectionAt(mollie: MolliePayment | null | undefined): string | null {
+export function paymentCollectionAt(mollie: MolliePayment | null | undefined): string | null {
   if (!mollie) return null;
   const raw =
     mollie.dueDate ||
@@ -253,7 +262,7 @@ function safeEqual(a: string, b: string): boolean {
   return mismatch === 0;
 }
 
-function mapStatus(s: MolliePayment["status"] | undefined):
+export function mapStatus(s: MolliePayment["status"] | undefined):
   | "paid"
   | "failed"
   | "unpaid"
@@ -282,11 +291,8 @@ async function handleSubscriptionLifecycle(opts: {
   // an active Starter/Pro). Only recurring charge failures flip shop status.
   const raw = opts.rawMollieStatus ?? null;
   const kind = (opts.metadata.kind as string | undefined) ?? null;
-  const isAbandonedFirstAttempt =
-    (raw === "canceled" || raw === "expired") &&
-    (kind === "subscription_first" || kind === "subscription");
-  const isFailedUpgradeCheckout =
-    kind === "subscription_upgrade" && opts.effectiveStatus === "failed";
+  const abandonedFirstAttempt = isAbandonedFirstAttempt(raw, kind);
+  const failedUpgradeCheckout = isFailedUpgradeCheckout(kind, opts.effectiveStatus);
 
   // Awaiting / open recurring charge (e.g. SEPA before collection): record when
   // Mollie will try — do NOT invent plan_expires_at until status is paid.
@@ -327,13 +333,12 @@ async function handleSubscriptionLifecycle(opts: {
     // Keep exactly one Mollie subscription for this shop (cancel orphans, patch or create).
     let mollieSubscriptionId = prevShop?.mollie_subscription_id ?? null;
     let nextBillingAt: string | null = null;
-    const needsSubSync =
-      hasMollie &&
-      mollieCustomerId &&
-      (kind === "subscription_first" ||
-        kind === "subscription" ||
-        kind === "subscription_upgrade");
-    if (needsSubSync) {
+    const needsSubSync = needsSubscriptionSync({
+      hasMollie,
+      hasCustomerId: Boolean(mollieCustomerId),
+      kind,
+    });
+    if (needsSubSync && mollieCustomerId) {
       const amountValue = ((subscriptionAmountCents(plan, cycle)) / 100).toFixed(2);
       const { data: billingCfg } = await supabaseAdmin
         .from("platform_billing_config")
@@ -440,7 +445,7 @@ async function handleSubscriptionLifecycle(opts: {
       });
       log.info("email_subscription_plan_changed", { ...changedMail });
     }
-  } else if (opts.effectiveStatus === "failed" && (isAbandonedFirstAttempt || isFailedUpgradeCheckout)) {
+  } else if (opts.effectiveStatus === "failed" && (abandonedFirstAttempt || failedUpgradeCheckout)) {
     // Abandoned first checkout OR failed/canceled upgrade attempt → payment row
     // already failed; keep shop plan + subscription_status unchanged.
     log.info("subscription_checkout_not_completed", {
@@ -448,7 +453,7 @@ async function handleSubscriptionLifecycle(opts: {
     });
     await supabaseAdmin.from("activity_log").insert({
       entity: BILLING_ENTITY,
-      action: isFailedUpgradeCheckout
+      action: failedUpgradeCheckout
         ? "subscription_upgrade_checkout_failed"
         : "subscription_checkout_abandoned",
       shop_id: opts.shopId,
@@ -516,7 +521,7 @@ async function handleSubscriptionLifecycle(opts: {
     kind,
     plan,
     cycle,
-    abandoned_first: isAbandonedFirstAttempt,
+    abandoned_first: abandonedFirstAttempt,
   });
 }
 
@@ -648,7 +653,7 @@ async function applyPendingPlanIfDue(shopId: string): Promise<void> {
 }
 
 // Local helper — keeps webhook self-contained without circular import on platform-billing.
-function subscriptionAmountCents(plan: DbPlan, cycle: BillingCycle): number {
+export function subscriptionAmountCents(plan: DbPlan, cycle: BillingCycle): number {
   const monthly: Record<string, number> = { starter: 1900, pro: 4900, premium: 9900 };
   const base = monthly[plan] ?? 0;
   return cycle === "yearly" ? base * 10 : base;
@@ -667,7 +672,7 @@ async function handleSmsCreditsLifecycle(opts: {
   if (!credits || credits <= 0) return;
 
   if (opts.effectiveStatus === "paid") {
-    if (opts.metadata.credits_applied === true) return; // already applied — idempotency
+    if (isSmsTopupAlreadyApplied(opts.metadata)) return; // already applied — idempotency
 
     // Atomic-ish increment: read, write back. RPC would be safer, but the row is per-shop
     // and webhook traffic is low, so contention is negligible.
@@ -678,8 +683,7 @@ async function handleSmsCreditsLifecycle(opts: {
       .maybeSingle();
 
     const oldBalance = existing?.balance ?? 0;
-    const newBalance = oldBalance + credits;
-    const resumed = oldBalance <= 0 && newBalance > 0;
+    const { newBalance, resumed } = computeSmsTopupResult(oldBalance, credits);
 
     if (existing) {
       await supabaseAdmin

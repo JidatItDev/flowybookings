@@ -1,25 +1,13 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BILLING_ENTITY } from "@/admin/settings/platform-billing";
-import { serverEnv } from "@/server/env";
+import { cronAuthorized } from "@/server/cron-auth";
 import { createLogger } from "@/server/logger";
+import {
+  resolveExpirySweepAction,
+  resolvePendingPlanKeepActive,
+} from "@/shop/billing/server/expiry-sweep-decision";
 
 const log = createLogger("billing.expiry");
-
-function cronAuthorized(request: Request): boolean {
-  const cronSecret = serverEnv("CRON_SECRET");
-  const got = (request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
-  if (cronSecret) return got === cronSecret;
-  const allowed = [
-    serverEnv("SUPABASE_SERVICE_ROLE_KEY"),
-    serverEnv("SUPABASE_ANON_KEY"),
-    serverEnv("SUPABASE_PUBLISHABLE_KEY"),
-  ].filter(Boolean) as string[];
-  return !!got && allowed.includes(got);
-}
-
-function hasLiveMollieSubscription(mollie_subscription_id: string | null): boolean {
-  return typeof mollie_subscription_id === "string" && mollie_subscription_id.length > 0;
-}
 
 export const handlers = {
   POST: async ({ request }: { request: Request }) => {
@@ -47,7 +35,7 @@ export const handlers = {
     for (const shop of pendingShops ?? []) {
       if (!shop.pending_plan) continue;
       const oldPlan = shop.plan;
-      const keepActive = hasLiveMollieSubscription(shop.mollie_subscription_id) || shop.subscription_status === "active";
+      const keepActive = resolvePendingPlanKeepActive(shop);
       const { data: updated } = await supabaseAdmin
         .from("shops")
         .update({
@@ -84,16 +72,14 @@ export const handlers = {
 
     for (const shop of expired ?? []) {
       if (pendingAppliedIds.has(shop.id)) continue;
-      const nextBilling = shop.next_billing_at ? new Date(shop.next_billing_at).getTime() : 0;
-      if (hasLiveMollieSubscription(shop.mollie_subscription_id) || nextBilling > Date.now()) {
+      const action = resolveExpirySweepAction(shop);
+      if (action === "skip_live_mollie") {
         log.info("skipped_live_mollie", { shop_id: shop.id });
         results.skipped_live_mollie.push({ shop_id: shop.id });
         continue;
       }
+      if (action === "skip_none") continue;
       const status = shop.subscription_status;
-      if (status !== "cancelled" && status !== "payment_failed" && status !== "active" && status !== "expired") {
-        if (status === "none") continue;
-      }
       const { error: updErr } = await supabaseAdmin
         .from("shops")
         .update({

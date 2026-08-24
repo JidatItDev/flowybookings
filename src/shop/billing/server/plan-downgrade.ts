@@ -8,11 +8,11 @@ import { getMolliePlatformKeys } from "@/shared/lib/mollie-platform";
 import type { DbPlan } from "@/shared/lib/plans";
 import { enqueueSubscriptionEmail } from "@/email/enqueue-subscription-email";
 import { ensureSinglePlatformSubscription } from "@/shop/billing/server/mollie-subscriptions";
+import { isValidDowngrade, resolveDowngradeCycle } from "@/shop/billing/server/plan-downgrade-decision";
 import { createLogger } from "@/server/logger";
 
 const log = createLogger("billing.downgrade");
 
-const PLAN_RANK: Record<string, number> = { trial: 0, starter: 1, pro: 2, premium: 3 };
 const ALLOWED_TARGETS = new Set(["starter", "pro", "premium"]);
 
 const corsHeaders = {
@@ -62,15 +62,14 @@ export const handlers = {
 
       const currentPlan = shop.plan as DbPlan;
       const targetPlan = body.target_plan as Exclude<DbPlan, "trial">;
-      if ((PLAN_RANK[targetPlan] ?? 0) >= (PLAN_RANK[currentPlan] ?? 0)) {
+      if (!isValidDowngrade(currentPlan, targetPlan)) {
         return json({ error: "not_a_downgrade" }, 400);
       }
       if (currentPlan === "trial") {
         return json({ error: "no_active_subscription" }, 400);
       }
 
-      const cycle: BillingCycle =
-        body.cycle === "yearly" || shop.plan_billing_cycle === "yearly" ? "yearly" : "monthly";
+      const cycle: BillingCycle = resolveDowngradeCycle(body.cycle, shop.plan_billing_cycle);
       const effectiveAt = shop.plan_expires_at;
       if (!effectiveAt) return json({ error: "missing_expiry" }, 400);
 
