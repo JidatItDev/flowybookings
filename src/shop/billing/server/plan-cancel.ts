@@ -10,7 +10,7 @@ import { BILLING_ENTITY } from "@/admin/settings/platform-billing";
 import { getMolliePlatformKeys } from "@/shared/lib/mollie-platform";
 import { enqueueSubscriptionEmail } from "@/email/enqueue-subscription-email";
 import { cancelMollieSubscription } from "@/shop/billing/server/mollie-subscriptions";
-import { resolveCancelOutcome } from "@/shop/billing/server/cancel-outcome";
+import { resolveCancelOutcome, resolveCancelPreflight } from "@/shop/billing/server/cancel-outcome";
 import { createLogger } from "@/server/logger";
 
 const log = createLogger("billing.cancel");
@@ -53,12 +53,12 @@ export const handlers = {
             }
           }
 
-          // Already cancelled — true no-op, don't re-send the email or re-log.
-          if (shop.subscription_status === "cancelled") {
+          const preflight = resolveCancelPreflight(shop);
+          if (preflight.kind === "already_cancelled") {
+            // True no-op — don't re-send the email or re-log.
             return json({ ok: true, already_cancelled: true, expires_at: shop.plan_expires_at });
           }
-
-          if (shop.plan === "trial") {
+          if (preflight.kind === "no_subscription") {
             return json({ error: "no_active_subscription" }, 400);
           }
 

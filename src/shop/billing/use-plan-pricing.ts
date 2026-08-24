@@ -59,7 +59,11 @@ export function formatPlanPrice(
   const formatted = new Intl.NumberFormat(locale, {
     style: "currency",
     currency: row.currency || "EUR",
-    maximumFractionDigits: 0,
+    // Match format.ts's formatCents: whole euros show no decimals, fractional
+    // prices (e.g. an admin-set €1.23 promo) keep their cents instead of
+    // silently rounding to the nearest euro.
+    minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
   }).format(amount);
   return cycle === "yearly" ? `${formatted}/jaar` : `${formatted}/maand`;
 }

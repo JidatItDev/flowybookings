@@ -249,7 +249,11 @@ export function UpgradePage() {
       {/* Plans */}
       <div className="grid gap-4 lg:grid-cols-3">
         {plans.map((p) => {
-          const isCurrent = currentPlan === p.key;
+          // Same plan name alone isn't "current" — a cancelled/expired/payment-failed
+          // shop still has plan === its old tier (billing-expiry.ts always lands lapsed
+          // shops on "starter"), but there's no live subscription behind it, so it must
+          // stay resubscribable rather than permanently disabled.
+          const isCurrent = currentPlan === p.key && activeShop?.subscription_status === "active";
           const isDowngrade = TIER_RANK[p.tier] < TIER_RANK[currentTier] && !isCurrent;
           const featured = p.accent === "primary";
           const busy =

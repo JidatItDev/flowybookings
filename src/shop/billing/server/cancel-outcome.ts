@@ -6,6 +6,25 @@ export type CancelOutcome =
   | { kind: "cancel"; mollieCancelled: boolean }
   | { kind: "fail"; error: string };
 
+export type CancelPreflightResult =
+  | { kind: "already_cancelled" }
+  | { kind: "no_subscription" }
+  | { kind: "proceed" };
+
+/**
+ * Whether a cancel request should even attempt anything, before touching Mollie.
+ * "none" (lapsed past expiry, or never subscribed) has no live subscription to
+ * cancel — same dead end as trial, just reached a different way.
+ */
+export function resolveCancelPreflight(shop: {
+  plan: string;
+  subscription_status: string | null;
+}): CancelPreflightResult {
+  if (shop.subscription_status === "cancelled") return { kind: "already_cancelled" };
+  if (shop.plan === "trial" || shop.subscription_status === "none") return { kind: "no_subscription" };
+  return { kind: "proceed" };
+}
+
 export function resolveCancelOutcome(opts: {
   hasMollie: boolean;
   customerId: string | null;

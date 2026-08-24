@@ -97,7 +97,14 @@ export function ShopBillingCard() {
   const expiresDate = expiry ? new Date(expiry) : null;
   const nextBillingDate = nextBillingRaw ? new Date(nextBillingRaw) : null;
   const isExpired = !!expiresDate && expiresDate.getTime() < Date.now();
-  const canCancel = activeShop?.plan && activeShop.plan !== "trial" && subscriptionStatus !== "cancelled";
+  // "none" means no live Mollie subscription exists to cancel (e.g. lapsed past
+  // expiry) — showing Cancel there would just mislabel the shop as "cancelled"
+  // rather than "never subscribed" for no functional reason.
+  const canCancel =
+    activeShop?.plan &&
+    activeShop.plan !== "trial" &&
+    subscriptionStatus !== "cancelled" &&
+    subscriptionStatus !== "none";
   const scheduledPlan = activeShop?.pending_plan ?? null;
   const scheduledAt = activeShop?.pending_plan_effective_at ?? null;
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { resolveCancelOutcome } from "@/shop/billing/server/cancel-outcome";
+import { resolveCancelOutcome, resolveCancelPreflight } from "@/shop/billing/server/cancel-outcome";
 
 describe("resolveCancelOutcome", () => {
   test("cancels locally without calling Mollie when no live keys are configured", () => {
@@ -60,5 +60,32 @@ describe("resolveCancelOutcome", () => {
       mollieResult: { ok: false },
     });
     expect(result).toEqual({ kind: "fail", error: "unknown_error" });
+  });
+});
+
+describe("resolveCancelPreflight", () => {
+  test("already-cancelled is a no-op, regardless of plan", () => {
+    const result = resolveCancelPreflight({ plan: "starter", subscription_status: "cancelled" });
+    expect(result).toEqual({ kind: "already_cancelled" });
+  });
+
+  test("trial has nothing to cancel", () => {
+    const result = resolveCancelPreflight({ plan: "trial", subscription_status: "trial" });
+    expect(result).toEqual({ kind: "no_subscription" });
+  });
+
+  test("'none' has nothing to cancel — lapsed past expiry, or never subscribed", () => {
+    const result = resolveCancelPreflight({ plan: "starter", subscription_status: "none" });
+    expect(result).toEqual({ kind: "no_subscription" });
+  });
+
+  test("an active paid plan proceeds", () => {
+    const result = resolveCancelPreflight({ plan: "pro", subscription_status: "active" });
+    expect(result).toEqual({ kind: "proceed" });
+  });
+
+  test("payment_failed still proceeds — there's a live subscription to cancel, it's just failing to charge", () => {
+    const result = resolveCancelPreflight({ plan: "starter", subscription_status: "payment_failed" });
+    expect(result).toEqual({ kind: "proceed" });
   });
 });
