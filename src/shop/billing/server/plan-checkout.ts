@@ -2,7 +2,8 @@
 // Missing keys return 503 server_configuration_missing (no mock checkout).
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { PLATFORM_PROVIDER, BILLING_ENTITY, priceFor, type BillingCycle } from "@/admin/settings/platform-billing";
+import { PLATFORM_PROVIDER, BILLING_ENTITY, type BillingCycle } from "@/admin/settings/platform-billing";
+import { fetchPlanPriceCents } from "@/shop/billing/server/plan-price";
 import {
   getMolliePrimaryKey,
   mollieAuthHeader,
@@ -69,7 +70,7 @@ export const handlers = {
           const plan = body.plan as Exclude<DbPlan, "trial">;
           const previousPlan = shop.plan as DbPlan;
           const paymentKind = resolveCheckoutKind(previousPlan, plan);
-          const amount = priceFor(plan, cycle);
+          const amount = await fetchPlanPriceCents(plan, cycle);
           const origin = body.redirect_origin || new URL(request.url).origin;
 
           // 1) Pre-create a pending payment row so we can correlate the webhook.

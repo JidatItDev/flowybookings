@@ -1,5 +1,11 @@
 import { describe, expect, test } from "vitest";
-import { priceFor, nextExpiry, cycleLabel, PLAN_PRICE_CENTS } from "@/admin/settings/platform-billing";
+import {
+  priceFor,
+  resolvePlanPriceCents,
+  nextExpiry,
+  cycleLabel,
+  PLAN_PRICE_CENTS,
+} from "@/admin/settings/platform-billing";
 
 describe("priceFor", () => {
   test("monthly price is the base plan price", () => {
@@ -14,6 +20,36 @@ describe("priceFor", () => {
 
   test("lifetime price is 24x monthly (placeholder, not exposed yet)", () => {
     expect(priceFor("pro", "lifetime")).toBe(PLAN_PRICE_CENTS.pro * 24);
+  });
+});
+
+describe("resolvePlanPriceCents", () => {
+  test("uses the live DB price when it's a real number", () => {
+    expect(resolvePlanPriceCents("pro", "monthly", 5900)).toBe(5900);
+  });
+
+  test("a DB price of exactly 0 is honored, not treated as missing (e.g. a promo)", () => {
+    expect(resolvePlanPriceCents("starter", "monthly", 0)).toBe(0);
+  });
+
+  test("falls back to the hardcoded map when the DB value is undefined", () => {
+    expect(resolvePlanPriceCents("pro", "monthly", undefined)).toBe(PLAN_PRICE_CENTS.pro);
+  });
+
+  test("falls back to the hardcoded map when the DB value is null", () => {
+    expect(resolvePlanPriceCents("pro", "monthly", null)).toBe(PLAN_PRICE_CENTS.pro);
+  });
+
+  test("applies the yearly multiplier on top of the live DB price", () => {
+    expect(resolvePlanPriceCents("pro", "yearly", 5900)).toBe(59000);
+  });
+
+  test("applies the lifetime multiplier on top of the live DB price", () => {
+    expect(resolvePlanPriceCents("pro", "lifetime", 5900)).toBe(5900 * 24);
+  });
+
+  test("priceFor() is exactly resolvePlanPriceCents with no DB value", () => {
+    expect(priceFor("premium", "yearly")).toBe(resolvePlanPriceCents("premium", "yearly", undefined));
   });
 });
 

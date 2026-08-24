@@ -20,6 +20,7 @@ import {
   ensureSinglePlatformSubscription,
   isoFromMollieDate,
 } from "@/shop/billing/server/mollie-subscriptions";
+import { fetchPlanPriceCents } from "@/shop/billing/server/plan-price";
 import {
   isAbandonedFirstAttempt,
   isFailedUpgradeCheckout,
@@ -285,6 +286,9 @@ async function handleSubscriptionLifecycle(opts: {
   const plan = opts.metadata.plan as DbPlan | undefined;
   const cycle = (opts.metadata.cycle as BillingCycle | undefined) ?? "monthly";
   if (!plan || !["starter", "pro", "premium"].includes(plan)) return;
+  // The guard above already excludes "trial" at runtime; Array#includes doesn't
+  // narrow the type for TS, so make the exclusion explicit for the pricing calls.
+  const billablePlan = plan as Exclude<DbPlan, "trial">;
 
   // Mollie's `canceled`/`expired` on a FIRST payment, or any failed/canceled/expired
   // UPGRADE checkout, must NOT mark the shop payment_failed (shop may already have
@@ -329,6 +333,9 @@ async function handleSubscriptionLifecycle(opts: {
       (opts.metadata.mollie_customer_id as string | undefined) ??
       prevShop?.mollie_customer_id ??
       null;
+    // Live plan_pricing lookup — reused below for the Mollie subscription amount and
+    // the payment-received email label so a single webhook run only fetches it once.
+    const priceCents = await fetchPlanPriceCents(billablePlan, cycle);
 
     // Keep exactly one Mollie subscription for this shop (cancel orphans, patch or create).
     let mollieSubscriptionId = prevShop?.mollie_subscription_id ?? null;
@@ -339,7 +346,7 @@ async function handleSubscriptionLifecycle(opts: {
       kind,
     });
     if (needsSubSync && mollieCustomerId) {
-      const amountValue = ((subscriptionAmountCents(plan, cycle)) / 100).toFixed(2);
+      const amountValue = (priceCents / 100).toFixed(2);
       const { data: billingCfg } = await supabaseAdmin
         .from("platform_billing_config")
         .select("webhook_url_override")
@@ -426,7 +433,7 @@ async function handleSubscriptionLifecycle(opts: {
       metadata: { kind: "subscription", subkind: "activated", plan, cycle },
     });
 
-    const amountLabel = `€${(subscriptionAmountCents(plan, cycle) / 100).toFixed(2).replace(".", ",")}`;
+    const amountLabel = `€${(priceCents / 100).toFixed(2).replace(".", ",")}`;
     const cycleLabel = cycle === "yearly" ? "jaarlijks" : "maandelijks";
     const expiresLabel = new Date(expiry).toLocaleDateString("nl-NL");
     const paymentMail = await enqueueSubscriptionEmail({
@@ -495,7 +502,7 @@ async function handleSubscriptionLifecycle(opts: {
     // Email the shop owner so they actually see it.
     try {
       const cents = (opts.metadata.amount_cents as number | undefined)
-        ?? subscriptionAmountCents(plan, cycle);
+        ?? (await fetchPlanPriceCents(billablePlan, cycle));
       const amountLabel = `€${(cents / 100).toFixed(2).replace(".", ",")}`;
       const appUrl = process.env.APP_URL ?? "https://www.flowybookings.com";
       await enqueueSubscriptionEmail({
@@ -650,13 +657,6 @@ async function applyPendingPlanIfDue(shopId: string): Promise<void> {
     shop_id: shopId,
     metadata: { old_plan: oldPlan, new_plan: shop.pending_plan },
   });
-}
-
-// Local helper — keeps webhook self-contained without circular import on platform-billing.
-export function subscriptionAmountCents(plan: DbPlan, cycle: BillingCycle): number {
-  const monthly: Record<string, number> = { starter: 1900, pro: 4900, premium: 9900 };
-  const base = monthly[plan] ?? 0;
-  return cycle === "yearly" ? base * 10 : base;
 }
 
 // SMS credit top-up lifecycle: increases shop_sms_credits.balance on success.

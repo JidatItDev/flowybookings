@@ -20,11 +20,27 @@ export const PLAN_PRICE_CENTS: Record<Exclude<DbPlan, "trial">, number> = {
   premium: 9900,
 };
 
-export function priceFor(plan: Exclude<DbPlan, "trial">, cycle: BillingCycle): number {
-  const monthly = PLAN_PRICE_CENTS[plan];
+/**
+ * Monthly price in cents for a plan/cycle, given whatever `plan_pricing.monthly_price_cents`
+ * the caller already fetched (or didn't). Any real number from the DB — including 0, e.g. a
+ * promo — is used as-is; only a missing/non-number value falls back to PLAN_PRICE_CENTS.
+ * Pure by design so it needs no mocking to test; the DB fetch itself lives server-side in
+ * shop/billing/server/plan-price.ts (this file is imported by client components too).
+ */
+export function resolvePlanPriceCents(
+  plan: Exclude<DbPlan, "trial">,
+  cycle: BillingCycle,
+  dbMonthlyPriceCents: number | null | undefined,
+): number {
+  const monthly = typeof dbMonthlyPriceCents === "number" ? dbMonthlyPriceCents : PLAN_PRICE_CENTS[plan];
   if (cycle === "yearly") return monthly * 10;
   if (cycle === "lifetime") return monthly * 24; // not exposed yet; placeholder
   return monthly;
+}
+
+/** Hardcoded-only price (no DB lookup) — kept for client-side estimates before plan_pricing loads. */
+export function priceFor(plan: Exclude<DbPlan, "trial">, cycle: BillingCycle): number {
+  return resolvePlanPriceCents(plan, cycle, undefined);
 }
 
 /** Compute the next expiry timestamp from `from` for a given cycle. */

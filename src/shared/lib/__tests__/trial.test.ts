@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { getTrialState, PAYMENT_FAILED_GRACE_DAYS_CONST } from "@/shared/lib/trial";
 
 const DAY_MS = 1000 * 60 * 60 * 24;
@@ -65,14 +65,24 @@ describe("getTrialState", () => {
   });
 
   test("payment_failed exactly at the grace boundary is still in grace (inclusive)", () => {
-    const failedAt = new Date(Date.now() - PAYMENT_FAILED_GRACE_DAYS_CONST * DAY_MS).toISOString();
-    const state = getTrialState({
-      plan: "starter",
-      subscription_status: "payment_failed",
-      payment_failed_at: failedAt,
-    });
-    expect(state.inPaymentFailedGrace).toBe(true);
-    expect(state.canAcceptBookings).toBe(true);
+    // Freeze the clock so the test's Date.now() and getTrialState's internal
+    // Date.now() read the identical millisecond — otherwise this boundary
+    // case is flaky by a few ms depending on scheduling.
+    const now = new Date("2026-06-15T12:00:00.000Z");
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+    try {
+      const failedAt = new Date(now.getTime() - PAYMENT_FAILED_GRACE_DAYS_CONST * DAY_MS).toISOString();
+      const state = getTrialState({
+        plan: "starter",
+        subscription_status: "payment_failed",
+        payment_failed_at: failedAt,
+      });
+      expect(state.inPaymentFailedGrace).toBe(true);
+      expect(state.canAcceptBookings).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   test("payment_failed past the 7-day grace window blocks bookings", () => {

@@ -3,7 +3,8 @@
 // charge uses the lower amount. Orphan Mollie subscriptions are cancelled first.
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { BILLING_ENTITY, priceFor, type BillingCycle } from "@/admin/settings/platform-billing";
+import { BILLING_ENTITY, type BillingCycle } from "@/admin/settings/platform-billing";
+import { fetchPlanPriceCents } from "@/shop/billing/server/plan-price";
 import { getMolliePlatformKeys } from "@/shared/lib/mollie-platform";
 import type { DbPlan } from "@/shared/lib/plans";
 import { enqueueSubscriptionEmail } from "@/email/enqueue-subscription-email";
@@ -76,7 +77,7 @@ export const handlers = {
       const subId = shop.mollie_subscription_id ?? null;
       const customerId = shop.mollie_customer_id ?? null;
       const hasMollie = getMolliePlatformKeys().length > 0;
-      const amount = priceFor(targetPlan, cycle);
+      const amount = await fetchPlanPriceCents(targetPlan, cycle);
 
       let molliePatched = false;
       let mollieSubscriptionId = subId;

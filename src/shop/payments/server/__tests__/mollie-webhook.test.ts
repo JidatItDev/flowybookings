@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { mapStatus, paymentCollectionAt, subscriptionAmountCents } from "@/shop/payments/server/mollie-webhook";
+import { mapStatus, paymentCollectionAt } from "@/shop/payments/server/mollie-webhook";
 
 describe("mapStatus", () => {
   test.each([
@@ -52,19 +52,5 @@ describe("paymentCollectionAt", () => {
 
   test("returns null when no date is present anywhere", () => {
     expect(paymentCollectionAt({ id: "tr_1", status: "pending" })).toBeNull();
-  });
-});
-
-describe("subscriptionAmountCents", () => {
-  test("monthly amounts per plan", () => {
-    expect(subscriptionAmountCents("starter", "monthly")).toBe(1900);
-    expect(subscriptionAmountCents("pro", "monthly")).toBe(4900);
-    expect(subscriptionAmountCents("premium", "monthly")).toBe(9900);
-  });
-  test("yearly is 10x monthly", () => {
-    expect(subscriptionAmountCents("starter", "yearly")).toBe(19000);
-  });
-  test("unrecognized plan defaults to 0", () => {
-    expect(subscriptionAmountCents("trial" as never, "monthly")).toBe(0);
   });
 });
