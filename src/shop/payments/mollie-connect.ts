@@ -6,6 +6,10 @@
 // used for SaaS subscription billing in /api/billing/plan-checkout.
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { accessTokenNeedsRefresh } from "@/shop/payments/server/mollie-token-decision";
+import { createLogger } from "@/server/logger";
+
+const log = createLogger("mollie_connect");
 
 export const MOLLIE_CONNECT_AUTHORIZE_URL = "https://my.mollie.com/oauth2/authorize";
 export const MOLLIE_CONNECT_TOKEN_URL = "https://api.mollie.com/oauth2/tokens";
@@ -206,9 +210,7 @@ export async function getActiveMollieAccessToken(shopId: string): Promise<{
   const profileId = (meta.profile_id as string | null | undefined) ?? null;
   if (!accessEnc) return null;
 
-  const expiresMs = expiresAt ? Date.parse(expiresAt) : NaN;
-  const needsRefresh =
-    Number.isFinite(expiresMs) && expiresMs - Date.now() < REFRESH_SAFETY_WINDOW_MS;
+  const needsRefresh = accessTokenNeedsRefresh(expiresAt, Date.now(), REFRESH_SAFETY_WINDOW_MS);
 
   if (!needsRefresh) {
     const access = await decryptToken(accessEnc);
@@ -246,7 +248,7 @@ export async function getActiveMollieAccessToken(shopId: string): Promise<{
       .eq("id", provider.id);
     return { accessToken: fresh.access_token, profileId, providerId: provider.id };
   } catch (err) {
-    console.error("[mollie-connect] refresh failed for shop", shopId, err);
+    log.error("on_demand_refresh_failed", { shop_id: shopId, err });
     await supabaseAdmin
       .from("shop_payment_providers")
       .update({

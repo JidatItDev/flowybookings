@@ -9,6 +9,10 @@ import {
   MOLLIE_CONNECT_AUTHORIZE_URL,
   MOLLIE_CONNECT_SCOPES,
 } from "@/shop/payments/mollie-connect";
+import { resolveShopAccessDecision } from "@/shop/payments/server/shop-access-decision";
+import { createLogger } from "@/server/logger";
+
+const log = createLogger("mollie_connect.authorize");
 
 export const handlers = {
       GET: async ({ request }: { request: Request }) => {
@@ -36,12 +40,22 @@ export const handlers = {
               .from("user_roles")
               .select("role")
               .eq("user_id", userId);
-            const isAdmin = (roles ?? []).some((r) => r.role === "super_admin");
-            if (!isAdmin) return json({ error: "forbidden" }, 403);
+            const decision = resolveShopAccessDecision({
+              shopOwnerId: shop.owner_id,
+              callerId: userId,
+              roles: (roles ?? []).map((r) => r.role),
+            });
+            if (decision === "forbidden") {
+              log.warn("forbidden", { shop_id: shopId, user_id: userId });
+              return json({ error: "forbidden" }, 403);
+            }
           }
 
           const clientId = process.env.MOLLIE_CONNECT_CLIENT_ID;
-          if (!clientId) return json({ error: "mollie_connect_not_configured" }, 503);
+          if (!clientId) {
+            log.error("not_configured", { shop_id: shopId });
+            return json({ error: "mollie_connect_not_configured" }, 503);
+          }
 
           // Generate state and stash it on the row (creates row if missing).
           const state = crypto.randomUUID();
@@ -65,7 +79,11 @@ export const handlers = {
               },
               { onConflict: "shop_id,provider" },
             );
-          if (upsertErr) return json({ error: "db_error", details: upsertErr.message }, 500);
+          if (upsertErr) {
+            log.error("db_error", { shop_id: shopId, err: upsertErr });
+            return json({ error: "db_error", details: upsertErr.message }, 500);
+          }
+          log.info("state_issued", { shop_id: shopId });
 
           const authorizeUrl = new URL(MOLLIE_CONNECT_AUTHORIZE_URL);
           authorizeUrl.searchParams.set("client_id", clientId);
@@ -77,7 +95,7 @@ export const handlers = {
 
           return json({ ok: true, authorize_url: authorizeUrl.toString() });
         } catch (err) {
-          console.error("[mollie-connect/authorize]", err);
+          log.error("unhandled_error", { err });
           return json({ error: "internal_error", details: (err as Error).message }, 500);
         }
       },

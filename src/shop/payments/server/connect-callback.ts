@@ -13,6 +13,16 @@ import {
   MOLLIE_CONNECT_TOKEN_URL,
   encryptToken,
 } from "@/shop/payments/mollie-connect";
+import {
+  buildCallbackRedirectUrl,
+  buildConnectedProviderMetadata,
+  buildProviderErrorMetadata,
+  findPendingProviderByState,
+  tokenExpiresAtIso,
+} from "@/shop/payments/server/connect-callback-decision";
+import { createLogger } from "@/server/logger";
+
+const log = createLogger("mollie_connect.callback");
 
 export const handlers = {
       GET: async ({ request }: { request: Request }) => {
@@ -21,14 +31,13 @@ export const handlers = {
         const state = url.searchParams.get("state");
         const errorParam = url.searchParams.get("error");
         const origin = url.origin;
-        const redirectBack = (status: "ok" | "error", reason?: string) => {
-          const u = new URL("/shop/payments", origin);
-          u.searchParams.set("mollie_connect", status);
-          if (reason) u.searchParams.set("reason", reason);
-          return Response.redirect(u.toString(), 302);
-        };
+        const redirectBack = (status: "ok" | "error", reason?: string) =>
+          Response.redirect(buildCallbackRedirectUrl(origin, status, reason), 302);
 
-        if (errorParam) return redirectBack("error", errorParam);
+        if (errorParam) {
+          log.warn("mollie_returned_error", { reason: errorParam });
+          return redirectBack("error", errorParam);
+        }
         if (!code || !state) return redirectBack("error", "missing_params");
 
         const clientId = process.env.MOLLIE_CONNECT_CLIENT_ID;
@@ -42,14 +51,14 @@ export const handlers = {
           .eq("provider", "mollie")
           .eq("connection_status", "pending");
         if (lookupErr) {
-          console.error("[mollie-connect/callback] lookup error", lookupErr);
+          log.error("lookup_failed", { err: lookupErr });
           return redirectBack("error", "lookup_failed");
         }
-        const row = (rows ?? []).find((r) => {
-          const meta = (r.metadata ?? {}) as Record<string, unknown>;
-          return meta.oauth_state === state;
-        });
-        if (!row) return redirectBack("error", "invalid_state");
+        const row = findPendingProviderByState(rows ?? [], state);
+        if (!row) {
+          log.warn("invalid_state");
+          return redirectBack("error", "invalid_state");
+        }
 
         const meta = (row.metadata ?? {}) as Record<string, unknown>;
         const redirectUri = (meta.oauth_redirect_uri as string | undefined) ??
@@ -70,12 +79,12 @@ export const handlers = {
         });
         if (!tokenRes.ok) {
           const txt = await tokenRes.text();
-          console.error("[mollie-connect/callback] token exchange failed", tokenRes.status, txt);
+          log.error("token_exchange_failed", { shop_id: row.shop_id, status: tokenRes.status, body: txt });
           await supabaseAdmin
             .from("shop_payment_providers")
             .update({
               connection_status: "error",
-              metadata: { ...meta, oauth_error: txt, oauth_state: null },
+              metadata: buildProviderErrorMetadata(meta, txt) as never,
             })
             .eq("id", row.id);
           return redirectBack("error", "token_exchange_failed");
@@ -87,6 +96,7 @@ export const handlers = {
           token_type?: string;
           scope?: string;
         };
+        log.info("token_exchanged", { shop_id: row.shop_id, has_refresh_token: !!tokens.refresh_token });
 
         // Fetch the connected organization to display a friendly name.
         let orgId: string | null = null;
@@ -100,9 +110,10 @@ export const handlers = {
             const org = (await orgRes.json()) as { id?: string; name?: string };
             orgId = org.id ?? null;
             orgName = org.name ?? null;
+            log.info("org_resolved", { shop_id: row.shop_id, organization_id: orgId, organization_name: orgName });
           }
         } catch (e) {
-          console.warn("[mollie-connect/callback] org fetch failed", e);
+          log.warn("org_fetch_failed", { shop_id: row.shop_id, err: e });
         }
         try {
           const profileRes = await fetch(`${MOLLIE_CONNECT_API_BASE}/profiles?limit=1`, {
@@ -115,71 +126,70 @@ export const handlers = {
             profileId = data._embedded?.profiles?.[0]?.id ?? null;
           }
         } catch (e) {
-          console.warn("[mollie-connect/callback] profile fetch failed", e);
+          log.warn("profile_fetch_failed", { shop_id: row.shop_id, err: e });
         }
 
-        const expiresAt = tokens.expires_in
-          ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
-          : null;
+        try {
+          const expiresAt = tokenExpiresAtIso(tokens.expires_in, Date.now());
 
-        const accessEnc = await encryptToken(tokens.access_token);
-        const refreshEnc = tokens.refresh_token ? await encryptToken(tokens.refresh_token) : null;
-
-        const newMeta = {
-          ...meta,
           // Encrypted at rest (AES-CBC + IV via pgcrypto, key in Vault).
-          access_token_enc: accessEnc,
-          refresh_token_enc: refreshEnc,
-          // Strip any legacy plaintext fields from older versions of this code.
-          access_token: null,
-          refresh_token: null,
-          token_expires_at: expiresAt,
-          organization_id: orgId,
-          organization_name: orgName,
-          profile_id: profileId,
-          scopes: tokens.scope ?? null,
-          oauth_state: null,
-          oauth_state_created_at: null,
-          oauth_error: null,
-          last_refresh_at: null,
-          last_refresh_error: null,
-          // Force the user to verify in the UI that they picked the right
-          // Mollie organisation. Cleared to `true` by the confirmation step.
-          connection_confirmed: false,
-          confirmed_at: null,
-        };
+          const accessEnc = await encryptToken(tokens.access_token);
+          const refreshEnc = tokens.refresh_token ? await encryptToken(tokens.refresh_token) : null;
 
-        await supabaseAdmin
-          .from("shop_payment_providers")
-          .update({
-            connection_status: "connected",
-            onboarding_status: "completed",
-            provider_account_id: orgId,
-            connected_at: new Date().toISOString(),
-            disconnected_at: null,
-            last_synced_at: new Date().toISOString(),
-            metadata: newMeta,
-          })
-          .eq("id", row.id);
+          const newMeta = buildConnectedProviderMetadata({
+            existingMeta: meta,
+            accessTokenEnc: accessEnc,
+            refreshTokenEnc: refreshEnc,
+            expiresAt,
+            organizationId: orgId,
+            organizationName: orgName,
+            profileId,
+            scope: tokens.scope ?? null,
+          });
 
-        await supabaseAdmin.from("activity_log").insert({
-          entity: "mollie_connect",
-          action: "connected",
-          shop_id: row.shop_id,
-          metadata: { organization_id: orgId, organization_name: orgName },
-        });
+          await supabaseAdmin
+            .from("shop_payment_providers")
+            .update({
+              connection_status: "connected",
+              onboarding_status: "completed",
+              provider_account_id: orgId,
+              connected_at: new Date().toISOString(),
+              disconnected_at: null,
+              last_synced_at: new Date().toISOString(),
+              metadata: newMeta as never,
+            })
+            .eq("id", row.id);
 
-        await supabaseAdmin.from("notifications").insert({
-          shop_id: row.shop_id,
-          type: "billing",
-          title: "Mollie gekoppeld",
-          message: orgName
-            ? `Je Mollie-account "${orgName}" is succesvol gekoppeld. Je kunt nu aanbetalingen ontvangen.`
-            : "Je Mollie-account is succesvol gekoppeld. Je kunt nu aanbetalingen ontvangen.",
-          action_url: "/shop/payments",
-          metadata: { kind: "mollie_connect", subkind: "connected" },
-        });
+          await supabaseAdmin.from("activity_log").insert({
+            entity: "mollie_connect",
+            action: "connected",
+            shop_id: row.shop_id,
+            metadata: { organization_id: orgId, organization_name: orgName },
+          });
 
-        return redirectBack("ok");
+          await supabaseAdmin.from("notifications").insert({
+            shop_id: row.shop_id,
+            type: "billing",
+            title: "Mollie gekoppeld",
+            message: orgName
+              ? `Je Mollie-account "${orgName}" is succesvol gekoppeld. Je kunt nu aanbetalingen ontvangen.`
+              : "Je Mollie-account is succesvol gekoppeld. Je kunt nu aanbetalingen ontvangen.",
+            action_url: "/shop/payments",
+            metadata: { kind: "mollie_connect", subkind: "connected" },
+          });
+
+          log.info("connected", { shop_id: row.shop_id, organization_id: orgId });
+          return redirectBack("ok");
+        } catch (err) {
+          log.error("post_token_exchange_failure", { shop_id: row.shop_id, err });
+          await supabaseAdmin
+            .from("shop_payment_providers")
+            .update({
+              connection_status: "error",
+              metadata: buildProviderErrorMetadata(meta, (err as Error).message) as never,
+            })
+            .eq("id", row.id);
+          return redirectBack("error", "connect_failed");
+        }
       },
     };

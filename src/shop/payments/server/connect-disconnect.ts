@@ -5,6 +5,10 @@
 // the merchant can revoke the app from their Mollie dashboard if they prefer.
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { resolveShopAccessDecision } from "@/shop/payments/server/shop-access-decision";
+import { createLogger } from "@/server/logger";
+
+const log = createLogger("mollie_connect.disconnect");
 
 export const handlers = {
       POST: async ({ request }: { request: Request }) => {
@@ -31,8 +35,12 @@ export const handlers = {
               .from("user_roles")
               .select("role")
               .eq("user_id", userId);
-            const isAdmin = (roles ?? []).some((r) => r.role === "super_admin");
-            if (!isAdmin) return json({ error: "forbidden" }, 403);
+            const decision = resolveShopAccessDecision({
+              shopOwnerId: shop.owner_id,
+              callerId: userId,
+              roles: (roles ?? []).map((r) => r.role),
+            });
+            if (decision === "forbidden") return json({ error: "forbidden" }, 403);
           }
 
           const { data: row } = await supabaseAdmin
@@ -66,7 +74,7 @@ export const handlers = {
             })
             .eq("id", row.id);
           if (updateErr) {
-            console.error("[mollie-connect/disconnect] update failed", updateErr);
+            log.error("update_failed", { shop_id: shopId, err: updateErr });
             return json({ error: "update_failed", details: updateErr.message }, 500);
           }
 
@@ -82,9 +90,10 @@ export const handlers = {
             },
           });
 
+          log.info("disconnected", { shop_id: shopId, user_id: userId });
           return json({ ok: true });
         } catch (err) {
-          console.error("[mollie-connect/disconnect]", err);
+          log.error("unhandled_error", { err });
           return json({ error: "internal_error", details: (err as Error).message }, 500);
         }
       },

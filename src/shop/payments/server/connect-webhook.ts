@@ -12,6 +12,9 @@ import {
 } from "@/shop/payments/mollie-connect";
 import { enqueueBookingEmail } from "@/email/enqueue-booking-email";
 import { getBookingUrl } from "@/shared/lib/booking-url";
+import { createLogger } from "@/server/logger";
+
+const log = createLogger("mollie_connect.webhook");
 
 type MolliePayment = {
   id: string;
@@ -48,6 +51,7 @@ export const handlers = {
             .maybeSingle();
 
           if (!payment) {
+            log.warn("received_unknown", { mollie_id: mollieId });
             await supabaseAdmin.from("activity_log").insert({
               entity: "mollie_connect_webhook",
               action: "received_unknown",
@@ -67,6 +71,12 @@ export const handlers = {
             if (res.ok) mollie = (await res.json()) as MolliePayment;
           }
 
+          log.info("received", {
+            shop_id: payment.shop_id,
+            mollie_id: mollieId,
+            mollie_status: mollie?.status ?? null,
+            local_status: payment.status,
+          });
           await supabaseAdmin.from("activity_log").insert({
             entity: "mollie_connect_webhook",
             action: "received",
@@ -80,6 +90,12 @@ export const handlers = {
 
           const newStatus = mapStatus(mollie?.status);
           if (newStatus && newStatus !== payment.status) {
+            log.info("status_changed", {
+              shop_id: payment.shop_id,
+              payment_id: payment.id,
+              from: payment.status,
+              to: newStatus,
+            });
             await supabaseAdmin
               .from("payments")
               .update({
@@ -113,7 +129,7 @@ export const handlers = {
 
           return ok();
         } catch (err) {
-          console.error("[mollie-connect/webhook]", err);
+          log.error("unhandled_error", { err });
           return json({ error: "internal_error" }, 500);
         }
       },
@@ -187,6 +203,6 @@ async function sendPaymentFailedEmail(bookingId: string, paymentId: string) {
       },
     });
   } catch (err) {
-    console.error("[mollie-connect/webhook] sendPaymentFailedEmail error", err);
+    log.error("payment_failed_email_error", { booking_id: bookingId, payment_id: paymentId, err });
   }
 }
