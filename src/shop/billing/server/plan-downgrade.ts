@@ -1,20 +1,21 @@
-// Schedule a platform-plan downgrade at period end. Local plan stays until
-// pending_plan_effective_at; the live Mollie subscription is NOT touched here.
+// Schedule a plan and/or billing-cycle downgrade at period end. Local plan
+// stays until pending_plan_effective_at; the live Mollie subscription is NOT
+// touched here — see billing-expiry.ts and the 2026-08-25
+// downgrade-premature-charge-fix plan for why (patching Mollie's `interval`
+// resets its billing anchor to now, so it must only ever happen at the real
+// renewal boundary, not when scheduling ahead of time).
 //
-// Why: patching a Mollie subscription's `interval` resets its internal
-// next-payment schedule to "now", even when the interval value doesn't
-// actually change (confirmed empirically in test mode — see the 2026-08-25
-// downgrade-premature-charge-fix plan). Patching it a year early caused an
-// unwanted immediate charge. Instead, billing-expiry.ts patches Mollie to the
-// new plan's price at the moment it actually applies pending_plan — which is
-// exactly when the real renewal is due, so "now" and "the anchor date" are
-// the same moment and nothing resets prematurely.
+// "Downgrade" here covers two shapes of change, both deferred per
+// resolvePlanChangeDirection: a lower tier (any cycle), or the same tier
+// switching from yearly to monthly. Switching a tier UP, or switching TO
+// yearly, is immediate and goes through plan-checkout.ts instead — this
+// endpoint rejects those.
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BILLING_ENTITY, type BillingCycle } from "@/admin/settings/platform-billing";
 import type { DbPlan } from "@/shared/lib/plans";
 import { enqueueSubscriptionEmail } from "@/email/enqueue-subscription-email";
-import { isValidDowngrade, resolveDowngradeCycle } from "@/shop/billing/server/plan-downgrade-decision";
+import { resolvePlanChangeDirection } from "@/shop/billing/server/plan-downgrade-decision";
 import { createLogger } from "@/server/logger";
 
 const log = createLogger("billing.downgrade");
@@ -67,15 +68,20 @@ export const handlers = {
       }
 
       const currentPlan = shop.plan as DbPlan;
-      const targetPlan = body.target_plan as Exclude<DbPlan, "trial">;
-      if (!isValidDowngrade(currentPlan, targetPlan)) {
-        return json({ error: "not_a_downgrade" }, 400);
-      }
       if (currentPlan === "trial") {
         return json({ error: "no_active_subscription" }, 400);
       }
+      const targetPlan = body.target_plan as Exclude<DbPlan, "trial">;
+      const targetCycle: BillingCycle = body.cycle === "yearly" ? "yearly" : "monthly";
 
-      const cycle: BillingCycle = resolveDowngradeCycle(body.cycle, shop.plan_billing_cycle);
+      const direction = resolvePlanChangeDirection(
+        { plan: currentPlan, cycle: shop.plan_billing_cycle },
+        { plan: targetPlan, cycle: targetCycle },
+      );
+      if (direction !== "deferred") {
+        return json({ error: direction === "noop" ? "no_change" : "not_a_downgrade" }, 400);
+      }
+
       const effectiveAt = shop.plan_expires_at;
       if (!effectiveAt) return json({ error: "missing_expiry" }, 400);
 
@@ -83,6 +89,7 @@ export const handlers = {
         .from("shops")
         .update({
           pending_plan: targetPlan,
+          pending_billing_cycle: targetCycle,
           pending_plan_effective_at: effectiveAt,
         })
         .eq("id", shop.id);
@@ -95,9 +102,10 @@ export const handlers = {
         actor_email: userRes.user.email ?? null,
         metadata: {
           old_plan: currentPlan,
+          old_cycle: shop.plan_billing_cycle,
           pending_plan: targetPlan,
+          pending_cycle: targetCycle,
           effective_at: effectiveAt,
-          cycle,
         },
       });
 
@@ -105,9 +113,9 @@ export const handlers = {
         shop_id: shop.id,
         type: "billing",
         title: "Downgrade gepland",
-        message: `Je blijft op ${currentPlan} tot ${new Date(effectiveAt).toLocaleDateString("nl-NL")}; daarna ${targetPlan}.`,
+        message: `Je blijft op ${currentPlan} tot ${new Date(effectiveAt).toLocaleDateString("nl-NL")}; daarna ${targetPlan} (${targetCycle === "yearly" ? "jaarlijks" : "maandelijks"}).`,
         action_url: "/shop/billing",
-        metadata: { kind: "subscription", subkind: "downgrade_scheduled", plan: targetPlan },
+        metadata: { kind: "subscription", subkind: "downgrade_scheduled", plan: targetPlan, cycle: targetCycle },
       });
 
       await enqueueSubscriptionEmail({
@@ -125,6 +133,7 @@ export const handlers = {
         shop_id: shop.id,
         old_plan: currentPlan,
         pending_plan: targetPlan,
+        pending_cycle: targetCycle,
         effective_at: effectiveAt,
       });
 

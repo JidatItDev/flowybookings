@@ -72,6 +72,15 @@ No migrations were written this session. No new API routes.
 - `UpgradePage.tsx`: top summary strip shows "Your previous plan: {tier}" + an "Inactive" pill when lapsed; the matching plan tile gets a "Previous plan" badge and a "Resubscribe to {plan} →" button instead of the generic upgrade CTA.
 - New i18n keys: `shopBilling.previousPlan`, `shopBilling.lapsedNoSubscription`, `upgrade.wasOn`, `upgrade.inactive`, `upgrade.previousPlanBadge`, `upgrade.cta.resubscribe` (en + nl).
 
+**Fourth item (same day): monthly↔yearly cycle-switch feature built** (was previously "not started" in this file's own §5/§6 — now built per `docs/superpowers/plans/2026-08-25-billing-cycle-switch.md`). Generalizes the tier-downgrade pattern: switching to a higher tier or to yearly is immediate (normal checkout, full price now); switching to a lower tier or to monthly is deferred to period end (existing downgrade-scheduling flow, extended).
+- New `resolvePlanChangeDirection()` in `plan-downgrade-decision.ts` replaces `isValidDowngrade`/`resolveDowngradeCycle` (both retired, only ever used inside `plan-downgrade.ts`) — classifies any (current plan, cycle) → (target plan, cycle) as `immediate`/`deferred`/`noop`.
+- New `shops.pending_billing_cycle` column (`supabase/migrations/20260825140000_shop_pending_billing_cycle.sql`, **not yet applied** — same as this session's other migration, user applies it) carries the target cycle alongside `pending_plan` for a same-tier cycle-only downgrade, which `pending_plan` alone couldn't represent (it would just equal the current plan).
+- `billing-expiry.ts` now also writes `plan_billing_cycle` when a pending change lands, preferring `pending_billing_cycle` over the shop's current cycle.
+- `UpgradePage.tsx`'s pricing tiles: toggling the existing monthly/yearly toggle while looking at your own current-tier tile now offers "Switch to yearly billing →" (immediate) or "Switch to monthly at renewal" (deferred) instead of a disabled "Current Plan" — no new UI control, reuses the toggle that was already there.
+- **Important caveat**: `src/integrations/supabase/types.ts` and `ShopRow` in `auth-context.tsx` are normally auto-generated/kept in sync with the live schema (`supabase gen types`) — since the migration isn't applied yet and there's no live DB connection available here, `pending_billing_cycle` was added to both **by hand**, matching the existing `pending_plan_effective_at` field's exact type shape (`string | null`). Once the user applies the migration, it would be worth running the real `supabase gen types` command to confirm the hand-edit matches exactly (it should — it's a plain nullable text column — but this hasn't been verified against the live schema).
+- Not yet manually tested live — see the plan doc's Task 8 for the checklist (cycle upgrade, cycle downgrade, cancel it, cron-apply it).
+- 237/237 tests passing (net -3 from the prior 240 — `isValidDowngrade`/`resolveDowngradeCycle`'s old tests were replaced by `resolvePlanChangeDirection`'s, which has fewer cases than the two old suites combined had), `npm run build` clean, `tsc`/`eslint` show only the same pre-existing unrelated issues.
+
 **Third follow-up (same day): D1 QA found a real premature-charge bug in downgrade scheduling.** Live Mollie test data: scheduling a Pro-yearly→Starter downgrade PATCHed the live Mollie subscription's amount immediately, and Mollie charged it ~10 minutes later (collection date the next day) despite `plan_expires_at` being a year out. Root cause: `patchMollieSubscription()` (`src/shop/billing/server/mollie-subscriptions.ts`) always includes `interval` in the PATCH body, and Mollie resets the subscription's next-payment schedule to "now" whenever `interval` is present, even unchanged. Fixed per full plan `docs/superpowers/plans/2026-08-25-downgrade-premature-charge-fix.md`:
 - `plan-downgrade.ts` no longer touches Mollie at all when scheduling — only writes `pending_plan`/`pending_plan_effective_at`.
 - `billing-expiry.ts`'s existing "apply pending plan" cron step now does the Mollie patch, at the moment it actually applies the plan (the real period-end boundary, so "now" and the anchor date coincide — no premature charge). If the Mollie patch fails, the local plan is NOT flipped that run (retries next cron tick) — avoids a mismatch between local plan/features and what Mollie is actually charging.
@@ -94,19 +103,19 @@ No migrations were written this session. No new API routes.
 
 **Minor, not urgent:**
 - `mollie-webhook.ts`'s `handleSubscriptionLifecycle` "failed" branch (recurring payment failure) enqueues the `platform-payment-failed` email but only logs on **error**, never on success — asymmetric with the "paid" branch which logs `email_subscription_payment_received`. Confirmed via manual test that the email *does* send correctly; this is purely an observability gap (a `log.info` line missing), not a functional bug.
-- Cycle-switch UX gap (monthly ↔ yearly on the same tier): `isCurrent` (even after this session's fix) doesn't compare `plan_billing_cycle`, so a monthly Starter customer toggling to "Yearly" still sees their tile disabled with no way to switch. Discussed at length (see git/chat history for full reasoning) — recommendation: monthly→yearly should behave like an upgrade (immediate, full price, reuses `ensureSinglePlatformSubscription`'s existing interval-patching), yearly→monthly should behave like a downgrade (scheduled at period end, since they've prepaid). Not started, not scoped into code yet.
+- ~~Cycle-switch UX gap~~ — **built this session**, see "Fourth item" above. Not yet manually verified live.
 - `plan-override.ts:54` pre-existing TS error (excess-property check on a `.update()` call) — predates this session, never touched, still there.
 
 ## 6. Remaining Work
 
 **Must do next:**
-1. Apply the `20260825120000_lapsed_subscription_block.sql` migration (user running it) and run the manual verification in §5 / the plan doc's Task 5.
-2. Commit the access-control fix's files (`supabase/migrations/20260825120000_lapsed_subscription_block.sql`, `src/shared/lib/trial.ts` + test, `src/shop/shell/TrialBanner.tsx`, `src/shop/shell/ShopLayout.tsx`, both translation files) — user reviews/commits himself, don't do this unprompted.
+1. Apply both pending migrations (user running these): `20260825120000_lapsed_subscription_block.sql` and `20260825140000_shop_pending_billing_cycle.sql`.
+2. Run the manual verification for the cycle-switch feature — `docs/superpowers/plans/2026-08-25-billing-cycle-switch.md`'s Task 8 (not yet done, unlike everything else in this list which IS now verified live).
+3. Commit everything — user reviews/commits himself, don't do this unprompted. Working tree currently has: both migrations, the lapsed-access-control fix, the downgrade-premature-charge fix, and the cycle-switch feature, all from this session.
 
-**Should do later:**
-3. Finish the manual QA matrix: F1 (failed upgrade), F2 (cancelled upgrade checkout), D1/D2 (downgrade then cancel), Y1 (yearly cycle), G1 (owner direct-write blocked by DB trigger — already covered by a migration-level trigger, just needs a manual click-through), G2 (already confirmed: `plan-confirm.ts` returns 410, mock billing fully removed).
-4. Add the missing `log.info` on the recurring-payment-failed email success path (trivial, ~1 line).
-5. Scope and build the cycle-switch (monthly↔yearly) feature discussed in §5.
+**Should do later (QA matrix — mostly done, see the matrix doc's Results log for exact status):**
+4. H2 (Starter→Pro paid) and F3 (first-subscribe-then-cancel) are the only original matrix rows never explicitly re-run this session — low risk, same code paths as what's already passing (Y1, Premium checkouts, F1).
+5. Add the missing `log.info` on the recurring-payment-failed email success path (trivial, ~1 line).
 
 **Optional:**
 6. Verify the physical `.dev.vars` file (still on disk, gitignored, unread by the app now) doesn't hold anything unique not already in `.env`, then delete it.

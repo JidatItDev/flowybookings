@@ -1739,10 +1739,16 @@ export const en: Record<string, string> = {
   "upgrade.cta.upgradeShort": "Start with {plan} →",
   "upgrade.cta.upgradePremium": "Upgrade to Premium →",
   "upgrade.cta.resubscribe": "Resubscribe to {plan} →",
+  "upgrade.cta.switchToYearly": "Switch to yearly billing →",
+  "upgrade.cta.switchToMonthly": "Switch to monthly at renewal",
   "upgrade.confirmDowngrade":
     "Downgrade to {plan}? Your current plan stays active until your next billing date — the change takes effect after that.",
   "upgrade.confirmUpgradeFromTrial":
     "Your upgrade starts immediately and your trial will end. Continue?",
+  "upgrade.confirmCycleUpgrade":
+    "Switch to yearly billing now? You'll be charged the full annual price immediately.",
+  "upgrade.confirmCycleDowngrade":
+    "Switch to monthly billing? You'll keep yearly billing until your current term ends, then switch to monthly.",
   "upgrade.billingNotice":
     "Payments are securely processed by Mollie · iDEAL, credit card & Bancontact",
   "upgrade.instantNote": "Active immediately after upgrade · No interruption to bookings or data",

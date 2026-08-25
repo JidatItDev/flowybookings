@@ -1760,9 +1760,15 @@ export const nl: Record<string, string> = {
   "upgrade.cta.upgradeShort": "Start met {plan} →",
   "upgrade.cta.upgradePremium": "Upgrade naar Premium →",
   "upgrade.cta.resubscribe": "Heractiveer {plan} →",
+  "upgrade.cta.switchToYearly": "Wissel naar jaarlijks →",
+  "upgrade.cta.switchToMonthly": "Wissel naar maandelijks bij verlenging",
   "upgrade.confirmDowngrade":
     "Downgraden naar {plan}? Je huidige plan blijft actief tot je volgende factuurdatum — daarna gaat de wijziging in.",
   "upgrade.confirmUpgradeFromTrial": "Je upgrade start direct en je proefperiode stopt. Doorgaan?",
+  "upgrade.confirmCycleUpgrade":
+    "Nu wisselen naar jaarlijkse facturatie? Je wordt direct de volledige jaarprijs in rekening gebracht.",
+  "upgrade.confirmCycleDowngrade":
+    "Wisselen naar maandelijkse facturatie? Je behoudt jaarlijkse facturatie tot je huidige periode afloopt, daarna wissel je naar maandelijks.",
   "upgrade.billingNotice": "Betalingen verlopen veilig via Mollie · iDEAL, creditcard & Bancontact",
   "upgrade.instantNote": "Direct actief na upgrade · Geen onderbreking in boekingen of data",
 

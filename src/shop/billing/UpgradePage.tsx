@@ -261,14 +261,27 @@ export function UpgradePage() {
       {/* Plans */}
       <div className="grid gap-4 lg:grid-cols-3">
         {plans.map((p) => {
+          const currentCycle: "monthly" | "yearly" = activeShop?.plan_billing_cycle === "yearly" ? "yearly" : "monthly";
+          const sameTier = p.key === currentPlan;
+          const isActive = activeShop?.subscription_status === "active";
           // Same plan name alone isn't "current" — a cancelled/expired/payment-failed
           // shop still has plan === its old tier (billing-expiry.ts always lands lapsed
           // shops on "starter"), but there's no live subscription behind it, so it must
-          // stay resubscribable rather than permanently disabled.
-          const isCurrent = currentPlan === p.key && activeShop?.subscription_status === "active";
+          // stay resubscribable rather than permanently disabled. Cycle must match too —
+          // toggling to "Yearly" while on Pro-monthly must NOT show Pro as your current,
+          // disabled tile; it should offer the cycle switch instead.
+          const isCurrent = sameTier && cycle === currentCycle && isActive;
           const isPreviousPlan = isLapsed && previousPlan === p.key;
-          const isPendingTarget = !isLapsed && activeShop?.pending_plan === p.key;
-          const isDowngrade = TIER_RANK[p.tier] < TIER_RANK[currentTier] && !isCurrent;
+          const isPendingTarget =
+            !isLapsed &&
+            activeShop?.pending_plan === p.key &&
+            (activeShop?.pending_billing_cycle ?? currentCycle) === cycle;
+          const isTierDowngrade = TIER_RANK[p.tier] < TIER_RANK[currentTier];
+          // Same tier, dropping from yearly to monthly — deferred, same as a tier downgrade.
+          const isCycleDowngrade = sameTier && isActive && !isCurrent && currentCycle === "yearly" && cycle === "monthly";
+          // Same tier, moving from monthly to yearly — immediate, same as any upgrade.
+          const isCycleUpgrade = sameTier && isActive && !isCurrent && currentCycle === "monthly" && cycle === "yearly";
+          const isDowngrade = !isCurrent && (isTierDowngrade || isCycleDowngrade);
           const featured = p.accent === "primary";
           const busy =
             (checkout.isPending && checkout.variables?.plan === p.key) ||
@@ -338,12 +351,17 @@ export function UpgradePage() {
                   if (!canManageBilling || readOnly) return;
                   if (isCurrent || isPendingTarget) return;
                   if (isDowngrade) {
-                    if (!window.confirm(t("upgrade.confirmDowngrade", { plan: p.name }))) return;
+                    const confirmMsg = isCycleDowngrade
+                      ? t("upgrade.confirmCycleDowngrade")
+                      : t("upgrade.confirmDowngrade", { plan: p.name });
+                    if (!window.confirm(confirmMsg)) return;
                     downgrade.mutate(p.key);
                   } else {
                     // Upgrade tijdens trial: laat duidelijk weten dat de trial direct stopt.
                     if (currentPlan === "trial") {
                       if (!window.confirm(t("upgrade.confirmUpgradeFromTrial"))) return;
+                    } else if (isCycleUpgrade) {
+                      if (!window.confirm(t("upgrade.confirmCycleUpgrade"))) return;
                     }
                     checkout.mutate({ plan: p.key, cycle });
                   }
@@ -354,13 +372,17 @@ export function UpgradePage() {
                   ? t("upgrade.currentPlan")
                   : isPendingTarget
                     ? t("upgrade.scheduledBadge")
-                    : isDowngrade
-                      ? t("upgrade.cta.downgrade", { plan: p.name })
-                      : isPreviousPlan
-                        ? t("upgrade.cta.resubscribe", { plan: p.name })
-                        : p.key === "premium"
-                          ? t("upgrade.cta.upgradePremium")
-                          : t("upgrade.cta.upgradeShort", { plan: p.name })}
+                    : isCycleDowngrade
+                      ? t("upgrade.cta.switchToMonthly")
+                      : isTierDowngrade
+                        ? t("upgrade.cta.downgrade", { plan: p.name })
+                        : isPreviousPlan
+                          ? t("upgrade.cta.resubscribe", { plan: p.name })
+                          : isCycleUpgrade
+                            ? t("upgrade.cta.switchToYearly")
+                            : p.key === "premium"
+                              ? t("upgrade.cta.upgradePremium")
+                              : t("upgrade.cta.upgradeShort", { plan: p.name })}
                 {!isCurrent && !isPendingTarget && !busy && <ArrowRight className="h-4 w-4" />}
               </Button>
             </div>

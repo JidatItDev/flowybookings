@@ -30,7 +30,7 @@ export const handlers = {
     const { data: pendingShops, error: pendingErr } = await supabaseAdmin
       .from("shops")
       .select(
-        "id, plan, pending_plan, pending_plan_effective_at, mollie_subscription_id, mollie_customer_id, plan_billing_cycle, subscription_status",
+        "id, plan, pending_plan, pending_plan_effective_at, pending_billing_cycle, mollie_subscription_id, mollie_customer_id, plan_billing_cycle, subscription_status",
       )
       .not("pending_plan", "is", null)
       .not("pending_plan_effective_at", "is", null)
@@ -45,7 +45,8 @@ export const handlers = {
       const oldPlan = shop.plan;
       const keepActive = resolvePendingPlanKeepActive(shop);
       const pendingPlan = shop.pending_plan as Exclude<DbPlan, "trial">;
-      const cycle: BillingCycle = shop.plan_billing_cycle === "yearly" ? "yearly" : "monthly";
+      const cycle: BillingCycle =
+        (shop.pending_billing_cycle ?? shop.plan_billing_cycle) === "yearly" ? "yearly" : "monthly";
 
       // Patch Mollie's live subscription to the new plan's price NOW — this is
       // the actual renewal boundary, so "now" and the subscription's real
@@ -79,8 +80,10 @@ export const handlers = {
         .from("shops")
         .update({
           plan: shop.pending_plan,
+          plan_billing_cycle: cycle,
           pending_plan: null,
           pending_plan_effective_at: null,
+          pending_billing_cycle: null,
           ...(keepActive ? { subscription_status: "active" } : {}),
           ...(mollieSubscriptionId ? { mollie_subscription_id: mollieSubscriptionId } : {}),
           ...(nextBillingAt ? { next_billing_at: nextBillingAt } : {}),

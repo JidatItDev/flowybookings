@@ -57,7 +57,7 @@ export const handlers = {
       const cancelledPendingPlan = shop.pending_plan;
       await supabaseAdmin
         .from("shops")
-        .update({ pending_plan: null, pending_plan_effective_at: null })
+        .update({ pending_plan: null, pending_plan_effective_at: null, pending_billing_cycle: null })
         .eq("id", shop.id);
 
       await supabaseAdmin.from("activity_log").insert({
