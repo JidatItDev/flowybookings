@@ -145,7 +145,7 @@ export function MessagesPage() {
             </div>
             <div>
               <Label className="text-xs">{t("adminMessages.actionUrl")}</Label>
-              <Input value={actionUrl} onChange={(e) => setActionUrl(e.target.value)} placeholder="/shop/upgrade" className="mt-1" />
+              <Input value={actionUrl} onChange={(e) => setActionUrl(e.target.value)} placeholder="/shop/billing" className="mt-1" />
             </div>
 
             <div>

@@ -91,6 +91,29 @@ export function ShopBillingCard() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const cancelDowngrade = useMutation({
+    mutationFn: async () => {
+      assertNotImpersonating();
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Not signed in");
+      const res = await fetch("/api/billing/plan-downgrade-cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ shop_id: shopId }),
+      });
+      if (!res.ok) {
+        const j = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(j.error ?? "downgrade_cancel_failed");
+      }
+    },
+    onSuccess: () => {
+      toast.success(t("billing.downgradeCancelSuccess"));
+      qc.invalidateQueries({ queryKey: ["auth", "shops"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const expiry = activeShop?.plan_expires_at ?? null;
   const cycle = activeShop?.plan_billing_cycle ?? null;
   const subscriptionStatus = activeShop?.subscription_status ?? null;
@@ -217,8 +240,17 @@ export function ShopBillingCard() {
               </span>
             ) : null}
             {scheduledPlan && scheduledAt ? (
-              <span className="ml-2 text-xs text-muted-foreground">
+              <span className="ml-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
                 Scheduled: {planLabel(scheduledPlan)} on {new Date(scheduledAt).toLocaleDateString()}
+                <button
+                  type="button"
+                  onClick={() => cancelDowngrade.mutate()}
+                  disabled={cancelDowngrade.isPending || readOnly}
+                  title={readOnlyTitle}
+                  className="font-medium text-primary underline hover:no-underline disabled:opacity-50"
+                >
+                  {t("billing.keepCurrentPlan")}
+                </button>
               </span>
             ) : null}
             {pending && activeShop?.id === pending.shopId && activeShop?.plan !== pending.plan ? (

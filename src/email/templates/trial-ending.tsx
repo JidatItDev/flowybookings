@@ -13,7 +13,7 @@ interface TrialEndingProps {
 const TrialEndingEmail = ({
   shopName = 'jouw zaak',
   daysLeft = 4,
-  upgradeUrl = 'https://www.flowybookings.com/shop/upgrade',
+  upgradeUrl = 'https://www.flowybookings.com/shop/billing',
 }: TrialEndingProps) => (
   <Html lang="nl" dir="ltr">
     <Head />
@@ -48,7 +48,7 @@ export const template = {
   previewData: {
     shopName: 'Aurora Studio',
     daysLeft: 4,
-    upgradeUrl: 'https://www.flowybookings.com/shop/upgrade',
+    upgradeUrl: 'https://www.flowybookings.com/shop/billing',
   },
 } satisfies TemplateEntry
 

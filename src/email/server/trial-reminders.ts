@@ -67,7 +67,7 @@ export const handlers = {
             templateData: {
               shopName: shop.name,
               daysLeft,
-              upgradeUrl: `${appUrl}/shop/upgrade`,
+              upgradeUrl: `${appUrl}/shop/billing`,
             },
           });
           results.push({

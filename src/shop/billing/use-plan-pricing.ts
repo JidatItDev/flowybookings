@@ -3,7 +3,7 @@
 // helpers that convert a plan key into a price label for UI surfaces:
 //   - header badge (no price)
 //   - "Jouw abonnement" card on /shop/settings
-//   - pricing tiles on /shop/upgrade
+//   - pricing tiles on /shop/billing
 //
 // All UI surfaces use this hook so they cannot drift apart from the DB.
 

@@ -33,7 +33,7 @@ export function PaymentsPage() {
   const { data: customers = [] } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
 
   // BOOKING PAYMENTS ONLY — strictly exclude platform subscription rows.
-  // Subscription billing lives at /shop/billing (alias of /shop/upgrade).
+  // Subscription billing lives at /shop/billing (/shop/upgrade is a legacy alias).
   const allBookingPayments = allPayments.filter(
     (p) => p.provider !== PLATFORM_PROVIDER && p.booking_id !== null,
   );

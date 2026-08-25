@@ -17,6 +17,7 @@ import {
   Search,
   LifeBuoy,
   Lock,
+  Receipt,
 } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -61,6 +62,7 @@ const nav: NavItem[] = [
   { to: "/shop/payments", labelKey: "shopNav.payments", icon: CreditCard, ownerOnly: true },
   { to: "/shop/analytics", labelKey: "shopNav.analytics", icon: BarChart3 },
   { to: "/shop/notifications", labelKey: "shopNav.notifications", icon: Bell, ownerOnly: true },
+  { to: "/shop/billing", labelKey: "shopNav.billing", icon: Receipt, ownerOnly: true },
   { to: "/shop/settings", labelKey: "shopNav.settings", icon: Settings, ownerOnly: true },
   { to: "/support", labelKey: "shopNav.support", icon: LifeBuoy },
 ];
@@ -125,7 +127,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
     noActiveSubscription && !isSuperAdmin && !isAllowedWhenBlocked(location.pathname);
   // Same gate, but for individual sidebar links regardless of which (allowed) page
   // they're currently on — otherwise the nav still lists Calendar/Staff/etc. as
-  // normal clickable links on /shop/upgrade itself, and clicking one just silently
+  // normal clickable links on /shop/billing itself, and clicking one just silently
   // bounces the user straight back via the accessBlocked redirect above.
   const subscriptionRequired = noActiveSubscription && !isSuperAdmin;
   const isNavItemLocked = (to: string) => subscriptionRequired && !isAllowedWhenBlocked(to);
@@ -164,7 +166,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading && !shopsLoading && !needsOnboarding && accessBlocked) {
-      navigate({ to: "/shop/upgrade", replace: true });
+      navigate({ to: "/shop/billing", replace: true });
     }
   }, [accessBlocked, needsOnboarding, loading, shopsLoading, navigate]);
 
@@ -198,7 +200,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
                 return (
                   <Link
                     key={item.to}
-                    to="/shop/upgrade"
+                    to="/shop/billing"
                     title={t("shopNav.lockedTooltip")}
                     className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent/50"
                   >
@@ -246,7 +248,7 @@ function ShopLayoutInner({ children }: { children: React.ReactNode }) {
                     return (
                       <Link
                         key={item.to}
-                        to="/shop/upgrade"
+                        to="/shop/billing"
                         onClick={() => setOpen(false)}
                         title={t("shopNav.lockedTooltip")}
                         className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-sidebar-foreground/40"
@@ -370,7 +372,7 @@ function SidebarFooter() {
       <p className="text-sm font-semibold">{t("shopNav.upgradePremium")}</p>
       <p className="mt-1 text-xs opacity-90">{t("shopNav.upgradeSub")}</p>
       <Link
-        to="/shop/upgrade"
+        to="/shop/billing"
         className="mt-3 block w-full rounded-lg bg-background/15 px-3 py-1.5 text-center text-xs font-medium backdrop-blur hover:bg-background/25"
       >
         {t("shopNav.seePlans")}
@@ -461,7 +463,7 @@ function AccountMenu(props: AccountMenuProps) {
                     title={item.locked ? t("shopNav.lockedTooltip") : undefined}
                     onClick={() => {
                       setOpen(false);
-                      props.onNavigate(item.locked ? "/shop/upgrade" : item.to);
+                      props.onNavigate(item.locked ? "/shop/billing" : item.to);
                     }}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm font-medium hover:bg-accent",
@@ -516,7 +518,7 @@ function AccountMenu(props: AccountMenuProps) {
               key={item.key}
               title={item.locked ? t("shopNav.lockedTooltip") : undefined}
               className={item.locked ? "text-muted-foreground/60" : undefined}
-              onClick={() => props.onNavigate(item.locked ? "/shop/upgrade" : item.to)}
+              onClick={() => props.onNavigate(item.locked ? "/shop/billing" : item.to)}
             >
               <Icon className="h-4 w-4" /> {item.label}
             </DropdownMenuItem>

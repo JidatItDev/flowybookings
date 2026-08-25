@@ -9,7 +9,12 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 export default defineConfig({
   vite: {
     server: {
-      allowedHosts: [".ngrok-free.app", ".ngrok.app", ".ngrok.io"],
+      allowedHosts: [
+        ".ngrok-free.app",
+        ".ngrok-free.dev",
+        ".ngrok.app",
+        ".ngrok.io",
+      ],
     },
   },
 });

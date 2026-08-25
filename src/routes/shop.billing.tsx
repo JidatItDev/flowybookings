@@ -1,13 +1,5 @@
-// Alias of /shop/upgrade so links to /shop/billing keep working.
-// Subscription billing only — booking payments live at /shop/payments.
 import { createFileRoute } from "@tanstack/react-router";
-import { Route as UpgradeRoute } from "./shop.upgrade";
-
-function ShopBillingAlias() {
-  const Component = UpgradeRoute.options.component;
-  if (!Component) return null;
-  return <Component />;
-}
+import { UpgradePage } from "@/shop/billing/UpgradePage";
 
 export const Route = createFileRoute("/shop/billing")({
   head: () => ({ meta: [{ title: "Billing — FlowyBookings" }] }),
@@ -17,5 +9,5 @@ export const Route = createFileRoute("/shop/billing")({
     if (typeof search.payment === "string") out.payment = search.payment;
     return out;
   },
-  component: ShopBillingAlias,
+  component: UpgradePage,
 });

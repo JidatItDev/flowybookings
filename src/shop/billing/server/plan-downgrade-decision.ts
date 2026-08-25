@@ -17,3 +17,12 @@ export function resolveDowngradeCycle(
 ): BillingCycle {
   return requestedCycle === "yearly" || currentCycle === "yearly" ? "yearly" : "monthly";
 }
+
+export type DowngradeCancelPreflight = "ok" | "no_pending_downgrade";
+
+/** Whether a shop has a scheduled downgrade that can be cancelled. */
+export function resolveDowngradeCancelPreflight(shop: {
+  pending_plan: string | null | undefined;
+}): DowngradeCancelPreflight {
+  return shop.pending_plan ? "ok" : "no_pending_downgrade";
+}

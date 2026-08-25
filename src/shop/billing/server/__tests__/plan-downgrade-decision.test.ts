@@ -1,5 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { isValidDowngrade, resolveDowngradeCycle } from "@/shop/billing/server/plan-downgrade-decision";
+import {
+  isValidDowngrade,
+  resolveDowngradeCycle,
+  resolveDowngradeCancelPreflight,
+} from "@/shop/billing/server/plan-downgrade-decision";
 
 describe("isValidDowngrade", () => {
   test("pro -> starter is a valid downgrade", () => {
@@ -35,5 +39,17 @@ describe("resolveDowngradeCycle", () => {
   });
   test("yearly on either side wins — a monthly request cannot downgrade an already-yearly cycle", () => {
     expect(resolveDowngradeCycle("monthly", "yearly")).toBe("yearly");
+  });
+});
+
+describe("resolveDowngradeCancelPreflight", () => {
+  test("a shop with a pending downgrade can cancel it", () => {
+    expect(resolveDowngradeCancelPreflight({ pending_plan: "starter" })).toBe("ok");
+  });
+  test("a shop with no pending downgrade has nothing to cancel", () => {
+    expect(resolveDowngradeCancelPreflight({ pending_plan: null })).toBe("no_pending_downgrade");
+  });
+  test("undefined pending_plan is also 'nothing to cancel'", () => {
+    expect(resolveDowngradeCancelPreflight({ pending_plan: undefined })).toBe("no_pending_downgrade");
   });
 });

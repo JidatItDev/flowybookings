@@ -29,7 +29,7 @@ export function FeatureLock({
   access,
   featureLabel,
   mode = "overlay",
-  upgradeHref = "/shop/upgrade",
+  upgradeHref = "/shop/billing",
   children,
   className,
 }: Props) {

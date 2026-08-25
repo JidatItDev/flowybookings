@@ -267,6 +267,7 @@ export function UpgradePage() {
           // stay resubscribable rather than permanently disabled.
           const isCurrent = currentPlan === p.key && activeShop?.subscription_status === "active";
           const isPreviousPlan = isLapsed && previousPlan === p.key;
+          const isPendingTarget = !isLapsed && activeShop?.pending_plan === p.key;
           const isDowngrade = TIER_RANK[p.tier] < TIER_RANK[currentTier] && !isCurrent;
           const featured = p.accent === "primary";
           const busy =
@@ -295,6 +296,11 @@ export function UpgradePage() {
               {isPreviousPlan && !isCurrent && (
                 <span className="absolute -top-3 right-6 rounded-full border border-border bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
                   {t("upgrade.previousPlanBadge")}
+                </span>
+              )}
+              {isPendingTarget && !isCurrent && (
+                <span className="absolute -top-3 right-6 rounded-full border border-border bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
+                  {t("upgrade.scheduledBadge")}
                 </span>
               )}
 
@@ -326,11 +332,11 @@ export function UpgradePage() {
                 variant={featured ? "hero" : isCurrent ? "outline" : "default"}
                 className="mt-6 w-full"
                 size="lg"
-                disabled={isCurrent || busy || !canManageBilling || readOnly}
+                disabled={isCurrent || isPendingTarget || busy || !canManageBilling || readOnly}
                 title={readOnlyTitle}
                 onClick={() => {
                   if (!canManageBilling || readOnly) return;
-                  if (isCurrent) return;
+                  if (isCurrent || isPendingTarget) return;
                   if (isDowngrade) {
                     if (!window.confirm(t("upgrade.confirmDowngrade", { plan: p.name }))) return;
                     downgrade.mutate(p.key);
@@ -346,14 +352,16 @@ export function UpgradePage() {
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {isCurrent
                   ? t("upgrade.currentPlan")
-                  : isDowngrade
-                    ? t("upgrade.cta.downgrade", { plan: p.name })
-                    : isPreviousPlan
-                      ? t("upgrade.cta.resubscribe", { plan: p.name })
-                      : p.key === "premium"
-                        ? t("upgrade.cta.upgradePremium")
-                        : t("upgrade.cta.upgradeShort", { plan: p.name })}
-                {!isCurrent && !busy && <ArrowRight className="h-4 w-4" />}
+                  : isPendingTarget
+                    ? t("upgrade.scheduledBadge")
+                    : isDowngrade
+                      ? t("upgrade.cta.downgrade", { plan: p.name })
+                      : isPreviousPlan
+                        ? t("upgrade.cta.resubscribe", { plan: p.name })
+                        : p.key === "premium"
+                          ? t("upgrade.cta.upgradePremium")
+                          : t("upgrade.cta.upgradeShort", { plan: p.name })}
+                {!isCurrent && !isPendingTarget && !busy && <ArrowRight className="h-4 w-4" />}
               </Button>
             </div>
           );

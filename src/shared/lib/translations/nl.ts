@@ -375,6 +375,7 @@ export const nl: Record<string, string> = {
   "shopNav.payments": "Betalingen",
   "shopNav.analytics": "Statistieken",
   "shopNav.notifications": "Meldingen",
+  "shopNav.billing": "Facturatie",
   "shopNav.settings": "Instellingen",
   "shopNav.support": "Support",
   "shopNav.searchPlaceholder": "Zoek boekingen, klanten…",
@@ -1750,6 +1751,7 @@ export const nl: Record<string, string> = {
   "upgrade.wasOn": "Je vorige plan",
   "upgrade.inactive": "Inactief",
   "upgrade.previousPlanBadge": "Vorig plan",
+  "upgrade.scheduledBadge": "Gepland",
   "upgrade.toastApplied": "Plan gewijzigd naar {plan}",
   "upgrade.toastUpgraded": "Je upgrade naar {plan} is direct actief",
   "upgrade.toastDowngradeScheduled":
@@ -2167,6 +2169,8 @@ export const nl: Record<string, string> = {
   "billing.viewPlans": "Bekijk plannen",
   "billing.updatePayment": "Betaalmethode bijwerken",
   "billing.reactivate": "Reactiveer",
+  "billing.keepCurrentPlan": "Behoud huidig plan",
+  "billing.downgradeCancelSuccess": "Geplande downgrade geannuleerd — je blijft op je huidige plan.",
   "billing.cancel": "Abonnement opzeggen",
   "billing.cancelConfirm":
     "Weet je zeker dat je je abonnement wilt opzeggen? Je plan blijft actief tot het einde van de huidige periode.",

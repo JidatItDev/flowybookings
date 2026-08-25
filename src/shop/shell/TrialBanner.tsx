@@ -49,7 +49,7 @@ export function TrialBanner() {
           <p className="text-sm font-semibold">{t("billing.lapsedBlockedTitle")}</p>
           <p className="text-xs opacity-90">{t("billing.lapsedBlockedSub")}</p>
         </div>
-        <Link to="/shop/upgrade">
+        <Link to="/shop/billing">
           <Button variant="destructive" size="sm">
             {t("billing.choosePlan")} <ArrowRight className="h-4 w-4" />
           </Button>
@@ -87,7 +87,7 @@ export function TrialBanner() {
           <p className="text-sm font-semibold">{t("billing.trialExpiredTitle")}</p>
           <p className="text-xs opacity-90">{t("billing.trialExpiredSub")}</p>
         </div>
-        <Link to="/shop/upgrade">
+        <Link to="/shop/billing">
           <Button variant="destructive" size="sm">
             {t("billing.choosePlan")} <ArrowRight className="h-4 w-4" />
           </Button>
@@ -112,7 +112,7 @@ export function TrialBanner() {
           </p>
           <p className="text-xs text-muted-foreground">{t("billing.planActiveUntilSub")}</p>
         </div>
-        <Link to="/shop/upgrade">
+        <Link to="/shop/billing">
           <Button variant="outline" size="sm">{t("billing.reactivate")}</Button>
         </Link>
       </div>
@@ -138,7 +138,7 @@ export function TrialBanner() {
               {t("billing.trialEndingSub", { days: state.daysLeft, date: dateLabel })}
             </p>
           </div>
-          <Link to="/shop/upgrade">
+          <Link to="/shop/billing">
             <Button variant="hero" size="sm">
               {t("billing.choosePlan")} <ArrowRight className="h-4 w-4" />
             </Button>
@@ -156,7 +156,7 @@ export function TrialBanner() {
             {t("billing.trialActiveSub", { date: dateLabel })}
           </p>
         </div>
-        <Link to="/shop/upgrade">
+        <Link to="/shop/billing">
           <Button variant="outline" size="sm">
             {t("billing.viewPlans")} <ArrowRight className="h-4 w-4" />
           </Button>

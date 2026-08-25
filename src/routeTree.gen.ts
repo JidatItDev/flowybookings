@@ -79,6 +79,7 @@ import { Route as ApiMollieConnectAuthorizeRouteImport } from './routes/api.moll
 import { Route as ApiBookingsRefundRouteImport } from './routes/api.bookings.refund'
 import { Route as ApiBookingsCheckoutRouteImport } from './routes/api.bookings.checkout'
 import { Route as ApiBillingPlanSyncRouteImport } from './routes/api.billing.plan-sync'
+import { Route as ApiBillingPlanDowngradeCancelRouteImport } from './routes/api.billing.plan-downgrade-cancel'
 import { Route as ApiBillingPlanDowngradeRouteImport } from './routes/api.billing.plan-downgrade'
 import { Route as ApiBillingPlanConfirmRouteImport } from './routes/api.billing.plan-confirm'
 import { Route as ApiBillingPlanCheckoutRouteImport } from './routes/api.billing.plan-checkout'
@@ -452,6 +453,12 @@ const ApiBillingPlanSyncRoute = ApiBillingPlanSyncRouteImport.update({
   path: '/api/billing/plan-sync',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBillingPlanDowngradeCancelRoute =
+  ApiBillingPlanDowngradeCancelRouteImport.update({
+    id: '/api/billing/plan-downgrade-cancel',
+    path: '/api/billing/plan-downgrade-cancel',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiBillingPlanDowngradeRoute = ApiBillingPlanDowngradeRouteImport.update({
   id: '/api/billing/plan-downgrade',
   path: '/api/billing/plan-downgrade',
@@ -566,6 +573,7 @@ export interface FileRoutesByFullPath {
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
   '/api/billing/plan-downgrade': typeof ApiBillingPlanDowngradeRoute
+  '/api/billing/plan-downgrade-cancel': typeof ApiBillingPlanDowngradeCancelRoute
   '/api/billing/plan-sync': typeof ApiBillingPlanSyncRoute
   '/api/bookings/checkout': typeof ApiBookingsCheckoutRoute
   '/api/bookings/refund': typeof ApiBookingsRefundRoute
@@ -649,6 +657,7 @@ export interface FileRoutesByTo {
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
   '/api/billing/plan-downgrade': typeof ApiBillingPlanDowngradeRoute
+  '/api/billing/plan-downgrade-cancel': typeof ApiBillingPlanDowngradeCancelRoute
   '/api/billing/plan-sync': typeof ApiBillingPlanSyncRoute
   '/api/bookings/checkout': typeof ApiBookingsCheckoutRoute
   '/api/bookings/refund': typeof ApiBookingsRefundRoute
@@ -735,6 +744,7 @@ export interface FileRoutesById {
   '/api/billing/plan-checkout': typeof ApiBillingPlanCheckoutRoute
   '/api/billing/plan-confirm': typeof ApiBillingPlanConfirmRoute
   '/api/billing/plan-downgrade': typeof ApiBillingPlanDowngradeRoute
+  '/api/billing/plan-downgrade-cancel': typeof ApiBillingPlanDowngradeCancelRoute
   '/api/billing/plan-sync': typeof ApiBillingPlanSyncRoute
   '/api/bookings/checkout': typeof ApiBookingsCheckoutRoute
   '/api/bookings/refund': typeof ApiBookingsRefundRoute
@@ -822,6 +832,7 @@ export interface FileRouteTypes {
     | '/api/billing/plan-checkout'
     | '/api/billing/plan-confirm'
     | '/api/billing/plan-downgrade'
+    | '/api/billing/plan-downgrade-cancel'
     | '/api/billing/plan-sync'
     | '/api/bookings/checkout'
     | '/api/bookings/refund'
@@ -905,6 +916,7 @@ export interface FileRouteTypes {
     | '/api/billing/plan-checkout'
     | '/api/billing/plan-confirm'
     | '/api/billing/plan-downgrade'
+    | '/api/billing/plan-downgrade-cancel'
     | '/api/billing/plan-sync'
     | '/api/bookings/checkout'
     | '/api/bookings/refund'
@@ -990,6 +1002,7 @@ export interface FileRouteTypes {
     | '/api/billing/plan-checkout'
     | '/api/billing/plan-confirm'
     | '/api/billing/plan-downgrade'
+    | '/api/billing/plan-downgrade-cancel'
     | '/api/billing/plan-sync'
     | '/api/bookings/checkout'
     | '/api/bookings/refund'
@@ -1062,6 +1075,7 @@ export interface RootRouteChildren {
   ApiBillingPlanCheckoutRoute: typeof ApiBillingPlanCheckoutRoute
   ApiBillingPlanConfirmRoute: typeof ApiBillingPlanConfirmRoute
   ApiBillingPlanDowngradeRoute: typeof ApiBillingPlanDowngradeRoute
+  ApiBillingPlanDowngradeCancelRoute: typeof ApiBillingPlanDowngradeCancelRoute
   ApiBillingPlanSyncRoute: typeof ApiBillingPlanSyncRoute
   ApiBookingsCheckoutRoute: typeof ApiBookingsCheckoutRoute
   ApiBookingsRefundRoute: typeof ApiBookingsRefundRoute
@@ -1593,6 +1607,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiBillingPlanSyncRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/billing/plan-downgrade-cancel': {
+      id: '/api/billing/plan-downgrade-cancel'
+      path: '/api/billing/plan-downgrade-cancel'
+      fullPath: '/api/billing/plan-downgrade-cancel'
+      preLoaderRoute: typeof ApiBillingPlanDowngradeCancelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/billing/plan-downgrade': {
       id: '/api/billing/plan-downgrade'
       path: '/api/billing/plan-downgrade'
@@ -1787,6 +1808,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBillingPlanCheckoutRoute: ApiBillingPlanCheckoutRoute,
   ApiBillingPlanConfirmRoute: ApiBillingPlanConfirmRoute,
   ApiBillingPlanDowngradeRoute: ApiBillingPlanDowngradeRoute,
+  ApiBillingPlanDowngradeCancelRoute: ApiBillingPlanDowngradeCancelRoute,
   ApiBillingPlanSyncRoute: ApiBillingPlanSyncRoute,
   ApiBookingsCheckoutRoute: ApiBookingsCheckoutRoute,
   ApiBookingsRefundRoute: ApiBookingsRefundRoute,

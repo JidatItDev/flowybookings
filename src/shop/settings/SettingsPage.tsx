@@ -187,7 +187,7 @@ export function SettingsPage() {
                 <p className="font-semibold">{t("settings.trialExpiredTitle")}</p>
                 <p className="mt-1 text-sm opacity-90">{t("settings.trialExpiredBody")}</p>
               </div>
-              <Link to="/shop/upgrade"><Button variant="hero">{t("settings.trialExpiredCta")}</Button></Link>
+              <Link to="/shop/billing"><Button variant="hero">{t("settings.trialExpiredCta")}</Button></Link>
             </div>
           )}
 
@@ -219,7 +219,7 @@ export function SettingsPage() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Link to="/shop/upgrade"><Button variant="hero">{t("settings.changePlan")}</Button></Link>
+                <Link to="/shop/billing"><Button variant="hero">{t("settings.changePlan")}</Button></Link>
               </div>
             </div>
           </Card>

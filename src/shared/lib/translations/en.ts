@@ -363,6 +363,7 @@ export const en: Record<string, string> = {
   "shopNav.payments": "Payments",
   "shopNav.analytics": "Analytics",
   "shopNav.notifications": "Notifications",
+  "shopNav.billing": "Billing",
   "shopNav.settings": "Settings",
   "shopNav.support": "Support",
   "shopNav.searchPlaceholder": "Search bookings, customers…",
@@ -1729,6 +1730,7 @@ export const en: Record<string, string> = {
   "upgrade.wasOn": "Your previous plan",
   "upgrade.inactive": "Inactive",
   "upgrade.previousPlanBadge": "Previous plan",
+  "upgrade.scheduledBadge": "Scheduled",
   "upgrade.toastApplied": "Plan changed to {plan}",
   "upgrade.toastUpgraded": "Your upgrade to {plan} is active immediately",
   "upgrade.toastDowngradeScheduled":
@@ -2141,6 +2143,8 @@ export const en: Record<string, string> = {
   "billing.viewPlans": "View plans",
   "billing.updatePayment": "Update payment method",
   "billing.reactivate": "Reactivate",
+  "billing.keepCurrentPlan": "Keep current plan",
+  "billing.downgradeCancelSuccess": "Scheduled downgrade cancelled — staying on your current plan.",
   "billing.cancel": "Cancel subscription",
   "billing.cancelConfirm":
     "Are you sure you want to cancel? Your plan stays active until the end of the current period.",

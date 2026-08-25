@@ -58,7 +58,7 @@ export function UpgradeNudge({ variant, count = 0, plan = "Pro", feature = "", d
         <p className="text-sm font-semibold">{title}</p>
         <p className="mt-1 text-sm text-muted-foreground">{body}</p>
         <div className="mt-3">
-          <Link to="/shop/upgrade">
+          <Link to="/shop/billing">
             <Button variant="hero" size="sm">
               {cta} <ArrowRight className="h-3.5 w-3.5" />
             </Button>

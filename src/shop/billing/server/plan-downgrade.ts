@@ -1,14 +1,19 @@
 // Schedule a platform-plan downgrade at period end. Local plan stays until
-// pending_plan_effective_at; Mollie subscription is PATCHed now so the next
-// charge uses the lower amount. Orphan Mollie subscriptions are cancelled first.
+// pending_plan_effective_at; the live Mollie subscription is NOT touched here.
+//
+// Why: patching a Mollie subscription's `interval` resets its internal
+// next-payment schedule to "now", even when the interval value doesn't
+// actually change (confirmed empirically in test mode — see the 2026-08-25
+// downgrade-premature-charge-fix plan). Patching it a year early caused an
+// unwanted immediate charge. Instead, billing-expiry.ts patches Mollie to the
+// new plan's price at the moment it actually applies pending_plan — which is
+// exactly when the real renewal is due, so "now" and "the anchor date" are
+// the same moment and nothing resets prematurely.
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BILLING_ENTITY, type BillingCycle } from "@/admin/settings/platform-billing";
-import { fetchPlanPriceCents } from "@/shop/billing/server/plan-price";
-import { getMolliePlatformKeys } from "@/shared/lib/mollie-platform";
 import type { DbPlan } from "@/shared/lib/plans";
 import { enqueueSubscriptionEmail } from "@/email/enqueue-subscription-email";
-import { ensureSinglePlatformSubscription } from "@/shop/billing/server/mollie-subscriptions";
 import { isValidDowngrade, resolveDowngradeCycle } from "@/shop/billing/server/plan-downgrade-decision";
 import { createLogger } from "@/server/logger";
 
@@ -46,7 +51,7 @@ export const handlers = {
 
       const { data: shop } = await supabaseAdmin
         .from("shops")
-        .select("id, name, owner_id, plan, plan_expires_at, plan_billing_cycle, mollie_customer_id, mollie_subscription_id")
+        .select("id, name, owner_id, plan, plan_expires_at, plan_billing_cycle")
         .eq("id", body.shop_id)
         .maybeSingle();
       if (!shop) return json({ error: "shop_not_found" }, 404);
@@ -74,48 +79,6 @@ export const handlers = {
       const effectiveAt = shop.plan_expires_at;
       if (!effectiveAt) return json({ error: "missing_expiry" }, 400);
 
-      const subId = shop.mollie_subscription_id ?? null;
-      const customerId = shop.mollie_customer_id ?? null;
-      const hasMollie = getMolliePlatformKeys().length > 0;
-      const amount = await fetchPlanPriceCents(targetPlan, cycle);
-
-      let molliePatched = false;
-      let mollieSubscriptionId = subId;
-      let cancelledOrphans: string[] = [];
-      if (hasMollie) {
-        if (!customerId) {
-          return json({ error: "mollie_customer_missing" }, 409);
-        }
-        const synced = await ensureSinglePlatformSubscription({
-          customerId,
-          shopId: shop.id,
-          plan: targetPlan,
-          cycle,
-          amountValue: (amount / 100).toFixed(2),
-          preferredSubId: subId,
-        });
-        if (!synced) {
-          return json({ error: "mollie_subscription_sync_failed" }, 502);
-        }
-        molliePatched = true;
-        mollieSubscriptionId = synced.subscriptionId;
-        cancelledOrphans = synced.cancelled;
-        if (synced.subscriptionId !== subId || cancelledOrphans.length) {
-          await supabaseAdmin
-            .from("shops")
-            .update({
-              mollie_subscription_id: synced.subscriptionId,
-              ...(synced.nextPaymentDate ? { next_billing_at: synced.nextPaymentDate } : {}),
-            })
-            .eq("id", shop.id);
-        } else if (synced.nextPaymentDate) {
-          await supabaseAdmin
-            .from("shops")
-            .update({ next_billing_at: synced.nextPaymentDate })
-            .eq("id", shop.id);
-        }
-      }
-
       await supabaseAdmin
         .from("shops")
         .update({
@@ -135,9 +98,6 @@ export const handlers = {
           pending_plan: targetPlan,
           effective_at: effectiveAt,
           cycle,
-          mollie_patched: molliePatched,
-          mollie_subscription_id: mollieSubscriptionId,
-          mollie_orphans_cancelled: cancelledOrphans,
         },
       });
 
@@ -166,16 +126,12 @@ export const handlers = {
         old_plan: currentPlan,
         pending_plan: targetPlan,
         effective_at: effectiveAt,
-        mollie_subscription_id: mollieSubscriptionId,
       });
 
       return json({
         ok: true,
         pending_plan: targetPlan,
         pending_plan_effective_at: effectiveAt,
-        mollie_patched: molliePatched,
-        mollie_subscription_id: mollieSubscriptionId,
-        mollie_orphans_cancelled: cancelledOrphans,
       });
     } catch (err) {
       log.error("internal_error", { err });
