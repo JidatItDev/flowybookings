@@ -9,6 +9,7 @@ import { useT } from "@/shared/lib/i18n";
  * Site-wide trial / subscription banner shown above the shop dashboard.
  * Priority order:
  *   1. payment_failed grace expired → red "boekingen geblokkeerd" banner
+ *   1.5. subscription lapsed (none) → red "abonnement verlopen" banner, no grace
  *   2. payment_failed in grace      → orange "betaling mislukt, X dagen" banner
  *   3. trial expired                → red blocking banner
  *   4. trial ≤7 days                → countdown banner
@@ -32,6 +33,25 @@ export function TrialBanner() {
         <Link to="/shop/settings">
           <Button variant="destructive" size="sm">
             {t("billing.updatePayment")} <ArrowRight className="h-4 w-4" />
+          </Button>
+        </Link>
+      </div>
+    );
+  }
+
+  // 1.5) Abonnement volledig verlopen (opgezegd + verlopen, of expiry-sweep
+  // zonder reactivatie) — geen grace period, matcht shop_can_accept_bookings.
+  if (state.isLapsed) {
+    return (
+      <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-destructive shadow-soft">
+        <Ban className="h-5 w-5 shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold">{t("billing.lapsedBlockedTitle")}</p>
+          <p className="text-xs opacity-90">{t("billing.lapsedBlockedSub")}</p>
+        </div>
+        <Link to="/shop/upgrade">
+          <Button variant="destructive" size="sm">
+            {t("billing.choosePlan")} <ArrowRight className="h-4 w-4" />
           </Button>
         </Link>
       </div>

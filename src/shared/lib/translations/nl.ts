@@ -383,6 +383,7 @@ export const nl: Record<string, string> = {
   "shopNav.upgradeSub": "Ontgrendel meerdere locaties, API-toegang en prioriteitsondersteuning.",
   "shopNav.seePlans": "Bekijk plannen",
   "shopNav.subscription": "Abonnement",
+  "shopNav.lockedTooltip": "Heractiveer om te ontgrendelen",
   "account.menuLabel": "Account-menu openen",
 
   // ── Admin sidebar / nav ──
@@ -1746,6 +1747,9 @@ export const nl: Record<string, string> = {
     "Demo-accounts worden geblokkeerd en demo-shops zijn verborgen van publieke boekingen.",
   // ── Plan / upgrade extras ──
   "upgrade.youAreOn": "Je gebruikt",
+  "upgrade.wasOn": "Je vorige plan",
+  "upgrade.inactive": "Inactief",
+  "upgrade.previousPlanBadge": "Vorig plan",
   "upgrade.toastApplied": "Plan gewijzigd naar {plan}",
   "upgrade.toastUpgraded": "Je upgrade naar {plan} is direct actief",
   "upgrade.toastDowngradeScheduled":
@@ -1753,6 +1757,7 @@ export const nl: Record<string, string> = {
   "upgrade.cta.downgrade": "Wissel naar {plan}",
   "upgrade.cta.upgradeShort": "Start met {plan} →",
   "upgrade.cta.upgradePremium": "Upgrade naar Premium →",
+  "upgrade.cta.resubscribe": "Heractiveer {plan} →",
   "upgrade.confirmDowngrade":
     "Downgraden naar {plan}? Je huidige plan blijft actief tot je volgende factuurdatum — daarna gaat de wijziging in.",
   "upgrade.confirmUpgradeFromTrial": "Je upgrade start direct en je proefperiode stopt. Doorgaan?",
@@ -1833,11 +1838,13 @@ export const nl: Record<string, string> = {
   // ── Shop billing card ──
   "shopBilling.title": "Jouw abonnement",
   "shopBilling.currentPlan": "Huidig plan",
+  "shopBilling.previousPlan": "Vorig plan",
   "shopBilling.renewsOn": "Verlengt op",
   "shopBilling.chargesOn": "Volgende incasso",
   "shopBilling.accessUntil": "Toegang tot",
   "shopBilling.expiredOn": "Verlopen op",
   "shopBilling.noExpiry": "Nog geen actief abonnement",
+  "shopBilling.lapsedNoSubscription": "Geen actief abonnement — heractiveer om door te gaan",
   "shopBilling.cycle": "Betaalcyclus",
   "shopBilling.history": "Betaalgeschiedenis",
   "shopBilling.noHistory": "Nog geen abonnementbetalingen.",
@@ -2140,9 +2147,9 @@ export const nl: Record<string, string> = {
     "Boekingen geblokkeerd — betaling al meer dan 7 dagen mislukt",
   "billing.paymentFailedBlockedSub":
     "Werk je betaalmethode bij om weer afspraken te kunnen aannemen. Bestaande data blijft zichtbaar.",
-  "billing.cancelledTitle": "Abonnement opgezegd",
-  "billing.cancelledSub":
-    "Je plan blijft actief tot {{date}}. Daarna ga je automatisch terug naar de gratis trial.",
+  "billing.lapsedBlockedTitle": "Abonnement verlopen — boekingen geblokkeerd",
+  "billing.lapsedBlockedSub":
+    "Je plan is beëindigd en niet verlengd. Kies een plan om weer afspraken te kunnen aannemen. Bestaande gegevens blijven zichtbaar.",
   "billing.planActiveUntilTitle": "Je {{plan}} plan loopt tot {{date}}",
   "billing.planActiveUntilSub":
     "Je behoudt alle functies tot die datum. Reactiveer wanneer je wil — je verliest niets.",

@@ -16,6 +16,7 @@ import { cn } from "@/shared/lib/utils";
 import { assertNotImpersonating, useImpersonationReadOnly } from "@/admin/impersonation/ImpersonationBanner";
 import { usePlanPricing, formatPlanPrice } from "@/shop/billing/use-plan-pricing";
 import { usePendingBilling, markBillingPending } from "@/shop/billing/use-pending-billing";
+import { useLastPaidPlan } from "@/shop/billing/use-last-paid-plan";
 
 export function ShopBillingCard() {
   const { t } = useT();
@@ -93,6 +94,12 @@ export function ShopBillingCard() {
   const expiry = activeShop?.plan_expires_at ?? null;
   const cycle = activeShop?.plan_billing_cycle ?? null;
   const subscriptionStatus = activeShop?.subscription_status ?? null;
+  // Fully lapsed (cancelled/unpaid plan whose access window ended). shops.plan is
+  // "starter" here regardless of the real prior tier — billing-expiry.ts always
+  // resets it — so the actual last plan comes from the last paid payment instead.
+  const isLapsed = subscriptionStatus === "none" && activeShop?.plan !== "trial";
+  const { data: lastPaidPlan } = useLastPaidPlan(isLapsed ? shopId : null);
+  const displayPlan = isLapsed && lastPaidPlan ? lastPaidPlan : activeShop?.plan;
   const nextBillingRaw = activeShop?.next_billing_at ?? null;
   const expiresDate = expiry ? new Date(expiry) : null;
   const nextBillingDate = nextBillingRaw ? new Date(nextBillingRaw) : null;
@@ -158,6 +165,12 @@ export function ShopBillingCard() {
   if (!activeShop) return null;
 
   const datePill = (() => {
+    if (isLapsed) {
+      return {
+        className: "bg-destructive/15 text-destructive",
+        label: t("shopBilling.lapsedNoSubscription"),
+      };
+    }
     if (pendingCharge && chargeDate) {
       return {
         className: "bg-amber-500/15 text-amber-800 dark:text-amber-200",
@@ -196,8 +209,8 @@ export function ShopBillingCard() {
             <Receipt className="h-4 w-4 text-primary" /> {t("shopBilling.title")}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            {t("shopBilling.currentPlan")}: <span className="font-medium text-foreground">{pending && activeShop?.id === pending.shopId ? planLabel(pending.plan) : planLabel(activeShop!.plan)}</span>
-            {cycle ? ` · ${t(`shopBilling.cycle.${cycle === "yearly" ? "yearly" : "monthly"}`)}` : ""}
+            {isLapsed ? t("shopBilling.previousPlan") : t("shopBilling.currentPlan")}: <span className="font-medium text-foreground">{pending && activeShop?.id === pending.shopId ? planLabel(pending.plan) : planLabel(displayPlan)}</span>
+            {!isLapsed && cycle ? ` · ${t(`shopBilling.cycle.${cycle === "yearly" ? "yearly" : "monthly"}`)}` : ""}
             {statusBadge ? (
               <span className="ml-2 inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                 {statusBadge}

@@ -17,6 +17,7 @@ import { clearBillingPending } from "@/shop/billing/use-pending-billing";
 import { TransactionFeesCard } from "@/shop/billing/TransactionFeesCard";
 import { assertNotImpersonating, useImpersonationReadOnly } from "@/admin/impersonation/ImpersonationBanner";
 import { usePlanPricing, planMonthlyAmount } from "@/shop/billing/use-plan-pricing";
+import { useLastPaidPlan } from "@/shop/billing/use-last-paid-plan";
 
 type PlanKey = "starter" | "pro" | "premium"; // DB plan values for BASIC/PRO/PREMIUM tiers
 
@@ -29,6 +30,12 @@ export function UpgradePage() {
   const qc = useQueryClient();
   const currentPlan = (activeShop?.plan ?? "trial") as DbPlan;
   const currentTier = tierOf(currentPlan);
+  // Fully lapsed (cancelled/unpaid plan whose access window ended). shops.plan is
+  // "starter" here regardless of the real prior tier — billing-expiry.ts always
+  // resets it — so the actual last plan comes from the last paid payment instead.
+  const isLapsed = activeShop?.subscription_status === "none" && currentPlan !== "trial";
+  const { data: lastPaidPlan } = useLastPaidPlan(isLapsed ? (activeShop?.id ?? null) : null);
+  const previousPlan = isLapsed ? (lastPaidPlan ?? currentPlan) : null;
   const [cycle, setCycle] = useState<"monthly" | "yearly">("monthly");
   const readOnly = useImpersonationReadOnly();
   const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
@@ -177,11 +184,16 @@ export function UpgradePage() {
       <div className="mb-4 rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-xs text-muted-foreground">{t("upgrade.youAreOn")}</p>
-            <p className="truncate text-sm font-semibold capitalize">{currentPlan}</p>
+            <p className="text-xs text-muted-foreground">{isLapsed ? t("upgrade.wasOn") : t("upgrade.youAreOn")}</p>
+            <p className="truncate text-sm font-semibold capitalize">{isLapsed ? previousPlan : currentPlan}</p>
           </div>
-          <span className="rounded-full bg-primary-soft px-2.5 py-1 text-xs font-semibold text-primary capitalize">
-            {currentTier}
+          <span
+            className={cn(
+              "rounded-full px-2.5 py-1 text-xs font-semibold capitalize",
+              isLapsed ? "bg-destructive/15 text-destructive" : "bg-primary-soft text-primary",
+            )}
+          >
+            {isLapsed ? t("upgrade.inactive") : currentTier}
           </span>
         </div>
       </div>
@@ -254,6 +266,7 @@ export function UpgradePage() {
           // shops on "starter"), but there's no live subscription behind it, so it must
           // stay resubscribable rather than permanently disabled.
           const isCurrent = currentPlan === p.key && activeShop?.subscription_status === "active";
+          const isPreviousPlan = isLapsed && previousPlan === p.key;
           const isDowngrade = TIER_RANK[p.tier] < TIER_RANK[currentTier] && !isCurrent;
           const featured = p.accent === "primary";
           const busy =
@@ -277,6 +290,11 @@ export function UpgradePage() {
               {isCurrent && (
                 <span className="absolute -top-3 right-6 rounded-full bg-success px-3 py-1 text-xs font-semibold text-success-foreground">
                   {t("upgrade.currentPlan")}
+                </span>
+              )}
+              {isPreviousPlan && !isCurrent && (
+                <span className="absolute -top-3 right-6 rounded-full border border-border bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
+                  {t("upgrade.previousPlanBadge")}
                 </span>
               )}
 
@@ -330,9 +348,11 @@ export function UpgradePage() {
                   ? t("upgrade.currentPlan")
                   : isDowngrade
                     ? t("upgrade.cta.downgrade", { plan: p.name })
-                    : p.key === "premium"
-                      ? t("upgrade.cta.upgradePremium")
-                      : t("upgrade.cta.upgradeShort", { plan: p.name })}
+                    : isPreviousPlan
+                      ? t("upgrade.cta.resubscribe", { plan: p.name })
+                      : p.key === "premium"
+                        ? t("upgrade.cta.upgradePremium")
+                        : t("upgrade.cta.upgradeShort", { plan: p.name })}
                 {!isCurrent && !busy && <ArrowRight className="h-4 w-4" />}
               </Button>
             </div>

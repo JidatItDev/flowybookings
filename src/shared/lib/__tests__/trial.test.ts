@@ -114,4 +114,21 @@ describe("getTrialState", () => {
     expect(state.subscriptionStatus).toBe("active");
     expect(state.canAcceptBookings).toBe(true);
   });
+
+  test("subscription_status 'none' blocks bookings and marks the shop lapsed", () => {
+    const state = getTrialState({ plan: "starter", subscription_status: "none" });
+    expect(state.subscriptionStatus).toBe("none");
+    expect(state.isLapsed).toBe(true);
+    expect(state.canAcceptBookings).toBe(false);
+  });
+
+  test("a trial shop is never marked lapsed even with a stale subscription_status of 'none'", () => {
+    const state = getTrialState({
+      plan: "trial",
+      plan_expires_at: new Date(Date.now() + DAY_MS).toISOString(),
+      subscription_status: "none",
+    });
+    expect(state.isLapsed).toBe(false);
+    expect(state.canAcceptBookings).toBe(true);
+  });
 });

@@ -1,6 +1,6 @@
 # Engineering Handoff — Platform Billing (Shop → Mollie)
 
-Last updated: 2026-08-24, end of session. Branch: `feature/platform-billing` (9 commits ahead of `origin/feature/platform-billing`, not pushed).
+Last updated: 2026-08-25 (mid-session addendum — see §5/§7). Branch: `feature/platform-billing` (10 commits ahead of `origin/feature/platform-billing`, not pushed).
 
 ## 1. Project Context
 
@@ -56,13 +56,33 @@ No migrations were written this session. No new API routes.
 
 ## 5. Known Issues / Bugs
 
-**Not yet fixed — this is tomorrow's stated starting point:**
+**Access-control gap: FIXED IN CODE 2026-08-25, migration NOT YET APPLIED to Supabase (user will run it).**
+- Decision made: surgical fix (option a from below), hard block with **no grace period** (unlike `payment_failed`'s 7 days) — the whole point of `subscription_status = 'none'` is that the grace period (or the paid-until date after cancellation) already ran out.
+- New migration: `supabase/migrations/20260825120000_lapsed_subscription_block.sql` — adds a `subscription_status = 'none'` branch to both `shop_can_accept_bookings()` and `get_shop_feature_access()`, returning blocked/not-allowed. **Not applied to the live Supabase project yet** — user is running it themselves. Until it's applied, the underlying DB-level leak described below is still live in production.
+- Client-side mirror: `src/shared/lib/trial.ts` gained `TrialState.isLapsed` (`!isTrial && subscriptionStatus === "none"`), and `canAcceptBookings` now returns `false` for it. Two new tests in `trial.test.ts` (237/237 passing total).
+- UI: `TrialBanner.tsx` gained a new blocking-banner case (priority 1.5, same red/Ban styling as `payment_failed`-grace-expired) using new i18n keys `billing.lapsedBlockedTitle`/`Sub` (en + nl).
+- `ShopLayout.tsx`'s `ShopLayoutInner` redirects to `/shop/upgrade` whenever there's no live subscription behind the shop — `accessBlocked = trialState.isLapsed || (trialState.isTrial && trialState.isExpired)` — covering **both** a lapsed paid plan and a trial whose 14 days ran out with no plan picked (added on request, for parity: previously only the paid-lapsed case redirected, expired trial was banner-only). Exempts `/shop/upgrade`, `/shop/billing`, `/support`, and bypasses entirely for `isSuperAdmin` (impersonation/support still works).
+- Also deleted two dead, factually-wrong i18n keys (`billing.cancelledTitle`/`billing.cancelledSub`, en + nl) that claimed a lapsed shop "moves back to the free trial" — confirmed zero references anywhere in the codebase, and the real behavior (`billing-expiry.ts`) has never done that; it always lands on `plan: starter, subscription_status: none`.
+- **Original bug** (for context, now fixed above): `shop_can_accept_bookings()` had no branch for `subscription_status = 'none'`, falling through to `RETURN true`; `get_shop_feature_access()` keyed purely off `shops.plan`, never checking `subscription_status`. Root cause: `shops.plan` enum (`trial | starter | pro | premium`, exactly 4 Postgres values) has no "no active plan" value, so `billing-expiry.ts` reuses `starter` as the floor — fine only if every consumer also checks `subscription_status`, which two important ones didn't.
+- Plan doc: `docs/superpowers/plans/2026-08-25-lapsed-subscription-access-block.md` — full task-by-task detail and the manual-verification checklist (Task 5), not yet run since the migration isn't applied yet.
 
-**Access-control gap: lapsed paid plans get free, indefinite Starter-tier access.** Found via design discussion, verified by reading the actual SQL, not yet fixed or tested.
-- `shop_can_accept_bookings()` (DB function, in `supabase/migrations/20260821190000_billing_mollie_columns.sql`) only blocks bookings for expired trial and `payment_failed` past its 7-day grace. It has **no branch for `subscription_status = 'none'`** — falls through to `RETURN true`. Any shop whose paid plan lapses (swept by `billing-expiry.ts` to `plan: starter, subscription_status: none`) can keep creating bookings forever, free.
-- `get_shop_feature_access()` (DB function, latest def in `supabase/migrations/20260814114220_entity_guards_dedup_staff_limit.sql`) determines feature access (SMS, staff limits, analytics — everything in `plan_features`) purely from `shops.plan`, **never** checks `subscription_status`. Same leak, broader scope.
-- Root cause: `shops.plan` enum (`trial | starter | pro | premium` — exactly 4 Postgres enum values, confirmed via `CREATE TYPE public.subscription_plan` in `supabase/migrations/20260417182027_...sql`) has no "no active plan" value, so `billing-expiry.ts` reuses `starter` as the floor. That's fine *if* every consumer also checks `subscription_status` — but two important ones don't.
-- Two design options were discussed, no decision made yet: (a) surgical fix — teach both SQL functions to treat `subscription_status = 'none'` as blocked, probably with the same 7-day-grace treatment as `payment_failed` for consistency; (b) add a real 5th `subscription_plan` enum value for "no plan" (bigger: Postgres `ALTER TYPE ... ADD VALUE`, plus updating every `ALLOWED_PLANS`/`.in("plan", [...])` list and the TS `DbPlan` type). Recommendation given was (a), but user said "will decide tomorrow" — **do not implement either without confirming which one first.**
+**Follow-up UX pass (same day, after the user tried the live UI):** the billing card read "Current plan: Starter" right next to "No active subscription yet" — contradictory once a plan can actually lapse. Fixed:
+- `ShopBillingCard.tsx`: shows "Previous plan" instead of "Current plan" when lapsed, and the pill reads "No active subscription — resubscribe to continue" instead of the new-shop-only "...yet" wording.
+- New `src/shop/billing/use-last-paid-plan.ts`: **`shops.plan` cannot tell you what the shop's real last plan was** — `billing-expiry.ts` always flattens it to `"starter"` on expiry regardless of whether the shop was on Pro or Premium. This hook reads the last **paid** row in `payments.metadata.plan` instead, which survives that flattening. Both `ShopBillingCard.tsx` and `UpgradePage.tsx` use it to show the true previous tier.
+- `UpgradePage.tsx`: top summary strip shows "Your previous plan: {tier}" + an "Inactive" pill when lapsed; the matching plan tile gets a "Previous plan" badge and a "Resubscribe to {plan} →" button instead of the generic upgrade CTA.
+- New i18n keys: `shopBilling.previousPlan`, `shopBilling.lapsedNoSubscription`, `upgrade.wasOn`, `upgrade.inactive`, `upgrade.previousPlanBadge`, `upgrade.cta.resubscribe` (en + nl).
+
+**Second follow-up (same day): sidebar/menu nav did nothing when blocked.** With the redirect in place, `/shop/upgrade` itself is exempt (so it renders), but its sidebar still listed Calendar/Staff/etc. as normal `<Link>`s — clicking one navigated to a blocked route, which `accessBlocked` immediately bounced back from, so from the user's perspective the click "did nothing." Fixed in `ShopLayout.tsx`:
+- New `isNavItemLocked(to)` — true whenever `subscriptionRequired` (no live subscription, not a super admin) and `to` isn't one of the allowed paths. Applied to every item in both the desktop sidebar `<nav>` and the mobile sheet nav: a locked item renders with a `Lock` icon, muted styling, a `title` tooltip (`shopNav.lockedTooltip`), and links straight to `/shop/upgrade` instead of its real destination.
+- Same fix applied to `AccountMenu`'s dropdown/mobile-sheet items (Dashboard, Settings) — `isLocked` is passed down from `ShopLayoutInner` as a prop; Subscription/Support stay unlocked since they're already on the allowed list.
+- New i18n key: `shopNav.lockedTooltip` (en + nl).
+
+**Remaining before this can be marked fully done:**
+- Apply `20260825120000_lapsed_subscription_block.sql` to the Supabase project (user doing this).
+- Run the manual verification in the plan doc's Task 5 against the live repro shop (`e643c118-e74c-41fc-a6b3-32fc6707a881`, sitting at exactly `plan: starter, subscription_status: none`): confirm `shop_can_accept_bookings()` now returns `false`, confirm the dashboard redirect and banner render correctly, confirm the public booking link is rejected, confirm super-admin impersonation is NOT blocked.
+- Also manually verify the expired-trial redirect (new, added same day for parity — no migration involved, this is pure client-side and already live once deployed): create/use a trial shop with `plan_expires_at` in the past, confirm it also redirects to `/shop/upgrade` and shows the existing "trial expired" banner (this path doesn't touch the DB functions at all, only `ShopLayout.tsx`'s `accessBlocked`).
+- Verify the "previous plan" UI: a lapsed shop whose last **paid** payment was for `pro` or `premium` (not `starter`) should show that real tier as "Previous plan" on both `ShopBillingCard` and the matching `UpgradePage` tile, not "Starter" (which is what `shops.plan` alone would incorrectly suggest post-sweep).
+- Update this file's own "remaining work" list and the QA matrix doc's Results log once that manual pass is done (see §6 below — left as-is until verified for real, not just marked done from code alone).
 
 **Minor, not urgent:**
 - `mollie-webhook.ts`'s `handleSubscriptionLifecycle` "failed" branch (recurring payment failure) enqueues the `platform-payment-failed` email but only logs on **error**, never on success — asymmetric with the "paid" branch which logs `email_subscription_payment_received`. Confirmed via manual test that the email *does* send correctly; this is purely an observability gap (a `log.info` line missing), not a functional bug.
@@ -72,8 +92,8 @@ No migrations were written this session. No new API routes.
 ## 6. Remaining Work
 
 **Must do next:**
-1. Decide the enum/access-control fix (§5) and implement it — this is explicitly what the user wants to start with tomorrow.
-2. Commit the 6 currently-uncommitted files (§2) — user reviews/commits himself, don't do this unprompted, but flag it since it's real working code sitting uncommitted.
+1. Apply the `20260825120000_lapsed_subscription_block.sql` migration (user running it) and run the manual verification in §5 / the plan doc's Task 5.
+2. Commit the access-control fix's files (`supabase/migrations/20260825120000_lapsed_subscription_block.sql`, `src/shared/lib/trial.ts` + test, `src/shop/shell/TrialBanner.tsx`, `src/shop/shell/ShopLayout.tsx`, both translation files) — user reviews/commits himself, don't do this unprompted.
 
 **Should do later:**
 3. Finish the manual QA matrix: F1 (failed upgrade), F2 (cancelled upgrade checkout), D1/D2 (downgrade then cancel), Y1 (yearly cycle), G1 (owner direct-write blocked by DB trigger — already covered by a migration-level trigger, just needs a manual click-through), G2 (already confirmed: `plan-confirm.ts` returns 410, mock billing fully removed).
@@ -86,13 +106,12 @@ No migrations were written this session. No new API routes.
 
 ## 7. Exact Next Step
 
-**Decide and implement the `subscription_status = 'none'` access-control fix.**
+**Apply the lapsed-subscription migration and run the manual verification.**
 
-1. Re-read `shop_can_accept_bookings()`'s current body — it's in `supabase/migrations/20260821190000_billing_mollie_columns.sql` (the latest redefinition; there are two earlier ones too, in `20260419120000...` and `20260819120000_week2_billing_foundation.sql` — always check `\df+ shop_can_accept_bookings` or the migrations in date order to confirm which is actually live).
-2. Ask the user to confirm option (a) surgical-SQL-fix vs (b) new-enum-value before writing anything — this was explicitly left as "decide tomorrow."
-3. If (a): write a new migration adding a `subscription_status = 'none'` branch to both `shop_can_accept_bookings()` and `get_shop_feature_access()`. Decide grace period (7 days matching `payment_failed`, or immediate block) — ask, don't assume.
-4. Test it against the live test shop (`e643c118-e74c-41fc-a6b3-32fc6707a881`, currently sitting at exactly `plan: starter, subscription_status: none` — the perfect existing repro case) by attempting to create a booking for it and confirming it's now blocked.
-5. No TS/unit test exists for this DB-level logic today — consider whether a `tests/integration/` test against a real/faked Postgres function call is warranted, or whether manual verification (step 4) is sufficient given this is SQL, not application code.
+1. Apply `supabase/migrations/20260825120000_lapsed_subscription_block.sql` to the Supabase project (user's own step — not done yet as of this write-up).
+2. Run Task 5 of `docs/superpowers/plans/2026-08-25-lapsed-subscription-access-block.md`: verify `shop_can_accept_bookings('e643c118-e74c-41fc-a6b3-32fc6707a881')` now returns `false`, verify `get_shop_feature_access(...)` returns `allowed: false`, verify the dashboard redirect + banner in the browser, verify the public booking link is rejected, verify super-admin impersonation is NOT blocked.
+3. Once verified, update this file's §5/§6 "remaining before done" bullets and the QA matrix doc's Results log per the plan's Task 5 Steps 4-5.
+4. After that: pick up the other items already queued in §6 "Should do later" (finish the F1/F2/D1/D2/Y1/G1 QA matrix rows, the missing `log.info` on the recurring-payment-failed success path, the cycle-switch feature).
 
 ## 8. Important Technical Details
 
@@ -108,12 +127,12 @@ No migrations were written this session. No new API routes.
 
 - Don't re-add Cloudflare/wrangler config (§4).
 - Don't rewrite `.env` git history or suggest it again unprompted (§4) — already discussed and explicitly declined in favor of the simpler `git rm --cached`.
-- Don't implement the enum/access-control fix without confirming which option (§5, §7) — this was explicitly deferred to "decide tomorrow."
+- Don't apply the `20260825120000_lapsed_subscription_block.sql` migration yourself — user explicitly said he'd run it himself.
 - Don't touch `plan-override.ts:54`'s pre-existing type error as part of unrelated work — it's known, pre-existing, and out of scope unless the user asks for it specifically.
-- Don't commit the 6 uncommitted files without being asked — user reviews and commits himself (established preference this session).
+- Don't commit files without being asked — user reviews and commits himself (established preference, reconfirmed this session).
 - Don't add proration logic when eventually building the cycle-switch feature (§6) — explicitly decided against, to stay consistent with how upgrades already work.
 - Don't re-derive the "how does Mollie recurring test payments work" research from scratch — it's documented in §8, already verified against Mollie's real docs this session (WebSearch/WebFetch citations are in chat history if deeper verification is ever needed).
 
 ## 10. Continuation Instructions
 
-Start by reading this file, then run `git status` and `npm test` to confirm the repo matches §3 exactly (nothing should have changed since last night unless the user did something outside this tool). Then ask the user which access-control fix option they've decided on (§5/§7) before writing any code — that decision was explicitly left open.
+Start by reading this file, then run `git status` and `npm test` to confirm the repo state. As of 2026-08-25: the lapsed-subscription access-control fix is written and tested (237/237 passing) but the migration has not been applied to Supabase yet — check whether the user has run it since, then pick up at §7's manual-verification step.

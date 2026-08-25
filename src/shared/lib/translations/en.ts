@@ -371,6 +371,7 @@ export const en: Record<string, string> = {
   "shopNav.upgradeSub": "Unlock multi-location, API access and priority support.",
   "shopNav.seePlans": "See plans",
   "shopNav.subscription": "Subscription",
+  "shopNav.lockedTooltip": "Resubscribe to unlock",
   "account.menuLabel": "Open account menu",
 
   // ── Admin sidebar / nav ──
@@ -1725,6 +1726,9 @@ export const en: Record<string, string> = {
     "Demo accounts are blocked and demo shops are hidden from public booking.",
   // ── Plan / upgrade extras ──
   "upgrade.youAreOn": "You're on",
+  "upgrade.wasOn": "Your previous plan",
+  "upgrade.inactive": "Inactive",
+  "upgrade.previousPlanBadge": "Previous plan",
   "upgrade.toastApplied": "Plan changed to {plan}",
   "upgrade.toastUpgraded": "Your upgrade to {plan} is active immediately",
   "upgrade.toastDowngradeScheduled":
@@ -1732,6 +1736,7 @@ export const en: Record<string, string> = {
   "upgrade.cta.downgrade": "Switch to {plan}",
   "upgrade.cta.upgradeShort": "Start with {plan} →",
   "upgrade.cta.upgradePremium": "Upgrade to Premium →",
+  "upgrade.cta.resubscribe": "Resubscribe to {plan} →",
   "upgrade.confirmDowngrade":
     "Downgrade to {plan}? Your current plan stays active until your next billing date — the change takes effect after that.",
   "upgrade.confirmUpgradeFromTrial":
@@ -1814,11 +1819,13 @@ export const en: Record<string, string> = {
   // ── Shop billing card ──
   "shopBilling.title": "Your subscription",
   "shopBilling.currentPlan": "Current plan",
+  "shopBilling.previousPlan": "Previous plan",
   "shopBilling.renewsOn": "Renews on",
   "shopBilling.chargesOn": "Next charge",
   "shopBilling.accessUntil": "Access until",
   "shopBilling.expiredOn": "Expired on",
   "shopBilling.noExpiry": "No active subscription yet",
+  "shopBilling.lapsedNoSubscription": "No active subscription — resubscribe to continue",
   "shopBilling.cycle": "Billing cycle",
   "shopBilling.history": "Payment history",
   "shopBilling.noHistory": "No subscription payments yet.",
@@ -2114,9 +2121,9 @@ export const en: Record<string, string> = {
   "billing.paymentFailedBlockedTitle": "Bookings blocked — payment failed for over 7 days",
   "billing.paymentFailedBlockedSub":
     "Update your payment method to start accepting appointments again. Existing data stays visible.",
-  "billing.cancelledTitle": "Subscription cancelled",
-  "billing.cancelledSub":
-    "Your plan stays active until {{date}}. After that you'll be moved back to the free trial.",
+  "billing.lapsedBlockedTitle": "Subscription lapsed — bookings blocked",
+  "billing.lapsedBlockedSub":
+    "Your plan ended and wasn't renewed. Pick a plan to start accepting appointments again. Existing data stays visible.",
   "billing.planActiveUntilTitle": "Your {{plan}} plan runs until {{date}}",
   "billing.planActiveUntilSub":
     "You keep every feature until that date. Reactivate any time — nothing is lost.",

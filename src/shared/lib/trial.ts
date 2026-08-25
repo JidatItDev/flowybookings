@@ -5,6 +5,7 @@
 // Booking-block rules (mirrored in DB function shop_can_accept_bookings):
 //   - trial expired                                       → no bookings
 //   - paid plan + payment_failed > 7 days ago             → no bookings (grace expired)
+//   - paid plan + subscription_status = 'none' (lapsed)   → no bookings (no grace period)
 //   - everything else                                     → bookings allowed
 
 const PAYMENT_FAILED_GRACE_DAYS = 7;
@@ -32,6 +33,8 @@ export type TrialState = {
   paymentFailedGraceExpired: boolean;
   // Cancellation
   cancelledAt: Date | null;
+  // Subscription fully lapsed — cancelled/unpaid plan whose access window ended.
+  isLapsed: boolean;
   // Composite gate: should the UI allow new bookings?
   canAcceptBookings: boolean;
 };
@@ -48,7 +51,7 @@ export function getTrialState(shop: {
       isTrial: false, isExpired: false, daysLeft: null, expiresAt: null,
       subscriptionStatus: "unknown",
       paymentFailedAt: null, inPaymentFailedGrace: false, paymentFailedDaysLeft: null,
-      paymentFailedGraceExpired: false, cancelledAt: null, canAcceptBookings: false,
+      paymentFailedGraceExpired: false, cancelledAt: null, isLapsed: false, canAcceptBookings: false,
     };
   }
   const plan = shop.plan ?? "trial";
@@ -85,9 +88,12 @@ export function getTrialState(shop: {
     : ((statusSource as SubscriptionStatus) ?? "active");
 
   // Composite booking gate (matches DB shop_can_accept_bookings exactly)
+  const isLapsed = !isTrial && subscriptionStatus === "none";
   let canAcceptBookings: boolean;
   if (isTrial) {
     canAcceptBookings = !isExpired;
+  } else if (isLapsed) {
+    canAcceptBookings = false;
   } else if (subscriptionStatus === "payment_failed" && paymentFailedAt) {
     canAcceptBookings = inPaymentFailedGrace;
   } else {
@@ -97,7 +103,7 @@ export function getTrialState(shop: {
   return {
     isTrial, isExpired, daysLeft, expiresAt, subscriptionStatus,
     paymentFailedAt, inPaymentFailedGrace, paymentFailedDaysLeft, paymentFailedGraceExpired,
-    cancelledAt, canAcceptBookings,
+    cancelledAt, isLapsed, canAcceptBookings,
   };
 }
 
