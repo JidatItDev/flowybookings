@@ -1642,6 +1642,7 @@ export const en: Record<string, string> = {
   "upgrade.cycle.save": "−2 mo",
   "upgrade.cycle.savingHint": "Save {months} months when billed yearly",
   "upgrade.basic": "Starter",
+  "upgrade.trialLabel": "Trial",
   "upgrade.basicTagline": "Everything you need to get going",
   "upgrade.pro": "Pro",
   "upgrade.proTagline": "Grow faster with automation",
@@ -1744,11 +1745,16 @@ export const en: Record<string, string> = {
   "upgrade.confirmDowngrade":
     "Downgrade to {plan}? Your current plan stays active until your next billing date — the change takes effect after that.",
   "upgrade.confirmUpgradeFromTrial":
-    "Your upgrade starts immediately and your trial will end. Continue?",
+    "Your upgrade starts immediately and your trial will end. You'll be redirected to Mollie's checkout page to complete payment. Continue?",
   "upgrade.confirmCycleUpgrade":
-    "Switch to yearly billing now? You'll be charged the full annual price immediately.",
+    "Switch to yearly billing now? You'll be charged the full annual price immediately, and redirected to Mollie's checkout page to complete payment.",
   "upgrade.confirmCycleDowngrade":
     "Switch to monthly billing? You'll keep yearly billing until your current term ends, then switch to monthly.",
+  "upgrade.confirmCheckout":
+    "You'll be redirected to Mollie's checkout page to complete your payment for {plan}. Continue?",
+  "upgrade.confirmTitle": "Confirm change",
+  "upgrade.confirmProceed": "Confirm",
+  "upgrade.confirmDismiss": "Cancel",
   "upgrade.billingNotice":
     "Payments are securely processed by Mollie · iDEAL, credit card & Bancontact",
   "upgrade.instantNote": "Active immediately after upgrade · No interruption to bookings or data",

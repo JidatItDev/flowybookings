@@ -5,6 +5,16 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageHeader } from "@/shared/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useAuth } from "@/auth/lib/auth-context";
 import { useT } from "@/shared/lib/i18n";
 import { cn } from "@/shared/lib/utils";
@@ -21,6 +31,15 @@ import { useLastPaidPlan } from "@/shop/billing/use-last-paid-plan";
 
 type PlanKey = "starter" | "pro" | "premium"; // DB plan values for BASIC/PRO/PREMIUM tiers
 
+type PendingConfirmKind = "downgrade" | "cycleDowngrade" | "trialUpgrade" | "cycleUpgrade" | "checkout";
+
+type PendingConfirm = {
+  kind: PendingConfirmKind;
+  plan: PlanKey;
+  planName: string;
+  cycle: "monthly" | "yearly";
+};
+
 const syncedPayments = new Set<string>();
 
 export function UpgradePage() {
@@ -30,6 +49,7 @@ export function UpgradePage() {
   const qc = useQueryClient();
   const currentPlan = (activeShop?.plan ?? "trial") as DbPlan;
   const currentTier = tierOf(currentPlan);
+  const currentCycle: "monthly" | "yearly" = activeShop?.plan_billing_cycle === "yearly" ? "yearly" : "monthly";
   // Fully lapsed (cancelled/unpaid plan whose access window ended). shops.plan is
   // "starter" here regardless of the real prior tier — billing-expiry.ts always
   // resets it — so the actual last plan comes from the last paid payment instead.
@@ -37,6 +57,7 @@ export function UpgradePage() {
   const { data: lastPaidPlan } = useLastPaidPlan(isLapsed ? (activeShop?.id ?? null) : null);
   const previousPlan = isLapsed ? (lastPaidPlan ?? currentPlan) : null;
   const [cycle, setCycle] = useState<"monthly" | "yearly">("monthly");
+  const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null);
   const readOnly = useImpersonationReadOnly();
   const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
   const search = useSearch({ strict: false }) as { billing?: string; payment?: string };
@@ -163,6 +184,17 @@ export function UpgradePage() {
       },
     ];
 
+  // Human-readable "from" side of the confirm dialog's change summary — the
+  // "to" side is always one of the paid tiers already in `plans`.
+  const planDisplayName = (plan: string): string =>
+    plan === "trial" ? t("upgrade.trialLabel") : (plans.find((pl) => pl.key === plan)?.name ?? plan);
+  const cycleLabel = (c: "monthly" | "yearly") => (c === "yearly" ? t("upgrade.cycle.yearly") : t("upgrade.cycle.monthly"));
+  const fromLabel = isLapsed
+    ? t("upgrade.inactive")
+    : currentPlan === "trial"
+      ? planDisplayName("trial")
+      : `${planDisplayName(currentPlan)} (${cycleLabel(currentCycle)})`;
+
   if (isStaffOnly) {
     return (
       <>
@@ -261,7 +293,6 @@ export function UpgradePage() {
       {/* Plans */}
       <div className="grid gap-4 lg:grid-cols-3">
         {plans.map((p) => {
-          const currentCycle: "monthly" | "yearly" = activeShop?.plan_billing_cycle === "yearly" ? "yearly" : "monthly";
           const sameTier = p.key === currentPlan;
           const isActive = activeShop?.subscription_status === "active";
           // Same plan name alone isn't "current" — a cancelled/expired/payment-failed
@@ -351,19 +382,19 @@ export function UpgradePage() {
                   if (!canManageBilling || readOnly) return;
                   if (isCurrent || isPendingTarget) return;
                   if (isDowngrade) {
-                    const confirmMsg = isCycleDowngrade
-                      ? t("upgrade.confirmCycleDowngrade")
-                      : t("upgrade.confirmDowngrade", { plan: p.name });
-                    if (!window.confirm(confirmMsg)) return;
-                    downgrade.mutate(p.key);
-                  } else {
+                    setPendingConfirm({
+                      kind: isCycleDowngrade ? "cycleDowngrade" : "downgrade",
+                      plan: p.key,
+                      planName: p.name,
+                      cycle,
+                    });
+                  } else if (currentPlan === "trial") {
                     // Upgrade tijdens trial: laat duidelijk weten dat de trial direct stopt.
-                    if (currentPlan === "trial") {
-                      if (!window.confirm(t("upgrade.confirmUpgradeFromTrial"))) return;
-                    } else if (isCycleUpgrade) {
-                      if (!window.confirm(t("upgrade.confirmCycleUpgrade"))) return;
-                    }
-                    checkout.mutate({ plan: p.key, cycle });
+                    setPendingConfirm({ kind: "trialUpgrade", plan: p.key, planName: p.name, cycle });
+                  } else if (isCycleUpgrade) {
+                    setPendingConfirm({ kind: "cycleUpgrade", plan: p.key, planName: p.name, cycle });
+                  } else {
+                    setPendingConfirm({ kind: "checkout", plan: p.key, planName: p.name, cycle });
                   }
                 }}
               >
@@ -389,6 +420,46 @@ export function UpgradePage() {
           );
         })}
       </div>
+
+      <AlertDialog open={!!pendingConfirm} onOpenChange={(o) => !o && setPendingConfirm(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("upgrade.confirmTitle")}</AlertDialogTitle>
+            {pendingConfirm && (
+              <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold text-foreground">
+                <span>{fromLabel}</span>
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                <span>
+                  {pendingConfirm.planName} ({cycleLabel(pendingConfirm.cycle)})
+                </span>
+              </p>
+            )}
+            <AlertDialogDescription>
+              {pendingConfirm?.kind === "downgrade" && t("upgrade.confirmDowngrade", { plan: pendingConfirm.planName })}
+              {pendingConfirm?.kind === "cycleDowngrade" && t("upgrade.confirmCycleDowngrade")}
+              {pendingConfirm?.kind === "trialUpgrade" && t("upgrade.confirmUpgradeFromTrial")}
+              {pendingConfirm?.kind === "cycleUpgrade" && t("upgrade.confirmCycleUpgrade")}
+              {pendingConfirm?.kind === "checkout" && t("upgrade.confirmCheckout", { plan: pendingConfirm.planName })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("upgrade.confirmDismiss")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!pendingConfirm) return;
+                if (pendingConfirm.kind === "downgrade" || pendingConfirm.kind === "cycleDowngrade") {
+                  downgrade.mutate(pendingConfirm.plan);
+                } else {
+                  checkout.mutate({ plan: pendingConfirm.plan, cycle: pendingConfirm.cycle });
+                }
+                setPendingConfirm(null);
+              }}
+            >
+              {t("upgrade.confirmProceed")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">{t("upgrade.guarantee")}</p>
       <p className="mt-2 text-center text-xs text-muted-foreground">{t("upgrade.instantNote")}</p>

@@ -1,11 +1,21 @@
 // Shop-side platform billing card. Reuses the existing payments table — no new system.
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Receipt, CalendarClock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/auth/lib/auth-context";
 import { useT } from "@/shared/lib/i18n";
@@ -24,6 +34,7 @@ export function ShopBillingCard() {
   const qc = useQueryClient();
   const readOnly = useImpersonationReadOnly();
   const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
 
   const shopId = activeShop?.id ?? null;
   const { data: pricing } = usePlanPricing();
@@ -292,11 +303,7 @@ export function ShopBillingCard() {
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => {
-              if (window.confirm(t("billing.cancelConfirm"))) {
-                cancelSubscription.mutate();
-              }
-            }}
+            onClick={() => setConfirmCancelOpen(true)}
             disabled={cancelSubscription.isPending || readOnly}
             title={readOnlyTitle}
             className="text-muted-foreground hover:text-destructive"
@@ -306,6 +313,27 @@ export function ShopBillingCard() {
           </Button>
         </div>
       )}
+
+      <AlertDialog open={confirmCancelOpen} onOpenChange={setConfirmCancelOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("billing.cancel")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("billing.cancelConfirm")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("billing.keepCurrentPlan")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                cancelSubscription.mutate();
+                setConfirmCancelOpen(false);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {t("billing.cancel")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <div className="mt-5">
         <h3 className="text-sm font-semibold">{t("shopBilling.history")}</h3>

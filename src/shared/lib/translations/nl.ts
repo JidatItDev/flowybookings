@@ -1661,6 +1661,7 @@ export const nl: Record<string, string> = {
   "upgrade.cycle.save": "−2 mnd",
   "upgrade.cycle.savingHint": "Bespaar {months} maanden bij jaarlijkse betaling",
   "upgrade.basic": "Starter",
+  "upgrade.trialLabel": "Proefperiode",
   "upgrade.basicTagline": "Alles wat je nodig hebt om te beginnen",
   "upgrade.pro": "Pro",
   "upgrade.proTagline": "Groei sneller met automatisering",
@@ -1764,11 +1765,17 @@ export const nl: Record<string, string> = {
   "upgrade.cta.switchToMonthly": "Wissel naar maandelijks bij verlenging",
   "upgrade.confirmDowngrade":
     "Downgraden naar {plan}? Je huidige plan blijft actief tot je volgende factuurdatum — daarna gaat de wijziging in.",
-  "upgrade.confirmUpgradeFromTrial": "Je upgrade start direct en je proefperiode stopt. Doorgaan?",
+  "upgrade.confirmUpgradeFromTrial":
+    "Je upgrade start direct en je proefperiode stopt. Je wordt doorgestuurd naar de betaalpagina van Mollie om te betalen. Doorgaan?",
   "upgrade.confirmCycleUpgrade":
-    "Nu wisselen naar jaarlijkse facturatie? Je wordt direct de volledige jaarprijs in rekening gebracht.",
+    "Nu wisselen naar jaarlijkse facturatie? Je wordt direct de volledige jaarprijs in rekening gebracht en doorgestuurd naar de betaalpagina van Mollie.",
   "upgrade.confirmCycleDowngrade":
     "Wisselen naar maandelijkse facturatie? Je behoudt jaarlijkse facturatie tot je huidige periode afloopt, daarna wissel je naar maandelijks.",
+  "upgrade.confirmCheckout":
+    "Je wordt doorgestuurd naar de betaalpagina van Mollie om je betaling voor {plan} af te ronden. Doorgaan?",
+  "upgrade.confirmTitle": "Bevestig wijziging",
+  "upgrade.confirmProceed": "Bevestigen",
+  "upgrade.confirmDismiss": "Annuleren",
   "upgrade.billingNotice": "Betalingen verlopen veilig via Mollie · iDEAL, creditcard & Bancontact",
   "upgrade.instantNote": "Direct actief na upgrade · Geen onderbreking in boekingen of data",
 
