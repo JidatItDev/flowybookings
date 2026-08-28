@@ -1,0 +1,43 @@
+services:
+  - type: web
+    name: flowybookings
+    runtime: node
+    plan: starter
+    region: frankfurt
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Everything below is set with real values in the Render dashboard
+      # (Environment tab), not here — this file only documents what's needed.
+      - key: SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: VITE_APP_URL
+        sync: false
+      - key: CRON_SECRET
+        sync: false
+      - key: MOLLIE_MODE
+        value: test
+      - key: MOLLIE_API_KEY_TEST
+        sync: false
+      - key: MOLLIE_CONNECT_CLIENT_ID
+        sync: false
+      - key: MOLLIE_CONNECT_CLIENT_SECRET
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        sync: false

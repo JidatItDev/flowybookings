@@ -7,6 +7,9 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  // Render deploys a plain Node server (see package.json "start" — srvx), not
+  // Cloudflare Workers. Keep this false so `vite build` never targets Cloudflare.
+  cloudflare: false,
   vite: {
     server: {
       allowedHosts: [

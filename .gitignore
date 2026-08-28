@@ -16,7 +16,7 @@ dist-ssr
 .nitro
 *.local
 .env
-
+.env.old
 # Legacy local file, no longer read by the app (see src/server/env.ts) —
 # still ignored in case a leftover copy exists locally.
 .dev.vars
