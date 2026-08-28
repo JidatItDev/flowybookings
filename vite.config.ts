@@ -5,11 +5,17 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { nitro } from "nitro/vite";
 
 export default defineConfig({
-  // Render deploys a plain Node server (see package.json "start" — srvx), not
-  // Cloudflare Workers. Keep this false so `vite build` never targets Cloudflare.
+  // Render deploys a plain Node server, not Cloudflare Workers. Keep this
+  // false so `vite build` never targets Cloudflare.
   cloudflare: false,
+  // TanStack Start's own recommended Node deployment path (produces
+  // .output/server/index.mjs with proper static-asset serving/caching built
+  // in) instead of the raw dist/server/server.js fetch handler we were
+  // hand-wrapping with srvx before.
+  plugins: [nitro({ preset: "node-server" })],
   vite: {
     server: {
       allowedHosts: [
