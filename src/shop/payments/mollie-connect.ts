@@ -8,8 +8,34 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { accessTokenNeedsRefresh } from "@/shop/payments/server/mollie-token-decision";
 import { createLogger } from "@/server/logger";
+import { isPublicHttpsOrigin } from "@/shared/lib/mollie-platform";
+import { collectServerEnvValues } from "@/server/env";
 
 const log = createLogger("mollie_connect");
+
+/**
+ * Public https origin to hand Mollie as the OAuth redirect_uri.
+ *
+ * Render terminates TLS at its edge and forwards plain HTTP to the app
+ * internally, so a raw `request.url`'s origin can come back as `http://`
+ * even though the shop owner is on `https://`. Mollie hard-rejects an
+ * `http://` redirect_uri ("The redirect URI provided is missing or does
+ * not match"). Prefer the deploy's known-public APP_URL / PUBLIC_APP_URL /
+ * SITE_URL — the same vars already trusted for the platform Mollie webhook,
+ * see `platformMollieWebhookUrl` in mollie-platform.ts — over the raw
+ * request origin.
+ */
+export function resolveMollieConnectOrigin(requestOrigin: string): string {
+  for (const name of ["APP_URL", "PUBLIC_APP_URL", "SITE_URL"] as const) {
+    for (const v of collectServerEnvValues(name)) {
+      if (isPublicHttpsOrigin(v)) return v.trim().replace(/\/$/, "");
+    }
+  }
+  if (isPublicHttpsOrigin(requestOrigin)) return requestOrigin.replace(/\/$/, "");
+  const upgraded = requestOrigin.replace(/^http:/, "https:");
+  if (isPublicHttpsOrigin(upgraded)) return upgraded.replace(/\/$/, "");
+  return requestOrigin.replace(/\/$/, "");
+}
 
 export const MOLLIE_CONNECT_AUTHORIZE_URL = "https://my.mollie.com/oauth2/authorize";
 export const MOLLIE_CONNECT_TOKEN_URL = "https://api.mollie.com/oauth2/tokens";

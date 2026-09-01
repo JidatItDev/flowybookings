@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NoShopState } from "@/shared/components/EmptyState";
 import { BookingLinkCard } from "@/shop/shared/BookingLinkCard";
-import { MollieConnectCard } from "@/shop/payments/MollieConnectCard";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/admin/impersonation/ImpersonationBanner";
 import { FeatureLock } from "@/shop/shared/FeatureLock";
 import { useActiveShopId } from "@/shop/shared/shop-context";
@@ -330,7 +329,21 @@ export function SettingsPage() {
               <div className="lg:col-span-3">
                 <h2 className="mb-3 text-base font-semibold">{t("settings.customerPayments")}</h2>
                 <p className="mb-4 text-xs text-muted-foreground">{t("settings.platformFee", { pct: String(fee) })} {currentPlan !== "premium" && `· ${t("settings.upgradeFee")}`}</p>
-                <MollieConnectCard shopId={shopId} />
+                <Link
+                  to="/shop/payments"
+                  className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-soft transition hover:border-primary/40 hover:bg-muted/30 sm:p-6"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-10 w-10 flex-none items-center justify-center rounded-xl bg-primary-soft text-primary">
+                      <CreditCard className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold">{t("settings.mollieManageTitle")}</p>
+                      <p className="text-xs text-muted-foreground">{t("settings.mollieManageDesc")}</p>
+                    </div>
+                  </div>
+                  <span className="flex-none text-xs font-medium text-primary">{t("settings.mollieManageCta")}</span>
+                </Link>
               </div>
             );
           })()}

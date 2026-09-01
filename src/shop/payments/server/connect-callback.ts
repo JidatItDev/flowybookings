@@ -12,6 +12,7 @@ import {
   MOLLIE_CONNECT_API_BASE,
   MOLLIE_CONNECT_TOKEN_URL,
   encryptToken,
+  resolveMollieConnectOrigin,
 } from "@/shop/payments/mollie-connect";
 import {
   buildCallbackRedirectUrl,
@@ -30,7 +31,7 @@ export const handlers = {
         const code = url.searchParams.get("code");
         const state = url.searchParams.get("state");
         const errorParam = url.searchParams.get("error");
-        const origin = url.origin;
+        const origin = resolveMollieConnectOrigin(url.origin);
         const redirectBack = (status: "ok" | "error", reason?: string) =>
           Response.redirect(buildCallbackRedirectUrl(origin, status, reason), 302);
 
@@ -38,11 +39,17 @@ export const handlers = {
           log.warn("mollie_returned_error", { reason: errorParam });
           return redirectBack("error", errorParam);
         }
-        if (!code || !state) return redirectBack("error", "missing_params");
+        if (!code || !state) {
+          log.warn("missing_params", { has_code: !!code, has_state: !!state });
+          return redirectBack("error", "missing_params");
+        }
 
         const clientId = process.env.MOLLIE_CONNECT_CLIENT_ID;
         const clientSecret = process.env.MOLLIE_CONNECT_CLIENT_SECRET;
-        if (!clientId || !clientSecret) return redirectBack("error", "not_configured");
+        if (!clientId || !clientSecret) {
+          log.error("not_configured");
+          return redirectBack("error", "not_configured");
+        }
 
         // Find the row whose metadata contains this state (atomic-ish lookup).
         const { data: rows, error: lookupErr } = await supabaseAdmin

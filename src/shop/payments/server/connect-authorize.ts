@@ -8,6 +8,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   MOLLIE_CONNECT_AUTHORIZE_URL,
   MOLLIE_CONNECT_SCOPES,
+  resolveMollieConnectOrigin,
 } from "@/shop/payments/mollie-connect";
 import { resolveShopAccessDecision } from "@/shop/payments/server/shop-access-decision";
 import { createLogger } from "@/server/logger";
@@ -59,7 +60,7 @@ export const handlers = {
 
           // Generate state and stash it on the row (creates row if missing).
           const state = crypto.randomUUID();
-          const origin = url.origin;
+          const origin = resolveMollieConnectOrigin(url.origin);
           const redirectUri = `${origin}/api/mollie-connect/callback`;
 
           // Upsert row with pending status + state token in metadata
