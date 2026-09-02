@@ -709,6 +709,7 @@ export type Database = {
           created_at: string
           currency: string
           deposit_cents: number
+          deposit_mode: string
           description: string | null
           duration_minutes: number
           id: string
@@ -723,6 +724,7 @@ export type Database = {
           created_at?: string
           currency?: string
           deposit_cents?: number
+          deposit_mode?: string
           description?: string | null
           duration_minutes?: number
           id?: string
@@ -737,6 +739,7 @@ export type Database = {
           created_at?: string
           currency?: string
           deposit_cents?: number
+          deposit_mode?: string
           description?: string | null
           duration_minutes?: number
           id?: string

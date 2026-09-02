@@ -19,16 +19,17 @@ import { MobileActionSheet, useStandardRowActions } from "@/shop/shared/mobile/M
 import { FloatingActionButton } from "@/shop/shared/mobile/FloatingActionButton";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/admin/impersonation/ImpersonationBanner";
 import { useActiveShopId } from "@/shop/shared/shop-context";
-import { servicesQuery, staffQuery, bookingsQuery, shopKeys, staffServicesQuery } from "@/shop/shared/queries-barrel";
+import { servicesQuery, staffQuery, bookingsQuery, shopKeys, staffServicesQuery, shopFullQuery } from "@/shop/shared/queries-barrel";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCents } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/lib/i18n";
 import { logActivity } from "@/shared/lib/activity-log";
 import { entityInUseFromBookings, entityHasOpenFutureBookings, isEntityInUseError } from "@/shop/shared/entity-in-use";
+import { resolveShopDefaultDepositPercent } from "@/shared/lib/booking-rules";
 
 const categoryColors: Record<string, string> = { Hair: "bg-primary-soft text-primary", Nails: "bg-pink text-pink-foreground", Beauty: "bg-peach text-peach-foreground", Tattoo: "bg-info/15 text-info-foreground", Pet: "bg-mint text-mint-foreground" };
-type ServiceRow = { id: string; name: string; description: string | null; category: string | null; duration_minutes: number; price_cents: number; deposit_cents: number; is_active: boolean; currency: string };
+type ServiceRow = { id: string; name: string; description: string | null; category: string | null; duration_minutes: number; price_cents: number; deposit_cents: number; deposit_mode?: string | null; is_active: boolean; currency: string };
 type SortKey = "all" | "popular" | "priceHigh" | "durShort" | "durLong";
 
 export function ServicesPage() {
@@ -323,13 +324,17 @@ export function ServicesPage() {
 
 function ServiceFormDialog({ open, onClose, service, duplicateOf, shopId }: { open: boolean; onClose: () => void; service: ServiceRow | null; duplicateOf?: ServiceRow | null; shopId: string | null }) {
   const qc = useQueryClient(); const { t } = useT();
-  const [form, setForm] = useState({ name: "", category: "", duration_minutes: 30, price: 0, deposit: 0, is_active: true, description: "" });
+  const [form, setForm] = useState({ name: "", category: "", duration_minutes: 30, price: 0, deposit: 0, deposit_mode: "default" as "default" | "custom", is_active: true, description: "" });
   // Reuse the shared staff + staff_services caches — no new queries.
   const { data: allStaff = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId && open });
   const { data: allLinks = [] } = useQuery({
     ...staffServicesQuery(shopId ?? ""),
     enabled: !!shopId && open,
   });
+  // Shop's live default deposit % — shown as a note when mode === "default"
+  // so the merchant sees what will actually apply, without a stale copy in this form.
+  const { data: shop } = useQuery({ ...shopFullQuery(shopId ?? ""), enabled: !!shopId && open });
+  const defaultDepositPct = resolveShopDefaultDepositPercent(shop?.branding);
   const [staffIds, setStaffIds] = useState<string[]>([]);
   const [pickStaffOpen, setPickStaffOpen] = useState(false);
   useEffect(() => {
@@ -341,6 +346,9 @@ function ServiceFormDialog({ open, onClose, service, duplicateOf, shopId }: { op
       duration_minutes: seed?.duration_minutes ?? 30,
       price: seed ? seed.price_cents / 100 : 0,
       deposit: seed ? seed.deposit_cents / 100 : 0,
+      // deposit_mode is a plain TEXT column (CHECK-constrained, not a DB enum) —
+      // narrow defensively rather than trusting the string shape.
+      deposit_mode: seed?.deposit_mode === "custom" ? "custom" : "default",
       is_active: seed?.is_active ?? true,
       description: seed?.description ?? "",
     });
@@ -351,15 +359,19 @@ function ServiceFormDialog({ open, onClose, service, duplicateOf, shopId }: { op
   }, [open, service?.id, duplicateOf?.id, allLinks.length]);
 
   // Validation: deposit must be ≥ 0 and ≤ price; price must be ≥ 0.
+  // The amount check only applies in "custom" mode — in "default" mode the
+  // amount input isn't shown and deposit_cents is zeroed out on save.
   const priceNum = Number(form.price) || 0;
   const depositNum = Number(form.deposit) || 0;
   const priceError = priceNum < 0 ? t("services.priceNegative") : null;
   const depositError =
-    depositNum < 0
-      ? t("services.depositNegative")
-      : depositNum > priceNum
-        ? t("services.depositTooHigh")
-        : null;
+    form.deposit_mode === "custom"
+      ? depositNum < 0
+        ? t("services.depositNegative")
+        : depositNum > priceNum
+          ? t("services.depositTooHigh")
+          : null
+      : null;
   const hasErrors = !!priceError || !!depositError;
 
   const save = useMutation({
@@ -367,7 +379,19 @@ function ServiceFormDialog({ open, onClose, service, duplicateOf, shopId }: { op
       assertNotImpersonating();
       if (!shopId) throw new Error(t("errors.noActiveShop"));
       if (hasErrors) throw new Error(depositError ?? priceError ?? "Invalid input");
-      const payload = { shop_id: shopId, name: form.name.trim(), category: form.category.trim() || null, description: form.description.trim() || null, duration_minutes: Number(form.duration_minutes) || 30, price_cents: Math.round(priceNum * 100), deposit_cents: Math.round(depositNum * 100), is_active: form.is_active };
+      const payload = {
+        shop_id: shopId,
+        name: form.name.trim(),
+        category: form.category.trim() || null,
+        description: form.description.trim() || null,
+        duration_minutes: Number(form.duration_minutes) || 30,
+        price_cents: Math.round(priceNum * 100),
+        // "default" mode never stores a stale amount — deposit_cents is always
+        // computed live from the shop's percent at booking time in that mode.
+        deposit_cents: form.deposit_mode === "custom" ? Math.round(depositNum * 100) : 0,
+        deposit_mode: form.deposit_mode,
+        is_active: form.is_active,
+      };
       let serviceId: string;
       if (service) {
         const { error } = await supabase.from("services").update(payload).eq("id", service.id); if (error) throw error;
@@ -457,8 +481,43 @@ function ServiceFormDialog({ open, onClose, service, duplicateOf, shopId }: { op
           </div>
           <div>
             <Label htmlFor="dep">{t("services.depositEur")}</Label>
-            <Input id="dep" type="number" min={0} step="0.01" inputMode="decimal" max={priceNum || undefined} value={form.deposit} onChange={(e) => setForm({ ...form, deposit: Number(e.target.value) })} aria-invalid={!!depositError} className={cn("h-11 text-base sm:h-9 sm:text-sm", depositError && "border-destructive")} />
-            {depositError ? <p className="mt-1 text-xs text-destructive">{depositError}</p> : <p className="mt-1 text-xs text-muted-foreground">{t("services.depositHint")}</p>}
+            {/* Two-option segmented control — same pill pattern used for the
+                inbox/settings tabs and the billing-cycle switch elsewhere in
+                the shop admin (rounded-full pill wrapper, active option filled). */}
+            <div role="tablist" aria-label={t("services.depositEur")} className="mt-1 inline-flex w-full rounded-full border border-border bg-card p-0.5 shadow-soft">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={form.deposit_mode === "default"}
+                onClick={() => setForm({ ...form, deposit_mode: "default" })}
+                className={cn(
+                  "flex-1 rounded-full px-2 py-1.5 text-[11px] font-semibold transition-colors",
+                  form.deposit_mode === "default" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t("services.depositModeDefault")}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={form.deposit_mode === "custom"}
+                onClick={() => setForm({ ...form, deposit_mode: "custom" })}
+                className={cn(
+                  "flex-1 rounded-full px-2 py-1.5 text-[11px] font-semibold transition-colors",
+                  form.deposit_mode === "custom" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {t("services.depositModeCustom")}
+              </button>
+            </div>
+            {form.deposit_mode === "custom" ? (
+              <>
+                <Input id="dep" type="number" min={0} step="0.01" inputMode="decimal" max={priceNum || undefined} value={form.deposit} onChange={(e) => setForm({ ...form, deposit: Number(e.target.value) })} aria-invalid={!!depositError} className={cn("mt-2 h-11 text-base sm:h-9 sm:text-sm", depositError && "border-destructive")} />
+                {depositError ? <p className="mt-1 text-xs text-destructive">{depositError}</p> : <p className="mt-1 text-xs text-muted-foreground">{t("services.depositHint")}</p>}
+              </>
+            ) : (
+              <p className="mt-2 text-xs text-muted-foreground">{t("services.depositModeDefaultNote", { percent: defaultDepositPct })}</p>
+            )}
           </div>
         </div>
         <div>
