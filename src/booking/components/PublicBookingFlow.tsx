@@ -344,9 +344,10 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
     const ymd = civilDateYmd(d);
     const todayYmd = shopTodayYmd(shopTimezone);
     if (ymd < todayYmd) return false;
-    const max = new Date();
-    max.setDate(max.getDate() + 90);
-    if (ymd > civilDateYmd(max)) return false;
+    const [ty, tm, td] = todayYmd.split("-").map(Number);
+    const maxDate = new Date(Date.UTC(ty, tm - 1, td + 90));
+    const maxYmd = `${maxDate.getUTCFullYear()}-${String(maxDate.getUTCMonth() + 1).padStart(2, "0")}-${String(maxDate.getUTCDate()).padStart(2, "0")}`;
+    if (ymd > maxYmd) return false;
 
     const businessHours = (selectedShop?.business_hours ?? {}) as BusinessHours;
     const shopDay = shopHoursForYmd(businessHours, ymd);

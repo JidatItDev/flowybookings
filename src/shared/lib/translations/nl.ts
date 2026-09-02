@@ -1335,6 +1335,13 @@ export const nl: Record<string, string> = {
   "book.bookingRef": "Referentie",
   "book.notFound": "Boeking niet gevonden",
   "book.notFoundSub": "Deze boekingsreferentie bestaat niet of is verlopen.",
+  "book.confirmingPayment": "Je betaling wordt bevestigd…",
+  "book.confirmingPaymentSlow": "Dit duurt langer dan verwacht",
+  "book.confirmingPaymentSlowSub":
+    "We verwerken je betaling nog. Je ontvangt een bevestiging per e-mail zodra dit klaar is.",
+  "book.paymentFailedTitle": "Betaling mislukt",
+  "book.paymentFailedSub": "Je betaling is niet gelukt of de boeking is geannuleerd. Probeer het opnieuw.",
+  "book.tryAgain": "Opnieuw proberen",
   "book.linkNotFound": "Boekingslink niet gevonden",
   "book.linkNotFoundSub": "Deze link hoort bij geen salon. Controleer de URL of neem contact op met de zaak.",
   "book.shopInactive": "Deze salon is niet beschikbaar",

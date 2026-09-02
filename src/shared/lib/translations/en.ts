@@ -1319,6 +1319,13 @@ export const en: Record<string, string> = {
   "book.bookingRef": "Reference",
   "book.notFound": "Booking not found",
   "book.notFoundSub": "This booking reference does not exist or has expired.",
+  "book.confirmingPayment": "Confirming your payment…",
+  "book.confirmingPaymentSlow": "This is taking longer than expected",
+  "book.confirmingPaymentSlowSub":
+    "We're still processing your payment. You'll receive a confirmation by email once it's done.",
+  "book.paymentFailedTitle": "Payment failed",
+  "book.paymentFailedSub": "Your payment didn't go through or the booking was cancelled. Please try again.",
+  "book.tryAgain": "Try again",
   "book.linkNotFound": "Booking link not found",
   "book.linkNotFoundSub": "This link doesn't match any shop. Check the URL or contact the business directly.",
   "book.shopInactive": "This shop is not available",
