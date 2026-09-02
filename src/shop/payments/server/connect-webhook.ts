@@ -33,9 +33,13 @@ export const handlers = {
         try {
           // Optional shared-secret guard. Mollie does not sign webhook bodies, so we use a
           // query-string token (or x-webhook-token header) configured when registering
-          // the webhook URL with Mollie. If MOLLIE_WEBHOOK_SECRET is set, requests
-          // missing/mismatching the token are rejected as spoofed.
-          const expectedSecret = serverEnv("MOLLIE_WEBHOOK_SECRET");
+          // the webhook URL with Mollie. Uses a DISTINCT secret from the platform
+          // billing webhook's MOLLIE_WEBHOOK_SECRET — this URL is created on each
+          // shop's own connected Mollie account and is visible to that merchant via
+          // their own Mollie dashboard/API, so it must not carry the same secret
+          // that also guards the platform webhook. If MOLLIE_CONNECT_WEBHOOK_SECRET
+          // is set, requests missing/mismatching the token are rejected as spoofed.
+          const expectedSecret = serverEnv("MOLLIE_CONNECT_WEBHOOK_SECRET");
           if (expectedSecret) {
             const url = new URL(request.url);
             const provided =
@@ -77,11 +81,24 @@ export const handlers = {
           const tokenInfo = await getActiveMollieAccessToken(payment.shop_id);
 
           let mollie: MolliePayment | null = null;
-          if (tokenInfo && mollieId.startsWith("tr_")) {
-            const res = await fetch(`${MOLLIE_CONNECT_API_BASE}/payments/${mollieId}`, {
-              headers: { Authorization: `Bearer ${tokenInfo.accessToken}` },
-            });
-            if (res.ok) mollie = (await res.json()) as MolliePayment;
+          // Tracks whether we genuinely could not confirm the Mollie-side status
+          // (no usable token, or the Mollie API call itself failed) — as opposed
+          // to a benign non-tr_ id, which is not something we ever expect to be
+          // able to fetch. Only the former should make Mollie retry delivery.
+          let mollieFetchFailed = false;
+          if (mollieId.startsWith("tr_")) {
+            if (!tokenInfo) {
+              mollieFetchFailed = true;
+            } else {
+              const res = await fetch(`${MOLLIE_CONNECT_API_BASE}/payments/${mollieId}`, {
+                headers: { Authorization: `Bearer ${tokenInfo.accessToken}` },
+              });
+              if (res.ok) {
+                mollie = (await res.json()) as MolliePayment;
+              } else {
+                mollieFetchFailed = true;
+              }
+            }
           }
 
           log.info("received", {
@@ -145,6 +162,31 @@ export const handlers = {
                 await sendBookingConfirmationEmail(payment.booking_id).catch((err) =>
                   log.error("confirmation_email_error", { booking_id: payment.booking_id, err }),
                 );
+              } else {
+                // The conditional update touched no row — the booking was not
+                // "pending" when this real payment settled. Most likely: the TTL
+                // sweep already cancelled it (slow payment methods like SEPA bank
+                // transfer can settle well after the 30-minute window). Surface
+                // this for manual follow-up/refund; never un-cancel the booking
+                // or email the customer for this case.
+                const { data: currentBooking } = await supabaseAdmin
+                  .from("bookings")
+                  .select("status")
+                  .eq("id", payment.booking_id)
+                  .maybeSingle();
+                if (currentBooking?.status === "cancelled") {
+                  await supabaseAdmin.from("activity_log").insert({
+                    entity: "payment",
+                    action: "paid_after_cancellation",
+                    shop_id: payment.shop_id,
+                    metadata: { payment_id: payment.id, booking_id: payment.booking_id },
+                  });
+                  log.error("paid_after_cancellation", {
+                    shop_id: payment.shop_id,
+                    payment_id: payment.id,
+                    booking_id: payment.booking_id,
+                  });
+                }
               }
             } else if (newStatus === "failed") {
               await supabaseAdmin
@@ -156,6 +198,19 @@ export const handlers = {
               // Notify the customer that their deposit failed and they can retry.
               await sendPaymentFailedEmail(payment.booking_id, payment.id);
             }
+          }
+
+          if (mollieFetchFailed) {
+            // We couldn't confirm the Mollie-side status at all (no usable access
+            // token, or the Mollie API call itself failed) — return non-2xx so
+            // Mollie retries delivery later instead of treating this as handled
+            // and silently dropping a possibly-genuine payment notification.
+            log.error("mollie_fetch_failed", {
+              shop_id: payment.shop_id,
+              payment_id: payment.id,
+              mollie_id: mollieId,
+            });
+            return json({ error: "mollie_fetch_failed" }, 502);
           }
 
           return ok();

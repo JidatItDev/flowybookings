@@ -96,12 +96,25 @@ export const handlers = {
           // Idempotent replay: if this booking already has an open (unpaid) payment
           // with a live Mollie checkout, hand back the SAME checkout URL instead of
           // creating a second Mollie payment.
-          const { data: existingPayment } = await supabaseAdmin
+          const { data: existingPayment, error: existingPaymentErr } = await supabaseAdmin
             .from("payments")
             .select("id, provider_payment_id, metadata")
             .eq("booking_id", booking.id)
             .eq("status", "unpaid")
             .maybeSingle();
+          if (existingPaymentErr) {
+            // .maybeSingle() returns an error (not just null data) when more than
+            // one row matches — e.g. before the payments_one_open_per_booking_uniq
+            // migration is applied, or any other transient DB issue. Treating a
+            // discarded error as "no existing payment" would let a second Mollie
+            // payment be created, exactly the duplicate-payment bug this replay
+            // check exists to prevent — so abort instead of falling through.
+            log.error("existing_payment_check_failed", {
+              booking_id: booking.id,
+              err: existingPaymentErr.message,
+            });
+            return json({ error: "payment_check_failed" }, 500);
+          }
 
           if (existingPayment?.provider_payment_id) {
             const existingCheckoutUrl = (
@@ -190,12 +203,22 @@ export const handlers = {
           if (payErr?.code === "23505") {
             // Lost the race — another concurrent request already created the open
             // payment for this booking. Re-fetch and replay its checkout URL.
-            const { data: winner } = await supabaseAdmin
+            const { data: winner, error: winnerErr } = await supabaseAdmin
               .from("payments")
               .select("id, provider_payment_id, metadata")
               .eq("booking_id", booking.id)
               .eq("status", "unpaid")
               .maybeSingle();
+            if (winnerErr) {
+              // Same reasoning as the pre-insert check above: a discarded error
+              // here must never be treated as "no winner found" — that would let
+              // this request fall through and create a second Mollie payment.
+              log.error("winner_refetch_failed", {
+                booking_id: booking.id,
+                err: winnerErr.message,
+              });
+              return json({ error: "payment_check_failed" }, 500);
+            }
             const winnerUrl = (winner?.metadata as Record<string, unknown> | null)?.checkout_url as
               | string
               | undefined;
@@ -214,7 +237,12 @@ export const handlers = {
 
           const origin = body.redirect_origin || new URL(request.url).origin;
           const redirectUrl = `${origin}/book/confirmation/${booking.id}?payment=${payment.id}`;
-          const webhookSecret = serverEnv("MOLLIE_WEBHOOK_SECRET");
+          // Distinct from MOLLIE_WEBHOOK_SECRET (platform billing webhook, in
+          // mollie-webhook.ts): this payment is created on the SHOP's own
+          // connected Mollie account, so webhookUrl is visible to that merchant
+          // via their own Mollie dashboard/API. Sharing the platform secret here
+          // would leak it to every shop that ever takes a deposit.
+          const webhookSecret = serverEnv("MOLLIE_CONNECT_WEBHOOK_SECRET");
           const webhookUrl = webhookSecret
             ? `${origin}/api/mollie-connect/webhook?token=${encodeURIComponent(webhookSecret)}`
             : `${origin}/api/mollie-connect/webhook`;
@@ -240,14 +268,42 @@ export const handlers = {
             };
           }
 
-          const mollieRes = await fetch(`${MOLLIE_CONNECT_API_BASE}/payments`, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${tokenInfo.accessToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(molliePayload),
-          });
+          let mollieRes: Response;
+          try {
+            mollieRes = await fetch(`${MOLLIE_CONNECT_API_BASE}/payments`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${tokenInfo.accessToken}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(molliePayload),
+            });
+          } catch (fetchErr) {
+            // Network failure (DNS, timeout, etc.) between inserting the payment
+            // row and reaching Mollie. Without this, the row is left "unpaid"
+            // with no provider_payment_id/checkout_url — every retry then fails
+            // the replay check, hits the unique-index race, finds this "winner"
+            // with no checkout_url, and gets stuck on 409 checkout_in_progress
+            // forever. Mark it failed (mirroring the non-ok-response branch below)
+            // so a retry finds a `failed` row (ignored by the replay check, which
+            // only matches `status = 'unpaid'`) and can create a fresh attempt.
+            const message = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+            console.error("[bookings/checkout] mollie create network error", message);
+            await supabaseAdmin
+              .from("payments")
+              .update({
+                status: "failed",
+                metadata: {
+                  kind: "booking_deposit",
+                  booking_fee_cents: bookingFeeCents,
+                  plan: shop?.plan ?? null,
+                  fee_model: "fixed_per_booking",
+                  mollie_error: message,
+                },
+              })
+              .eq("id", payment.id);
+            return json({ error: "mollie_create_failed", details: message }, 502);
+          }
           if (!mollieRes.ok) {
             const errText = await mollieRes.text();
             console.error("[bookings/checkout] mollie create failed", mollieRes.status, errText);

@@ -58,6 +58,16 @@ import {
 } from "@/shop/staff/staff-availability";
 import { shopDayOccupancy, staffDayOccupancy } from "@/shop/calendar/occupancy";
 import { OccupancyRing } from "@/shop/calendar/components/OccupancyRing";
+import { resolveDepositCents } from "@/booking/lib/deposit-decision";
+import { resolveShopDefaultDepositPercent } from "@/shared/lib/booking-rules";
+
+// services.deposit_mode is a DB-constrained TEXT column (CHECK IN ('default',
+// 'custom')) but the generated Supabase row type widens it to `string` —
+// narrow it here for the shared deposit-decision module, same pattern as
+// PublicBookingFlow.tsx's local (non-exported) toDepositMode helper.
+function toDepositMode(mode: string): "default" | "custom" {
+  return mode === "custom" ? "custom" : "default";
+}
 
 const statuses = ["all", "pending", "confirmed", "completed", "cancelled", "no_show"] as const;
 
@@ -1146,6 +1156,12 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
   const { data: customers = [] } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId && open });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId && open });
   const { data: staff = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId && open });
+  // Same shopFullQuery the outer ShopCalendarPage already loads (shared query
+  // key/cache) — needed here for branding.rules.defaultDepositPct so a
+  // "default" mode service's deposit is resolved the same way checkout.ts and
+  // PublicBookingFlow.tsx resolve it, instead of reading the raw (hard-zeroed
+  // for "default" mode) services.deposit_cents column.
+  const { data: shopFull } = useQuery({ ...shopFullQuery(shopId ?? ""), enabled: !!shopId && open });
   // Hits the same cache als de calendar-pagina; geen extra request.
   const { data: allBookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId && open });
 
@@ -1246,7 +1262,20 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
         }
       }
 
-      const payload = { shop_id: shopId, customer_id: form.customer_id || null, service_id: form.service_id || null, staff_id: form.staff_id || null, starts_at: startUtc.toISOString(), ends_at: ends.toISOString(), status: form.status, price_cents: svc?.price_cents ?? booking?.price_cents ?? 0, deposit_cents: svc?.deposit_cents ?? booking?.deposit_cents ?? 0, notes: form.notes || null };
+      // Resolve the deposit the same way checkout.ts / PublicBookingFlow.tsx do —
+      // NOT the raw services.deposit_cents column, which is hard-zeroed for
+      // services in deposit_mode: 'default' (the real amount is computed live
+      // from the shop's default percent). Falls back to the existing booking's
+      // stored deposit_cents only when there's no `svc` in scope (editing
+      // without changing the service).
+      const defaultDepositPercent = resolveShopDefaultDepositPercent(shopFull?.branding);
+      const resolvedDepositCents = svc
+        ? resolveDepositCents(
+            { ...svc, deposit_mode: toDepositMode(svc.deposit_mode) },
+            defaultDepositPercent,
+          )
+        : booking?.deposit_cents ?? 0;
+      const payload = { shop_id: shopId, customer_id: form.customer_id || null, service_id: form.service_id || null, staff_id: form.staff_id || null, starts_at: startUtc.toISOString(), ends_at: ends.toISOString(), status: form.status, price_cents: svc?.price_cents ?? booking?.price_cents ?? 0, deposit_cents: resolvedDepositCents, notes: form.notes || null };
       if (booking) { const { error } = await supabase.from("bookings").update(payload).eq("id", booking.id); if (error) throw error; }
       else { const { error } = await supabase.from("bookings").insert(payload); if (error) throw error; }
     },

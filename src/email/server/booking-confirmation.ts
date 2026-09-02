@@ -25,11 +25,19 @@ export async function sendBookingConfirmationEmail(bookingId: string): Promise<B
 
   const { data: booking, error: bErr } = await supabase
     .from('bookings')
-    .select('id, shop_id, starts_at, confirmation_sent_at, customer_id, service_id, staff_id, price_cents, currency')
+    .select('id, shop_id, status, starts_at, confirmation_sent_at, customer_id, service_id, staff_id, price_cents, currency')
     .eq('id', bookingId)
     .maybeSingle()
   if (bErr || !booking) return { error: 'Booking not found' }
   if (booking.confirmation_sent_at) return { skipped: true, reason: 'already_sent' }
+  // Guard every caller (public no-JWT hook included) against sending a "you're
+  // booked!" email for a booking that isn't actually confirmed yet — e.g. still
+  // pending/unpaid deposit checkout. The real paid path (connect-webhook.ts)
+  // only calls this function after its own conditional update has already
+  // flipped the booking to "confirmed", so this never blocks the real send.
+  if (booking.status !== 'confirmed' && booking.status !== 'completed') {
+    return { skipped: true, reason: 'not_confirmed' }
+  }
 
   const { data: auto } = await supabase
     .from('shop_automations').select('confirmation_enabled').eq('shop_id', booking.shop_id).maybeSingle()

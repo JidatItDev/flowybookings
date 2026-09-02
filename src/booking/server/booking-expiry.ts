@@ -24,9 +24,31 @@ export const handlers = {
 
     if (error) return json({ error: "fetch_failed", detail: error.message }, 500);
 
+    // Narrow to bookings that are genuinely mid-Mollie-deposit-flow: only a
+    // booking with an open (unpaid, mollie_connect-provider) payment row is a
+    // candidate for expiry. A `pending` booking with no such payment (e.g. a
+    // shop-created manual booking from the calendar, which also defaults to
+    // "pending" but never goes through checkout.ts) must be left completely
+    // untouched by this sweep — no status change, no email, no log.
+    const candidateIds = (candidates ?? []).map((b) => b.id);
+    let openDepositBookingIds = new Set<string>();
+    if (candidateIds.length > 0) {
+      const { data: openPayments, error: payFetchError } = await supabaseAdmin
+        .from("payments")
+        .select("booking_id")
+        .in("booking_id", candidateIds)
+        .eq("status", "unpaid")
+        .eq("provider", "mollie_connect");
+      if (payFetchError) return json({ error: "fetch_failed", detail: payFetchError.message }, 500);
+      openDepositBookingIds = new Set(
+        (openPayments ?? []).map((p) => p.booking_id).filter((id): id is string => !!id),
+      );
+    }
+
     const expired: string[] = [];
 
     for (const booking of candidates ?? []) {
+      if (!openDepositBookingIds.has(booking.id)) continue;
       if (!isPendingBookingExpired(booking, now, PENDING_TTL_MINUTES)) continue;
 
       const { data: cancelled } = await supabaseAdmin

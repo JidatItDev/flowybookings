@@ -536,7 +536,10 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
           };
           if (res.status === 409 && data?.error === "mollie_not_connected") {
             toast.error(t("book.mollieNotConnected"));
-            setStep(presetShopId ? 2 : 3);
+            // Bounce back to the service picker (not date/time) — it's the exact
+            // service that just got blocked, so date/time can never be paid for.
+            // Task 7's gating now shows it there as grayed out.
+            setStep(presetShopId ? 0 : 1);
             return;
           }
           if (res.ok && data.ok && data.checkout_url && !data.skipped) {
