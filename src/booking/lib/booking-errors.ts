@@ -24,11 +24,12 @@ export type BookingErrorInfo = {
 
 export function classifyBookingError(err: unknown): BookingErrorInfo {
   // PostgrestError exposes both `message` and `details`; combine for matching.
-  const e = err as { message?: unknown; details?: unknown; hint?: unknown } | null;
+  const e = err as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown } | null;
   const parts = [
     e && typeof e.message === "string" ? e.message : "",
     e && typeof e.details === "string" ? e.details : "",
     e && typeof e.hint === "string" ? e.hint : "",
+    e && typeof e.code === "string" ? e.code : "",
     err instanceof Error ? err.message : typeof err === "string" ? err : "",
   ].filter(Boolean);
   const raw = parts.join(" | ");
@@ -63,7 +64,7 @@ export function classifyBookingError(err: unknown): BookingErrorInfo {
     };
   }
 
-  if (/BOOKING_CONFLICT/i.test(raw)) {
+  if (/BOOKING_CONFLICT/i.test(raw) || raw.includes("23P01") || /exclusion constraint/i.test(raw)) {
     return { kind: "conflict", raw };
   }
 
