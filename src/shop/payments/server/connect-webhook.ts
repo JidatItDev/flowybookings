@@ -10,12 +10,14 @@ import {
   MOLLIE_CONNECT_API_BASE,
   getActiveMollieAccessToken,
 } from "@/shop/payments/mollie-connect";
-import { enqueueBookingEmail } from "@/email/enqueue-booking-email";
 import { getBookingUrl } from "@/shared/lib/booking-url";
 import { createLogger } from "@/server/logger";
 import { mapMollieStatus, type MollieRawStatus } from "@/shop/payments/mollie-status";
 import { verifyWebhookToken } from "@/shared/lib/webhook-auth";
 import { serverEnv } from "@/server/env";
+import { sendBookingConfirmationEmail } from "@/email/server/booking-confirmation";
+import { sendEmail } from "@/email/send-email";
+import { formatInShopTz, resolveShopTimezone } from "@/shared/lib/shop-timezone";
 
 const log = createLogger("mollie_connect.webhook");
 
@@ -122,10 +124,28 @@ export const handlers = {
 
           if (payment.booking_id) {
             if (newStatus === "paid") {
-              await supabaseAdmin
+              const { data: confirmedBooking } = await supabaseAdmin
                 .from("bookings")
                 .update({ status: "confirmed", updated_at: new Date().toISOString() })
-                .eq("id", payment.booking_id);
+                .eq("id", payment.booking_id)
+                .eq("status", "pending")
+                .select("id")
+                .maybeSingle();
+
+              await supabaseAdmin.from("activity_log").insert({
+                entity: "payment",
+                action: "confirmed",
+                shop_id: payment.shop_id,
+                metadata: { payment_id: payment.id, booking_id: payment.booking_id },
+              });
+
+              // Only email on the actual pending->confirmed transition — a retried
+              // webhook delivery for an already-confirmed booking must not re-send.
+              if (confirmedBooking) {
+                await sendBookingConfirmationEmail(payment.booking_id).catch((err) =>
+                  log.error("confirmation_email_error", { booking_id: payment.booking_id, err }),
+                );
+              }
             } else if (newStatus === "failed") {
               await supabaseAdmin
                 .from("bookings")
@@ -173,7 +193,7 @@ async function sendPaymentFailedEmail(bookingId: string, paymentId: string) {
       booking.customer_id
         ? supabaseAdmin.from("customers").select("full_name, email").eq("id", booking.customer_id).maybeSingle()
         : Promise.resolve({ data: null } as any),
-      supabaseAdmin.from("shops").select("name, slug").eq("id", booking.shop_id).maybeSingle(),
+      supabaseAdmin.from("shops").select("name, slug, timezone").eq("id", booking.shop_id).maybeSingle(),
       booking.service_id
         ? supabaseAdmin.from("services").select("name").eq("id", booking.service_id).maybeSingle()
         : Promise.resolve({ data: null } as any),
@@ -182,24 +202,23 @@ async function sendPaymentFailedEmail(bookingId: string, paymentId: string) {
     if (!customer?.email) return;
 
     const startsAt = new Date(booking.starts_at);
-    const whenLabel = startsAt.toLocaleString("nl-NL", {
-      weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
-    });
+    const shopTz = resolveShopTimezone(shop?.timezone);
+    const whenLabel = formatInShopTz(startsAt, shopTz, "EEE d MMM, HH:mm");
     const cents = booking.deposit_cents ?? 0;
     const currency = booking.currency || "EUR";
     const amountLabel = cents > 0
       ? `${currency === "EUR" ? "€" : currency + " "}${(cents / 100).toFixed(2).replace(".", ",")}`
-      : undefined;
+      : "";
     const retryUrl = getBookingUrl(shop?.slug ?? null, { external: true });
 
-    await enqueueBookingEmail({
-      templateName: "booking-payment-failed",
-      recipientEmail: customer.email,
+    await sendEmail({
+      type: "booking-payment-failed",
+      to: customer.email,
       idempotencyKey: `booking-payment-failed-${paymentId}`,
-      templateData: {
-        customerName: customer.full_name?.split(" ")[0],
-        shopName: shop?.name,
-        serviceName: service?.name,
+      data: {
+        customerName: customer.full_name?.split(" ")[0] ?? "",
+        shopName: shop?.name ?? "",
+        serviceName: service?.name ?? "",
         whenLabel,
         amountLabel,
         retryUrl,
