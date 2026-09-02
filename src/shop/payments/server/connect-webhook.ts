@@ -13,19 +13,13 @@ import {
 import { enqueueBookingEmail } from "@/email/enqueue-booking-email";
 import { getBookingUrl } from "@/shared/lib/booking-url";
 import { createLogger } from "@/server/logger";
+import { mapMollieStatus, type MollieRawStatus } from "@/shop/payments/mollie-status";
 
 const log = createLogger("mollie_connect.webhook");
 
 type MolliePayment = {
   id: string;
-  status:
-    | "open"
-    | "pending"
-    | "paid"
-    | "canceled"
-    | "expired"
-    | "failed"
-    | "authorized";
+  status: MollieRawStatus;
   method?: string | null;
   metadata?: Record<string, unknown> | null;
 };
@@ -88,7 +82,7 @@ export const handlers = {
             },
           });
 
-          const newStatus = mapStatus(mollie?.status);
+          const newStatus = mapMollieStatus(mollie?.status);
           if (newStatus && newStatus !== payment.status) {
             log.info("status_changed", {
               shop_id: payment.shop_id,
@@ -145,14 +139,6 @@ function json(body: unknown, status = 200) {
     status,
     headers: { "Content-Type": "application/json" },
   });
-}
-
-function mapStatus(s: MolliePayment["status"] | undefined): "paid" | "failed" | "unpaid" | null {
-  if (!s) return null;
-  if (s === "paid" || s === "authorized") return "paid";
-  if (s === "failed" || s === "canceled" || s === "expired") return "failed";
-  if (s === "open" || s === "pending") return "unpaid";
-  return null;
 }
 
 // Send "betaling mislukt" email to the customer with a retry link.

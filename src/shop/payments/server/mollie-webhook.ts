@@ -31,6 +31,7 @@ import {
   isSmsTopupAlreadyApplied,
 } from "@/shop/notifications/server/sms-credits-decision";
 import { createLogger } from "@/server/logger";
+import { mapMollieStatus } from "@/shop/payments/mollie-status";
 
 const log = createLogger("billing.webhook");
 
@@ -166,7 +167,7 @@ export async function processMolliePaymentNotification(
     }
   }
 
-  const mappedLocalStatus = mapStatus(mollie?.status);
+  const mappedLocalStatus = mapMollieStatus(mollie?.status);
   log.info(logAction, {
     mollie_id: mollieId,
     mollie_status: mollie?.status ?? null,
@@ -198,7 +199,7 @@ export async function processMolliePaymentNotification(
     };
   }
 
-  const newStatus = mapStatus(mollie?.status);
+  const newStatus = mapMollieStatus(mollie?.status);
   if (newStatus && newStatus !== payment.status) {
     await supabaseAdmin
       .from("payments")
@@ -263,17 +264,7 @@ function safeEqual(a: string, b: string): boolean {
   return mismatch === 0;
 }
 
-export function mapStatus(s: MolliePayment["status"] | undefined):
-  | "paid"
-  | "failed"
-  | "unpaid"
-  | null {
-  if (!s) return null;
-  if (s === "paid" || s === "authorized") return "paid";
-  if (s === "failed" || s === "canceled" || s === "expired") return "failed";
-  if (s === "open" || s === "pending") return "unpaid";
-  return null;
-}
+export { mapMollieStatus as mapStatus };
 
 async function handleSubscriptionLifecycle(opts: {
   paymentId: string;
@@ -555,7 +546,7 @@ async function ingestUnknownPlatformPayment(
   // Recurring charges often arrive before we have a local payments row — including
   // SEPA "awaiting" (open/pending). Ingest those so next_billing_at can track Mollie.
   if (!mollie) return false;
-  const localStatus = mapStatus(mollie.status);
+  const localStatus = mapMollieStatus(mollie.status);
   if (!localStatus) return false;
   const shopId = await resolveShopFromMolliePayment(mollie);
   if (!shopId) return false;
