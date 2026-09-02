@@ -245,6 +245,18 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
     enabled: !!selectedShop?.id,
   });
   const defaultDepositPercent = resolveShopDefaultDepositPercent(selectedShop?.branding);
+  // Resolved (percent-or-custom) deposit for the currently selected service —
+  // this is the actual amount that will be frozen onto the booking row and
+  // charged via Mollie, which can diverge from the raw services.deposit_cents
+  // column for "default" mode services (deposit_cents is hard-zeroed there).
+  // Sidebar, review step, and the submit handler all read from this single
+  // hoisted value so the customer-facing amount never drifts from what's charged.
+  const resolvedDepositCents = selectedService
+    ? resolveDepositCents(
+        { ...selectedService, deposit_mode: toDepositMode(selectedService.deposit_mode) },
+        defaultDepositPercent,
+      )
+    : 0;
 
   // Existing bookings for the chosen shop-local day (conflict checks)
   const bookingsQ = useQuery({
@@ -462,15 +474,10 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
 
       // Booking starts "pending" only when a deposit will actually be charged
       // via Mollie Connect. Demo shops and free/no-deposit services skip
-      // payment and confirm immediately. The resolved (percent-or-custom)
-      // deposit amount is computed once here and frozen onto the booking row —
-      // it must NOT be re-derived from services.deposit_cents later, since a
-      // "default" mode service's deposit_cents column doesn't reflect the
-      // actual amount owed.
-      const resolvedDepositCents = resolveDepositCents(
-        { ...selectedService, deposit_mode: toDepositMode(selectedService.deposit_mode) },
-        defaultDepositPercent,
-      );
+      // payment and confirm immediately. `resolvedDepositCents` (hoisted at
+      // component level, above) is frozen onto the booking row — it must NOT
+      // be re-derived from services.deposit_cents, since a "default" mode
+      // service's deposit_cents column doesn't reflect the actual amount owed.
       const willChargeDeposit = !isDemoShop && resolvedDepositCents > 0;
       const bookingStatus: "pending" | "confirmed" = willChargeDeposit ? "pending" : "confirmed";
 
@@ -688,10 +695,10 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
                   <span className="text-muted-foreground">{t("book.total")}</span>
                   <span className="font-semibold">{priceLabel(selectedService.price_cents)}</span>
                 </div>
-                {selectedService.deposit_cents > 0 && (
+                {resolvedDepositCents > 0 && (
                   <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
                     <span>{t("book.deposit")}</span>
-                    <span>€{(selectedService.deposit_cents / 100).toFixed(2)}</span>
+                    <span>€{(resolvedDepositCents / 100).toFixed(2)}</span>
                   </div>
                 )}
               </div>
@@ -923,8 +930,8 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
                     <>
                       <Row label={t("book.durationLabel")} value={`${selectedService.duration_minutes} min`} />
                       <Row label={t("book.price")} value={priceLabel(selectedService.price_cents)} />
-                      {selectedService.deposit_cents > 0 && (
-                        <Row label={t("book.depositDue")} value={`€${(selectedService.deposit_cents / 100).toFixed(2)}`} />
+                      {resolvedDepositCents > 0 && (
+                        <Row label={t("book.depositDue")} value={`€${(resolvedDepositCents / 100).toFixed(2)}`} />
                       )}
                     </>
                   )}
