@@ -1574,6 +1574,9 @@ function BookingActionDialog({
     ? (prefs as Record<string, unknown>).allergies
     : null;
   const allergy = typeof allergyRaw === "string" && allergyRaw.trim().length > 0 ? allergyRaw.trim() : null;
+  // Client rule: customers pay only a deposit online, the rest is settled offline/in-person.
+  // Math.max guards against a negative figure in any edge case (e.g. a deposit exceeding price).
+  const remainingBalanceCents = Math.max(0, (booking.price_cents ?? 0) - (booking.deposit_cents ?? 0));
 
   // Shared body — identical content for Sheet (mobile) and Dialog (desktop/tablet).
   const body = (
@@ -1615,6 +1618,9 @@ function BookingActionDialog({
           )}
         </div>
         <ActionRow label="Bedrag" value={formatCents(booking.price_cents)} />
+        {remainingBalanceCents > 0 && (
+          <ActionRow label="Nog te betalen" value={formatCents(remainingBalanceCents)} />
+        )}
       </div>
       {booking.notes && (
         <div className="rounded-xl border border-border bg-card p-3">
