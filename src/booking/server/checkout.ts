@@ -93,6 +93,29 @@ export const handlers = {
             return json({ error: "mollie_not_connected" }, 409);
           }
 
+          // Idempotent replay: if this booking already has an open (unpaid) payment
+          // with a live Mollie checkout, hand back the SAME checkout URL instead of
+          // creating a second Mollie payment.
+          const { data: existingPayment } = await supabaseAdmin
+            .from("payments")
+            .select("id, provider_payment_id, metadata")
+            .eq("booking_id", booking.id)
+            .eq("status", "unpaid")
+            .maybeSingle();
+
+          if (existingPayment?.provider_payment_id) {
+            const existingCheckoutUrl = (
+              existingPayment.metadata as Record<string, unknown> | null
+            )?.checkout_url as string | undefined;
+            if (existingCheckoutUrl) {
+              log.info("replayed_existing_checkout", {
+                booking_id: booking.id,
+                payment_id: existingPayment.id,
+              });
+              return json({ ok: true, payment_id: existingPayment.id, checkout_url: existingCheckoutUrl });
+            }
+          }
+
           // Load provider toggle + shop (plan + per-shop fee override + DB plan_pricing)
           // to determine the FIXED booking fee in cents.
           const { data: provider } = await supabaseAdmin
@@ -164,7 +187,28 @@ export const handlers = {
             })
             .select("id")
             .single();
+          if (payErr?.code === "23505") {
+            // Lost the race — another concurrent request already created the open
+            // payment for this booking. Re-fetch and replay its checkout URL.
+            const { data: winner } = await supabaseAdmin
+              .from("payments")
+              .select("id, provider_payment_id, metadata")
+              .eq("booking_id", booking.id)
+              .eq("status", "unpaid")
+              .maybeSingle();
+            const winnerUrl = (winner?.metadata as Record<string, unknown> | null)?.checkout_url as
+              | string
+              | undefined;
+            if (winner && winnerUrl) {
+              log.info("race_lost_replayed_winner", { booking_id: booking.id, payment_id: winner.id });
+              return json({ ok: true, payment_id: winner.id, checkout_url: winnerUrl });
+            }
+            // Winner hasn't reached the Mollie-create step yet (metadata.checkout_url
+            // not set) — ask the client to retry shortly rather than double-create.
+            return json({ error: "checkout_in_progress" }, 409);
+          }
           if (payErr || !payment) {
+            log.error("payment_insert_failed", { booking_id: booking.id, err: payErr?.message });
             return json({ error: "payment_insert_failed", details: payErr?.message }, 500);
           }
 
@@ -228,12 +272,28 @@ export const handlers = {
             _links?: { checkout?: { href?: string } };
           };
 
+          const checkoutUrl = mollie._links?.checkout?.href ?? redirectUrl;
           await supabaseAdmin
             .from("payments")
-            .update({ provider_payment_id: mollie.id })
+            .update({
+              provider_payment_id: mollie.id,
+              metadata: {
+                kind: "booking_deposit",
+                booking_fee_cents: bookingFeeCents,
+                plan: shop?.plan ?? null,
+                fee_model: "fixed_per_booking",
+                checkout_url: checkoutUrl,
+              },
+            })
             .eq("id", payment.id);
 
-          const checkoutUrl = mollie._links?.checkout?.href ?? redirectUrl;
+          await supabaseAdmin.from("activity_log").insert({
+            entity: "payment",
+            action: "checkout_created",
+            shop_id: booking.shop_id,
+            metadata: { payment_id: payment.id, booking_id: booking.id, amount_cents: amountCents },
+          });
+
           return json({ ok: true, payment_id: payment.id, checkout_url: checkoutUrl });
         } catch (err) {
           console.error("[bookings/checkout] error:", err);
