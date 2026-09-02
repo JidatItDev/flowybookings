@@ -25,11 +25,20 @@ export const handlers = {
     if (error) return json({ error: "fetch_failed", detail: error.message }, 500);
 
     // Narrow to bookings that are genuinely mid-Mollie-deposit-flow: only a
-    // booking with an open (unpaid, mollie_connect-provider) payment row is a
-    // candidate for expiry. A `pending` booking with no such payment (e.g. a
-    // shop-created manual booking from the calendar, which also defaults to
-    // "pending" but never goes through checkout.ts) must be left completely
-    // untouched by this sweep — no status change, no email, no log.
+    // booking with a mollie_connect-provider payment row is a candidate for
+    // expiry. A `pending` booking with no such payment (e.g. a shop-created
+    // manual booking from the calendar, which also defaults to "pending" but
+    // never goes through checkout.ts) must be left completely untouched by
+    // this sweep — no status change, no email, no log.
+    //
+    // Deliberately NOT filtered to status = 'unpaid': checkout.ts marks the
+    // payment row 'failed' (Mollie API error, network error) without ever
+    // touching the booking's status, so a booking can be stuck 'pending' with
+    // a 'failed' payment. That's exactly the abandoned state this sweep exists
+    // to clean up — excluding it would leave those bookings stuck forever. A
+    // booking whose payment actually reached 'paid' never appears here anyway,
+    // since the webhook flips the booking itself to 'confirmed' at the same
+    // time, taking it out of the `status = 'pending'` candidate query above.
     const candidateIds = (candidates ?? []).map((b) => b.id);
     let openDepositBookingIds = new Set<string>();
     if (candidateIds.length > 0) {
@@ -37,7 +46,6 @@ export const handlers = {
         .from("payments")
         .select("booking_id")
         .in("booking_id", candidateIds)
-        .eq("status", "unpaid")
         .eq("provider", "mollie_connect");
       if (payFetchError) return json({ error: "fetch_failed", detail: payFetchError.message }, 500);
       openDepositBookingIds = new Set(

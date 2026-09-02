@@ -23,6 +23,7 @@ import {
   resolveApplicationFeeCents,
 } from "@/shop/payments/mollie-connect";
 import { serverEnv } from "@/server/env";
+import { getMollieMode } from "@/shared/lib/mollie-platform";
 import { createLogger } from "@/server/logger";
 
 const corsHeaders = {
@@ -55,6 +56,26 @@ async function cancelBookingNoMollie(bookingId: string, shopId: string) {
     metadata: { booking_id: bookingId },
   });
   log.warn("blocked_no_mollie_connection", { booking_id: bookingId, shop_id: shopId });
+}
+
+// A Mollie payment-creation call failed synchronously (network error or a
+// non-ok API response) — the `payments` row is already marked `failed` by
+// the caller. Cancel the booking right away too, rather than leaving it
+// `pending` for the (up to ~40 minute) TTL sweep to eventually catch — the
+// failure is already known at this point, no reason to wait.
+async function cancelBookingCheckoutFailed(bookingId: string, shopId: string, reason: string) {
+  await supabaseAdmin
+    .from("bookings")
+    .update({ status: "cancelled" })
+    .eq("id", bookingId)
+    .eq("status", "pending");
+  await supabaseAdmin.from("activity_log").insert({
+    entity: "booking",
+    action: "checkout_failed",
+    shop_id: shopId,
+    metadata: { booking_id: bookingId, reason },
+  });
+  log.warn("checkout_failed_cancelled", { booking_id: bookingId, shop_id: shopId, reason });
 }
 
 export const handlers = {
@@ -261,6 +282,13 @@ export const handlers = {
           };
           if (customerEmail) molliePayload.billingEmail = customerEmail;
           if (tokenInfo.profileId) molliePayload.profileId = tokenInfo.profileId;
+          // Mollie Connect OAuth tokens create LIVE payments unless testmode is
+          // explicitly set — unlike the platform's own API key, an OAuth access
+          // token can't be swapped for a "test" one. Reuse the same MOLLIE_MODE
+          // toggle already used for platform billing (mollie-platform.ts) so
+          // local/staging deposit payments run in Mollie's test mode too, while
+          // production (MOLLIE_MODE=live) omits this entirely — unaffected.
+          if (getMollieMode() === "test") molliePayload.testmode = true;
           if (feeCents > 0) {
             molliePayload.applicationFee = {
               amount: { currency, value: (feeCents / 100).toFixed(2) },
@@ -302,6 +330,7 @@ export const handlers = {
                 },
               })
               .eq("id", payment.id);
+            await cancelBookingCheckoutFailed(booking.id, booking.shop_id, "mollie_network_error");
             return json({ error: "mollie_create_failed", details: message }, 502);
           }
           if (!mollieRes.ok) {
@@ -321,6 +350,7 @@ export const handlers = {
                 },
               })
               .eq("id", payment.id);
+            await cancelBookingCheckoutFailed(booking.id, booking.shop_id, "mollie_api_error");
             return json({ error: "mollie_create_failed", details: errText }, 502);
           }
           const mollie = (await mollieRes.json()) as {
