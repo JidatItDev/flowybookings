@@ -1328,6 +1328,9 @@ export const en: Record<string, string> = {
   "book.shopUnavailableSub": "{shop} is temporarily not accepting new appointments. Please try again later.",
   "book.noServices": "No services found for this shop",
   "book.noServicesSub": "Please check back later or contact the shop.",
+  "book.serviceUnavailable": "Temporarily unavailable",
+  "book.mollieNotConnected":
+    "This shop can't accept deposit payments right now. Please try again later or contact the shop.",
   "book.noStaff": "No team members found for this shop",
   "book.noStaffSub": "Please check back later or contact the shop.",
   "book.noTimes": "No available times on this day.",

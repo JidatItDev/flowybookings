@@ -24,6 +24,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { servicesQuery, staffQuery } from "@/shop/shared/queries-barrel";
 import { publicAppSettingsQuery } from "@/shared/lib/app-settings";
+import { resolveDepositCents, serviceRequiresMollie } from "@/booking/lib/deposit-decision";
+import { resolveShopDefaultDepositPercent } from "@/shared/lib/booking-rules";
 import { useT } from "@/shared/lib/i18n";
 import { getTrialState } from "@/shared/lib/trial";
 import { classifyBookingError, bookingErrorToast } from "@/booking/lib/booking-errors";
@@ -69,6 +71,15 @@ function fromMin(min: number): string {
 
 function emailValid(e: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+}
+
+// services.deposit_mode is a DB-constrained TEXT column (CHECK IN ('default',
+// 'custom')) but the generated Supabase row type widens it to `string` — narrow
+// it here for the shared deposit-decision module. Any unrecognized value falls
+// back to "default" (percent-of-price), never trusting a possibly-stale raw
+// deposit_cents as the charge amount.
+function toDepositMode(mode: string): "default" | "custom" {
+  return mode === "custom" ? "custom" : "default";
 }
 
 function shopHoursForYmd(
@@ -142,7 +153,7 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shops")
-        .select("id, name, slug, address, is_demo, business_hours, timezone, plan, plan_expires_at, subscription_status, payment_failed_at, logo_url")
+        .select("id, name, slug, address, is_demo, business_hours, timezone, plan, plan_expires_at, subscription_status, payment_failed_at, logo_url, branding")
         .eq("status", "active");
       if (error) throw error;
       let rows = data ?? [];
@@ -197,7 +208,7 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shops")
-        .select("id, name, slug, address, is_demo, business_hours, timezone, plan, plan_expires_at, subscription_status, payment_failed_at, logo_url")
+        .select("id, name, slug, address, is_demo, business_hours, timezone, plan, plan_expires_at, subscription_status, payment_failed_at, logo_url, branding")
         .eq("id", presetShopId!)
         .maybeSingle();
       if (error) throw error;
@@ -217,6 +228,23 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
   const selectedStaff = staffQ.data?.find((s) => s.id === staffId);
   const activeServices = (servicesQ.data ?? []).filter((s) => s.is_active);
   const selectedDateYmd = date ? civilDateYmd(date) : null;
+
+  // Whether the shop has an active Mollie Connect connection — used to gray
+  // out deposit-requiring services before the customer gets to checkout.
+  // Defaults to true (not blocked) while unknown, so we don't flash a
+  // "unavailable" state during load; checkout.ts is the real enforcement point.
+  const { data: mollieConnected = true } = useQuery({
+    queryKey: ["public", "shop-mollie-connected", selectedShop?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("public_shop_mollie_connected", {
+        _shop_id: selectedShop!.id,
+      });
+      if (error) throw error;
+      return data ?? false;
+    },
+    enabled: !!selectedShop?.id,
+  });
+  const defaultDepositPercent = resolveShopDefaultDepositPercent(selectedShop?.branding);
 
   // Existing bookings for the chosen shop-local day (conflict checks)
   const bookingsQ = useQuery({
@@ -433,11 +461,17 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
       }
 
       // Booking starts "pending" only when a deposit will actually be charged
-      // via Mollie Connect. Demo shops, free services, and shops without a
-      // Mollie connection skip payment and confirm immediately. The
-      // /api/bookings/checkout call below will flip back to "confirmed" if no
-      // deposit is collected (skipped: true).
-      const willChargeDeposit = !isDemoShop && selectedService.deposit_cents > 0;
+      // via Mollie Connect. Demo shops and free/no-deposit services skip
+      // payment and confirm immediately. The resolved (percent-or-custom)
+      // deposit amount is computed once here and frozen onto the booking row —
+      // it must NOT be re-derived from services.deposit_cents later, since a
+      // "default" mode service's deposit_cents column doesn't reflect the
+      // actual amount owed.
+      const resolvedDepositCents = resolveDepositCents(
+        { ...selectedService, deposit_mode: toDepositMode(selectedService.deposit_mode) },
+        defaultDepositPercent,
+      );
+      const willChargeDeposit = !isDemoShop && resolvedDepositCents > 0;
       const bookingStatus: "pending" | "confirmed" = willChargeDeposit ? "pending" : "confirmed";
 
       const { data: booking, error: bErr } = await supabase
@@ -451,7 +485,7 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
           ends_at: endsAt.toISOString(),
           status: bookingStatus,
           price_cents: selectedService.price_cents,
-          deposit_cents: selectedService.deposit_cents,
+          deposit_cents: resolvedDepositCents,
           currency: selectedService.currency,
           notes: note || null,
         })
@@ -460,10 +494,11 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
 
       // Booking deposit flow:
       // - Demo shops: skip Mollie entirely (already "confirmed", record fake payment).
-      // - Real shop with deposit_cents > 0: try Mollie Connect checkout. If the
-      //   shop hasn't connected Mollie yet, the API returns { skipped: true }
-      //   and we just confirm the booking without payment.
-      const depositDue = selectedService.deposit_cents > 0 ? selectedService.deposit_cents : 0;
+      // - Real shop with a resolved deposit > 0: try Mollie Connect checkout. If
+      //   the shop has no working Mollie connection, checkout.ts now CANCELS the
+      //   booking and returns 409 mollie_not_connected instead of silently
+      //   confirming it — surface that to the customer.
+      const depositDue = resolvedDepositCents > 0 ? resolvedDepositCents : 0;
 
       if (isDemoShop) {
         const amountDue = depositDue > 0 ? depositDue : selectedService.price_cents;
@@ -489,13 +524,19 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
             skipped?: boolean;
             checkout_url?: string;
             reason?: string;
+            error?: string;
           };
+          if (res.status === 409 && data?.error === "mollie_not_connected") {
+            toast.error(t("book.mollieNotConnected"));
+            setStep(presetShopId ? 2 : 3);
+            return;
+          }
           if (res.ok && data.ok && data.checkout_url && !data.skipped) {
             // Off to Mollie — webhook will flip booking to confirmed on success.
             window.location.href = data.checkout_url;
             return;
           }
-          // Skipped (no Mollie connection or no deposit) — checkout API confirms server-side.
+          // Skipped (no deposit) — checkout API confirms server-side.
         } catch (e) {
           console.warn("[book] checkout call failed:", e);
         }
@@ -692,19 +733,37 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
                   />
                 ) : (
                   <div className="space-y-2">
-                    {activeServices.map((s) => (
-                      <button key={s.id} onClick={() => { setServiceId(s.id); setStaffId(null); setTime(null); }}
-                        className={cn("flex w-full items-center justify-between gap-3 rounded-2xl border p-4 text-left transition-all",
-                          serviceId === s.id ? "border-primary bg-primary-soft/40" : "border-border hover:bg-muted/40")}>
-                        <div className="min-w-0">
-                          <p className="truncate font-medium">{s.name}</p>
-                          <p className="text-xs text-muted-foreground">{s.duration_minutes} min{s.category ? ` · ${s.category}` : ""}</p>
-                        </div>
-                        <p className={cn("flex-none text-sm font-semibold", s.price_cents === 0 && "text-success")}>
-                          {priceLabel(s.price_cents)}
-                        </p>
-                      </button>
-                    ))}
+                    {activeServices.map((s) => {
+                      const requiresMollie =
+                        !isDemoShop &&
+                        serviceRequiresMollie(
+                          { ...s, deposit_mode: toDepositMode(s.deposit_mode) },
+                          defaultDepositPercent,
+                        );
+                      const blocked = requiresMollie && !mollieConnected;
+                      return (
+                        <button key={s.id} type="button"
+                          onClick={() => { if (blocked) return; setServiceId(s.id); setStaffId(null); setTime(null); }}
+                          disabled={blocked}
+                          aria-disabled={blocked}
+                          title={blocked ? t("book.serviceUnavailable") : undefined}
+                          className={cn("flex w-full items-center justify-between gap-3 rounded-2xl border p-4 text-left transition-all",
+                            blocked
+                              ? "cursor-not-allowed border-dashed border-border bg-muted/30 opacity-60"
+                              : serviceId === s.id ? "border-primary bg-primary-soft/40" : "border-border hover:bg-muted/40")}>
+                          <div className="min-w-0">
+                            <p className="truncate font-medium">{s.name}</p>
+                            <p className="text-xs text-muted-foreground">{s.duration_minutes} min{s.category ? ` · ${s.category}` : ""}</p>
+                            {blocked && (
+                              <p className="mt-1 text-xs text-destructive">{t("book.serviceUnavailable")}</p>
+                            )}
+                          </div>
+                          <p className={cn("flex-none text-sm font-semibold", s.price_cents === 0 && "text-success")}>
+                            {priceLabel(s.price_cents)}
+                          </p>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </Section>

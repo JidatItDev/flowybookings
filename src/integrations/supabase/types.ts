@@ -1404,6 +1404,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      public_shop_mollie_connected: {
+        Args: { _shop_id: string }
+        Returns: boolean
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {

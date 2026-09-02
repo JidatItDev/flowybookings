@@ -9,8 +9,10 @@
 //   - We only ever charge what's stored on the service.deposit_cents
 //   - We don't return any sensitive shop/Mollie data
 //
-// Returns: { ok, payment_id, checkout_url } or { skipped: true } when no Mollie
-// connection exists / no deposit is required (caller should treat as confirmed).
+// Returns: { ok, payment_id, checkout_url }; { skipped: true } when no deposit is
+// required (caller should treat as confirmed); or 409 { error: "mollie_not_connected" }
+// when a deposit IS required but the shop has no working Mollie connection — the
+// booking is cancelled server-side rather than silently confirmed with zero payment.
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
@@ -21,12 +23,15 @@ import {
   resolveApplicationFeeCents,
 } from "@/shop/payments/mollie-connect";
 import { serverEnv } from "@/server/env";
+import { createLogger } from "@/server/logger";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
+
+const log = createLogger("bookings.checkout");
 
 async function confirmBookingIfPending(bookingId: string, currentStatus: string) {
   if (currentStatus === "confirmed") return;
@@ -35,6 +40,21 @@ async function confirmBookingIfPending(bookingId: string, currentStatus: string)
     .update({ status: "confirmed" })
     .eq("id", bookingId)
     .eq("status", "pending");
+}
+
+async function cancelBookingNoMollie(bookingId: string, shopId: string) {
+  await supabaseAdmin
+    .from("bookings")
+    .update({ status: "cancelled" })
+    .eq("id", bookingId)
+    .eq("status", "pending");
+  await supabaseAdmin.from("activity_log").insert({
+    entity: "booking",
+    action: "blocked_no_mollie_connection",
+    shop_id: shopId,
+    metadata: { booking_id: bookingId },
+  });
+  log.warn("blocked_no_mollie_connection", { booking_id: bookingId, shop_id: shopId });
 }
 
 export const handlers = {
@@ -65,8 +85,12 @@ export const handlers = {
           // Resolve a usable (decrypted, refreshed-if-needed) access token.
           const tokenInfo = await getActiveMollieAccessToken(booking.shop_id);
           if (!tokenInfo) {
-            await confirmBookingIfPending(booking.id, booking.status);
-            return json({ ok: true, skipped: true, reason: "no_mollie_connection" });
+            // A deposit IS required but the shop has no working Mollie connection —
+            // this is a shop misconfiguration, not something to silently absorb as a
+            // free confirmed booking. Cancel it; the customer sees an error and the
+            // slot is released for someone else.
+            await cancelBookingNoMollie(booking.id, booking.shop_id);
+            return json({ error: "mollie_not_connected" }, 409);
           }
 
           // Load provider toggle + shop (plan + per-shop fee override + DB plan_pricing)

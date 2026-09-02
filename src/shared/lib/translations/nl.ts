@@ -1344,6 +1344,9 @@ export const nl: Record<string, string> = {
   "book.shopUnavailableSub": "{shop} accepteert momenteel geen nieuwe afspraken. Probeer het later opnieuw.",
   "book.noServices": "Geen diensten gevonden voor deze salon",
   "book.noServicesSub": "Kom later terug of neem contact op met de salon.",
+  "book.serviceUnavailable": "Tijdelijk niet beschikbaar",
+  "book.mollieNotConnected":
+    "Deze salon kan momenteel geen aanbetalingen verwerken. Probeer het later opnieuw of neem contact op met de salon.",
   "book.noStaff": "Geen teamleden gevonden voor deze salon",
   "book.noStaffSub": "Kom later terug of neem contact op met de salon.",
   "book.noTimes": "Geen beschikbare tijden op deze dag.",
