@@ -25,6 +25,7 @@ import { useSearch, useNavigate } from "@tanstack/react-router";
 import { cn } from "@/shared/lib/utils";
 import { DEFAULT_SHOP_BUSINESS_HOURS } from "@/shop/staff/staff-availability";
 import { DEFAULT_SHOP_TIMEZONE } from "@/shared/lib/shop-timezone";
+import { DEFAULT_DEPOSIT_PERCENT } from "@/shared/lib/booking-rules";
 
 const Route = getRouteApi("/shop/settings");
 
@@ -36,7 +37,7 @@ type BookingRules = { minNoticeHours: number; maxWindowDays: number; slotInterva
 type Branding = { color?: string };
 
 const DEFAULT_HOURS: BusinessHours = DEFAULT_SHOP_BUSINESS_HOURS;
-const DEFAULT_RULES: BookingRules = { minNoticeHours: 2, maxWindowDays: 60, slotIntervalMin: 15, defaultDepositPct: 20 };
+const DEFAULT_RULES: BookingRules = { minNoticeHours: 2, maxWindowDays: 60, slotIntervalMin: 15, defaultDepositPct: DEFAULT_DEPOSIT_PERCENT };
 
 /** True when DB has no usable business_hours (empty `{}` or missing day open/close). */
 function isBusinessHoursUnset(raw: unknown): boolean {
