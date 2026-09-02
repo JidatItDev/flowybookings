@@ -32,6 +32,7 @@ import {
 } from "@/shop/notifications/server/sms-credits-decision";
 import { createLogger } from "@/server/logger";
 import { mapMollieStatus } from "@/shop/payments/mollie-status";
+import { verifyWebhookToken } from "@/shared/lib/webhook-auth";
 
 const log = createLogger("billing.webhook");
 
@@ -93,7 +94,7 @@ export const handlers = {
               url.searchParams.get("token") ??
               request.headers.get("x-webhook-token") ??
               "";
-            if (!safeEqual(provided, expectedSecret)) {
+            if (!verifyWebhookToken(provided, expectedSecret)) {
               log.warn("rejected_invalid_or_missing_token");
               return new Response(JSON.stringify({ error: "unauthorized" }), {
                 status: 401,
@@ -252,16 +253,6 @@ export async function processMolliePaymentNotification(
     local_status: newStatus ?? payment.status,
     mollie_status: mollie?.status ?? null,
   };
-}
-
-// Constant-time string comparison to avoid timing attacks on the shared-secret guard.
-function safeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let mismatch = 0;
-  for (let i = 0; i < a.length; i++) {
-    mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-  return mismatch === 0;
 }
 
 export { mapMollieStatus as mapStatus };

@@ -20,6 +20,7 @@ import {
   getActiveMollieAccessToken,
   resolveApplicationFeeCents,
 } from "@/shop/payments/mollie-connect";
+import { serverEnv } from "@/server/env";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -145,7 +146,10 @@ export const handlers = {
 
           const origin = body.redirect_origin || new URL(request.url).origin;
           const redirectUrl = `${origin}/book/confirmation/${booking.id}?payment=${payment.id}`;
-          const webhookUrl = `${origin}/api/mollie-connect/webhook`;
+          const webhookSecret = serverEnv("MOLLIE_WEBHOOK_SECRET");
+          const webhookUrl = webhookSecret
+            ? `${origin}/api/mollie-connect/webhook?token=${encodeURIComponent(webhookSecret)}`
+            : `${origin}/api/mollie-connect/webhook`;
 
           const molliePayload: Record<string, unknown> = {
             amount: { currency, value: (amountCents / 100).toFixed(2) },

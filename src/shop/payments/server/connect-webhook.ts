@@ -14,6 +14,8 @@ import { enqueueBookingEmail } from "@/email/enqueue-booking-email";
 import { getBookingUrl } from "@/shared/lib/booking-url";
 import { createLogger } from "@/server/logger";
 import { mapMollieStatus, type MollieRawStatus } from "@/shop/payments/mollie-status";
+import { verifyWebhookToken } from "@/shared/lib/webhook-auth";
+import { serverEnv } from "@/server/env";
 
 const log = createLogger("mollie_connect.webhook");
 
@@ -27,6 +29,21 @@ type MolliePayment = {
 export const handlers = {
       POST: async ({ request }: { request: Request }) => {
         try {
+          // Optional shared-secret guard. Mollie does not sign webhook bodies, so we use a
+          // query-string token (or x-webhook-token header) configured when registering
+          // the webhook URL with Mollie. If MOLLIE_WEBHOOK_SECRET is set, requests
+          // missing/mismatching the token are rejected as spoofed.
+          const expectedSecret = serverEnv("MOLLIE_WEBHOOK_SECRET");
+          if (expectedSecret) {
+            const url = new URL(request.url);
+            const provided =
+              url.searchParams.get("token") ?? request.headers.get("x-webhook-token") ?? "";
+            if (!verifyWebhookToken(provided, expectedSecret)) {
+              log.warn("rejected_invalid_or_missing_token");
+              return json({ error: "unauthorized" }, 401);
+            }
+          }
+
           const ct = request.headers.get("content-type") ?? "";
           let mollieId: string | null = null;
           if (ct.includes("application/json")) {
