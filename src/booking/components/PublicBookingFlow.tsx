@@ -24,7 +24,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { servicesQuery, staffQuery } from "@/shop/shared/queries-barrel";
 import { publicAppSettingsQuery } from "@/shared/lib/app-settings";
-import { resolveDepositCents, serviceRequiresMollie } from "@/booking/lib/deposit-decision";
+import { resolveDepositCents } from "@/booking/lib/deposit-decision";
 import { resolveShopDefaultDepositPercent } from "@/shared/lib/booking-rules";
 import { useT } from "@/shared/lib/i18n";
 import { getTrialState } from "@/shared/lib/trial";
@@ -122,7 +122,7 @@ function intervalFitsStaff(startMin: number, endMin: number, av: StaffAvailabili
 
 export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
   const navigate = useNavigate();
-  const { t } = useT();
+  const { t, locale } = useT();
   const stepLabels = presetShopId
     ? [t("book.stepService"), t("book.stepStaff"), t("book.stepDateTime"), t("book.stepDetails"), t("book.stepReview")]
     : [t("book.stepShop"), t("book.stepService"), t("book.stepStaff"), t("book.stepDateTime"), t("book.stepDetails"), t("book.stepReview")];
@@ -689,7 +689,7 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
             <div className="mt-3 space-y-2 text-sm">
               <SummaryRow label={t("book.shop")} value={selectedShop?.name ?? "—"} />
               <SummaryRow label={t("book.service")} value={selectedService?.name ?? "—"} />
-              <SummaryRow label={t("book.with")} value={staffId === "any" ? `${t("book.anyAvailable")} · wordt toegewezen` : selectedStaff?.full_name ?? "—"} />
+              <SummaryRow label={t("book.with")} value={staffId === "any" ? `${t("book.anyAvailable")} · ${t("book.autoAssigned")}` : selectedStaff?.full_name ?? "—"} />
               <SummaryRow label={t("book.date")} value={selectedDateYmd ? formatInShopTz(shopLocalToUtc(selectedDateYmd, time ?? "12:00", shopTimezone), shopTimezone, "EEE d MMM") : "—"} />
               <SummaryRow label={t("book.time")} value={time ?? "—"} />
             </div>
@@ -700,9 +700,9 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
                   <span className="font-semibold">{priceLabel(selectedService.price_cents)}</span>
                 </div>
                 {resolvedDepositCents > 0 && (
-                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{t("book.deposit")}</span>
-                    <span>€{(resolvedDepositCents / 100).toFixed(2)}</span>
+                  <div className="mt-1 flex items-center justify-between text-sm">
+                    <span className="text-primary">{t("book.dueNow")}</span>
+                    <span className="font-semibold text-primary">€{(resolvedDepositCents / 100).toFixed(2)}</span>
                   </div>
                 )}
               </div>
@@ -745,12 +745,11 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
                 ) : (
                   <div className="space-y-2">
                     {activeServices.map((s) => {
-                      const requiresMollie =
-                        !isDemoShop &&
-                        serviceRequiresMollie(
-                          { ...s, deposit_mode: toDepositMode(s.deposit_mode) },
-                          defaultDepositPercent,
-                        );
+                      const serviceDeposit = resolveDepositCents(
+                        { ...s, deposit_mode: toDepositMode(s.deposit_mode) },
+                        defaultDepositPercent,
+                      );
+                      const requiresMollie = !isDemoShop && serviceDeposit > 0;
                       const blocked = requiresMollie && !mollieConnected;
                       return (
                         <button key={s.id} type="button"
@@ -765,8 +764,17 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
                           <div className="min-w-0">
                             <p className="truncate font-medium">{s.name}</p>
                             <p className="text-xs text-muted-foreground">{s.duration_minutes} min{s.category ? ` · ${s.category}` : ""}</p>
-                            {blocked && (
+                            {blocked ? (
                               <p className="mt-1 text-xs text-destructive">{t("book.serviceUnavailable")}</p>
+                            ) : (
+                              <span className={cn(
+                                "mt-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
+                                serviceDeposit > 0 ? "bg-primary-soft/60 text-primary" : "bg-mint/40 text-mint-foreground",
+                              )}>
+                                {serviceDeposit > 0
+                                  ? t("book.depositBadge").replace("{amount}", `€${(serviceDeposit / 100).toFixed(2)}`)
+                                  : t("book.noDepositBadge")}
+                              </span>
                             )}
                           </div>
                           <p className={cn("flex-none text-sm font-semibold", s.price_cents === 0 && "text-success")}>
@@ -795,8 +803,15 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
                     <button onClick={() => { setStaffId("any"); setDate(undefined); setTime(null); }}
                       className={cn("rounded-2xl border p-4 text-left",
                         staffId === "any" ? "border-primary bg-primary-soft/40" : "border-border hover:bg-muted/40")}>
-                      <p className="font-medium">{t("book.anyAvailable")}</p>
-                      <p className="text-xs text-muted-foreground">{t("book.firstOpenSlot")}</p>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-mint text-mint-foreground">
+                          <Users className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{t("book.anyAvailable")}</p>
+                          <p className="text-xs text-muted-foreground">{t("book.firstOpenSlot")}</p>
+                        </div>
+                      </div>
                     </button>
                     {eligibleStaff.map((s) => (
                       <button key={s.id} onClick={() => { setStaffId(s.id); setDate(undefined); setTime(null); }}
@@ -885,7 +900,7 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
                     value={name}
                     onChange={setName}
                     onBlur={() => setTouched((s) => ({ ...s, name: true }))}
-                    placeholder="Jan Janssen"
+                    placeholder={locale === "nl" ? "Jan Janssen" : "Jane Doe"}
                     error={touched.name && name.trim().length < 2 ? t("book.errName") : undefined}
                   />
                   <Field
@@ -893,7 +908,7 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
                     value={phone}
                     onChange={setPhone}
                     onBlur={() => setTouched((s) => ({ ...s, phone: true }))}
-                    placeholder="+31 6 1234 5678"
+                    placeholder={locale === "nl" ? "+31 6 1234 5678" : "+1 555 123 4567"}
                     type="tel"
                     error={touched.phone && phone.trim().length < 6 ? t("book.errPhone") : undefined}
                   />
@@ -903,7 +918,7 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
                       value={email}
                       onChange={setEmail}
                       onBlur={() => setTouched((s) => ({ ...s, email: true }))}
-                      placeholder="jij@voorbeeld.nl"
+                      placeholder={locale === "nl" ? "jij@voorbeeld.nl" : "you@example.com"}
                       type="email"
                       error={touched.email && !emailValid(email) ? t("book.errEmail") : undefined}
                     />
@@ -927,7 +942,7 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
                 <dl className="space-y-3 text-sm">
                   <Row label={t("book.shop")} value={selectedShop?.name ?? "—"} />
                   <Row label={t("book.service")} value={selectedService?.name ?? "—"} />
-                  <Row label={t("book.with")} value={staffId === "any" ? `${t("book.anyAvailable")} · wordt automatisch toegewezen` : selectedStaff?.full_name ?? "—"} />
+                  <Row label={t("book.with")} value={staffId === "any" ? `${t("book.anyAvailable")} · ${t("book.autoAssigned")}` : selectedStaff?.full_name ?? "—"} />
                   <Row label={t("book.when")} value={selectedDateYmd ? `${formatInShopTz(shopLocalToUtc(selectedDateYmd, time ?? "12:00", shopTimezone), shopTimezone, "EEEE d MMMM")} · ${time ?? "—"}` : "—"} />
                   <Row label={t("book.customerLabel")} value={`${name} · ${phone}`} />
                   {selectedService && (
@@ -935,19 +950,27 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
                       <Row label={t("book.durationLabel")} value={`${selectedService.duration_minutes} min`} />
                       <Row label={t("book.price")} value={priceLabel(selectedService.price_cents)} />
                       {resolvedDepositCents > 0 && (
-                        <Row label={t("book.depositDue")} value={`€${(resolvedDepositCents / 100).toFixed(2)}`} />
+                        <>
+                          <Row label={t("book.depositDue")} value={`€${(resolvedDepositCents / 100).toFixed(2)}`} />
+                          <Row
+                            label={t("book.remainingAtAppointment")}
+                            value={`€${((selectedService.price_cents - resolvedDepositCents) / 100).toFixed(2)}`}
+                          />
+                        </>
                       )}
                     </>
                   )}
                 </dl>
                 <p className={cn(
                   "mt-6 rounded-xl p-3 text-xs",
-                  isDemoShop ? "bg-primary-soft/60 text-primary" : selectedService && selectedService.price_cents > 0 ? "bg-mint/40 text-mint-foreground" : "bg-muted text-muted-foreground",
+                  isDemoShop ? "bg-primary-soft/60 text-primary" : selectedService && resolvedDepositCents > 0 ? "bg-mint/40 text-mint-foreground" : "bg-muted text-muted-foreground",
                 )}>
                   {isDemoShop
                     ? t("demo.paymentNotice")
-                    : selectedService && selectedService.price_cents > 0
-                      ? t("book.stripeNotice")
+                    : selectedService && resolvedDepositCents > 0
+                      ? t("book.depositNotice")
+                          .replace("{deposit}", `€${(resolvedDepositCents / 100).toFixed(2)}`)
+                          .replace("{remaining}", `€${((selectedService.price_cents - resolvedDepositCents) / 100).toFixed(2)}`)
                       : t("book.freeNotice")}
                 </p>
               </Section>
@@ -964,10 +987,13 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
               <Button variant="hero" onClick={next} disabled={!canNext || submitting}>
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 {step === stepLabels.length - 1
-                  ? selectedService && selectedService.price_cents > 0
+                  ? selectedService && (isDemoShop ? selectedService.price_cents > 0 : resolvedDepositCents > 0)
                     ? <>
                         <CreditCard className="h-4 w-4" />
-                        {t("book.payIdeal").replace("{amount}", `€${(selectedService.price_cents / 100).toFixed(2)}`)}
+                        {t("book.payNow").replace(
+                          "{amount}",
+                          `€${((isDemoShop ? selectedService.price_cents : resolvedDepositCents) / 100).toFixed(2)}`,
+                        )}
                       </>
                     : t("book.confirmFree")
                   : t("book.continue")}

@@ -8,6 +8,7 @@
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { MOLLIE_CONNECT_API_BASE, getActiveMollieAccessToken } from "@/shop/payments/mollie-connect";
+import { getMollieMode } from "@/shared/lib/mollie-platform";
 
 export const handlers = {
       POST: async ({ request }: { request: Request }) => {
@@ -63,6 +64,15 @@ export const handlers = {
           );
           const currency = payment.currency || "EUR";
 
+          // Mollie Connect OAuth tokens operate against LIVE data unless
+          // testmode is explicitly set — same requirement as checkout.ts's
+          // payment creation and connect-webhook.ts's status re-fetch.
+          const refundPayload: Record<string, unknown> = {
+            amount: { currency, value: (amountCents / 100).toFixed(2) },
+            description: "Refund via FlowyBookings",
+          };
+          if (getMollieMode() === "test") refundPayload.testmode = true;
+
           const mollieRes = await fetch(
             `${MOLLIE_CONNECT_API_BASE}/payments/${payment.provider_payment_id}/refunds`,
             {
@@ -71,10 +81,7 @@ export const handlers = {
                 Authorization: `Bearer ${tokenInfo.accessToken}`,
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({
-                amount: { currency, value: (amountCents / 100).toFixed(2) },
-                description: "Refund via FlowyBookings",
-              }),
+              body: JSON.stringify(refundPayload),
             },
           );
           if (!mollieRes.ok) {

@@ -15,6 +15,7 @@ import { createLogger } from "@/server/logger";
 import { mapMollieStatus, type MollieRawStatus } from "@/shop/payments/mollie-status";
 import { verifyWebhookToken } from "@/shared/lib/webhook-auth";
 import { serverEnv } from "@/server/env";
+import { getMollieMode } from "@/shared/lib/mollie-platform";
 import { sendBookingConfirmationEmail } from "@/email/server/booking-confirmation";
 import { sendEmail } from "@/email/send-email";
 import { formatInShopTz, resolveShopTimezone } from "@/shared/lib/shop-timezone";
@@ -90,7 +91,14 @@ export const handlers = {
             if (!tokenInfo) {
               mollieFetchFailed = true;
             } else {
-              const res = await fetch(`${MOLLIE_CONNECT_API_BASE}/payments/${mollieId}`, {
+              // Mollie's OAuth API 404s a test-mode payment on GET unless the
+              // testmode query param is explicitly passed — mirrors the
+              // testmode flag checkout.ts sends when creating the payment.
+              const fetchUrl =
+                getMollieMode() === "test"
+                  ? `${MOLLIE_CONNECT_API_BASE}/payments/${mollieId}?testmode=true`
+                  : `${MOLLIE_CONNECT_API_BASE}/payments/${mollieId}`;
+              const res = await fetch(fetchUrl, {
                 headers: { Authorization: `Bearer ${tokenInfo.accessToken}` },
               });
               if (res.ok) {
