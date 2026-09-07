@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       activity_log: {
@@ -168,6 +193,8 @@ export type Database = {
       }
       bookings: {
         Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
           confirmation_sent_at: string | null
           created_at: string
           currency: string
@@ -188,6 +215,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
           confirmation_sent_at?: string | null
           created_at?: string
           currency?: string
@@ -208,6 +237,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
           confirmation_sent_at?: string | null
           created_at?: string
           currency?: string
@@ -759,6 +790,48 @@ export type Database = {
           },
         ]
       }
+      session_activity: {
+        Row: {
+          first_seen_at: string
+          last_seen_at: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          first_seen_at?: string
+          last_seen_at?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          first_seen_at?: string
+          last_seen_at?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      session_policy: {
+        Row: {
+          id: boolean
+          inactivity_days: number
+          max_session_days: number
+          updated_at: string
+        }
+        Insert: {
+          id?: boolean
+          inactivity_days?: number
+          max_session_days?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: boolean
+          inactivity_days?: number
+          max_session_days?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       shop_automations: {
         Row: {
           confirmation_enabled: boolean
@@ -970,11 +1043,11 @@ export type Database = {
           logo_url: string | null
           mollie_customer_id: string | null
           mollie_subscription_id: string | null
-          payment_failed_at: string | null
           name: string
           next_billing_at: string | null
           onboarding: Json
           owner_id: string
+          payment_failed_at: string | null
           pending_billing_cycle: string | null
           pending_plan: Database["public"]["Enums"]["subscription_plan"] | null
           pending_plan_effective_at: string | null
@@ -1007,11 +1080,11 @@ export type Database = {
           logo_url?: string | null
           mollie_customer_id?: string | null
           mollie_subscription_id?: string | null
-          payment_failed_at?: string | null
           name: string
           next_billing_at?: string | null
           onboarding?: Json
           owner_id: string
+          payment_failed_at?: string | null
           pending_billing_cycle?: string | null
           pending_plan?: Database["public"]["Enums"]["subscription_plan"] | null
           pending_plan_effective_at?: string | null
@@ -1044,11 +1117,11 @@ export type Database = {
           logo_url?: string | null
           mollie_customer_id?: string | null
           mollie_subscription_id?: string | null
-          payment_failed_at?: string | null
           name?: string
           next_billing_at?: string | null
           onboarding?: Json
           owner_id?: string
+          payment_failed_at?: string | null
           pending_billing_cycle?: string | null
           pending_plan?: Database["public"]["Enums"]["subscription_plan"] | null
           pending_plan_effective_at?: string | null
@@ -1281,6 +1354,7 @@ export type Database = {
         Returns: number
       }
       consume_sms_credit: { Args: { _shop_id: string }; Returns: boolean }
+      custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       decrypt_mollie_token: { Args: { ciphertext: string }; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
@@ -1324,23 +1398,8 @@ export type Database = {
           status: Database["public"]["Enums"]["booking_status"]
         }[]
       }
-      resolve_public_booking_shop: {
-        Args: { _ref: string }
-        Returns: {
-          block_reason: string | null
-          found: boolean
-          logo_url: string | null
-          name: string | null
-          shop_id: string | null
-          slug: string | null
-        }[]
-      }
       get_public_bookings_for_availability: {
-        Args: {
-          _range_end: string
-          _range_start: string
-          _shop_id: string
-        }
+        Args: { _range_end: string; _range_start: string; _shop_id: string }
         Returns: {
           ends_at: string
           staff_id: string
@@ -1351,15 +1410,6 @@ export type Database = {
       get_public_busy_staff_ids: {
         Args: { _ends_at: string; _shop_id: string; _starts_at: string }
         Returns: string[]
-      }
-      refresh_public_customer_contact: {
-        Args: {
-          _full_name: string
-          _id: string
-          _phone: string
-          _shop_id: string
-        }
-        Returns: undefined
       }
       get_shop_feature_access: {
         Args: { _feature_slug: string; _shop_id: string }
@@ -1424,6 +1474,26 @@ export type Database = {
         Args: { _customer_id: string }
         Returns: undefined
       }
+      refresh_public_customer_contact: {
+        Args: {
+          _full_name: string
+          _id: string
+          _phone: string
+          _shop_id: string
+        }
+        Returns: undefined
+      }
+      resolve_public_booking_shop: {
+        Args: { _ref: string }
+        Returns: {
+          block_reason: string
+          found: boolean
+          logo_url: string
+          name: string
+          shop_id: string
+          slug: string
+        }[]
+      }
       shop_can_accept_bookings: { Args: { _shop_id: string }; Returns: boolean }
     }
     Enums: {
@@ -1460,12 +1530,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1489,11 +1559,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1514,11 +1584,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1539,11 +1609,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1556,11 +1626,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1570,6 +1640,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: [

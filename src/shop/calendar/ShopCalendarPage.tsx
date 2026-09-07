@@ -11,6 +11,8 @@ import { PageHeader } from "@/shared/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -29,6 +31,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EmptyState, NoShopState } from "@/shared/components/EmptyState";
+import { StatusBadge } from "@/shared/components/StatusBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FeatureLock } from "@/shop/shared/FeatureLock";
 import { useImpersonationReadOnly, assertNotImpersonating } from "@/admin/impersonation/ImpersonationBanner";
@@ -36,9 +39,12 @@ import { bookingErrorToast } from "@/booking/lib/booking-errors";
 import { useActiveShopId } from "@/shop/shared/shop-context";
 import { useBookingsRealtime } from "@/shop/calendar/use-bookings-realtime";
 import {
-  bookingsQuery, customersQuery, servicesQuery, shopFullQuery, shopKeys, staffQuery,
+  bookingsQuery, customersQuery, paymentsQuery, servicesQuery, shopFullQuery, shopKeys, staffQuery,
   type BookingWithRelations,
 } from "@/shop/shared/queries-barrel";
+import { canTransition, type BookingAction, type BookingLite } from "@/booking/server/booking-status-decision";
+import { useRefundAction } from "@/shop/payments/useRefundAction";
+import { RefundConfirmDialog } from "@/shop/payments/RefundConfirmDialog";
 import { Sparkles } from "lucide-react";
 import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
@@ -79,8 +85,33 @@ function toDepositMode(mode: string): "default" | "custom" {
 
 const statuses = ["all", "pending", "confirmed", "completed", "cancelled", "no_show"] as const;
 
+// Error codes booking-status.ts / reschedule.ts can return that have a
+// dedicated, translated message. Anything else (unexpected server errors)
+// falls back to a generic message rather than showing a raw error code.
+const KNOWN_STATUS_ERROR_CODES = [
+  "booking_already_started",
+  "booking_not_started_yet",
+  "booking_not_ended_yet",
+  "payment_in_progress",
+  "invalid_current_status",
+  "missing_reason",
+  "unauthenticated",
+  "forbidden",
+  "booking_not_found",
+  "status_changed",
+  "invalid_action",
+] as const;
+
+function statusActionErrorMessage(code: string, t: (key: string, vars?: Record<string, string | number>) => string): string {
+  if ((KNOWN_STATUS_ERROR_CODES as readonly string[]).includes(code)) {
+    return t(`calendar.guardReason.${code}`);
+  }
+  return t("calendar.genericError");
+}
+
 export function ShopCalendarPage() {
   const shopId = useActiveShopId();
+  const { refundTarget, setRefundTarget, refundMut } = useRefundAction(shopId ?? "");
   const { activeShop } = useAuth();
   const trial = getTrialState(activeShop as never);
   const readOnly = useImpersonationReadOnly();
@@ -112,7 +143,6 @@ export function ShopCalendarPage() {
   const [staffFilter, setStaffFilter] = useState<string | "all" | "unassigned">("all");
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<BookingWithRelations | null>(null);
-  const [deleting, setDeleting] = useState<BookingWithRelations | null>(null);
   const [viewing, setViewing] = useState<BookingWithRelations | null>(null);
   const [rescheduling, setRescheduling] = useState<BookingWithRelations | null>(null);
   const [dayOffset, setDayOffset] = useState<number | null>(0); // 0 = vandaag, null = alle
@@ -150,6 +180,23 @@ export function ShopCalendarPage() {
   const { data: customers = [] } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
   const { data: staff = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
+  // Same cache the Payments page already populates (shopKeys.payments) — reused
+  // here to know, per booking: is there an open payment (Confirm-guard), is
+  // there a paid/deposit_paid one (Refunded badge, Cancel dialog's amount +
+  // inline refund shortcut). No new query.
+  const { data: payments = [] } = useQuery({ ...paymentsQuery(shopId ?? ""), enabled: !!shopId });
+  const paymentsByBooking = useMemo(() => {
+    const map = new Map<string, typeof payments[number]>();
+    for (const p of payments) {
+      if (!p.booking_id) continue;
+      // Prefer the most recent row per booking (a voided-then-repaid edge case).
+      const existing = map.get(p.booking_id);
+      if (!existing || new Date(p.created_at) > new Date(existing.created_at)) {
+        map.set(p.booking_id, p);
+      }
+    }
+    return map;
+  }, [payments]);
   const { data: shopFull } = useQuery({ ...shopFullQuery(shopId ?? ""), enabled: !!shopId });
   const businessHours = (shopFull?.business_hours ?? undefined) as
     | import("@/shop/calendar/components/DayTimeGrid").BusinessHours
@@ -171,23 +218,39 @@ export function ShopCalendarPage() {
   // Realtime: live-patch the bookings cache on INSERT/UPDATE/DELETE for this shop.
   const realtimeStatus = useBookingsRealtime(shopId);
 
+  // All status transitions (Confirm/Cancel/No-show/Completed + undos) go through
+  // POST /api/bookings/status — auth + guards + emails + activity_log all live
+  // server-side now (booking-status.ts / booking-status-decision.ts). There is
+  // no more client-side hard delete; Cancel (with a required reason) is the
+  // only removal action — see docs/adr/0001-cancellation-and-refund-are-independent.md.
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: BookingWithRelations["status"] }) => {
+    mutationFn: async ({ id, action, reason }: { id: string; action: BookingAction; reason?: string }) => {
       assertNotImpersonating();
-      const { error } = await supabase.from("bookings").update({ status }).eq("id", id);
-      if (error) throw error;
+      const { data: sess } = await supabase.auth.getSession();
+      const accessToken = sess.session?.access_token;
+      if (!accessToken) throw new Error("unauthenticated");
+      const res = await fetch("/api/bookings/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ booking_id: id, action, reason }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
+      if (!res.ok || !body.ok) throw new Error(body.error ?? `http_${res.status}`);
+      return body;
     },
     onSuccess: () => {
       toast.success(t("calendar.bookingUpdated"));
       if (shopId) qc.invalidateQueries({ queryKey: shopKeys.bookings(shopId) });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(statusActionErrorMessage(e.message, t)),
   });
 
   /**
    * Drag-and-drop reschedule. Werkt optimistisch via setQueryData zodat het
-   * blok meteen op zijn nieuwe plek staat. Server-trigger valideert working
-   * hours + conflicts en geeft een mapped foutmelding terug bij rollback.
+   * blok meteen op zijn nieuwe plek staat. Persisted via POST
+   * /api/bookings/reschedule (auth + guard + email + activity_log server-side);
+   * a rejected update forwards the raw Postgres error fields so
+   * classifyBookingError/bookingErrorToast keep working unmodified.
    */
   const reschedule = useMutation({
     mutationFn: async (params: {
@@ -198,18 +261,33 @@ export function ShopCalendarPage() {
       newEndsAt?: Date;
     }) => {
       assertNotImpersonating();
-      const { booking, newStaffId, newStartsAt, newEndsAt } = params;
-      const durMs = +new Date(booking.ends_at) - +new Date(booking.starts_at);
-      const newEnds = newEndsAt ?? new Date(newStartsAt.getTime() + durMs);
-      const { error } = await supabase
-        .from("bookings")
-        .update({
-          starts_at: newStartsAt.toISOString(),
-          ends_at: newEnds.toISOString(),
-          staff_id: newStaffId,
-        })
-        .eq("id", booking.id);
-      if (error) throw error;
+      const { booking, newStaffId, newStartsAt } = params;
+      const { data: sess } = await supabase.auth.getSession();
+      const accessToken = sess.session?.access_token;
+      if (!accessToken) throw new Error("unauthenticated");
+      const res = await fetch("/api/bookings/reschedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({
+          booking_id: booking.id,
+          new_starts_at: newStartsAt.toISOString(),
+          new_staff_id: newStaffId,
+        }),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        error?: string;
+        message?: string;
+        details?: string;
+        hint?: string;
+        code?: string;
+      };
+      if (!res.ok || !body.ok) {
+        throw body.message || body.details || body.hint || body.code
+          ? { message: body.message, details: body.details, hint: body.hint, code: body.code }
+          : new Error(body.error ?? `http_${res.status}`);
+      }
+      return body;
     },
     onMutate: async (params) => {
       if (!shopId) return;
@@ -232,11 +310,12 @@ export function ShopCalendarPage() {
       );
       return { prev };
     },
-    onError: (e: Error, _params, context) => {
+    onError: (e: unknown, _params, context) => {
       if (shopId && context?.prev) {
         qc.setQueryData(shopKeys.bookings(shopId), context.prev);
       }
-      toast.error(bookingErrorToast(e, t, e.message));
+      const err = e instanceof Error ? e : (e as { message?: string });
+      toast.error(bookingErrorToast(err, t, err.message ?? ""));
     },
     onSuccess: () => {
       toast.success(t("calendar.bookingUpdated"));
@@ -244,20 +323,6 @@ export function ShopCalendarPage() {
     onSettled: () => {
       if (shopId) qc.invalidateQueries({ queryKey: shopKeys.bookings(shopId) });
     },
-  });
-
-  const remove = useMutation({
-    mutationFn: async (id: string) => {
-      assertNotImpersonating();
-      const { error } = await supabase.from("bookings").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast.success(t("calendar.bookingDeleted"));
-      setDeleting(null);
-      if (shopId) qc.invalidateQueries({ queryKey: shopKeys.bookings(shopId) });
-    },
-    onError: (e: Error) => toast.error(e.message),
   });
 
   // Bookings filtered by status + day (without staff filter) — used for staff chip counts.
@@ -1066,22 +1131,15 @@ export function ShopCalendarPage() {
                             )}
                           </td>
                           <td className="px-4 py-3 text-right font-medium tabular-nums">{formatCents(b.price_cents)}</td>
-                          <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                            <Select value={b.status} disabled={readOnly} onValueChange={(v) => updateStatus.mutate({ id: b.id, status: v as BookingWithRelations["status"] })}>
-                              <SelectTrigger
-                                className="h-8 w-[120px] text-xs"
-                                title={readOnly ? t("impersonate.readOnlyTooltip") : undefined}
-                              ><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                {statuses.filter((s) => s !== "all").map((s) => (
-                                  <SelectItem key={s} value={s}>{statusLabel[s]}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                          <td className="px-4 py-3">
+                            {/* Status changes only happen via the guarded actions in the
+                                detail sheet (row click) — no bare status picker here, that
+                                would bypass every guard/confirmation/email booking-status.ts
+                                now enforces. */}
+                            <StatusBadge status={b.status} />
                           </td>
                           <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                             <Button variant="ghost" size="sm" disabled={readOnly} title={readOnly ? t("impersonate.readOnlyTooltip") : undefined} onClick={() => setEditing(b)}>{t("calendar.edit")}</Button>
-                            <Button variant="ghost" size="sm" disabled={readOnly} title={readOnly ? t("impersonate.readOnlyTooltip") : undefined} onClick={() => setDeleting(b)}>{t("calendar.delete")}</Button>
                           </td>
                         </tr>
                       );
@@ -1107,12 +1165,16 @@ export function ShopCalendarPage() {
         onClose={() => setViewing(null)}
         onEdit={(b) => { setViewing(null); setEditing(b); }}
         onReschedule={(b) => { setViewing(null); setRescheduling(b); }}
-        onAction={(id, status) => { updateStatus.mutate({ id, status }); setViewing(null); }}
+        onAction={(id, action, reason) => { updateStatus.mutate({ id, action, reason }); setViewing(null); }}
         customers={customers}
         services={services}
         staff={staff}
         shopTz={shopTz}
+        payment={viewing ? paymentsByBooking.get(viewing.id) : undefined}
+        onRefund={(payment) => setRefundTarget({ id: payment.id, amount: payment.amount_cents, currency: payment.currency })}
       />
+
+      <RefundConfirmDialog refundTarget={refundTarget} setRefundTarget={setRefundTarget} refundMut={refundMut} />
 
       <RescheduleSheet
         booking={rescheduling}
@@ -1126,21 +1188,6 @@ export function ShopCalendarPage() {
           );
         }}
       />
-
-      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("calendar.deleteBooking")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("calendar.deleteBookingDesc")}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("calendar.cancel")}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleting && remove.mutate(deleting.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {t("calendar.delete")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Mobile floating action button — opens dezelfde nieuwe-boeking dialog. */}
       {isMobile && shopId && (
@@ -1626,24 +1673,66 @@ function CustomerCombobox({
   );
 }
 
+type PaymentLite = { id: string; amount_cents: number; currency: string; status: string };
+
+// The "Confirmed" status-grid button does double duty: from `pending` it's a
+// real Confirm; from `no_show`/`completed` it's the undo path back to
+// `confirmed` (see CONTEXT.md's "No-show"/"Completed" entries — both are
+// deliberately reversible, Cancel is not).
+function resolveConfirmAction(status: BookingWithRelations["status"]): BookingAction {
+  if (status === "no_show") return "undoNoShow";
+  if (status === "completed") return "undoCompleted";
+  return "confirm";
+}
+
+function statusActionCopy(
+  action: BookingAction,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): { title: string; desc: string; confirmLabel: string } {
+  switch (action) {
+    case "confirm":
+      return { title: t("calendar.confirmActionTitle"), desc: t("calendar.confirmActionDesc"), confirmLabel: t("calendar.confirmed") };
+    case "cancel":
+      return { title: t("calendar.cancelActionTitle"), desc: t("calendar.cancelActionDesc"), confirmLabel: t("calendar.cancelBooking") };
+    case "markNoShow":
+      return { title: t("calendar.noShowActionTitle"), desc: t("calendar.noShowActionDesc"), confirmLabel: t("calendar.noShow") };
+    case "markCompleted":
+      return { title: t("calendar.completedActionTitle"), desc: t("calendar.completedActionDesc"), confirmLabel: t("calendar.completed") };
+    case "undoNoShow":
+    case "undoCompleted":
+      return { title: t("calendar.undoActionTitle"), desc: t("calendar.undoActionDesc"), confirmLabel: t("calendar.confirmed") };
+  }
+}
+
 function BookingActionDialog({
-  booking, onClose, onEdit, onReschedule, onAction, customers, services, staff, shopTz,
+  booking, onClose, onEdit, onReschedule, onAction, customers, services, staff, shopTz, payment, onRefund,
 }: {
   booking: BookingWithRelations | null;
   onClose: () => void;
   onEdit: (b: BookingWithRelations) => void;
   onReschedule?: (b: BookingWithRelations) => void;
-  onAction: (id: string, status: BookingWithRelations["status"]) => void;
+  onAction: (id: string, action: BookingAction, reason?: string) => void;
   customers: Array<{ id: string; full_name: string; email: string | null; phone: string | null; preferences?: unknown }>;
   services: Array<{ id: string; name: string }>;
   staff: Array<{ id: string; full_name: string }>;
   shopTz: string;
+  payment?: PaymentLite;
+  onRefund: (payment: PaymentLite) => void;
 }) {
   const shopId = useActiveShopId();
   const colors = useStaffColors(shopId);
   const isMobile = useIsMobile();
   const { t, locale } = useT();
   const dateLocale = locale === "en" ? "en-US" : "nl-NL";
+  const [pendingAction, setPendingAction] = useState<BookingAction | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+
+  // Reset the reason textarea whenever the pending action changes (or clears)
+  // so a stale reason from a previous Cancel attempt never leaks into a new one.
+  useEffect(() => {
+    if (pendingAction !== "cancel") setCancelReason("");
+  }, [pendingAction]);
+
   if (!booking) return null;
   const cust = customers.find((c) => c.id === booking.customer_id);
   const svc = services.find((s) => s.id === booking.service_id);
@@ -1656,6 +1745,25 @@ function BookingActionDialog({
   // Client rule: customers pay only a deposit online, the rest is settled offline/in-person.
   // Math.max guards against a negative figure in any edge case (e.g. a deposit exceeding price).
   const remainingBalanceCents = Math.max(0, (booking.price_cents ?? 0) - (booking.deposit_cents ?? 0));
+  const hasOpenPayment = payment?.status === "unpaid";
+  const isRefundable = !!payment && (payment.status === "paid" || payment.status === "deposit_paid");
+  const isRefunded = payment?.status === "refunded";
+
+  // Same pure guard logic booking-status.ts enforces server-side, reused here
+  // purely for UI disablement/tooltips — the server remains the source of
+  // truth and re-checks all of this regardless (booking-status-decision.ts
+  // has zero I/O, safe to share between client and server bundles).
+  const bookingLite: BookingLite = { status: booking.status, starts_at: booking.starts_at, ends_at: booking.ends_at };
+  const now = Date.now();
+  const confirmAction = resolveConfirmAction(booking.status);
+  const confirmVerdict = canTransition(bookingLite, confirmAction, { now, hasOpenPayment: !!hasOpenPayment });
+  const cancelVerdict = canTransition(bookingLite, "cancel", { now, hasOpenPayment: false });
+  const noShowVerdict = canTransition(bookingLite, "markNoShow", { now, hasOpenPayment: false });
+  const completedVerdict = canTransition(bookingLite, "markCompleted", { now, hasOpenPayment: false });
+  const guardTitle = (verdict: { allowed: boolean; reason?: string }) =>
+    verdict.allowed ? undefined : t(`calendar.guardReason.${verdict.reason}`);
+
+  const pendingCopy = pendingAction ? statusActionCopy(pendingAction, t) : null;
 
   // Shared body — identical content for Sheet (mobile) and Dialog (desktop/tablet).
   const body = (
@@ -1696,7 +1804,13 @@ function BookingActionDialog({
             <span className="text-xs italic text-muted-foreground">{t("calendar.unassigned")}</span>
           )}
         </div>
-        <ActionRow label={t("calendar.amount")} value={formatCents(booking.price_cents)} />
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">{t("calendar.amount")}</span>
+          <span className="flex items-center gap-2">
+            <span className="font-medium">{formatCents(booking.price_cents)}</span>
+            {isRefunded && <Badge variant="outline">{t("calendar.refundedBadge")}</Badge>}
+          </span>
+        </div>
         {remainingBalanceCents > 0 && (
           <ActionRow label={t("calendar.remainingBalance")} value={formatCents(remainingBalanceCents)} />
         )}
@@ -1710,22 +1824,25 @@ function BookingActionDialog({
     </div>
   );
 
-  // Status mutation actions — identical on every device.
+  // Status actions — identical on every device. Every click opens the shared
+  // confirm dialog below instead of mutating immediately (per the UX rework:
+  // every status change gets a confirmation step, not a bare instant click).
   const statusActions = (
     <div className="grid grid-cols-2 gap-2 pt-2">
-      <Button variant="default" disabled={booking.status === "confirmed"} onClick={() => onAction(booking.id, "confirmed")}>
+      <Button variant="default" disabled={!confirmVerdict.allowed} title={guardTitle(confirmVerdict)} onClick={() => setPendingAction(confirmAction)}>
         {t("calendar.confirmed")}
       </Button>
-      <Button variant="hero" disabled={booking.status === "completed"} onClick={() => onAction(booking.id, "completed")}>
+      <Button variant="hero" disabled={!completedVerdict.allowed} title={guardTitle(completedVerdict)} onClick={() => setPendingAction("markCompleted")}>
         {t("calendar.completed")}
       </Button>
-      <Button variant="outline" disabled={booking.status === "cancelled"} onClick={() => onAction(booking.id, "cancelled")}>
-        {t("calendar.cancel")}
+      <Button variant="outline" disabled={!cancelVerdict.allowed} title={guardTitle(cancelVerdict)} onClick={() => setPendingAction("cancel")}>
+        {t("calendar.cancelBooking")}
       </Button>
       <Button
         variant="outline"
-        disabled={booking.status === "no_show"}
-        onClick={() => onAction(booking.id, "no_show")}
+        disabled={!noShowVerdict.allowed}
+        title={guardTitle(noShowVerdict)}
+        onClick={() => setPendingAction("markNoShow")}
         className="text-destructive border-destructive/30 hover:bg-destructive/10"
       >
         <UserX className="h-4 w-4" /> {t("calendar.noShow")}
@@ -1733,60 +1850,116 @@ function BookingActionDialog({
     </div>
   );
 
+  const confirmDialog = (
+    <AlertDialog open={!!pendingAction} onOpenChange={(o) => !o && setPendingAction(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{pendingCopy?.title}</AlertDialogTitle>
+          <AlertDialogDescription>{pendingCopy?.desc}</AlertDialogDescription>
+        </AlertDialogHeader>
+        {pendingAction === "cancel" && (
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="cancel-reason">{t("calendar.cancelReasonLabel")}</Label>
+              <Textarea
+                id="cancel-reason"
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                placeholder={t("calendar.cancelReasonPlaceholder")}
+                rows={3}
+              />
+            </div>
+            {isRefundable && payment && (
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("calendar.capturedAmount")}</p>
+                  <p className="font-medium">{formatCents(payment.amount_cents, payment.currency)}</p>
+                </div>
+                <Button type="button" variant="outline" size="sm" onClick={() => onRefund(payment)}>
+                  {t("mollieConnect.payments.refund")}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t("calendar.cancel")}</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={pendingAction === "cancel" && !cancelReason.trim()}
+            onClick={(e) => {
+              e.preventDefault();
+              if (!pendingAction) return;
+              onAction(booking.id, pendingAction, pendingAction === "cancel" ? cancelReason.trim() : undefined);
+              setPendingAction(null);
+            }}
+          >
+            {pendingCopy?.confirmLabel}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+
   // Mobile: bottom sheet with prominent Reschedule + Edit row above status actions.
   if (isMobile) {
     return (
-      <Sheet open={!!booking} onOpenChange={(o) => !o && onClose()}>
-        <SheetContent
-          side="bottom"
-          className="max-h-[92dvh] overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom,0px)]"
-        >
-          {/* Grab handle */}
-          <div className="mx-auto mt-2 mb-1 h-1.5 w-10 rounded-full bg-muted" aria-hidden="true" />
-          <SheetHeader className="px-5 pb-2 pt-1 text-left">
-            <SheetTitle>{t("calendar.appointmentDetails")}</SheetTitle>
-          </SheetHeader>
-          <div className="px-5">{body}</div>
-          <div className="sticky bottom-0 mt-2 space-y-2 border-t border-border bg-background/95 px-5 pb-3 pt-3 backdrop-blur supports-[backdrop-filter]:bg-background/85">
-            <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" onClick={() => (onReschedule ?? onEdit)(booking)}>
-                {t("calendar.reschedule")}
-              </Button>
-              <Button variant="outline" onClick={() => onEdit(booking)}>
-                {t("calendar.edit")}
-              </Button>
+      <>
+        <Sheet open={!!booking} onOpenChange={(o) => !o && onClose()}>
+          <SheetContent
+            side="bottom"
+            className="max-h-[92dvh] overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom,0px)]"
+          >
+            {/* Grab handle */}
+            <div className="mx-auto mt-2 mb-1 h-1.5 w-10 rounded-full bg-muted" aria-hidden="true" />
+            <SheetHeader className="px-5 pb-2 pt-1 text-left">
+              <SheetTitle>{t("calendar.appointmentDetails")}</SheetTitle>
+            </SheetHeader>
+            <div className="px-5">{body}</div>
+            <div className="sticky bottom-0 mt-2 space-y-2 border-t border-border bg-background/95 px-5 pb-3 pt-3 backdrop-blur supports-[backdrop-filter]:bg-background/85">
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" onClick={() => (onReschedule ?? onEdit)(booking)}>
+                  {t("calendar.reschedule")}
+                </Button>
+                <Button variant="outline" onClick={() => onEdit(booking)}>
+                  {t("calendar.edit")}
+                </Button>
+              </div>
+              {statusActions}
             </div>
-            {statusActions}
-          </div>
-        </SheetContent>
-      </Sheet>
+          </SheetContent>
+        </Sheet>
+        {confirmDialog}
+      </>
     );
   }
 
   // Tablet/Desktop: right-side slide-in panel (replaces the old centered modal).
   return (
-    <Sheet open={!!booking} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
-        <SheetHeader className="border-b border-border/60 px-5 py-4 text-left">
-          <SheetTitle>{t("calendar.appointmentDetails")}</SheetTitle>
-        </SheetHeader>
-        <div className="flex-1 overflow-y-auto px-5 py-4">
-          {body}
-          {statusActions}
-        </div>
-        <div className="flex items-center justify-between gap-2 border-t border-border/60 px-5 py-3">
-          <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={() => (onReschedule ?? onEdit)(booking)}>
-              {t("calendar.reschedule")}
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => onEdit(booking)}>
-              {t("calendar.edit")}
-            </Button>
+    <>
+      <Sheet open={!!booking} onOpenChange={(o) => !o && onClose()}>
+        <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
+          <SheetHeader className="border-b border-border/60 px-5 py-4 text-left">
+            <SheetTitle>{t("calendar.appointmentDetails")}</SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-5 py-4">
+            {body}
+            {statusActions}
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>{t("calendar.cancel")}</Button>
-        </div>
-      </SheetContent>
-    </Sheet>
+          <div className="flex items-center justify-between gap-2 border-t border-border/60 px-5 py-3">
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={() => (onReschedule ?? onEdit)(booking)}>
+                {t("calendar.reschedule")}
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => onEdit(booking)}>
+                {t("calendar.edit")}
+              </Button>
+            </div>
+            <Button variant="ghost" size="sm" onClick={onClose}>{t("calendar.cancel")}</Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+      {confirmDialog}
+    </>
   );
 }
 

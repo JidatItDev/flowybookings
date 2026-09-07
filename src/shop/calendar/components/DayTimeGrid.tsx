@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { cn } from "@/shared/lib/utils";
 import { formatCents, formatTime } from "@/shared/lib/format";
 import { staffInitials, type StaffColor } from "@/shop/calendar/staff-color";
@@ -215,6 +216,36 @@ export function DayTimeGrid({
   emptyLabels,
 }: DayTimeGridProps) {
   const { t } = useT();
+  // Drag/resize/keyboard-move all funnel through this instead of calling
+  // `onReschedule` directly — shows a confirm toast (Confirm/Cancel action
+  // buttons) before anything is actually committed. Declining costs nothing:
+  // since the parent's data was never touched, the block is already back at
+  // its real position the moment the toast's transient preview state clears.
+  type RescheduleParams = {
+    booking: BookingWithRelations;
+    newStaffId: string | null;
+    newStartsAt: Date;
+    newEndsAt?: Date;
+  };
+  function proposeReschedule(params: RescheduleParams) {
+    // Aliased to a fresh binding so TS's narrowing here doesn't leak across
+    // the whole component scope and flag the unrelated `onReschedule` checks
+    // elsewhere (drag/resize handlers) as "always true".
+    const commitReschedule = onReschedule;
+    if (!commitReschedule) return;
+    const startChanged = params.newStartsAt.getTime() !== new Date(params.booking.starts_at).getTime();
+    const title = startChanged
+      ? t("calendar.confirmMoveTitle", { time: formatTime(params.newStartsAt, shopTz) })
+      : t("calendar.confirmResizeTitle", {
+          time: params.newEndsAt ? formatTime(params.newEndsAt, shopTz) : "",
+        });
+    toast(title, {
+      id: `reschedule-${params.booking.id}`,
+      duration: 8000,
+      action: { label: t("calendar.confirmMoveAction"), onClick: () => commitReschedule(params) },
+      cancel: { label: t("calendar.cancel"), onClick: () => {} },
+    });
+  }
   // `day` already IS shop-local midnight (an absolute instant), computed by the
   // caller via shopLocalDayBoundsUtc — never re-derive it via UTC getters/setters
   // here, that would silently swap it back to UTC midnight.
@@ -663,7 +694,7 @@ export function DayTimeGrid({
                     }
                   }
                 }
-                onReschedule({ booking, newStaffId: c.staffId, newStartsAt: newStart });
+                proposeReschedule({ booking, newStaffId: c.staffId, newStartsAt: newStart });
               } : undefined}
             >
               {/* Unavailable-overlay: alles buiten working hours wordt grijs gestreept.
@@ -1054,7 +1085,7 @@ export function DayTimeGrid({
                             const sameStaff = (b.staff_id ?? null) === targetCol.staffId;
                             const sameTime = new Date(b.starts_at).getTime() === newStart.getTime();
                             if (sameStaff && sameTime) return;
-                            onReschedule?.({
+                            proposeReschedule({
                               booking: b,
                               newStaffId: targetCol.staffId,
                               newStartsAt: newStart,
@@ -1179,7 +1210,7 @@ export function DayTimeGrid({
                           }
                           // Mark this booking-id voor focus-restore na re-render.
                           restoreFocusIdRef.current = b.id;
-                          onReschedule?.({
+                          proposeReschedule({
                             booking: b,
                             newStaffId: targetCol.staffId,
                             newStartsAt: newStart,
@@ -1304,12 +1335,13 @@ export function DayTimeGrid({
                             if (cur.invalid) {
                               // Resize geblokkeerd door pre-validatie — toast in parent.
                               if (cur.reason) onDropBlocked?.(cur.reason);
-                            } else if (
-                              Math.round(cur.newDurMin) !== Math.round(startDurInit) &&
-                              onReschedule
-                            ) {
+                            } else if (Math.round(cur.newDurMin) !== Math.round(startDurInit)) {
+                              // `onReschedule` is already guaranteed defined here (this whole
+                              // resize handle only renders when `draggable` is true, which
+                              // itself requires `onReschedule`) — proposeReschedule() re-checks
+                              // it anyway as a safety net.
                               const newEnds = new Date(start.getTime() + cur.newDurMin * 60_000);
-                              onReschedule({
+                              proposeReschedule({
                                 booking: b,
                                 newStaffId: c.staffId,
                                 newStartsAt: start,

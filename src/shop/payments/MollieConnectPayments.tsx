@@ -1,43 +1,28 @@
 // Mollie Connect incoming booking payments — a dedicated section listing only
 // payments where provider='mollie_connect'. Owners can issue a refund via
-// /api/bookings/refund.
-import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+// /api/bookings/refund (useRefundAction — shared with the calendar's
+// booking-detail sheet, see docs/adr/0001-cancellation-and-refund-are-independent.md).
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Wallet } from "lucide-react";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import {
   bookingsQuery,
   customersQuery,
   paymentsQuery,
-  shopKeys,
 } from "@/shop/shared/queries-barrel";
 import { formatCents } from "@/shared/lib/format";
 import { useT } from "@/shared/lib/i18n";
 import { StatusBadge } from "@/shared/components/StatusBadge";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { assertNotImpersonating, useImpersonationReadOnly } from "@/admin/impersonation/ImpersonationBanner";
+import { useImpersonationReadOnly } from "@/admin/impersonation/ImpersonationBanner";
+import { useRefundAction } from "@/shop/payments/useRefundAction";
+import { RefundConfirmDialog } from "@/shop/payments/RefundConfirmDialog";
 
 export function MollieConnectPayments({ shopId }: { shopId: string }) {
   const { t } = useT();
-  const qc = useQueryClient();
   const readOnly = useImpersonationReadOnly();
   const readOnlyTitle = readOnly ? t("impersonate.readOnlyTooltip") : undefined;
-  const [refundTarget, setRefundTarget] = useState<{
-    id: string;
-    amount: number;
-    currency: string;
-  } | null>(null);
+  const { refundTarget, setRefundTarget, refundMut } = useRefundAction(shopId);
 
   const { data: payments = [] } = useQuery(paymentsQuery(shopId));
   const { data: bookings = [] } = useQuery(bookingsQuery(shopId));
@@ -47,40 +32,6 @@ export function MollieConnectPayments({ shopId }: { shopId: string }) {
     () => payments.filter((p) => p.provider === "mollie_connect"),
     [payments],
   );
-
-  const refundMut = useMutation({
-    mutationFn: async (paymentId: string) => {
-      assertNotImpersonating();
-      const { data: sess } = await supabase.auth.getSession();
-      const accessToken = sess.session?.access_token;
-      if (!accessToken) throw new Error("unauthenticated");
-      const res = await fetch("/api/bookings/refund", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ payment_id: paymentId }),
-      });
-      const json = (await res.json().catch(() => ({}))) as {
-        ok?: boolean;
-        error?: string;
-        details?: string;
-      };
-      if (!res.ok || !json.ok) {
-        throw new Error(json.error ?? `http_${res.status}`);
-      }
-      return json;
-    },
-    onSuccess: () => {
-      toast.success(t("mollieConnect.payments.refundSuccess"));
-      qc.invalidateQueries({ queryKey: shopKeys.payments(shopId) });
-      setRefundTarget(null);
-    },
-    onError: (e: Error) => {
-      toast.error(`${t("mollieConnect.payments.refundError")}: ${e.message}`);
-    },
-  });
 
   return (
     <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
@@ -164,42 +115,7 @@ export function MollieConnectPayments({ shopId }: { shopId: string }) {
         </div>
       )}
 
-      <AlertDialog
-        open={!!refundTarget}
-        onOpenChange={(o) => !o && setRefundTarget(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("mollieConnect.payments.refundConfirmTitle")}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("mollieConnect.payments.refundConfirmDesc").replace(
-                "{amount}",
-                refundTarget
-                  ? formatCents(refundTarget.amount, refundTarget.currency)
-                  : "",
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={refundMut.isPending}>
-              {t("mollieConnect.payments.refundCancel")}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              disabled={refundMut.isPending}
-              onClick={(e) => {
-                e.preventDefault();
-                if (refundTarget) refundMut.mutate(refundTarget.id);
-              }}
-            >
-              {refundMut.isPending
-                ? t("mollieConnect.payments.refunding")
-                : t("mollieConnect.payments.refundConfirm")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <RefundConfirmDialog refundTarget={refundTarget} setRefundTarget={setRefundTarget} refundMut={refundMut} />
     </div>
   );
 }

@@ -77,6 +77,8 @@ import { Route as ApiMollieConnectWebhookRouteImport } from './routes/api.mollie
 import { Route as ApiMollieConnectDisconnectRouteImport } from './routes/api.mollie-connect.disconnect'
 import { Route as ApiMollieConnectCallbackRouteImport } from './routes/api.mollie-connect.callback'
 import { Route as ApiMollieConnectAuthorizeRouteImport } from './routes/api.mollie-connect.authorize'
+import { Route as ApiBookingsStatusRouteImport } from './routes/api.bookings.status'
+import { Route as ApiBookingsRescheduleRouteImport } from './routes/api.bookings.reschedule'
 import { Route as ApiBookingsRefundRouteImport } from './routes/api.bookings.refund'
 import { Route as ApiBookingsCheckoutRouteImport } from './routes/api.bookings.checkout'
 import { Route as ApiBillingPlanSyncRouteImport } from './routes/api.billing.plan-sync'
@@ -444,6 +446,16 @@ const ApiMollieConnectAuthorizeRoute =
     path: '/api/mollie-connect/authorize',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiBookingsStatusRoute = ApiBookingsStatusRouteImport.update({
+  id: '/api/bookings/status',
+  path: '/api/bookings/status',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBookingsRescheduleRoute = ApiBookingsRescheduleRouteImport.update({
+  id: '/api/bookings/reschedule',
+  path: '/api/bookings/reschedule',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiBookingsRefundRoute = ApiBookingsRefundRouteImport.update({
   id: '/api/bookings/refund',
   path: '/api/bookings/refund',
@@ -584,6 +596,8 @@ export interface FileRoutesByFullPath {
   '/api/billing/plan-sync': typeof ApiBillingPlanSyncRoute
   '/api/bookings/checkout': typeof ApiBookingsCheckoutRoute
   '/api/bookings/refund': typeof ApiBookingsRefundRoute
+  '/api/bookings/reschedule': typeof ApiBookingsRescheduleRoute
+  '/api/bookings/status': typeof ApiBookingsStatusRoute
   '/api/mollie-connect/authorize': typeof ApiMollieConnectAuthorizeRoute
   '/api/mollie-connect/callback': typeof ApiMollieConnectCallbackRoute
   '/api/mollie-connect/disconnect': typeof ApiMollieConnectDisconnectRoute
@@ -669,6 +683,8 @@ export interface FileRoutesByTo {
   '/api/billing/plan-sync': typeof ApiBillingPlanSyncRoute
   '/api/bookings/checkout': typeof ApiBookingsCheckoutRoute
   '/api/bookings/refund': typeof ApiBookingsRefundRoute
+  '/api/bookings/reschedule': typeof ApiBookingsRescheduleRoute
+  '/api/bookings/status': typeof ApiBookingsStatusRoute
   '/api/mollie-connect/authorize': typeof ApiMollieConnectAuthorizeRoute
   '/api/mollie-connect/callback': typeof ApiMollieConnectCallbackRoute
   '/api/mollie-connect/disconnect': typeof ApiMollieConnectDisconnectRoute
@@ -757,6 +773,8 @@ export interface FileRoutesById {
   '/api/billing/plan-sync': typeof ApiBillingPlanSyncRoute
   '/api/bookings/checkout': typeof ApiBookingsCheckoutRoute
   '/api/bookings/refund': typeof ApiBookingsRefundRoute
+  '/api/bookings/reschedule': typeof ApiBookingsRescheduleRoute
+  '/api/bookings/status': typeof ApiBookingsStatusRoute
   '/api/mollie-connect/authorize': typeof ApiMollieConnectAuthorizeRoute
   '/api/mollie-connect/callback': typeof ApiMollieConnectCallbackRoute
   '/api/mollie-connect/disconnect': typeof ApiMollieConnectDisconnectRoute
@@ -846,6 +864,8 @@ export interface FileRouteTypes {
     | '/api/billing/plan-sync'
     | '/api/bookings/checkout'
     | '/api/bookings/refund'
+    | '/api/bookings/reschedule'
+    | '/api/bookings/status'
     | '/api/mollie-connect/authorize'
     | '/api/mollie-connect/callback'
     | '/api/mollie-connect/disconnect'
@@ -931,6 +951,8 @@ export interface FileRouteTypes {
     | '/api/billing/plan-sync'
     | '/api/bookings/checkout'
     | '/api/bookings/refund'
+    | '/api/bookings/reschedule'
+    | '/api/bookings/status'
     | '/api/mollie-connect/authorize'
     | '/api/mollie-connect/callback'
     | '/api/mollie-connect/disconnect'
@@ -1018,6 +1040,8 @@ export interface FileRouteTypes {
     | '/api/billing/plan-sync'
     | '/api/bookings/checkout'
     | '/api/bookings/refund'
+    | '/api/bookings/reschedule'
+    | '/api/bookings/status'
     | '/api/mollie-connect/authorize'
     | '/api/mollie-connect/callback'
     | '/api/mollie-connect/disconnect'
@@ -1092,6 +1116,8 @@ export interface RootRouteChildren {
   ApiBillingPlanSyncRoute: typeof ApiBillingPlanSyncRoute
   ApiBookingsCheckoutRoute: typeof ApiBookingsCheckoutRoute
   ApiBookingsRefundRoute: typeof ApiBookingsRefundRoute
+  ApiBookingsRescheduleRoute: typeof ApiBookingsRescheduleRoute
+  ApiBookingsStatusRoute: typeof ApiBookingsStatusRoute
   ApiMollieConnectAuthorizeRoute: typeof ApiMollieConnectAuthorizeRoute
   ApiMollieConnectCallbackRoute: typeof ApiMollieConnectCallbackRoute
   ApiMollieConnectDisconnectRoute: typeof ApiMollieConnectDisconnectRoute
@@ -1606,6 +1632,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMollieConnectAuthorizeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/bookings/status': {
+      id: '/api/bookings/status'
+      path: '/api/bookings/status'
+      fullPath: '/api/bookings/status'
+      preLoaderRoute: typeof ApiBookingsStatusRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/bookings/reschedule': {
+      id: '/api/bookings/reschedule'
+      path: '/api/bookings/reschedule'
+      fullPath: '/api/bookings/reschedule'
+      preLoaderRoute: typeof ApiBookingsRescheduleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/bookings/refund': {
       id: '/api/bookings/refund'
       path: '/api/bookings/refund'
@@ -1833,6 +1873,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBillingPlanSyncRoute: ApiBillingPlanSyncRoute,
   ApiBookingsCheckoutRoute: ApiBookingsCheckoutRoute,
   ApiBookingsRefundRoute: ApiBookingsRefundRoute,
+  ApiBookingsRescheduleRoute: ApiBookingsRescheduleRoute,
+  ApiBookingsStatusRoute: ApiBookingsStatusRoute,
   ApiMollieConnectAuthorizeRoute: ApiMollieConnectAuthorizeRoute,
   ApiMollieConnectCallbackRoute: ApiMollieConnectCallbackRoute,
   ApiMollieConnectDisconnectRoute: ApiMollieConnectDisconnectRoute,

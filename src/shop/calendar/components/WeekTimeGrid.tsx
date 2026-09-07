@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { cn } from "@/shared/lib/utils";
 import { formatTime } from "@/shared/lib/format";
 import { staffInitials, type StaffColor } from "@/shop/calendar/staff-color";
@@ -175,6 +176,34 @@ export function WeekTimeGrid({
 }: WeekTimeGridProps) {
   const { t, locale } = useT();
   const dateLocale = locale === "en" ? "en-US" : "nl-NL";
+  // Drag/resize/keyboard-move all funnel through this instead of calling
+  // `onReschedule` directly — shows a confirm toast (Confirm/Cancel action
+  // buttons) before anything is actually committed. Declining costs nothing:
+  // since the parent's data was never touched, the block is already back at
+  // its real position the moment the toast's transient preview state clears.
+  // Mirrors DayTimeGrid.tsx's identical helper.
+  type RescheduleParams = {
+    booking: BookingWithRelations;
+    newStaffId: string | null;
+    newStartsAt: Date;
+    newEndsAt?: Date;
+  };
+  function proposeReschedule(params: RescheduleParams) {
+    const commitReschedule = onReschedule;
+    if (!commitReschedule) return;
+    const startChanged = params.newStartsAt.getTime() !== new Date(params.booking.starts_at).getTime();
+    const title = startChanged
+      ? t("calendar.confirmMoveTitle", { time: formatTime(params.newStartsAt, shopTz) })
+      : t("calendar.confirmResizeTitle", {
+          time: params.newEndsAt ? formatTime(params.newEndsAt, shopTz) : "",
+        });
+    toast(title, {
+      id: `reschedule-${params.booking.id}`,
+      duration: 8000,
+      action: { label: t("calendar.confirmMoveAction"), onClick: () => commitReschedule(params) },
+      cancel: { label: t("calendar.cancel"), onClick: () => {} },
+    });
+  }
   const bookingsById = useMemo(() => {
     const m = new Map<string, BookingWithRelations>();
     for (const b of bookings) m.set(b.id, b);
@@ -569,7 +598,7 @@ export function WeekTimeGrid({
                       }
                     }
                   }
-                  onReschedule({ booking: src, newStaffId: src.staff_id ?? null, newStartsAt: newStart });
+                  proposeReschedule({ booking: src, newStaffId: src.staff_id ?? null, newStartsAt: newStart });
                 }}
               >
                 {/* Hele dag gesloten */}
@@ -814,7 +843,7 @@ export function WeekTimeGrid({
                           }
                           // Mark this booking-id voor focus-restore na re-render.
                           restoreFocusIdRef.current = b.id;
-                          onReschedule?.({
+                          proposeReschedule({
                             booking: b,
                             newStaffId: b.staff_id ?? null,
                             newStartsAt: newStart,
@@ -1005,7 +1034,7 @@ export function WeekTimeGrid({
                             }
                             const newStart = slotStart;
                             if (newStart.getTime() === startTs) return;
-                            onReschedule?.({
+                            proposeReschedule({
                               booking: b,
                               newStaffId: b.staff_id ?? null,
                               newStartsAt: newStart,
@@ -1196,12 +1225,9 @@ export function WeekTimeGrid({
                             if (cur.invalid) {
                               // Resize geblokkeerd door pre-validatie — toast in parent.
                               if (cur.reason) onDropBlocked?.(cur.reason);
-                            } else if (
-                              Math.round(cur.newDurMin) !== Math.round(fullDurMin) &&
-                              onReschedule
-                            ) {
+                            } else if (Math.round(cur.newDurMin) !== Math.round(fullDurMin)) {
                               const newEnds = new Date(start.getTime() + cur.newDurMin * 60_000);
-                              onReschedule({
+                              proposeReschedule({
                                 booking: b,
                                 newStaffId: b.staff_id ?? null,
                                 newStartsAt: start,
