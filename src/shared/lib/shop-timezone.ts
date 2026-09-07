@@ -68,6 +68,13 @@ function normalizeHhmm(hhmm: string): string {
   return `${h.padStart(2, "0")}:${m.padStart(2, "0")}`;
 }
 
+/** Add `days` (may be negative) to a `yyyy-MM-dd` civil date string. */
+export function addDaysToYmd(dateYmd: string, days: number): string {
+  const [y, m, d] = dateYmd.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + days));
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
+}
+
 /** Gregorian Y-M-D → weekday key (timezone-independent for a civil date). */
 export function dayKeyFromYmd(dateYmd: string): CivilDayKey {
   const [y, mo, d] = dateYmd.split("-").map(Number);
@@ -119,10 +126,7 @@ export function shopLocalDayBoundsUtc(
   shopTz: string | null | undefined,
 ): { rangeStart: Date; rangeEnd: Date } {
   const rangeStart = shopLocalToUtc(dateYmd, "00:00", shopTz);
-  const [y, m, d] = dateYmd.split("-").map(Number);
-  const next = new Date(Date.UTC(y, m - 1, d + 1));
-  const nextYmd = `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}-${String(next.getUTCDate()).padStart(2, "0")}`;
-  const nextMidnight = shopLocalToUtc(nextYmd, "00:00", shopTz);
+  const nextMidnight = shopLocalToUtc(addDaysToYmd(dateYmd, 1), "00:00", shopTz);
   return { rangeStart, rangeEnd: new Date(nextMidnight.getTime() - 1) };
 }
 

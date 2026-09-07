@@ -12,7 +12,7 @@ import {
   type DayKey,
   type StaffWorkingHours,
 } from "@/shop/staff/staff-availability";
-import { utcToShopLocal } from "@/shared/lib/shop-timezone";
+import { utcToShopLocal, shopLocalDayBoundsUtc, addDaysToYmd } from "@/shared/lib/shop-timezone";
 import { useT } from "@/shared/lib/i18n";
 
 /** Shop-lokale kalenderdag-sleutel ("yyyy-MM-dd") — gebruikt voor dag-groepering
@@ -182,9 +182,17 @@ export function WeekTimeGrid({
   }, [bookings]);
   // `weekStart` already IS shop-local midnight of the week's first day — never
   // re-derive it via UTC getters/setters, that would swap it back to UTC midnight.
+  // Walk forward one shop-local calendar day at a time (via addDaysToYmd +
+  // shopLocalDayBoundsUtc) instead of flat 86400000ms steps — a DST transition
+  // inside the displayed week makes some days 23h/25h, so a fixed-ms stride
+  // would drift every subsequent day off true local midnight.
   const dayList = useMemo(() => {
-    return Array.from({ length: days }, (_, i) => new Date(weekStart.getTime() + i * 86400000));
-  }, [weekStart, days]);
+    const startYmd = utcToShopLocal(weekStart, shopTz).dateYmd;
+    return Array.from(
+      { length: days },
+      (_, i) => shopLocalDayBoundsUtc(addDaysToYmd(startYmd, i), shopTz).rangeStart,
+    );
+  }, [weekStart, days, shopTz]);
 
   const { startHour: START_HOUR, endHour: END_HOUR } = useMemo(
     () => resolveWeekWindow(dayList, businessHours, shopTz),
@@ -363,7 +371,9 @@ export function WeekTimeGrid({
             const isToday = dayKey === todayKey;
             const dw = dayWindow(d, businessHours, shopTz);
             const dayStartTs = d.getTime();
-            const dayEndTs = dayStartTs + 24 * 3600 * 1000;
+            // Re-derive the true next-midnight via shopLocalDayBoundsUtc rather than
+            // a flat +24h — a DST transition day in shopTz is 23h/25h, not 24h.
+            const dayEndTs = shopLocalDayBoundsUtc(dayKey, shopTz).rangeEnd.getTime() + 1;
             const dayBookings = bookingsByDay.get(dayKey) ?? [];
 
             // Off-hours ranges binnen het venster (wat NIET binnen open/close valt).

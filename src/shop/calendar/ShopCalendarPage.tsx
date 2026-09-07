@@ -66,6 +66,7 @@ import {
   shopLocalDayBoundsUtc,
   shopLocalToUtc,
   utcToShopLocal,
+  addDaysToYmd,
 } from "@/shared/lib/shop-timezone";
 
 // services.deposit_mode is a DB-constrained TEXT column (CHECK IN ('default',
@@ -74,13 +75,6 @@ import {
 // PublicBookingFlow.tsx's local (non-exported) toDepositMode helper.
 function toDepositMode(mode: string): "default" | "custom" {
   return mode === "custom" ? "custom" : "default";
-}
-
-/** Add `days` (may be negative) to a `yyyy-MM-dd` civil date string. */
-function addDaysToYmd(ymd: string, days: number): string {
-  const [y, m, d] = ymd.split("-").map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d + days));
-  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
 }
 
 const statuses = ["all", "pending", "confirmed", "completed", "cancelled", "no_show"] as const;
@@ -928,12 +922,12 @@ export function ShopCalendarPage() {
               onUnavailableSlot={({ staffName, reason }) => {
                 const label =
                   reason === "closed"
-                    ? `${staffName} werkt niet op deze dag`
+                    ? t("calendar.staffOffToday", { staff: staffName })
                     : reason === "break"
-                      ? `${staffName} heeft pauze op dat tijdstip`
-                      : `Buiten werkuren van ${staffName}`;
+                      ? t("calendar.staffBreakAtTime", { staff: staffName })
+                      : t("calendar.outsideStaffHours", { staff: staffName });
                 toast.warning(label, {
-                  description: "Kies een tijdstip binnen de werkuren of wijzig het rooster van de medewerker.",
+                  description: t("calendar.pickAvailableTimeHint"),
                 });
               }}
               onCreateBooking={() => {
@@ -1210,8 +1204,25 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
   // Reset / hydrate the form whenever the dialog opens or the edited booking changes.
   // Doing this in useEffect (instead of during render) avoids the infinite-render
   // loop that previously crashed the page when "Nieuwe boeking" was clicked.
+  //
+  // `shopTz` is read here (for `starts_at`'s initial value) but deliberately kept
+  // OUT of the dependency array: shopFullQuery resolves asynchronously and can
+  // flip shopTz from the DEFAULT_SHOP_TIMEZONE placeholder to the real value
+  // *after* the dialog is already open. If shopTz were a dependency, that late
+  // resolution would re-run this effect and wipe every field the shop owner had
+  // already typed (customer/service/staff/notes), not just re-derive starts_at.
+  // The `hydratedKeyRef` guard below re-hydrates on a genuine identity change
+  // (dialog reopened, different booking/prefill) but is a no-op on a bare
+  // shopTz update within the same open session.
+  const hydratedKeyRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      hydratedKeyRef.current = null;
+      return;
+    }
+    const key = `${booking?.id ?? "new"}:${prefill?.staffId ?? ""}:${prefill?.startsAt?.getTime() ?? ""}`;
+    if (hydratedKeyRef.current === key) return;
+    hydratedKeyRef.current = key;
     const dur = booking ? Math.round((+new Date(booking.ends_at) - +new Date(booking.starts_at)) / 60000) : 60;
     setForm({
       customer_id: booking?.customer_id ?? "",
@@ -1222,7 +1233,8 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
       status: booking?.status ?? "pending",
       notes: booking?.notes ?? "",
     });
-  }, [open, booking?.id, prefill?.staffId, prefill?.startsAt?.getTime(), shopTz]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- shopTz intentionally excluded, see comment above
+  }, [open, booking?.id, prefill?.staffId, prefill?.startsAt?.getTime()]);
 
   /**
    * Client-side pre-validation against `staff.working_hours`.

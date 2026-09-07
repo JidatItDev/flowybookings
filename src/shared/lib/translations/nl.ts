@@ -2192,6 +2192,9 @@ export const nl: Record<string, string> = {
   "calendar.arrowKeysMoveDayHint": "Pijltjes: ±15 min of ±1 dag",
   "calendar.closedBadge": "Gesloten",
   "calendar.timeColumn": "Tijd",
+  "calendar.staffBreakAtTime": "{staff} heeft pauze op dat tijdstip",
+  "calendar.outsideStaffHours": "Buiten werkuren van {staff}",
+  "calendar.pickAvailableTimeHint": "Kies een tijdstip binnen de werkuren of wijzig het rooster van de medewerker.",
   "billing.trialExpiredTitle": "Je gratis proefperiode is verlopen",
   "billing.trialExpiredSub":
     "Je kunt geen nieuwe afspraken meer aanmaken. Bestaande gegevens blijven zichtbaar. Kies een plan om door te gaan.",

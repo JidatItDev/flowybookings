@@ -1,0 +1,7 @@
+# Cancellation never triggers a refund; bookings are never hard-deleted
+
+Shop owners can cancel a booking, but cancelling a captured deposit does nothing to the payment — refunding is a separate, independent action reachable any time a payment is `paid`/`deposit_paid`, regardless of the booking's status. This was a deliberate client decision: whether a cancelled booking's deposit gets refunded depends on the shop's own cancellation policy, which the app doesn't model, so coupling the two risked either an unwanted automatic refund or a shop owner forgetting to refund a customer who was owed one. Cancellation is the only removal action — the app never hard-deletes a booking, since doing so orphaned payment history and silently rolled back customer stats.
+
+Refund is decoupled the same way in the other direction — it never auto-cancels the booking, since a refund on a still-live booking (goodwill, price adjustment) is often intentional, not a mistake. The two directions get different treatment on purpose, though: the Cancel confirmation surfaces the captured amount and a Refund shortcut right there (still a separate, manual click), because forgetting to refund after cancelling is a real customer-money problem, whereas Refund never nudges toward Cancel, because forgetting to cancel after refunding usually isn't a mistake at all.
+
+This is a Phase 1, no-policy-engine decision: refund and cancel are always manual actions, not because an automated cutoff-window auto-forfeit/auto-refund policy was missed, but because it's explicitly out of scope for now.

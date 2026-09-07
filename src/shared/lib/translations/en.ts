@@ -2166,6 +2166,9 @@ export const en: Record<string, string> = {
   "calendar.arrowKeysMoveDayHint": "Arrows: ±15 min or ±1 day",
   "calendar.closedBadge": "Closed",
   "calendar.timeColumn": "Time",
+  "calendar.staffBreakAtTime": "{staff} has a break at that time",
+  "calendar.outsideStaffHours": "Outside {staff}'s working hours",
+  "calendar.pickAvailableTimeHint": "Choose a time within working hours, or adjust the staff member's schedule.",
   "billing.trialExpiredTitle": "Your free trial has expired",
   "billing.trialExpiredSub":
     "You can no longer create new appointments. Existing data stays visible. Pick a plan to continue.",

@@ -15,7 +15,7 @@ import {
   type StaffDayHours as SharedStaffDayHours,
   type StaffWorkingHours as SharedStaffWorkingHours,
 } from "@/shop/staff/staff-availability";
-import { utcToShopLocal } from "@/shared/lib/shop-timezone";
+import { utcToShopLocal, shopLocalDayBoundsUtc } from "@/shared/lib/shop-timezone";
 import { useT } from "@/shared/lib/i18n";
 
 /**
@@ -219,7 +219,13 @@ export function DayTimeGrid({
   // caller via shopLocalDayBoundsUtc — never re-derive it via UTC getters/setters
   // here, that would silently swap it back to UTC midnight.
   const dayStart = day;
-  const dayEnd = useMemo(() => new Date(dayStart.getTime() + 24 * 3600 * 1000), [dayStart]);
+  // A shop-local calendar day isn't always 24h (DST transition days are 23h/25h
+  // in a DST-observing shopTz) — re-derive the true next-midnight via
+  // shopLocalDayBoundsUtc instead of assuming a flat +24h offset from dayStart.
+  const dayEnd = useMemo(() => {
+    const { dateYmd } = utcToShopLocal(dayStart, shopTz);
+    return new Date(shopLocalDayBoundsUtc(dateYmd, shopTz).rangeEnd.getTime() + 1);
+  }, [dayStart, shopTz]);
 
   // Kolommen bepalen op basis van actieve medewerkers + filter.
   const columns: Column[] = useMemo(() => {
