@@ -60,6 +60,13 @@ import { shopDayOccupancy, staffDayOccupancy } from "@/shop/calendar/occupancy";
 import { OccupancyRing } from "@/shop/calendar/components/OccupancyRing";
 import { resolveDepositCents } from "@/booking/lib/deposit-decision";
 import { resolveShopDefaultDepositPercent } from "@/shared/lib/booking-rules";
+import {
+  resolveShopTimezone,
+  shopTodayYmd,
+  shopLocalDayBoundsUtc,
+  shopLocalToUtc,
+  utcToShopLocal,
+} from "@/shared/lib/shop-timezone";
 
 // services.deposit_mode is a DB-constrained TEXT column (CHECK IN ('default',
 // 'custom')) but the generated Supabase row type widens it to `string` —
@@ -67,6 +74,13 @@ import { resolveShopDefaultDepositPercent } from "@/shared/lib/booking-rules";
 // PublicBookingFlow.tsx's local (non-exported) toDepositMode helper.
 function toDepositMode(mode: string): "default" | "custom" {
   return mode === "custom" ? "custom" : "default";
+}
+
+/** Add `days` (may be negative) to a `yyyy-MM-dd` civil date string. */
+function addDaysToYmd(ymd: string, days: number): string {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + days));
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
 }
 
 const statuses = ["all", "pending", "confirmed", "completed", "cancelled", "no_show"] as const;
@@ -85,7 +99,8 @@ export function ShopCalendarPage() {
   const subscriptionBlocked = trial.isExpired || trial.paymentFailedGraceExpired;
   const newBookingDisabled = !shopId || subscriptionBlocked || bookingsBlocked || readOnly;
   const qc = useQueryClient();
-  const { t } = useT();
+  const { t, locale } = useT();
+  const dateLocale = locale === "en" ? "en-US" : "nl-NL";
   const isMobile = useIsMobile();
   const newBookingTitle = readOnly
     ? t("impersonate.readOnlyTooltip")
@@ -145,6 +160,12 @@ export function ShopCalendarPage() {
   const businessHours = (shopFull?.business_hours ?? undefined) as
     | import("@/shop/calendar/components/DayTimeGrid").BusinessHours
     | undefined;
+  // Every date/time computation and display on this page is anchored to the
+  // shop's own wall clock, not the browser's or the server's — matches the
+  // customer-facing booking flow (shop-timezone.ts) and the DB triggers that
+  // already validate working hours via `starts_at AT TIME ZONE shop.timezone`.
+  const shopTz = resolveShopTimezone(shopFull?.timezone);
+  const todayYmd = shopTodayYmd(shopTz);
   const colors = useStaffColors(shopId);
 
   // Pull-to-refresh — composes with the existing bookingsQuery refetch above.
@@ -245,14 +266,14 @@ export function ShopCalendarPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // Bookings filtered by status + day (without staff filter) — used for staff chip counts
+  // Bookings filtered by status + day (without staff filter) — used for staff chip counts.
+  // "Day" always means a shop-local calendar day, not a UTC one.
   const scopedBookings = bookings.filter((b) => {
     if (filter !== "all" && b.status !== filter) return false;
     if (dayOffset !== null) {
-      const dayStart = new Date(); dayStart.setUTCHours(0, 0, 0, 0); dayStart.setUTCDate(dayStart.getUTCDate() + dayOffset);
-      const dayEnd = new Date(dayStart); dayEnd.setUTCDate(dayEnd.getUTCDate() + 1);
+      const { rangeStart, rangeEnd } = shopLocalDayBoundsUtc(addDaysToYmd(todayYmd, dayOffset), shopTz);
       const t = new Date(b.starts_at).getTime();
-      if (t < dayStart.getTime() || t >= dayEnd.getTime()) return false;
+      if (t < rangeStart.getTime() || t > rangeEnd.getTime()) return false;
     }
     return true;
   });
@@ -273,44 +294,42 @@ export function ShopCalendarPage() {
     return true;
   });
 
-  // Genereer 14 dagen vooruit voor de dag-selector
+  // Genereer 14 dagen vooruit voor de dag-selector (shop-lokale dagen)
   const dayChips = Array.from({ length: 14 }, (_, i) => {
-    const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() + i);
+    const { rangeStart, rangeEnd } = shopLocalDayBoundsUtc(addDaysToYmd(todayYmd, i), shopTz);
     const count = bookings.filter((b) => {
       const t = new Date(b.starts_at).getTime();
-      const next = new Date(d); next.setUTCDate(next.getUTCDate() + 1);
-      return t >= d.getTime() && t < next.getTime();
+      return t >= rangeStart.getTime() && t <= rangeEnd.getTime();
     }).length;
-    const occ = shopDayOccupancy(d, staff, bookings);
-    return { offset: i, date: d, count, occ };
+    const occ = shopDayOccupancy(rangeStart, staff, bookings, shopTz);
+    return { offset: i, date: rangeStart, count, occ };
   });
 
   /**
-   * "Vandaag aan het werk" — afgeleid van staff.working_hours + bookings van vandaag.
-   * Toont alleen actieve staff met een werkblok of afspraken vandaag.
+   * "Working today" — derived from staff.working_hours + today's bookings,
+   * anchored to the shop's own local day.
    */
   const workingToday = useMemo(() => {
-    const today = new Date(); today.setUTCHours(0, 0, 0, 0);
-    const tomorrow = new Date(today); tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    const { rangeStart, rangeEnd } = shopLocalDayBoundsUtc(todayYmd, shopTz);
     const todaysBookings = bookings.filter((b) => {
       const t = new Date(b.starts_at).getTime();
-      return t >= today.getTime() && t < tomorrow.getTime() && b.status !== "cancelled" && b.status !== "no_show";
+      return t >= rangeStart.getTime() && t <= rangeEnd.getTime() && b.status !== "cancelled" && b.status !== "no_show";
     });
     return staff
       .filter((s) => s.is_active)
       .map((s) => {
         const wh = (s.working_hours ?? undefined) as StaffWorkingHours | undefined;
-        const av = wh ? resolveStaffAvailability(today, wh) : null;
+        const av = wh ? resolveStaffAvailability(rangeStart, wh, 0, 24 * 60, shopTz) : null;
         const count = todaysBookings.filter((b) => b.staff_id === s.id).length;
         const firstW = av?.working[0];
         const lastW = av?.working[(av?.working.length ?? 1) - 1];
         const window = firstW && lastW ? `${formatMinutesOfDay(firstW.startMin)}–${formatMinutesOfDay(lastW.endMin)}` : null;
         const closed = !!av?.dayClosed;
-        const occ = staffDayOccupancy(today, s, bookings);
+        const occ = staffDayOccupancy(rangeStart, s, bookings, shopTz);
         return { staff: s, count, window, closed, hasData: !!av?.hasStructuredData, occ };
       })
       .filter((row) => row.window || row.closed || row.count > 0);
-  }, [staff, bookings]);
+  }, [staff, bookings, todayYmd, shopTz]);
 
 
   return (
@@ -526,10 +545,10 @@ export function ShopCalendarPage() {
                       </span>
                     )}
                     <div className="text-[10px] uppercase tracking-wider opacity-80">
-                      {isToday ? t("calendar.today") : c.date.toLocaleDateString("nl-NL", { weekday: "short", timeZone: "UTC" })}
+                      {isToday ? t("calendar.today") : c.date.toLocaleDateString(dateLocale, { weekday: "short", timeZone: shopTz })}
                     </div>
                     <div className="text-base font-semibold sm:text-sm">
-                      {c.date.toLocaleDateString("nl-NL", { day: "2-digit", month: "short", timeZone: "UTC" })}
+                      {c.date.toLocaleDateString(dateLocale, { day: "2-digit", month: "short", timeZone: shopTz })}
                     </div>
                     {/* Today indicator dot under the date when not active */}
                     {isToday && !active && (
@@ -553,8 +572,8 @@ export function ShopCalendarPage() {
                 const noun = filtered.length === 1 ? t("calendar.appointment") : t("calendar.appointments");
                 if (dayOffset === null) return `${filtered.length} ${noun} ${t("calendar.upcomingSuffix")}`;
                 if (dayOffset === 0) return filtered.length === 0 ? t("calendar.zeroToday") : `${filtered.length} ${noun} ${t("calendar.todaySuffix")}`;
-                const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() + dayOffset);
-                const label = d.toLocaleDateString("nl-NL", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+                const d = shopLocalDayBoundsUtc(addDaysToYmd(todayYmd, dayOffset), shopTz).rangeStart;
+                const label = d.toLocaleDateString(dateLocale, { weekday: "short", day: "numeric", month: "short", timeZone: shopTz });
                 return filtered.length === 0 ? t("calendar.zeroOnDay", { day: label }) : `${filtered.length} ${noun}`;
               })()}
             </span>
@@ -677,8 +696,8 @@ export function ShopCalendarPage() {
                       : `${filtered.length} ${noun} ${t("calendar.todaySuffix")}`;
                   }
                   // Specifieke andere dag
-                  const d = new Date(); d.setUTCHours(0, 0, 0, 0); d.setUTCDate(d.getUTCDate() + dayOffset);
-                  const label = d.toLocaleDateString("nl-NL", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" });
+                  const d = shopLocalDayBoundsUtc(addDaysToYmd(todayYmd, dayOffset), shopTz).rangeStart;
+                  const label = d.toLocaleDateString(dateLocale, { weekday: "long", day: "numeric", month: "short", timeZone: shopTz });
                   return filtered.length === 0
                     ? t("calendar.zeroOnDay", { day: label })
                     : `${filtered.length} ${noun} ${t("calendar.onDayPrefix")} ${label}`;
@@ -696,13 +715,13 @@ export function ShopCalendarPage() {
                         : "text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    Dag
+                    {t("calendar.viewDay")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setCalendarMode("week")}
                     disabled={isMobile}
-                    title={isMobile ? "Week-weergave alleen op tablet/desktop" : "Week"}
+                    title={isMobile ? t("calendar.viewWeekDisabledMobile") : t("calendar.viewWeek")}
                     className={cn(
                       "rounded-full px-3 py-1 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                       calendarMode === "week" && !isMobile
@@ -710,7 +729,7 @@ export function ShopCalendarPage() {
                         : "text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    Week
+                    {t("calendar.viewWeek")}
                   </button>
                 </div>
               )}
@@ -720,7 +739,7 @@ export function ShopCalendarPage() {
                 type="button"
                 onClick={() => setViewMode("grid")}
                 disabled={dayOffset === null && calendarMode === "day"}
-                title={dayOffset === null && calendarMode === "day" ? "Kies een dag om het rooster te tonen" : "Rooster"}
+                title={dayOffset === null && calendarMode === "day" ? t("calendar.viewGridDisabledPickDay") : t("calendar.viewGrid")}
                 className={cn(
                   "inline-flex items-center gap-1 rounded-full px-3 py-1 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                   viewMode === "grid" && (dayOffset !== null || calendarMode === "week")
@@ -728,7 +747,7 @@ export function ShopCalendarPage() {
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <LayoutGrid className="h-3.5 w-3.5" /> Rooster
+                <LayoutGrid className="h-3.5 w-3.5" /> {t("calendar.viewGrid")}
               </button>
               <button
                 type="button"
@@ -740,27 +759,27 @@ export function ShopCalendarPage() {
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <List className="h-3.5 w-3.5" /> Lijst
+                <List className="h-3.5 w-3.5" /> {t("calendar.viewList")}
               </button>
             </div>
           </div>
 
           {/* Week-navigatie: vorige/volgende week + label. Alleen in week-modus. */}
           {viewMode === "grid" && calendarMode === "week" && (() => {
-            const today = new Date(); today.setUTCHours(0, 0, 0, 0);
-            // Maandag-start (UTC): getUTCDay() → 0=zo, 1=ma, … 6=za
-            const dow = today.getUTCDay();
+            // Maandag-start, in de tijdzone van de shop: getUTCDay() op de civiele
+            // datumstring zelf is timezone-onafhankelijk (0=zo, 1=ma, … 6=za).
+            const dow = new Date(todayYmd + "T00:00:00Z").getUTCDay();
             const mondayOffset = dow === 0 ? -6 : 1 - dow;
-            const weekStart = new Date(today);
-            weekStart.setUTCDate(weekStart.getUTCDate() + mondayOffset + weekOffset * 7);
-            const weekEnd = new Date(weekStart);
-            weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
+            const weekStartYmd = addDaysToYmd(todayYmd, mondayOffset + weekOffset * 7);
+            const weekEndYmd = addDaysToYmd(weekStartYmd, 6);
+            const weekStart = shopLocalDayBoundsUtc(weekStartYmd, shopTz).rangeStart;
+            const weekEnd = shopLocalDayBoundsUtc(weekEndYmd, shopTz).rangeStart;
             const fmt = (d: Date) =>
-              d.toLocaleDateString("nl-NL", { day: "2-digit", month: "short", timeZone: "UTC" });
+              d.toLocaleDateString(dateLocale, { day: "2-digit", month: "short", timeZone: shopTz });
             return (
               <div className="mb-3 flex items-center justify-between gap-2 rounded-xl border border-border bg-card px-3 py-2">
                 <Button variant="ghost" size="sm" onClick={() => setWeekOffset((w) => w - 1)}>
-                  <ChevronLeft className="h-4 w-4" /> Vorige week
+                  <ChevronLeft className="h-4 w-4" /> {t("calendar.prevWeek")}
                 </Button>
                 <div className="text-center">
                   <div className="text-sm font-semibold tabular-nums">{fmt(weekStart)} – {fmt(weekEnd)}</div>
@@ -770,15 +789,15 @@ export function ShopCalendarPage() {
                       onClick={() => setWeekOffset(0)}
                       className="text-[11px] font-medium text-primary hover:underline"
                     >
-                      Naar deze week
+                      {t("calendar.jumpToThisWeek")}
                     </button>
                   )}
                   {weekOffset === 0 && (
-                    <div className="text-[11px] text-muted-foreground">Deze week</div>
+                    <div className="text-[11px] text-muted-foreground">{t("calendar.thisWeek")}</div>
                   )}
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => setWeekOffset((w) => w + 1)}>
-                  Volgende week <ChevronRight className="h-4 w-4" />
+                  {t("calendar.nextWeek")} <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             );
@@ -832,13 +851,12 @@ export function ShopCalendarPage() {
               )}
             />
           ) : viewMode === "grid" && calendarMode === "week" && !isMobile ? (() => {
-            const today = new Date(); today.setUTCHours(0, 0, 0, 0);
-            const dow = today.getUTCDay();
+            const dow = new Date(todayYmd + "T00:00:00Z").getUTCDay();
             const mondayOffset = dow === 0 ? -6 : 1 - dow;
-            const weekStart = new Date(today);
-            weekStart.setUTCDate(weekStart.getUTCDate() + mondayOffset + weekOffset * 7);
-            const weekEnd = new Date(weekStart);
-            weekEnd.setUTCDate(weekEnd.getUTCDate() + 7);
+            const weekStartYmd = addDaysToYmd(todayYmd, mondayOffset + weekOffset * 7);
+            const weekEndYmd = addDaysToYmd(weekStartYmd, 7);
+            const weekStart = shopLocalDayBoundsUtc(weekStartYmd, shopTz).rangeStart;
+            const weekEnd = shopLocalDayBoundsUtc(weekEndYmd, shopTz).rangeStart;
             // Week-bookings: ignoreer dayOffset, maar respecteer status- en staff-filter.
             const weekBookings = bookings.filter((b) => {
               if (filter !== "all" && b.status !== filter) return false;
@@ -850,6 +868,7 @@ export function ShopCalendarPage() {
             return (
               <WeekTimeGrid
                 weekStart={weekStart}
+                shopTz={shopTz}
                 days={7}
                 bookings={weekBookings}
                 staff={staff}
@@ -859,9 +878,13 @@ export function ShopCalendarPage() {
                 businessHours={businessHours}
                 onSelectBooking={(b) => setViewing(b)}
                 onSelectDay={(d) => {
-                  // Bepaal offset t.o.v. vandaag en spring naar dag-weergave.
-                  const today2 = new Date(); today2.setUTCHours(0, 0, 0, 0);
-                  const offset = Math.round((d.getTime() - today2.getTime()) / (24 * 3600 * 1000));
+                  // Bepaal offset t.o.v. vandaag (shop-lokaal) en spring naar dag-weergave.
+                  const dYmd = utcToShopLocal(d, shopTz).dateYmd;
+                  const offset = Math.round(
+                    (shopLocalDayBoundsUtc(dYmd, shopTz).rangeStart.getTime() -
+                      shopLocalDayBoundsUtc(todayYmd, shopTz).rangeStart.getTime()) /
+                      (24 * 3600 * 1000),
+                  );
                   setDayOffset(offset);
                   setCalendarMode("day");
                 }}
@@ -878,12 +901,8 @@ export function ShopCalendarPage() {
             );
           })() : viewMode === "grid" && dayOffset !== null && !isMobile ? (
             <DayTimeGrid
-              day={(() => {
-                const d = new Date();
-                d.setUTCHours(0, 0, 0, 0);
-                d.setUTCDate(d.getUTCDate() + dayOffset);
-                return d;
-              })()}
+              day={shopLocalDayBoundsUtc(addDaysToYmd(todayYmd, dayOffset), shopTz).rangeStart}
+              shopTz={shopTz}
               bookings={filtered}
               staff={staff}
               customers={customers}
@@ -991,6 +1010,7 @@ export function ShopCalendarPage() {
                       <li key={b.id}>
                         <BookingCard
                           variant="card"
+                          shopTz={shopTz}
                           booking={b}
                           customerName={cust?.full_name ?? null}
                           serviceName={svc?.name ?? null}
@@ -1029,9 +1049,9 @@ export function ShopCalendarPage() {
                       return (
                         <tr key={b.id} onClick={() => setViewing(b)} className="cursor-pointer hover:bg-muted/30">
                           <td className="px-4 py-3">
-                            <p className="font-medium">{formatTime(b.starts_at)}</p>
+                            <p className="font-medium">{formatTime(b.starts_at, shopTz)}</p>
                             <p className="text-xs text-muted-foreground">
-                              {new Date(b.starts_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", timeZone: "UTC" })}
+                              {new Date(b.starts_at).toLocaleDateString(dateLocale, { day: "2-digit", month: "short", timeZone: shopTz })}
                             </p>
                           </td>
                           <td className="hidden px-4 py-3 sm:table-cell">{cust?.full_name ?? "—"}</td>
@@ -1048,7 +1068,7 @@ export function ShopCalendarPage() {
                                 </span>
                               );
                             })() : (
-                              <span className="text-xs text-muted-foreground italic">{t("calendar.unassigned") ?? "Niet toegewezen"}</span>
+                              <span className="text-xs text-muted-foreground italic">{t("calendar.unassigned")}</span>
                             )}
                           </td>
                           <td className="px-4 py-3 text-right font-medium tabular-nums">{formatCents(b.price_cents)}</td>
@@ -1097,12 +1117,14 @@ export function ShopCalendarPage() {
         customers={customers}
         services={services}
         staff={staff}
+        shopTz={shopTz}
       />
 
       <RescheduleSheet
         booking={rescheduling}
         onClose={() => setRescheduling(null)}
         isPending={reschedule.isPending}
+        shopTz={shopTz}
         onConfirm={(b, newStartsAt) => {
           reschedule.mutate(
             { booking: b, newStaffId: b.staff_id, newStartsAt },
@@ -1143,16 +1165,18 @@ export function ShopCalendarPage() {
   );
 }
 
-function toLocalInput(iso: string | null): string {
+// Populates the datetime-local input with the shop-local wall-clock time for
+// a stored UTC instant — the reverse of shopLocalToUtc, used at submit time.
+function toLocalInput(iso: string | null, shopTz: string | null | undefined): string {
   if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+  const { dateYmd, timeHHmm } = utcToShopLocal(new Date(iso), shopTz);
+  return `${dateYmd}T${timeHHmm}`;
 }
 
 function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: boolean; onClose: () => void; booking: BookingWithRelations | null; shopId: string | null; prefill?: { staffId: string | null; startsAt: Date } | null }) {
   const qc = useQueryClient();
-  const { t } = useT();
+  const { t, locale } = useT();
+  const dateLocale = locale === "en" ? "en-US" : "nl-NL";
   const { data: customers = [] } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId && open });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId && open });
   const { data: staff = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId && open });
@@ -1162,6 +1186,17 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
   // PublicBookingFlow.tsx resolve it, instead of reading the raw (hard-zeroed
   // for "default" mode) services.deposit_cents column.
   const { data: shopFull } = useQuery({ ...shopFullQuery(shopId ?? ""), enabled: !!shopId && open });
+  const shopTz = resolveShopTimezone(shopFull?.timezone);
+  // `form.starts_at` (a datetime-local input value, "yyyy-MM-ddTHH:mm") is
+  // always interpreted as the SHOP's own wall-clock time, not UTC — matches
+  // how the DB trigger validates working hours (`starts_at AT TIME ZONE
+  // shop.timezone`) and how the public booking flow already behaves.
+  function formStartsAtToUtc(value: string): Date | null {
+    if (!value) return null;
+    const [dateYmd, hhmm] = value.split("T");
+    if (!dateYmd || !hhmm) return null;
+    return shopLocalToUtc(dateYmd, hhmm, shopTz);
+  }
   // Hits the same cache als de calendar-pagina; geen extra request.
   const { data: allBookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId && open });
 
@@ -1182,12 +1217,12 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
       customer_id: booking?.customer_id ?? "",
       service_id: booking?.service_id ?? "",
       staff_id: booking?.staff_id ?? prefill?.staffId ?? "",
-      starts_at: toLocalInput(booking?.starts_at ?? prefill?.startsAt?.toISOString() ?? null),
+      starts_at: toLocalInput(booking?.starts_at ?? prefill?.startsAt?.toISOString() ?? null, shopTz),
       duration: dur,
       status: booking?.status ?? "pending",
       notes: booking?.notes ?? "",
     });
-  }, [open, booking?.id, prefill?.staffId, prefill?.startsAt?.getTime()]);
+  }, [open, booking?.id, prefill?.staffId, prefill?.startsAt?.getTime(), shopTz]);
 
   /**
    * Client-side pre-validation against `staff.working_hours`.
@@ -1203,10 +1238,10 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
     const stf = staff.find((s) => s.id === form.staff_id);
     const wh = (stf?.working_hours ?? undefined) as StaffWorkingHours | undefined;
     if (!wh) return null;
-    const startUtc = new Date(form.starts_at + "Z");
-    if (Number.isNaN(startUtc.getTime())) return null;
+    const startUtc = formStartsAtToUtc(form.starts_at);
+    if (!startUtc || Number.isNaN(startUtc.getTime())) return null;
     const ends = new Date(startUtc.getTime() + form.duration * 60000);
-    const result = validateBookingSlot(startUtc, ends, wh, "UTC");
+    const result = validateBookingSlot(startUtc, ends, wh, shopTz);
     if (result.kind === "ok" || result.kind === "no_data") return null;
     if (result.kind === "closed_day") return { message: t("bookingError.closedDay") };
     if (result.kind === "break") {
@@ -1222,7 +1257,7 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
         ? t("bookingError.outsideHoursRange", { range })
         : t("bookingError.outsideHours"),
     };
-  }, [form.staff_id, form.starts_at, form.duration, form.status, staff, t]);
+  }, [form.staff_id, form.starts_at, form.duration, form.status, staff, t, shopTz]);
 
   const save = useMutation({
     mutationFn: async () => {
@@ -1230,7 +1265,8 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
       if (!shopId) throw new Error(t("errors.noActiveShop"));
       if (!form.starts_at) throw new Error(t("errors.pickStartTime"));
       const svc = services.find((s) => s.id === form.service_id);
-      const startUtc = new Date(form.starts_at + "Z");
+      const startUtc = formStartsAtToUtc(form.starts_at);
+      if (!startUtc) throw new Error(t("errors.pickStartTime"));
       const ends = new Date(startUtc.getTime() + form.duration * 60000);
 
       // Pre-flight conflict check: only when staff is assigned and booking is not cancelled/no_show.
@@ -1250,7 +1286,7 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
           const stf = staff.find((s) => s.id === form.staff_id);
           const cust = customers.find((c) => c.id === conflict.customer_id);
           const svcName = services.find((s) => s.id === conflict.service_id)?.name;
-          const range = `${formatTime(conflict.starts_at)}–${formatTime(conflict.ends_at)}`;
+          const range = `${formatTime(conflict.starts_at, shopTz)}–${formatTime(conflict.ends_at, shopTz)}`;
           throw new Error(
             t("calendar.conflictWith", {
               staff: stf?.full_name ?? t("calendar.staffCol"),
@@ -1343,7 +1379,7 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
               </div>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div><Label htmlFor="dt">{t("calendar.startUTC")}</Label><Input id="dt" type="datetime-local" className="h-11 sm:h-9" value={form.starts_at} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} /></div>
+              <div><Label htmlFor="dt">{t("calendar.start")}</Label><Input id="dt" type="datetime-local" className="h-11 sm:h-9" value={form.starts_at} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} /></div>
               <div><Label htmlFor="du">{t("calendar.duration")}</Label><Input id="du" type="number" inputMode="numeric" className="h-11 sm:h-9" value={form.duration} onChange={(e) => setForm({ ...form, duration: Number(e.target.value) })} /></div>
             </div>
             <div className="-mt-1">
@@ -1359,9 +1395,9 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
                   const wh = (stf.working_hours ?? undefined) as StaffWorkingHours | undefined;
                   const SNAP = 15;
                   const durMs = form.duration * 60000;
-                  // Startpunt: max(now+15min, huidige form-tijd+15min) gesnapt naar 15min UTC.
+                  // Startpunt: max(now+15min, huidige form-tijd+15min) gesnapt naar 15min.
                   const now = new Date();
-                  const baseFromForm = form.starts_at ? new Date(form.starts_at + "Z") : null;
+                  const baseFromForm = formStartsAtToUtc(form.starts_at);
                   const baseTs = Math.max(
                     now.getTime() + SNAP * 60000,
                     baseFromForm && !Number.isNaN(baseFromForm.getTime()) ? baseFromForm.getTime() + SNAP * 60000 : 0,
@@ -1380,7 +1416,7 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
                     const start = cursor;
                     const end = new Date(start.getTime() + durMs);
                     // Working-hours check (advisory; bij no_data slaan we deze over).
-                    const v = validateBookingSlot(start, end, wh, "UTC");
+                    const v = validateBookingSlot(start, end, wh, shopTz);
                     const whOk = v.kind === "ok" || v.kind === "no_data";
                     // Conflict check.
                     const sTs = start.getTime();
@@ -1393,8 +1429,8 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
                     toast.warning(t("calendar.firstAvailableNone"));
                     return;
                   }
-                  setForm({ ...form, starts_at: toLocalInput(found.toISOString()) });
-                  const when = found.toLocaleString("nl-NL", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+                  setForm({ ...form, starts_at: toLocalInput(found.toISOString(), shopTz) });
+                  const when = found.toLocaleString(dateLocale, { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", timeZone: shopTz });
                   toast.success(t("calendar.firstAvailableFound", { when }));
                 }}
                 title={!form.staff_id ? t("calendar.firstAvailablePickStaff") : !form.duration ? t("calendar.firstAvailablePickDuration") : t("calendar.firstAvailableSlotTooltip")}
@@ -1579,7 +1615,7 @@ function CustomerCombobox({
 }
 
 function BookingActionDialog({
-  booking, onClose, onEdit, onReschedule, onAction, customers, services, staff,
+  booking, onClose, onEdit, onReschedule, onAction, customers, services, staff, shopTz,
 }: {
   booking: BookingWithRelations | null;
   onClose: () => void;
@@ -1589,11 +1625,13 @@ function BookingActionDialog({
   customers: Array<{ id: string; full_name: string; email: string | null; phone: string | null; preferences?: unknown }>;
   services: Array<{ id: string; name: string }>;
   staff: Array<{ id: string; full_name: string }>;
+  shopTz: string;
 }) {
   const shopId = useActiveShopId();
   const colors = useStaffColors(shopId);
   const isMobile = useIsMobile();
-  const { t } = useT();
+  const { t, locale } = useT();
+  const dateLocale = locale === "en" ? "en-US" : "nl-NL";
   if (!booking) return null;
   const cust = customers.find((c) => c.id === booking.customer_id);
   const svc = services.find((s) => s.id === booking.service_id);
@@ -1614,24 +1652,24 @@ function BookingActionDialog({
         <div className="flex items-start gap-2 rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-destructive">
           <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wider">Allergie / aandachtspunt</p>
+            <p className="text-xs font-semibold uppercase tracking-wider">{t("calendar.allergyNote")}</p>
             <p className="mt-0.5 whitespace-pre-wrap text-sm font-medium">{allergy}</p>
           </div>
         </div>
       )}
       <div className="rounded-xl bg-muted/40 p-3">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">Wanneer</p>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("calendar.when")}</p>
         <p className="mt-1 font-medium">
-          {new Date(booking.starts_at).toLocaleDateString("nl-NL", { weekday: "long", day: "2-digit", month: "long", timeZone: "UTC" })}
+          {new Date(booking.starts_at).toLocaleDateString(dateLocale, { weekday: "long", day: "2-digit", month: "long", timeZone: shopTz })}
           {" · "}
-          {formatTime(booking.starts_at)}
+          {formatTime(booking.starts_at, shopTz)}
         </p>
       </div>
       <div className="grid gap-2">
-        <ActionRow label="Klant" value={cust?.full_name ?? "—"} sub={cust?.email ?? cust?.phone ?? undefined} />
-        <ActionRow label="Service" value={svc?.name ?? "—"} />
+        <ActionRow label={t("calendar.customer")} value={cust?.full_name ?? "—"} sub={cust?.email ?? cust?.phone ?? undefined} />
+        <ActionRow label={t("calendar.service")} value={svc?.name ?? "—"} />
         <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
-          <span className="text-xs uppercase tracking-wider text-muted-foreground">Medewerker</span>
+          <span className="text-xs uppercase tracking-wider text-muted-foreground">{t("calendar.staffCol")}</span>
           {stf ? (() => {
             const c = colors.get(stf.id);
             return (
@@ -1643,17 +1681,17 @@ function BookingActionDialog({
               </span>
             );
           })() : (
-            <span className="text-xs italic text-muted-foreground">Niet toegewezen</span>
+            <span className="text-xs italic text-muted-foreground">{t("calendar.unassigned")}</span>
           )}
         </div>
-        <ActionRow label="Bedrag" value={formatCents(booking.price_cents)} />
+        <ActionRow label={t("calendar.amount")} value={formatCents(booking.price_cents)} />
         {remainingBalanceCents > 0 && (
-          <ActionRow label="Nog te betalen" value={formatCents(remainingBalanceCents)} />
+          <ActionRow label={t("calendar.remainingBalance")} value={formatCents(remainingBalanceCents)} />
         )}
       </div>
       {booking.notes && (
         <div className="rounded-xl border border-border bg-card p-3">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Notities</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("calendar.notes")}</p>
           <p className="mt-1 whitespace-pre-wrap">{booking.notes}</p>
         </div>
       )}
@@ -1694,7 +1732,7 @@ function BookingActionDialog({
           {/* Grab handle */}
           <div className="mx-auto mt-2 mb-1 h-1.5 w-10 rounded-full bg-muted" aria-hidden="true" />
           <SheetHeader className="px-5 pb-2 pt-1 text-left">
-            <SheetTitle>Afspraak details</SheetTitle>
+            <SheetTitle>{t("calendar.appointmentDetails")}</SheetTitle>
           </SheetHeader>
           <div className="px-5">{body}</div>
           <div className="sticky bottom-0 mt-2 space-y-2 border-t border-border bg-background/95 px-5 pb-3 pt-3 backdrop-blur supports-[backdrop-filter]:bg-background/85">
@@ -1718,7 +1756,7 @@ function BookingActionDialog({
     <Sheet open={!!booking} onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
         <SheetHeader className="border-b border-border/60 px-5 py-4 text-left">
-          <SheetTitle>Afspraak details</SheetTitle>
+          <SheetTitle>{t("calendar.appointmentDetails")}</SheetTitle>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {body}

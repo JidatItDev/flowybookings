@@ -45,6 +45,8 @@ export type BookingCardProps = BookingCardData & {
   unassignedLabel?: string;
   /** Localized status label (for tooltip/aria on the status dot). */
   statusLabel?: string;
+  /** Shop's IANA timezone — every displayed time is shown in this zone, not UTC. */
+  shopTz?: string | null;
   /**
    * Mobile/list only. When provided, the component renders a <button> wrapper
    * with active feedback and accent border. For grid blocks, omit this and
@@ -65,6 +67,7 @@ export function BookingCard({
   variant = "card",
   unassignedLabel = "—",
   statusLabel,
+  shopTz,
   onClick,
   animationIndex,
   className,
@@ -89,7 +92,7 @@ export function BookingCard({
                 isCancelled && "line-through",
               )}
             >
-              {formatTime(booking.starts_at)}
+              {formatTime(booking.starts_at, shopTz)}
             </span>
           </span>
           <span className="shrink-0 text-[11px] font-semibold tabular-nums text-foreground/80">
@@ -147,7 +150,7 @@ export function BookingCard({
         {/* Row 3: time range + staff dot/name */}
         <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
           <span className="tabular-nums">
-            {formatTime(booking.starts_at)} – {formatTime(booking.ends_at)}
+            {formatTime(booking.starts_at, shopTz)} – {formatTime(booking.ends_at, shopTz)}
           </span>
           {staffName && color ? (
             <span className="inline-flex min-w-0 items-center gap-1.5">
@@ -178,7 +181,7 @@ export function BookingCard({
       <button
         type="button"
         onClick={onClick}
-        aria-label={`${customerName ?? ""} — ${serviceName ?? ""} — ${formatTime(booking.starts_at)}`}
+        aria-label={`${customerName ?? ""} — ${serviceName ?? ""} — ${formatTime(booking.starts_at, shopTz)}`}
         className={cn(baseClasses, "active:scale-[0.99] active:bg-muted/40", animationIndex != null && "animate-fade-in")}
         style={style}
       >

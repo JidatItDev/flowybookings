@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { useT } from "@/shared/lib/i18n";
 import { formatTime } from "@/shared/lib/format";
+import { shopLocalToUtc, utcToShopLocal } from "@/shared/lib/shop-timezone";
 import type { BookingWithRelations } from "@/shop/shared/queries-barrel";
 
 /**
@@ -22,31 +23,37 @@ export function RescheduleSheet({
   onClose,
   onConfirm,
   isPending,
+  shopTz,
 }: {
   booking: BookingWithRelations | null;
   onClose: () => void;
   /** Reuses the parent's reschedule mutation. Receives the new start Date. */
   onConfirm: (booking: BookingWithRelations, newStartsAt: Date) => void;
   isPending?: boolean;
+  shopTz: string;
 }) {
-  const { t } = useT();
+  const { t, locale } = useT();
+  const dateLocale = locale === "en" ? "en-US" : "nl-NL";
   const isMobile = useIsMobile();
   const open = !!booking;
   const [value, setValue] = useState("");
 
-  // Hydrate the picker each time we open or switch booking.
+  // Hydrate the picker each time we open or switch booking, in the shop's own
+  // wall-clock time — matches how the calendar's create/edit form works.
   useEffect(() => {
     if (!booking) return;
-    const d = new Date(booking.starts_at);
-    const pad = (n: number) => String(n).padStart(2, "0");
-    setValue(
-      `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}T${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`,
-    );
-  }, [booking?.id, booking?.starts_at]);
+    const { dateYmd, timeHHmm } = utcToShopLocal(new Date(booking.starts_at), shopTz);
+    setValue(`${dateYmd}T${timeHHmm}`);
+  }, [booking?.id, booking?.starts_at, shopTz]);
 
   if (!booking) return null;
 
-  const newStart = value ? new Date(value + "Z") : null;
+  const newStart = (() => {
+    if (!value) return null;
+    const [dateYmd, hhmm] = value.split("T");
+    if (!dateYmd || !hhmm) return null;
+    return shopLocalToUtc(dateYmd, hhmm, shopTz);
+  })();
   const sameAsCurrent =
     !!newStart && newStart.getTime() === new Date(booking.starts_at).getTime();
   const disabled = !newStart || Number.isNaN(newStart.getTime()) || sameAsCurrent || !!isPending;
@@ -58,13 +65,13 @@ export function RescheduleSheet({
           {t("calendar.when")}
         </p>
         <p className="mt-1 font-medium">
-          {new Date(booking.starts_at).toLocaleDateString("nl-NL", {
+          {new Date(booking.starts_at).toLocaleDateString(dateLocale, {
             weekday: "long",
             day: "2-digit",
             month: "long",
-            timeZone: "UTC",
+            timeZone: shopTz,
           })}{" "}
-          · {formatTime(booking.starts_at)} – {formatTime(booking.ends_at)}
+          · {formatTime(booking.starts_at, shopTz)} – {formatTime(booking.ends_at, shopTz)}
         </p>
       </div>
       <div>

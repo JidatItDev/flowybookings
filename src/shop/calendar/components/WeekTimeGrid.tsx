@@ -12,6 +12,14 @@ import {
   type DayKey,
   type StaffWorkingHours,
 } from "@/shop/staff/staff-availability";
+import { utcToShopLocal } from "@/shared/lib/shop-timezone";
+import { useT } from "@/shared/lib/i18n";
+
+/** Shop-lokale kalenderdag-sleutel ("yyyy-MM-dd") — gebruikt voor dag-groepering
+ * en "is dit vandaag/dezelfde dag"-vergelijkingen, nooit UTC-kalendervelden. */
+function dayKeyOf(d: Date, shopTz: string): string {
+  return utcToShopLocal(d, shopTz).dateYmd;
+}
 
 /**
  * Weekrooster (5–7 dagen) als compacte salon-stijl agenda.
@@ -34,7 +42,6 @@ const MAX_HOUR = 23;
 const PX_PER_HOUR = 56;
 const PX_PER_MIN = PX_PER_HOUR / 60;
 const SNAP_MINUTES = 15;
-const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 const DRAG_MIME = "application/x-flowy-booking";
 
 type StaffLite = {
@@ -61,8 +68,10 @@ export type WeekRescheduleParams = {
 };
 
 export type WeekTimeGridProps = {
-  /** Startdag van de week (UTC midnight). Doorgaans maandag. */
+  /** Startdag van de week (shop-lokale middernacht). Doorgaans maandag. */
   weekStart: Date;
+  /** Shop's IANA tijdzone — elke tijd wordt hierin weergegeven/geïnterpreteerd, nooit UTC. */
+  shopTz: string;
   /** Aantal dagen om te tonen (5 = werkweek, 7 = volledige week). */
   days?: number;
   bookings: BookingWithRelations[];
@@ -108,6 +117,7 @@ function parseHour(value: string | undefined, mode: "floor" | "ceil"): number | 
 function resolveWeekWindow(
   days: Date[],
   bh: BusinessHours | undefined,
+  shopTz: string,
 ): { startHour: number; endHour: number } {
   let minOpen = DEFAULT_START_HOUR;
   let maxClose = DEFAULT_END_HOUR;
@@ -116,7 +126,7 @@ function resolveWeekWindow(
     let lo = 24;
     let hi = 0;
     for (const d of days) {
-      const dh = bh[DAY_KEYS[d.getUTCDay()] as DayKey];
+      const dh = bh[utcToShopLocal(d, shopTz).dayKey as DayKey];
       if (!dh || dh.closed) continue;
       const o = parseHour(dh.open, "floor");
       const c = parseHour(dh.close, "ceil");
@@ -135,9 +145,9 @@ function resolveWeekWindow(
   return { startHour, endHour };
 }
 
-function dayWindow(d: Date, bh: BusinessHours | undefined): { open: number; close: number; closed: boolean } | null {
+function dayWindow(d: Date, bh: BusinessHours | undefined, shopTz: string): { open: number; close: number; closed: boolean } | null {
   if (!bh) return null;
-  const dh = bh[DAY_KEYS[d.getUTCDay()] as DayKey];
+  const dh = bh[utcToShopLocal(d, shopTz).dayKey as DayKey];
   if (!dh) return null;
   if (dh.closed) return { open: 0, close: 0, closed: true };
   const o = parseHour(dh.open, "floor");
@@ -148,6 +158,7 @@ function dayWindow(d: Date, bh: BusinessHours | undefined): { open: number; clos
 
 export function WeekTimeGrid({
   weekStart,
+  shopTz,
   days = 7,
   bookings,
   staff,
@@ -162,24 +173,22 @@ export function WeekTimeGrid({
   dropInvalidLabels,
   onDropBlocked,
 }: WeekTimeGridProps) {
+  const { t, locale } = useT();
+  const dateLocale = locale === "en" ? "en-US" : "nl-NL";
   const bookingsById = useMemo(() => {
     const m = new Map<string, BookingWithRelations>();
     for (const b of bookings) m.set(b.id, b);
     return m;
   }, [bookings]);
+  // `weekStart` already IS shop-local midnight of the week's first day — never
+  // re-derive it via UTC getters/setters, that would swap it back to UTC midnight.
   const dayList = useMemo(() => {
-    const start = new Date(weekStart);
-    start.setUTCHours(0, 0, 0, 0);
-    return Array.from({ length: days }, (_, i) => {
-      const d = new Date(start);
-      d.setUTCDate(d.getUTCDate() + i);
-      return d;
-    });
+    return Array.from({ length: days }, (_, i) => new Date(weekStart.getTime() + i * 86400000));
   }, [weekStart, days]);
 
   const { startHour: START_HOUR, endHour: END_HOUR } = useMemo(
-    () => resolveWeekWindow(dayList, businessHours),
-    [dayList, businessHours],
+    () => resolveWeekWindow(dayList, businessHours, shopTz),
+    [dayList, businessHours, shopTz],
   );
 
   const hours = useMemo(() => {
@@ -204,8 +213,7 @@ export function WeekTimeGrid({
     >();
     const grouped = new Map<string, BookingWithRelations[]>();
     for (const b of bookings) {
-      const d = new Date(b.starts_at);
-      const key = `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
+      const key = dayKeyOf(new Date(b.starts_at), shopTz);
       const list = grouped.get(key) ?? [];
       list.push(b);
       grouped.set(key, list);
@@ -235,7 +243,7 @@ export function WeekTimeGrid({
       );
     }
     return map;
-  }, [bookings]);
+  }, [bookings, shopTz]);
 
   const staffById = useMemo(() => {
     const m = new Map<string, StaffLite>();
@@ -291,8 +299,8 @@ export function WeekTimeGrid({
   const [mouseDrag, setMouseDrag] = useState<{ bookingId: string } | null>(null);
 
   const now = new Date();
-  const todayKey = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}`;
-  const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes() - winStart;
+  const todayKey = dayKeyOf(now, shopTz);
+  const nowMinutes = utcToShopLocal(now, shopTz).minutesOfDay - winStart;
   const nowTop = nowMinutes >= 0 && nowMinutes <= (END_HOUR - START_HOUR) * 60 ? nowMinutes * PX_PER_MIN : null;
 
   return (
@@ -304,12 +312,11 @@ export function WeekTimeGrid({
         >
           {/* Header rij */}
           <div className="sticky top-0 z-10 border-b border-border bg-muted/40 px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Tijd
+            {t("calendar.timeColumn")}
           </div>
           {dayList.map((d) => {
-            const isToday =
-              `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}` === todayKey;
-            const dw = dayWindow(d, businessHours);
+            const isToday = dayKeyOf(d, shopTz) === todayKey;
+            const dw = dayWindow(d, businessHours, shopTz);
             const closed = dw?.closed ?? false;
             return (
               <button
@@ -320,17 +327,17 @@ export function WeekTimeGrid({
                   "sticky top-0 z-10 flex flex-col items-center gap-0.5 border-b border-l border-border bg-muted/40 px-2 py-2 text-center transition-colors hover:bg-muted",
                   isToday && "bg-primary/10 hover:bg-primary/15",
                 )}
-                title="Open dag-weergave"
+                title={t("calendar.openDayView")}
               >
                 <span className={cn("text-[10px] font-semibold uppercase tracking-wider", isToday ? "text-primary" : "text-muted-foreground")}>
-                  {d.toLocaleDateString("nl-NL", { weekday: "short", timeZone: "UTC" })}
+                  {d.toLocaleDateString(dateLocale, { weekday: "short", timeZone: shopTz })}
                 </span>
                 <span className={cn("text-sm font-semibold tabular-nums", isToday && "text-primary")}>
-                  {d.toLocaleDateString("nl-NL", { day: "2-digit", month: "short", timeZone: "UTC" })}
+                  {d.toLocaleDateString(dateLocale, { day: "2-digit", month: "short", timeZone: shopTz })}
                 </span>
                 {closed && (
                   <span className="text-[9px] font-medium uppercase tracking-wide text-muted-foreground/70">
-                    Gesloten
+                    {t("calendar.closedBadge")}
                   </span>
                 )}
               </button>
@@ -352,9 +359,9 @@ export function WeekTimeGrid({
 
           {/* Dag-kolommen */}
           {dayList.map((d) => {
-            const dayKey = `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
+            const dayKey = dayKeyOf(d, shopTz);
             const isToday = dayKey === todayKey;
-            const dw = dayWindow(d, businessHours);
+            const dw = dayWindow(d, businessHours, shopTz);
             const dayStartTs = d.getTime();
             const dayEndTs = dayStartTs + 24 * 3600 * 1000;
             const dayBookings = bookingsByDay.get(dayKey) ?? [];
@@ -399,8 +406,7 @@ export function WeekTimeGrid({
                     const src = bookingsById.get(draggedId);
                     if (src) {
                       const durMs = +new Date(src.ends_at) - +new Date(src.starts_at);
-                      const slotStart = new Date(d);
-                      slotStart.setUTCMinutes(totalMin);
+                      const slotStart = new Date(d.getTime() + totalMin * 60000);
                       const slotEnd = new Date(slotStart.getTime() + durMs);
 
                       // 1) Conflict-check: overlap met andere booking van
@@ -415,12 +421,8 @@ export function WeekTimeGrid({
                           const oStart = new Date(other.starts_at).getTime();
                           const oEnd = new Date(other.ends_at).getTime();
                           if (newStartTs < oEnd && newEndTs > oStart) {
-                            const oStartDate = new Date(other.starts_at);
-                            const oEndDate = new Date(other.ends_at);
-                            const oStartMin =
-                              oStartDate.getUTCHours() * 60 + oStartDate.getUTCMinutes();
-                            const oEndMin =
-                              oEndDate.getUTCHours() * 60 + oEndDate.getUTCMinutes();
+                            const oStartMin = (oStart - d.getTime()) / 60000;
+                            const oEndMin = (oEnd - d.getTime()) / 60000;
                             invalid = true;
                             reason = dropInvalidLabels.conflictWith(
                               `${formatMinutesOfDay(oStartMin)}–${formatMinutesOfDay(oEndMin)}`,
@@ -435,7 +437,7 @@ export function WeekTimeGrid({
                         const stf = src.staff_id ? staffById.get(src.staff_id) : undefined;
                         const wh = stf?.working_hours as StaffWorkingHours | undefined;
                         if (wh) {
-                          const v = validateBookingSlot(slotStart, slotEnd, wh, "UTC");
+                          const v = validateBookingSlot(slotStart, slotEnd, wh, shopTz);
                           if (v.kind === "closed_day") {
                             invalid = true;
                             reason = dropInvalidLabels.closedDay;
@@ -501,8 +503,7 @@ export function WeekTimeGrid({
                   const snapped = Math.round(rawMin / SNAP_MINUTES) * SNAP_MINUTES;
                   const totalMinFromMidnight = winStart + snapped;
                   const clamped = Math.max(0, Math.min(24 * 60 - SNAP_MINUTES, totalMinFromMidnight));
-                  const newStart = new Date(d);
-                  newStart.setUTCMinutes(clamped);
+                  const newStart = new Date(d.getTime() + clamped * 60000);
                   if (newStart.getTime() === new Date(src.starts_at).getTime()) return;
                   // Pre-validatie commit-block: werkuren/pauze + conflict.
                   // Bij invalid: notify parent (toast) en abort.
@@ -520,12 +521,8 @@ export function WeekTimeGrid({
                         const oStart = new Date(other.starts_at).getTime();
                         const oEnd = new Date(other.ends_at).getTime();
                         if (newStartTs < oEnd && newEndTs > oStart) {
-                          const oStartDate = new Date(other.starts_at);
-                          const oEndDate = new Date(other.ends_at);
-                          const oStartMin =
-                            oStartDate.getUTCHours() * 60 + oStartDate.getUTCMinutes();
-                          const oEndMin =
-                            oEndDate.getUTCHours() * 60 + oEndDate.getUTCMinutes();
+                          const oStartMin = (oStart - d.getTime()) / 60000;
+                          const oEndMin = (oEnd - d.getTime()) / 60000;
                           onDropBlocked?.(
                             dropInvalidLabels.conflictWith(
                               `${formatMinutesOfDay(oStartMin)}–${formatMinutesOfDay(oEndMin)}`,
@@ -539,7 +536,7 @@ export function WeekTimeGrid({
                     const stfDrop = src.staff_id ? staffById.get(src.staff_id) : undefined;
                     const whDrop = stfDrop?.working_hours as StaffWorkingHours | undefined;
                     if (whDrop) {
-                      const v = validateBookingSlot(newStart, slotEnd, whDrop, "UTC");
+                      const v = validateBookingSlot(newStart, slotEnd, whDrop, shopTz);
                       if (v.kind === "closed_day") {
                         onDropBlocked?.(dropInvalidLabels.closedDay);
                         return;
@@ -575,7 +572,7 @@ export function WeekTimeGrid({
                       backgroundImage:
                         "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground) / 0.08) 6px 7px)",
                     }}
-                    title="Salon gesloten"
+                    title={t("calendar.shopClosed")}
                   />
                 )}
                 {/* Off-hours blokken */}
@@ -669,10 +666,10 @@ export function WeekTimeGrid({
                   if (endTs <= dayStartTs || startTs >= dayEndTs) return null;
                   const startMin = Math.max(
                     winStart,
-                    start.getUTCHours() * 60 + start.getUTCMinutes(),
+                    (startTs - dayStartTs) / 60000,
                   );
                   const endMinRaw =
-                    endTs > dayEndTs ? 24 * 60 : end.getUTCHours() * 60 + end.getUTCMinutes();
+                    endTs > dayEndTs ? 24 * 60 : (endTs - dayStartTs) / 60000;
                   const endMin = Math.min(winEnd, endMinRaw);
                   if (endMin <= startMin) return null;
                   const top = (startMin - winStart) * PX_PER_MIN;
@@ -719,27 +716,27 @@ export function WeekTimeGrid({
 
                           const durMs = endTs - startTs;
                           let newStart = new Date(b.starts_at);
+                          const currentDayIdx = dayList.findIndex(
+                            (dd) => dayKeyOf(dd, shopTz) === dayKeyOf(newStart, shopTz),
+                          );
+                          let targetDayIdx = currentDayIdx;
 
                           if (key === "ArrowUp" || key === "ArrowDown") {
                             const delta = key === "ArrowUp" ? -SNAP_MINUTES : SNAP_MINUTES;
                             newStart = new Date(newStart.getTime() + delta * 60_000);
                           } else {
-                            const dayIdx = dayList.findIndex(
-                              (d) => d.getUTCFullYear() === newStart.getUTCFullYear() &&
-                                     d.getUTCMonth() === newStart.getUTCMonth() &&
-                                     d.getUTCDate() === newStart.getUTCDate(),
-                            );
                             const dir = key === "ArrowLeft" ? -1 : 1;
-                            const nextIdx = dayIdx + dir;
+                            const nextIdx = currentDayIdx + dir;
                             if (nextIdx < 0 || nextIdx >= dayList.length) return;
+                            targetDayIdx = nextIdx;
                             const targetDay = dayList[nextIdx];
-                            const tod = newStart.getUTCHours() * 60 + newStart.getUTCMinutes();
-                            newStart = new Date(targetDay);
-                            newStart.setUTCMinutes(tod);
+                            const tod = utcToShopLocal(newStart, shopTz).minutesOfDay;
+                            newStart = new Date(targetDay.getTime() + tod * 60000);
                           }
 
                           // Clamp binnen het week-venster (zelfde regels als drag).
-                          const startMinAbs = newStart.getUTCHours() * 60 + newStart.getUTCMinutes();
+                          const dayAnchor = dayList[targetDayIdx] ?? dayList[currentDayIdx];
+                          const startMinAbs = (newStart.getTime() - dayAnchor.getTime()) / 60000;
                           const newDurMin = durMs / 60_000;
                           if (startMinAbs < winStart || startMinAbs + newDurMin > winEnd) {
                             return;
@@ -761,10 +758,8 @@ export function WeekTimeGrid({
                                 const oStart = new Date(other.starts_at).getTime();
                                 const oEnd = new Date(other.ends_at).getTime();
                                 if (newStartTs < oEnd && newEndTs > oStart) {
-                                  const oS = new Date(other.starts_at);
-                                  const oE = new Date(other.ends_at);
-                                  const oSm = oS.getUTCHours() * 60 + oS.getUTCMinutes();
-                                  const oEm = oE.getUTCHours() * 60 + oE.getUTCMinutes();
+                                  const oSm = utcToShopLocal(new Date(oStart), shopTz).minutesOfDay;
+                                  const oEm = utcToShopLocal(new Date(oEnd), shopTz).minutesOfDay;
                                   invalid = true;
                                   reason = dropInvalidLabels.conflictWith(`${formatMinutesOfDay(oSm)}–${formatMinutesOfDay(oEm)}`);
                                   break;
@@ -773,7 +768,7 @@ export function WeekTimeGrid({
                             }
                             const wh = stf?.working_hours as StaffWorkingHours | undefined;
                             if (!invalid && wh) {
-                              const v = validateBookingSlot(newStart, slotEnd, wh, "UTC");
+                              const v = validateBookingSlot(newStart, slotEnd, wh, shopTz);
                               if (v.kind === "closed_day") { invalid = true; reason = dropInvalidLabels.closedDay; }
                               else if (v.kind === "off_hours") {
                                 invalid = true;
@@ -789,7 +784,7 @@ export function WeekTimeGrid({
                           }
 
                           // Visuele feedback via bestaande dragPreview-state.
-                          const targetDayKey = `${newStart.getUTCFullYear()}-${newStart.getUTCMonth()}-${newStart.getUTCDate()}`;
+                          const targetDayKey = dayKeyOf(newStart, shopTz);
                           const previewTopPx = (startMinAbs - winStart) * PX_PER_MIN;
                           const previewLabel = formatMinutesOfDay(startMinAbs);
                           setDragPreview({
@@ -872,7 +867,7 @@ export function WeekTimeGrid({
                             const targetDayKey = dayEl.getAttribute("data-day-key");
                             if (!targetDayKey) return null;
                             const targetDay = dayList.find(
-                              (d) => `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}` === targetDayKey,
+                              (d) => dayKeyOf(d, shopTz) === targetDayKey,
                             );
                             if (!targetDay) return null;
                             const rect = dayEl.getBoundingClientRect();
@@ -903,12 +898,8 @@ export function WeekTimeGrid({
                                 const oStart = new Date(other.starts_at).getTime();
                                 const oEnd = new Date(other.ends_at).getTime();
                                 if (newStartTs < oEnd && newEndTs > oStart) {
-                                  const oStartDate = new Date(other.starts_at);
-                                  const oEndDate = new Date(other.ends_at);
-                                  const oStartMin =
-                                    oStartDate.getUTCHours() * 60 + oStartDate.getUTCMinutes();
-                                  const oEndMin =
-                                    oEndDate.getUTCHours() * 60 + oEndDate.getUTCMinutes();
+                                  const oStartMin = utcToShopLocal(new Date(oStart), shopTz).minutesOfDay;
+                                  const oEndMin = utcToShopLocal(new Date(oEnd), shopTz).minutesOfDay;
                                   return {
                                     invalid: true,
                                     reason: dropInvalidLabels.conflictWith(
@@ -921,7 +912,7 @@ export function WeekTimeGrid({
                             // 2) Werkuren/pauze
                             const wh = stf?.working_hours as StaffWorkingHours | undefined;
                             if (!wh) return { invalid: false };
-                            const v = validateBookingSlot(slotStart, slotEnd, wh, "UTC");
+                            const v = validateBookingSlot(slotStart, slotEnd, wh, shopTz);
                             if (v.kind === "ok" || v.kind === "no_data") return { invalid: false };
                             if (v.kind === "closed_day") {
                               return { invalid: true, reason: dropInvalidLabels.closedDay };
@@ -952,8 +943,7 @@ export function WeekTimeGrid({
                               return;
                             }
                             const { targetDay, targetDayKey, clampedInWin, totalMin } = at;
-                            const slotStart = new Date(targetDay);
-                            slotStart.setUTCMinutes(totalMin);
+                            const slotStart = new Date(targetDay.getTime() + totalMin * 60000);
                             const slotEnd = new Date(slotStart.getTime() + durMs);
                             const v = computeValidation(slotStart, slotEnd);
                             setDragPreview({
@@ -995,8 +985,7 @@ export function WeekTimeGrid({
                             setDragPreview(null);
                             if (!at) return;
                             const { targetDay, totalMin } = at;
-                            const slotStart = new Date(targetDay);
-                            slotStart.setUTCMinutes(totalMin);
+                            const slotStart = new Date(targetDay.getTime() + totalMin * 60000);
                             const slotEnd = new Date(slotStart.getTime() + durMs);
                             // Blokkeer commit bij invalid (werkuren/pauze/conflict) + notify parent.
                             const tv = computeValidation(slotStart, slotEnd);
@@ -1004,8 +993,7 @@ export function WeekTimeGrid({
                               if (tv.reason) onDropBlocked?.(tv.reason);
                               return;
                             }
-                            const newStart = new Date(targetDay);
-                            newStart.setUTCMinutes(totalMin);
+                            const newStart = slotStart;
                             if (newStart.getTime() === startTs) return;
                             onReschedule?.({
                               booking: b,
@@ -1051,14 +1039,14 @@ export function WeekTimeGrid({
                           const cust = b.customer_id ? customerById.get(b.customer_id) : undefined;
                           const svc = b.service_id ? serviceById.get(b.service_id) : undefined;
                           const parts = [
-                            `${formatTime(b.starts_at)}–${formatTime(b.ends_at)}`,
+                            `${formatTime(b.starts_at, shopTz)}–${formatTime(b.ends_at, shopTz)}`,
                             cust?.full_name,
                             svc?.name,
-                            stf?.full_name ?? "Niet toegewezen",
+                            stf?.full_name ?? t("calendar.unassigned"),
                           ].filter(Boolean);
-                          return `${parts.join(" · ")}${draggable ? " · Pijltjes om te verplaatsen" : ""}`;
+                          return `${parts.join(" · ")}${draggable ? ` · ${t("calendar.arrowKeysMove")}` : ""}`;
                         })()}
-                        aria-label={draggable ? `${stf?.full_name ?? "Niet toegewezen"} · ${formatTime(b.starts_at)} · Pijltjes: ±15 min of ±1 dag` : undefined}
+                        aria-label={draggable ? `${stf?.full_name ?? t("calendar.unassigned")} · ${formatTime(b.starts_at, shopTz)} · ${t("calendar.arrowKeysMoveDayHint")}` : undefined}
                       >
                         {/* Staff-color accent: linkerrand i.p.v. full-fill voor cleanere look. */}
                         <span
@@ -1078,7 +1066,7 @@ export function WeekTimeGrid({
                             <>
                               <div className="flex items-center gap-1">
                                 <span className="truncate text-[10px] font-semibold tabular-nums">
-                                  {formatTime(b.starts_at)}
+                                  {formatTime(b.starts_at, shopTz)}
                                 </span>
                                 {!showName && cust && (
                                   <span className="truncate text-[10px] font-medium opacity-90">
@@ -1107,7 +1095,7 @@ export function WeekTimeGrid({
                                     {stf ? staffInitials(stf.full_name) : "—"}
                                   </span>
                                   <span className="truncate text-[10px] text-muted-foreground">
-                                    {stf?.full_name ?? "Niet toegewezen"}
+                                    {stf?.full_name ?? t("calendar.unassigned")}
                                   </span>
                                 </div>
                               )}
@@ -1142,12 +1130,8 @@ export function WeekTimeGrid({
                               const oStart = new Date(other.starts_at).getTime();
                               const oEnd = new Date(other.ends_at).getTime();
                               if (newStartTs < oEnd && newEndTs > oStart) {
-                                const oStartDate = new Date(other.starts_at);
-                                const oEndDate = new Date(other.ends_at);
-                                const oStartMin =
-                                  oStartDate.getUTCHours() * 60 + oStartDate.getUTCMinutes();
-                                const oEndMin =
-                                  oEndDate.getUTCHours() * 60 + oEndDate.getUTCMinutes();
+                                const oStartMin = utcToShopLocal(new Date(oStart), shopTz).minutesOfDay;
+                                const oEndMin = utcToShopLocal(new Date(oEnd), shopTz).minutesOfDay;
                                 return {
                                   invalid: true,
                                   reason: dropInvalidLabels.conflictWith(
@@ -1158,7 +1142,7 @@ export function WeekTimeGrid({
                             }
                           }
                           if (!wh) return { invalid: false };
-                          const v = validateBookingSlot(start, newEnd, wh, "UTC");
+                          const v = validateBookingSlot(start, newEnd, wh, shopTz);
                           if (v.kind === "ok" || v.kind === "no_data") return { invalid: false };
                           if (v.kind === "closed_day") {
                             return { invalid: true, reason: dropInvalidLabels.closedDay };
@@ -1230,11 +1214,11 @@ export function WeekTimeGrid({
                         return (
                           <div
                             role="slider"
-                            aria-label={resizeHandleLabel ?? "Sleep om duur aan te passen"}
+                            aria-label={resizeHandleLabel ?? t("calendar.resizeHandle")}
                             aria-valuemin={SNAP_MINUTES}
                             aria-valuenow={Math.round(liveDurMin)}
                             tabIndex={-1}
-                            title={resizeHandleLabel ?? "Sleep om duur aan te passen"}
+                            title={resizeHandleLabel ?? t("calendar.resizeHandle")}
                             style={{ touchAction: "none" }}
                             onMouseDown={(e) => {
                               e.preventDefault();

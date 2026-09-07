@@ -15,12 +15,17 @@ export function formatCents(
   }).format(value);
 }
 
-export function formatTime(iso: string | Date): string {
+// `shopTz` is an explicit IANA zone (e.g. "Asia/Karachi") — pass it wherever
+// the caller has a shop in scope so the displayed time matches the shop's own
+// wall clock. Omitting it keeps the old raw-UTC behavior for call sites that
+// haven't been audited yet. Either way the zone is always an explicit fixed
+// value, never the ambient system zone, so SSR/CSR hydration stays stable.
+export function formatTime(iso: string | Date, shopTz?: string | null): string {
   const d = typeof iso === "string" ? new Date(iso) : iso;
   return d.toLocaleTimeString("en-GB", {
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: "UTC",
+    timeZone: shopTz || "UTC",
   });
 }
 

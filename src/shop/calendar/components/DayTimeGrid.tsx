@@ -15,6 +15,8 @@ import {
   type StaffDayHours as SharedStaffDayHours,
   type StaffWorkingHours as SharedStaffWorkingHours,
 } from "@/shop/staff/staff-availability";
+import { utcToShopLocal } from "@/shared/lib/shop-timezone";
+import { useT } from "@/shared/lib/i18n";
 
 /**
  * Visuele dag-rooster (tijdgrid) voor de shop-kalender.
@@ -39,8 +41,6 @@ const SLOT_MINUTES = 60;
 const SNAP_MINUTES = 15; // Drag-and-drop snap-raster (15 min)
 const PX_PER_HOUR = 64; // 64px per uur → 1 min ≈ 1.07px
 const PX_PER_MIN = PX_PER_HOUR / 60;
-
-const DAY_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
 export type DayHours = { open?: string; close?: string; closed?: boolean };
 export type BusinessHours = SharedBusinessHours;
@@ -71,10 +71,11 @@ function parseHour(value: string | undefined, mode: "floor" | "ceil"): number | 
 function resolveDayWindow(
   day: Date,
   businessHours: BusinessHours | undefined,
+  shopTz: string,
 ): { startHour: number; endHour: number; isClosed: boolean } {
   const fallback = { startHour: DEFAULT_START_HOUR, endHour: DEFAULT_END_HOUR, isClosed: false };
   if (!businessHours) return fallback;
-  const key = DAY_KEYS[day.getUTCDay()] as DayKey;
+  const key = utcToShopLocal(day, shopTz).dayKey as DayKey;
   const dh = businessHours[key];
   if (!dh) return fallback;
   if (dh.closed) return { ...fallback, isClosed: true };
@@ -93,8 +94,9 @@ function resolveStaffAvailability(
   wh: StaffWorkingHours | undefined,
   windowStartHour: number,
   windowEndHour: number,
+  shopTz: string,
 ): StaffAvailability {
-  return resolveStaffAvailabilityCore(day, wh, windowStartHour * 60, windowEndHour * 60);
+  return resolveStaffAvailabilityCore(day, wh, windowStartHour * 60, windowEndHour * 60, shopTz);
 }
 
 
@@ -114,8 +116,10 @@ type ColorResolver = {
 };
 
 export type DayTimeGridProps = {
-  /** Lokale dag (UTC midnight) waarvoor het rooster wordt getoond. */
+  /** Shop-lokale dag (middernacht in de tijdzone van de shop) waarvoor het rooster wordt getoond. */
   day: Date;
+  /** Shop's IANA tijdzone — elke tijd wordt hierin weergegeven/geïnterpreteerd, nooit UTC. */
+  shopTz: string;
   bookings: BookingWithRelations[];
   staff: StaffLite[];
   customers: CustomerLite[];
@@ -190,6 +194,7 @@ type Column = {
 
 export function DayTimeGrid({
   day,
+  shopTz,
   bookings,
   staff,
   customers,
@@ -209,16 +214,12 @@ export function DayTimeGrid({
   createBookingTitle,
   emptyLabels,
 }: DayTimeGridProps) {
-  const dayStart = useMemo(() => {
-    const d = new Date(day);
-    d.setUTCHours(0, 0, 0, 0);
-    return d;
-  }, [day]);
-  const dayEnd = useMemo(() => {
-    const d = new Date(dayStart);
-    d.setUTCDate(d.getUTCDate() + 1);
-    return d;
-  }, [dayStart]);
+  const { t } = useT();
+  // `day` already IS shop-local midnight (an absolute instant), computed by the
+  // caller via shopLocalDayBoundsUtc — never re-derive it via UTC getters/setters
+  // here, that would silently swap it back to UTC midnight.
+  const dayStart = day;
+  const dayEnd = useMemo(() => new Date(dayStart.getTime() + 24 * 3600 * 1000), [dayStart]);
 
   // Kolommen bepalen op basis van actieve medewerkers + filter.
   const columns: Column[] = useMemo(() => {
@@ -238,13 +239,13 @@ export function DayTimeGrid({
         new Date(b.starts_at) < dayEnd,
     );
     if (hasUnassigned) {
-      allCols.push({ key: "__unassigned__", label: "Niet toegewezen", staffId: null, color: null });
+      allCols.push({ key: "__unassigned__", label: t("calendar.unassigned"), staffId: null, color: null });
     }
     if (staffFilter === "all") return allCols;
     if (staffFilter === "unassigned")
       return allCols.filter((c) => c.staffId === null);
     return allCols.filter((c) => c.staffId === staffFilter);
-  }, [staff, colors, staffFilter, bookings, dayStart, dayEnd]);
+  }, [staff, colors, staffFilter, bookings, dayStart, dayEnd, t]);
 
   // Bookings binnen deze dag, gefilterd door kolommen.
   const visibleBookings = useMemo(() => {
@@ -258,8 +259,8 @@ export function DayTimeGrid({
 
   // Dynamisch venster op basis van business_hours per weekdag.
   const { startHour: START_HOUR, endHour: END_HOUR, isClosed } = useMemo(
-    () => resolveDayWindow(dayStart, businessHours),
-    [dayStart, businessHours],
+    () => resolveDayWindow(dayStart, businessHours, shopTz),
+    [dayStart, businessHours, shopTz],
   );
 
   // Drag-preview: gesnapte drop-positie binnen één kolom (tijdelijke UI-state).
@@ -326,10 +327,10 @@ export function DayTimeGrid({
     const map = new Map<string, StaffAvailability>();
     for (const c of columns) {
       if (c.staffId == null) continue; // unassigned: geen overlay
-      map.set(c.key, resolveStaffAvailability(dayStart, c.workingHours, START_HOUR, END_HOUR));
+      map.set(c.key, resolveStaffAvailability(dayStart, c.workingHours, START_HOUR, END_HOUR, shopTz));
     }
     return map;
-  }, [columns, dayStart, START_HOUR, END_HOUR]);
+  }, [columns, dayStart, START_HOUR, END_HOUR, shopTz]);
 
   /** Bepaal of een uur-slot binnen een unavailable zone valt voor een kolom. */
   function slotReason(colKey: string, hour: number): "closed" | "break" | "off_hours" | null {
@@ -347,13 +348,12 @@ export function DayTimeGrid({
     return inside ? null : "off_hours";
   }
 
-  // "Now"-lijn alleen tonen wanneer de kalenderdag === vandaag (UTC).
+  // "Now"-lijn alleen tonen wanneer de kalenderdag === vandaag, in de tijdzone
+  // van de shop. Minuten-sinds-dayStart via tijdsverschil, niet via
+  // UTC-kalendervelden — dayStart is al shop-lokale middernacht.
   const now = new Date();
-  const todayKey = `${now.getUTCFullYear()}-${now.getUTCMonth()}-${now.getUTCDate()}`;
-  const dayKey = `${dayStart.getUTCFullYear()}-${dayStart.getUTCMonth()}-${dayStart.getUTCDate()}`;
-  const showNow = todayKey === dayKey;
-  const nowMinutes =
-    now.getUTCHours() * 60 + now.getUTCMinutes() - START_HOUR * 60;
+  const showNow = now.getTime() >= dayStart.getTime() && now.getTime() < dayEnd.getTime();
+  const nowMinutes = (now.getTime() - dayStart.getTime()) / 60000 - START_HOUR * 60;
   const nowTop = showNow && nowMinutes >= 0 && nowMinutes <= (END_HOUR - START_HOUR) * 60
     ? nowMinutes * PX_PER_MIN
     : null;
@@ -361,10 +361,10 @@ export function DayTimeGrid({
   if (columns.length === 0) {
     const hasActiveStaff = staff.some((s) => s.is_active);
     const labels = emptyLabels ?? {
-      title: "Geen afspraken zichtbaar",
-      noStaffSelected: "Selecteer een medewerker om afspraken te bekijken.",
-      noStaffActive: "Voeg een actieve medewerker toe om je rooster te starten.",
-      cta: "Nieuwe boeking",
+      title: t("calendar.emptyTitle"),
+      noStaffSelected: t("calendar.emptyNoStaffSelected"),
+      noStaffActive: t("calendar.emptyNoStaffActive"),
+      cta: t("calendar.newBooking"),
     };
     const subtitle = hasActiveStaff ? labels.noStaffSelected : labels.noStaffActive;
     return (
@@ -507,8 +507,7 @@ export function DayTimeGrid({
                   const durMs = src
                     ? +new Date(src.ends_at) - +new Date(src.starts_at)
                     : SNAP_MINUTES * 60_000;
-                  const slotStart = new Date(dayStart);
-                  slotStart.setUTCMinutes(totalMin);
+                  const slotStart = new Date(dayStart.getTime() + totalMin * 60000);
                   const slotEnd = new Date(slotStart.getTime() + durMs);
 
                   if (dropInvalidLabels) {
@@ -523,12 +522,8 @@ export function DayTimeGrid({
                         const oStart = new Date(other.starts_at).getTime();
                         const oEnd = new Date(other.ends_at).getTime();
                         if (newStartTs < oEnd && newEndTs > oStart) {
-                          const oStartDate = new Date(other.starts_at);
-                          const oEndDate = new Date(other.ends_at);
-                          const oStartMin =
-                            oStartDate.getUTCHours() * 60 + oStartDate.getUTCMinutes();
-                          const oEndMin =
-                            oEndDate.getUTCHours() * 60 + oEndDate.getUTCMinutes();
+                          const oStartMin = (oStart - dayStart.getTime()) / 60000;
+                          const oEndMin = (oEnd - dayStart.getTime()) / 60000;
                           invalid = true;
                           reason = dropInvalidLabels.conflictWith(
                             `${formatMinutes(oStartMin)}–${formatMinutes(oEndMin)}`,
@@ -539,7 +534,7 @@ export function DayTimeGrid({
                     }
                     // 2) Werkuren/pauze van doel-medewerker (alleen als nog geen conflict).
                     if (!invalid && c.workingHours) {
-                      const v = validateBookingSlot(slotStart, slotEnd, c.workingHours, "UTC");
+                      const v = validateBookingSlot(slotStart, slotEnd, c.workingHours, shopTz);
                       if (v.kind === "closed_day") {
                         invalid = true;
                         reason = dropInvalidLabels.closedDay;
@@ -600,9 +595,7 @@ export function DayTimeGrid({
                 const snapped = Math.round(rawMin / SNAP_MINUTES) * SNAP_MINUTES;
                 const totalMinFromMidnight = START_HOUR * 60 + snapped;
                 const clamped = Math.max(0, Math.min(24 * 60 - SNAP_MINUTES, totalMinFromMidnight));
-                const newStart = new Date(dayStart);
-                newStart.setUTCHours(0, 0, 0, 0);
-                newStart.setUTCMinutes(clamped);
+                const newStart = new Date(dayStart.getTime() + clamped * 60000);
                 const booking = bookings.find((b) => b.id === bookingId);
                 if (!booking) return;
                 // No-op detectie: zelfde staff en zelfde tijd → niets doen.
@@ -628,12 +621,8 @@ export function DayTimeGrid({
                       const oStart = new Date(other.starts_at).getTime();
                       const oEnd = new Date(other.ends_at).getTime();
                       if (newStartTs < oEnd && newEndTs > oStart) {
-                        const oStartDate = new Date(other.starts_at);
-                        const oEndDate = new Date(other.ends_at);
-                        const oStartMin =
-                          oStartDate.getUTCHours() * 60 + oStartDate.getUTCMinutes();
-                        const oEndMin =
-                          oEndDate.getUTCHours() * 60 + oEndDate.getUTCMinutes();
+                        const oStartMin = (oStart - dayStart.getTime()) / 60000;
+                        const oEndMin = (oEnd - dayStart.getTime()) / 60000;
                         onDropBlocked?.(
                           dropInvalidLabels.conflictWith(
                             `${formatMinutes(oStartMin)}–${formatMinutes(oEndMin)}`,
@@ -645,7 +634,7 @@ export function DayTimeGrid({
                   }
                   // Werkuren/pauze
                   if (c.workingHours) {
-                    const v = validateBookingSlot(newStart, slotEnd, c.workingHours, "UTC");
+                    const v = validateBookingSlot(newStart, slotEnd, c.workingHours, shopTz);
                     if (v.kind === "closed_day") {
                       onDropBlocked?.(dropInvalidLabels.closedDay);
                       return;
@@ -682,7 +671,7 @@ export function DayTimeGrid({
                     backgroundImage:
                       "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground) / 0.08) 6px 7px)",
                   }}
-                  title={`Niet beschikbaar — ${c.label} werkt vandaag niet`}
+                  title={t("calendar.unavailableStaffOffToday", { staff: c.label })}
                 />
               ) : (
                 // Render één off-hours-blok vóór de eerste working-window en één erna,
@@ -708,7 +697,7 @@ export function DayTimeGrid({
                         backgroundImage:
                           "repeating-linear-gradient(45deg, transparent 0 6px, hsl(var(--muted-foreground) / 0.08) 6px 7px)",
                       }}
-                      title={`Buiten werkuren ${formatMinutes(g.startMin)}–${formatMinutes(g.endMin)}`}
+                      title={t("calendar.outsideHoursRangeCompact", { range: `${formatMinutes(g.startMin)}–${formatMinutes(g.endMin)}` })}
                     />
                   ));
                 })()
@@ -724,7 +713,7 @@ export function DayTimeGrid({
                     backgroundImage:
                       "repeating-linear-gradient(135deg, transparent 0 5px, hsl(var(--warning) / 0.18) 5px 6px)",
                   }}
-                  title={`Pauze ${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`}
+                  title={t("calendar.breakRangeCompact", { range: `${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}` })}
                 />
               ))}
               {/* Uur-grid-lijnen + klikbare slots */}
@@ -734,7 +723,7 @@ export function DayTimeGrid({
                 let unavailableTitle: string | undefined;
                 if (unavailable) {
                   if (reason === "closed") {
-                    unavailableTitle = `${c.label} werkt vandaag niet`;
+                    unavailableTitle = t("calendar.staffOffToday", { staff: c.label });
                   } else if (reason === "break" && av) {
                     const slotStart = h * 60;
                     const slotEnd = slotStart + 60;
@@ -742,13 +731,13 @@ export function DayTimeGrid({
                       (b) => slotStart < b.endMin && slotEnd > b.startMin,
                     );
                     unavailableTitle = br
-                      ? `Pauze ${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}`
-                      : "Pauze";
+                      ? t("calendar.breakRangeCompact", { range: `${formatMinutes(br.startMin)}–${formatMinutes(br.endMin)}` })
+                      : t("calendar.break");
                   } else if (reason === "off_hours" && av) {
                     const w = av.working[0];
                     unavailableTitle = w
-                      ? `Buiten werkuren — ${c.label} werkt ${formatMinutes(w.startMin)}–${formatMinutes(w.endMin)}`
-                      : `Buiten werkuren`;
+                      ? t("calendar.outsideHoursStaffRange", { staff: c.label, range: `${formatMinutes(w.startMin)}–${formatMinutes(w.endMin)}` })
+                      : t("calendar.outsideHours");
                   }
                 }
                 return (
@@ -761,8 +750,7 @@ export function DayTimeGrid({
                         return;
                       }
                       if (!onSelectSlot) return;
-                      const startsAt = new Date(dayStart);
-                      startsAt.setUTCHours(h, 0, 0, 0);
+                      const startsAt = new Date(dayStart.getTime() + h * 3600000);
                       onSelectSlot({ staffId: c.staffId, startsAt });
                     }}
                     className={cn(
@@ -773,8 +761,8 @@ export function DayTimeGrid({
                     title={unavailableTitle}
                     aria-label={
                       unavailable
-                        ? `Niet beschikbaar — ${c.label} ${String(h).padStart(2, "0")}:00${unavailableTitle ? ` (${unavailableTitle})` : ""}`
-                        : `Nieuwe boeking ${c.label} ${String(h).padStart(2, "0")}:00`
+                        ? `${t("calendar.unavailableStaffTime", { staff: c.label, time: `${String(h).padStart(2, "0")}:00` })}${unavailableTitle ? ` (${unavailableTitle})` : ""}`
+                        : t("calendar.newBookingStaffTime", { staff: c.label, time: `${String(h).padStart(2, "0")}:00` })
                     }
                     aria-disabled={unavailable}
                   />
@@ -854,8 +842,7 @@ export function DayTimeGrid({
                 .map((b) => {
                   const start = new Date(b.starts_at);
                   const end = new Date(b.ends_at);
-                  const startMin =
-                    start.getUTCHours() * 60 + start.getUTCMinutes() - START_HOUR * 60;
+                  const startMin = (start.getTime() - dayStart.getTime()) / 60000 - START_HOUR * 60;
                   const durMin = Math.max(15, (end.getTime() - start.getTime()) / 60000);
                   const top = Math.max(0, startMin * PX_PER_MIN);
                   const cust = customers.find((x) => x.id === b.customer_id);
@@ -963,12 +950,8 @@ export function DayTimeGrid({
                                 const oStart = new Date(other.starts_at).getTime();
                                 const oEnd = new Date(other.ends_at).getTime();
                                 if (newStartTs < oEnd && newEndTs > oStart) {
-                                  const oStartDate = new Date(other.starts_at);
-                                  const oEndDate = new Date(other.ends_at);
-                                  const oStartMin =
-                                    oStartDate.getUTCHours() * 60 + oStartDate.getUTCMinutes();
-                                  const oEndMin =
-                                    oEndDate.getUTCHours() * 60 + oEndDate.getUTCMinutes();
+                                  const oStartMin = (oStart - dayStart.getTime()) / 60000;
+                                  const oEndMin = (oEnd - dayStart.getTime()) / 60000;
                                   return {
                                     invalid: true,
                                     reason: dropInvalidLabels.conflictWith(
@@ -980,7 +963,7 @@ export function DayTimeGrid({
                             }
                             // 2) Werkuren/pauze
                             if (!targetCol.workingHours) return { invalid: false };
-                            const v = validateBookingSlot(slotStart, slotEnd, targetCol.workingHours, "UTC");
+                            const v = validateBookingSlot(slotStart, slotEnd, targetCol.workingHours, shopTz);
                             if (v.kind === "ok" || v.kind === "no_data") return { invalid: false };
                             if (v.kind === "closed_day") {
                               return { invalid: true, reason: dropInvalidLabels.closedDay };
@@ -1011,8 +994,7 @@ export function DayTimeGrid({
                               return;
                             }
                             const { targetCol, clampedInWin, totalMin } = at;
-                            const slotStart = new Date(dayStart);
-                            slotStart.setUTCMinutes(totalMin);
+                            const slotStart = new Date(dayStart.getTime() + totalMin * 60000);
                             const slotEnd = new Date(slotStart.getTime() + durMin * 60_000);
                             const v = computeValidation(targetCol, slotStart, slotEnd);
                             setDragPreview({
@@ -1054,8 +1036,7 @@ export function DayTimeGrid({
                             setDragPreview(null);
                             if (!at) return;
                             const { targetCol, totalMin } = at;
-                            const slotStart = new Date(dayStart);
-                            slotStart.setUTCMinutes(totalMin);
+                            const slotStart = new Date(dayStart.getTime() + totalMin * 60000);
                             const slotEnd = new Date(slotStart.getTime() + durMin * 60_000);
                             // Blokkeer commit bij invalid (werkuren/pauze/conflict) + notify parent.
                             const tv = computeValidation(targetCol, slotStart, slotEnd);
@@ -1063,9 +1044,7 @@ export function DayTimeGrid({
                               if (tv.reason) onDropBlocked?.(tv.reason);
                               return;
                             }
-                            const newStart = new Date(dayStart);
-                            newStart.setUTCHours(0, 0, 0, 0);
-                            newStart.setUTCMinutes(totalMin);
+                            const newStart = slotStart;
                             const sameStaff = (b.staff_id ?? null) === targetCol.staffId;
                             const sameTime = new Date(b.starts_at).getTime() === newStart.getTime();
                             if (sameStaff && sameTime) return;
@@ -1130,7 +1109,7 @@ export function DayTimeGrid({
                           // Clamp binnen het dag-venster (zelfde regels als drag).
                           const dayMinStart = START_HOUR * 60;
                           const dayMinEnd = END_HOUR * 60;
-                          const startMinAbs = newStart.getUTCHours() * 60 + newStart.getUTCMinutes();
+                          const startMinAbs = (newStart.getTime() - dayStart.getTime()) / 60000;
                           if (startMinAbs < dayMinStart || startMinAbs + durMin > dayMinEnd) {
                             return;
                           }
@@ -1151,10 +1130,8 @@ export function DayTimeGrid({
                                 const oStart = new Date(other.starts_at).getTime();
                                 const oEnd = new Date(other.ends_at).getTime();
                                 if (newStartTs < oEnd && newEndTs > oStart) {
-                                  const oS = new Date(other.starts_at);
-                                  const oE = new Date(other.ends_at);
-                                  const oSm = oS.getUTCHours() * 60 + oS.getUTCMinutes();
-                                  const oEm = oE.getUTCHours() * 60 + oE.getUTCMinutes();
+                                  const oSm = (oStart - dayStart.getTime()) / 60000;
+                                  const oEm = (oEnd - dayStart.getTime()) / 60000;
                                   invalid = true;
                                   reason = dropInvalidLabels.conflictWith(`${formatMinutes(oSm)}–${formatMinutes(oEm)}`);
                                   break;
@@ -1162,7 +1139,7 @@ export function DayTimeGrid({
                               }
                             }
                             if (!invalid && targetCol.workingHours) {
-                              const v = validateBookingSlot(newStart, slotEnd, targetCol.workingHours, "UTC");
+                              const v = validateBookingSlot(newStart, slotEnd, targetCol.workingHours, shopTz);
                               if (v.kind === "closed_day") { invalid = true; reason = dropInvalidLabels.closedDay; }
                               else if (v.kind === "off_hours") {
                                 invalid = true;
@@ -1215,12 +1192,12 @@ export function DayTimeGrid({
                           touchDrag?.bookingId === b.id && "scale-[1.02] opacity-70 ring-2 ring-primary/70 shadow-lg",
                         )}
                         style={touchDrag?.bookingId === b.id ? { touchAction: "none" } : undefined}
-                        title={`${cust?.full_name ?? "—"} · ${svc?.name ?? "—"} · ${formatTime(b.starts_at)}–${formatTime(b.ends_at)}${draggable ? " · Sleep of gebruik pijltjestoetsen om te verplaatsen" : ""}`}
-                        aria-label={draggable ? `${cust?.full_name ?? "—"} · ${formatTime(b.starts_at)}–${formatTime(b.ends_at)} · Pijltjes om ±15 min of medewerker-kolom te verplaatsen` : undefined}
+                        title={`${cust?.full_name ?? "—"} · ${svc?.name ?? "—"} · ${formatTime(b.starts_at, shopTz)}–${formatTime(b.ends_at, shopTz)}${draggable ? ` · ${t("calendar.dragOrKeysToMove")}` : ""}`}
+                        aria-label={draggable ? `${cust?.full_name ?? "—"} · ${formatTime(b.starts_at, shopTz)}–${formatTime(b.ends_at, shopTz)} · ${t("calendar.arrowKeysHint")}` : undefined}
                       >
                         <div className="flex items-center justify-between gap-1">
                           <span className="truncate font-semibold">
-                            {formatTime(b.starts_at)}
+                            {formatTime(b.starts_at, shopTz)}
                           </span>
                           <span className="shrink-0 text-[10px] font-medium tabular-nums opacity-90">
                             {formatCents(b.price_cents)}
@@ -1263,12 +1240,8 @@ export function DayTimeGrid({
                               const oStart = new Date(other.starts_at).getTime();
                               const oEnd = new Date(other.ends_at).getTime();
                               if (newStartTs < oEnd && newEndTs > oStart) {
-                                const oStartMin =
-                                  new Date(other.starts_at).getUTCHours() * 60 +
-                                  new Date(other.starts_at).getUTCMinutes();
-                                const oEndMin =
-                                  new Date(other.ends_at).getUTCHours() * 60 +
-                                  new Date(other.ends_at).getUTCMinutes();
+                                const oStartMin = (oStart - dayStart.getTime()) / 60000;
+                                const oEndMin = (oEnd - dayStart.getTime()) / 60000;
                                 return {
                                   invalid: true,
                                   reason: dropInvalidLabels.conflictWith(
@@ -1279,7 +1252,7 @@ export function DayTimeGrid({
                             }
                           }
                           if (!wh) return { invalid: false };
-                          const v = validateBookingSlot(start, slotEnd, wh, "UTC");
+                          const v = validateBookingSlot(start, slotEnd, wh, shopTz);
                           if (v.kind === "ok" || v.kind === "no_data") return { invalid: false };
                           if (v.kind === "closed_day") {
                             return { invalid: true, reason: dropInvalidLabels.closedDay };
@@ -1357,11 +1330,11 @@ export function DayTimeGrid({
                         return (
                           <div
                             role="slider"
-                            aria-label={resizeHandleLabel ?? "Sleep om duur aan te passen"}
+                            aria-label={resizeHandleLabel ?? t("calendar.resizeHandle")}
                             aria-valuemin={15}
                             aria-valuenow={Math.round(liveDurMin)}
                             tabIndex={-1}
-                            title={resizeHandleLabel ?? "Sleep om duur aan te passen"}
+                            title={resizeHandleLabel ?? t("calendar.resizeHandle")}
                             // touchAction:none voorkomt page-scroll tijdens vertical drag op touch.
                             style={{ touchAction: "none" }}
                             onMouseDown={(e) => {
