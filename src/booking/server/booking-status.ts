@@ -137,9 +137,13 @@ export const handlers = {
             .eq("id", openPayment.id)
             .maybeSingle();
           if (paymentRow?.provider_payment_id) {
-            voidOpenMolliePayment(paymentRow.id, booking.shop_id, paymentRow.provider_payment_id).catch(
-              (err) => log.error("void_payment_error", { booking_id: booking.id, err }),
-            );
+            voidOpenMolliePayment(paymentRow.id, booking.shop_id, paymentRow.provider_payment_id)
+              .then((result) => {
+                if (!result.ok) {
+                  log.error("void_payment_failed", { booking_id: booking.id, error: result.error });
+                }
+              })
+              .catch((err) => log.error("void_payment_error", { booking_id: booking.id, err }));
           }
         }
       }

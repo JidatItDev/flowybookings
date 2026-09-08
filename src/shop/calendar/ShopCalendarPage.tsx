@@ -261,7 +261,7 @@ export function ShopCalendarPage() {
       newEndsAt?: Date;
     }) => {
       assertNotImpersonating();
-      const { booking, newStaffId, newStartsAt } = params;
+      const { booking, newStaffId, newStartsAt, newEndsAt } = params;
       const { data: sess } = await supabase.auth.getSession();
       const accessToken = sess.session?.access_token;
       if (!accessToken) throw new Error("unauthenticated");
@@ -272,6 +272,9 @@ export function ShopCalendarPage() {
           booking_id: booking.id,
           new_starts_at: newStartsAt.toISOString(),
           new_staff_id: newStaffId,
+          // Resize sets this explicitly (duration change, start unchanged) —
+          // omitted on a plain move, where the server keeps the existing duration.
+          new_ends_at: newEndsAt?.toISOString(),
         }),
       });
       const body = (await res.json().catch(() => ({}))) as {
@@ -1829,24 +1832,35 @@ function BookingActionDialog({
   // every status change gets a confirmation step, not a bare instant click).
   const statusActions = (
     <div className="grid grid-cols-2 gap-2 pt-2">
-      <Button variant="default" disabled={!confirmVerdict.allowed} title={guardTitle(confirmVerdict)} onClick={() => setPendingAction(confirmAction)}>
-        {t("calendar.confirmed")}
-      </Button>
-      <Button variant="hero" disabled={!completedVerdict.allowed} title={guardTitle(completedVerdict)} onClick={() => setPendingAction("markCompleted")}>
-        {t("calendar.completed")}
-      </Button>
-      <Button variant="outline" disabled={!cancelVerdict.allowed} title={guardTitle(cancelVerdict)} onClick={() => setPendingAction("cancel")}>
-        {t("calendar.cancelBooking")}
-      </Button>
-      <Button
-        variant="outline"
-        disabled={!noShowVerdict.allowed}
-        title={guardTitle(noShowVerdict)}
-        onClick={() => setPendingAction("markNoShow")}
-        className="text-destructive border-destructive/30 hover:bg-destructive/10"
-      >
-        <UserX className="h-4 w-4" /> {t("calendar.noShow")}
-      </Button>
+      {/* title lives on the span, not the Button: disabled:pointer-events-none
+          on the base Button class (needed so disabled buttons don't fire
+          onClick) also blocks native title tooltips from ever showing on a
+          disabled button — the span is a non-disabled hover target instead. */}
+      <span title={guardTitle(confirmVerdict)}>
+        <Button variant="default" disabled={!confirmVerdict.allowed} onClick={() => setPendingAction(confirmAction)} className="w-full">
+          {t("calendar.confirmed")}
+        </Button>
+      </span>
+      <span title={guardTitle(completedVerdict)}>
+        <Button variant="hero" disabled={!completedVerdict.allowed} onClick={() => setPendingAction("markCompleted")} className="w-full">
+          {t("calendar.completed")}
+        </Button>
+      </span>
+      <span title={guardTitle(cancelVerdict)}>
+        <Button variant="outline" disabled={!cancelVerdict.allowed} onClick={() => setPendingAction("cancel")} className="w-full">
+          {t("calendar.cancelBooking")}
+        </Button>
+      </span>
+      <span title={guardTitle(noShowVerdict)}>
+        <Button
+          variant="outline"
+          disabled={!noShowVerdict.allowed}
+          onClick={() => setPendingAction("markNoShow")}
+          className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
+        >
+          <UserX className="h-4 w-4" /> {t("calendar.noShow")}
+        </Button>
+      </span>
     </div>
   );
 

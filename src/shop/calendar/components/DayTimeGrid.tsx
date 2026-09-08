@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import { cn } from "@/shared/lib/utils";
+import {
+  RescheduleConfirmDialog,
+  type CustomerLite,
+  type ServiceLite,
+  type RescheduleParams,
+} from "@/shop/calendar/components/RescheduleConfirmDialog";
 import { formatCents, formatTime } from "@/shared/lib/format";
 import { staffInitials, type StaffColor } from "@/shop/calendar/staff-color";
 import type { BookingWithRelations } from "@/shop/shared/queries-barrel";
@@ -108,9 +113,6 @@ type StaffLite = {
   working_hours?: unknown;
 };
 
-type CustomerLite = { id: string; full_name: string };
-type ServiceLite = { id: string; name: string };
-
 /** Resolver-shape die useStaffColors() teruggeeft. */
 type ColorResolver = {
   get: (staffId: string | null | undefined) => StaffColor;
@@ -217,34 +219,14 @@ export function DayTimeGrid({
 }: DayTimeGridProps) {
   const { t } = useT();
   // Drag/resize/keyboard-move all funnel through this instead of calling
-  // `onReschedule` directly — shows a confirm toast (Confirm/Cancel action
-  // buttons) before anything is actually committed. Declining costs nothing:
-  // since the parent's data was never touched, the block is already back at
-  // its real position the moment the toast's transient preview state clears.
-  type RescheduleParams = {
-    booking: BookingWithRelations;
-    newStaffId: string | null;
-    newStartsAt: Date;
-    newEndsAt?: Date;
-  };
+  // `onReschedule` directly — shows a confirm modal (RescheduleConfirmDialog)
+  // before anything is actually committed. Declining costs nothing: since the
+  // parent's data was never touched, the block is already back at its real
+  // position the moment the dialog closes.
+  const [pendingReschedule, setPendingReschedule] = useState<RescheduleParams | null>(null);
   function proposeReschedule(params: RescheduleParams) {
-    // Aliased to a fresh binding so TS's narrowing here doesn't leak across
-    // the whole component scope and flag the unrelated `onReschedule` checks
-    // elsewhere (drag/resize handlers) as "always true".
-    const commitReschedule = onReschedule;
-    if (!commitReschedule) return;
-    const startChanged = params.newStartsAt.getTime() !== new Date(params.booking.starts_at).getTime();
-    const title = startChanged
-      ? t("calendar.confirmMoveTitle", { time: formatTime(params.newStartsAt, shopTz) })
-      : t("calendar.confirmResizeTitle", {
-          time: params.newEndsAt ? formatTime(params.newEndsAt, shopTz) : "",
-        });
-    toast(title, {
-      id: `reschedule-${params.booking.id}`,
-      duration: 8000,
-      action: { label: t("calendar.confirmMoveAction"), onClick: () => commitReschedule(params) },
-      cancel: { label: t("calendar.cancel"), onClick: () => {} },
-    });
+    if (!onReschedule) return;
+    setPendingReschedule(params);
   }
   // `day` already IS shop-local midnight (an absolute instant), computed by the
   // caller via shopLocalDayBoundsUtc — never re-derive it via UTC getters/setters
@@ -455,6 +437,7 @@ export function DayTimeGrid({
   }
 
   return (
+    <>
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
       {isClosed && (
         <div className="border-b border-border bg-muted/30 px-4 py-2 text-center text-xs text-muted-foreground">
@@ -1451,5 +1434,17 @@ export function DayTimeGrid({
         </div>
       </div>
     </div>
+    <RescheduleConfirmDialog
+      pending={pendingReschedule}
+      shopTz={shopTz}
+      customers={customers}
+      services={services}
+      onConfirm={(params) => {
+        onReschedule?.(params);
+        setPendingReschedule(null);
+      }}
+      onCancel={() => setPendingReschedule(null)}
+    />
+    </>
   );
 }

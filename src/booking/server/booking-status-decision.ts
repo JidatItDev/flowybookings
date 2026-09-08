@@ -60,6 +60,16 @@ function noOpenPayment(_booking: BookingLite, ctx: GuardContext): GuardResult {
   return { allowed: true };
 }
 
+// A pending booking was never confirmed, so it never "started" in any
+// customer-facing sense — time-gating its cancellation the same way as a
+// confirmed one leaves it permanently stuck (no other transition reaches a
+// pending booking once its start time passes: confirm and cancel both need
+// beforeStartTime, and no-show/completed both require status confirmed/no_show).
+function beforeStartTimeUnlessPending(booking: BookingLite, ctx: GuardContext): GuardResult {
+  if (booking.status === "pending") return { allowed: true };
+  return beforeStartTime(booking, ctx);
+}
+
 function always(): GuardResult {
   return { allowed: true };
 }
@@ -90,7 +100,7 @@ export const TRANSITIONS: Record<BookingAction, Transition> = {
   cancel: {
     from: ["pending", "confirmed"],
     to: "cancelled",
-    guard: beforeStartTime,
+    guard: beforeStartTimeUnlessPending,
     requiresReason: true,
   },
   markNoShow: {

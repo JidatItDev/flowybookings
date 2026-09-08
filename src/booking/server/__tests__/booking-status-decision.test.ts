@@ -74,6 +74,14 @@ describe("cancel", () => {
     expect(result).toEqual({ allowed: false, reason: "booking_already_started" });
   });
 
+  test("allowed: pending, well after start time (would otherwise be permanently stuck)", () => {
+    const result = canTransition(booking({ status: "pending", starts_at: PAST }), "cancel", {
+      now: NOW,
+      hasOpenPayment: false,
+    });
+    expect(result).toEqual({ allowed: true, to: "cancelled", requiresReason: true });
+  });
+
   test("denied: already cancelled", () => {
     const result = canTransition(booking({ status: "cancelled" }), "cancel", { now: NOW, hasOpenPayment: false });
     expect(result).toEqual({ allowed: false, reason: "invalid_current_status" });

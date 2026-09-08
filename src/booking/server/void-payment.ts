@@ -11,6 +11,7 @@
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { MOLLIE_CONNECT_API_BASE, getActiveMollieAccessToken } from "@/shop/payments/mollie-connect";
+import { getMollieMode } from "@/shared/lib/mollie-platform";
 import { createLogger } from "@/server/logger";
 
 const log = createLogger("bookings.void-payment");
@@ -23,9 +24,21 @@ export async function voidOpenMolliePayment(
   const tokenInfo = await getActiveMollieAccessToken(shopId);
   if (!tokenInfo) return { ok: false, error: "no_mollie_connection" };
 
+  // Mollie Connect OAuth tokens operate against LIVE data unless testmode is
+  // explicitly set — same requirement as checkout.ts, connect-webhook.ts's
+  // status re-fetch, and refund.ts. Unlike the GET endpoint (query param),
+  // Mollie's Cancel Payment DELETE only accepts testmode as a JSON body field
+  // — a bare `?testmode=true` query param 422s with "Non-existent query
+  // parameter" (confirmed against the real API).
+  const body: Record<string, unknown> = {};
+  if (getMollieMode() === "test") body.testmode = true;
   const mollieRes = await fetch(`${MOLLIE_CONNECT_API_BASE}/payments/${providerPaymentId}`, {
     method: "DELETE",
-    headers: { Authorization: `Bearer ${tokenInfo.accessToken}` },
+    headers: {
+      Authorization: `Bearer ${tokenInfo.accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
   });
 
   // Mollie returns 204 (no body) on success, or an error payload otherwise.

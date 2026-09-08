@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 import { cn } from "@/shared/lib/utils";
 import { formatTime } from "@/shared/lib/format";
 import { staffInitials, type StaffColor } from "@/shop/calendar/staff-color";
 import type { BookingWithRelations } from "@/shop/shared/queries-barrel";
+import {
+  RescheduleConfirmDialog,
+  type CustomerLite,
+  type ServiceLite,
+  type RescheduleParams as WeekRescheduleParams,
+} from "@/shop/calendar/components/RescheduleConfirmDialog";
 import { createEdgeAutoScroller } from "@/shop/calendar/auto-scroll-edge";
 import {
   formatMinutesOfDay,
@@ -53,19 +58,8 @@ type StaffLite = {
   working_hours?: unknown;
 };
 
-type CustomerLite = { id: string; full_name: string };
-type ServiceLite = { id: string; name: string };
-
 type ColorResolver = {
   get: (staffId: string | null | undefined) => StaffColor;
-};
-
-export type WeekRescheduleParams = {
-  booking: BookingWithRelations;
-  newStaffId: string | null;
-  newStartsAt: Date;
-  /** Optioneel — wanneer gezet, override van de afgeleide einde (voor resize-flow). */
-  newEndsAt?: Date;
 };
 
 export type WeekTimeGridProps = {
@@ -177,32 +171,14 @@ export function WeekTimeGrid({
   const { t, locale } = useT();
   const dateLocale = locale === "en" ? "en-US" : "nl-NL";
   // Drag/resize/keyboard-move all funnel through this instead of calling
-  // `onReschedule` directly — shows a confirm toast (Confirm/Cancel action
-  // buttons) before anything is actually committed. Declining costs nothing:
-  // since the parent's data was never touched, the block is already back at
-  // its real position the moment the toast's transient preview state clears.
-  // Mirrors DayTimeGrid.tsx's identical helper.
-  type RescheduleParams = {
-    booking: BookingWithRelations;
-    newStaffId: string | null;
-    newStartsAt: Date;
-    newEndsAt?: Date;
-  };
-  function proposeReschedule(params: RescheduleParams) {
-    const commitReschedule = onReschedule;
-    if (!commitReschedule) return;
-    const startChanged = params.newStartsAt.getTime() !== new Date(params.booking.starts_at).getTime();
-    const title = startChanged
-      ? t("calendar.confirmMoveTitle", { time: formatTime(params.newStartsAt, shopTz) })
-      : t("calendar.confirmResizeTitle", {
-          time: params.newEndsAt ? formatTime(params.newEndsAt, shopTz) : "",
-        });
-    toast(title, {
-      id: `reschedule-${params.booking.id}`,
-      duration: 8000,
-      action: { label: t("calendar.confirmMoveAction"), onClick: () => commitReschedule(params) },
-      cancel: { label: t("calendar.cancel"), onClick: () => {} },
-    });
+  // `onReschedule` directly — shows a confirm modal (RescheduleConfirmDialog)
+  // before anything is actually committed. Declining costs nothing: since the
+  // parent's data was never touched, the block is already back at its real
+  // position the moment the dialog closes. Mirrors DayTimeGrid.tsx's identical helper.
+  const [pendingReschedule, setPendingReschedule] = useState<WeekRescheduleParams | null>(null);
+  function proposeReschedule(params: WeekRescheduleParams) {
+    if (!onReschedule) return;
+    setPendingReschedule(params);
   }
   const bookingsById = useMemo(() => {
     const m = new Map<string, BookingWithRelations>();
@@ -341,6 +317,7 @@ export function WeekTimeGrid({
   const nowTop = nowMinutes >= 0 && nowMinutes <= (END_HOUR - START_HOUR) * 60 ? nowMinutes * PX_PER_MIN : null;
 
   return (
+    <>
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
       <div className="overflow-x-auto">
         <div
@@ -1328,5 +1305,17 @@ export function WeekTimeGrid({
         </div>
       </div>
     </div>
+    <RescheduleConfirmDialog
+      pending={pendingReschedule}
+      shopTz={shopTz}
+      customers={customers ?? []}
+      services={services ?? []}
+      onConfirm={(params) => {
+        onReschedule?.(params);
+        setPendingReschedule(null);
+      }}
+      onCancel={() => setPendingReschedule(null)}
+    />
+    </>
   );
 }

@@ -30,7 +30,13 @@ export const handlers = {
       const userId = userRes.user.id;
 
       const body = (await request.json().catch(() => null)) as
-        | { booking_id?: string; new_starts_at?: string; new_staff_id?: string | null }
+        | {
+            booking_id?: string;
+            new_starts_at?: string;
+            new_staff_id?: string | null;
+            /** Resize flow: explicit new end time. Omitted on a plain move, which keeps the existing duration. */
+            new_ends_at?: string;
+          }
         | null;
       if (!body?.booking_id || !body.new_starts_at) {
         return json({ error: "missing_fields" }, 400);
@@ -70,9 +76,15 @@ export const handlers = {
       const guard = beforeStartTime(bookingLite, { now: Date.now(), hasOpenPayment: false });
       if (!guard.allowed) return json({ error: guard.reason }, 409);
 
-      const durationMs = new Date(booking.ends_at).getTime() - new Date(booking.starts_at).getTime();
       const newStartsAt = new Date(body.new_starts_at);
-      const newEndsAt = new Date(newStartsAt.getTime() + durationMs);
+      // Resize sends an explicit new end time (duration change, start unchanged).
+      // A plain move omits it — keep the booking's existing duration in that case.
+      const newEndsAt = body.new_ends_at
+        ? new Date(body.new_ends_at)
+        : new Date(
+            newStartsAt.getTime() +
+              (new Date(booking.ends_at).getTime() - new Date(booking.starts_at).getTime()),
+          );
       const newStaffId = body.new_staff_id !== undefined ? body.new_staff_id : booking.staff_id;
       const startsAtChanged = newStartsAt.getTime() !== new Date(booking.starts_at).getTime();
 
