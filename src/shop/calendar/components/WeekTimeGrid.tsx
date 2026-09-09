@@ -9,6 +9,7 @@ import {
   type ServiceLite,
   type RescheduleParams as WeekRescheduleParams,
 } from "@/shop/calendar/components/RescheduleConfirmDialog";
+import { resolveVisualStatus, VISUAL_STATUS_META } from "@/shop/calendar/booking-visual-status";
 import { createEdgeAutoScroller } from "@/shop/calendar/auto-scroll-edge";
 import {
   formatMinutesOfDay,
@@ -75,6 +76,9 @@ export type WeekTimeGridProps = {
   customers?: CustomerLite[];
   /** Optioneel — wanneer aanwezig tonen we de dienstnaam in elk booking-blok. */
   services?: ServiceLite[];
+  /** Booking ids with a currently-open (unpaid) deposit payment — splits the
+   * "pending" status visually into payment-pending vs confirmation-pending. */
+  openPaymentBookingIds?: Set<string>;
   colors: ColorResolver;
   businessHours?: BusinessHours;
   onSelectBooking?: (b: BookingWithRelations) => void;
@@ -159,6 +163,7 @@ export function WeekTimeGrid({
   staff,
   customers,
   services,
+  openPaymentBookingIds,
   colors,
   businessHours,
   onSelectBooking,
@@ -693,6 +698,9 @@ export function WeekTimeGrid({
                   const stf = b.staff_id ? staffById.get(b.staff_id) : undefined;
                   const c = colors.get(b.staff_id);
                   const cancelled = b.status === "cancelled" || b.status === "no_show";
+                  const visualStatus = resolveVisualStatus(b.status, openPaymentBookingIds?.has(b.id) ?? false);
+                  const statusMeta = VISUAL_STATUS_META[visualStatus];
+                  const StatusIcon = statusMeta.icon;
                   const draggable = !!onReschedule && !cancelled;
                   const isResizingThis = resizing?.bookingId === b.id;
                   const liveDurMin = isResizingThis ? resizing!.newDurMin : baseDurMin;
@@ -1059,6 +1067,7 @@ export function WeekTimeGrid({
                             cust?.full_name,
                             svc?.name,
                             stf?.full_name ?? t("calendar.unassigned"),
+                            t(statusMeta.labelKey),
                           ].filter(Boolean);
                           return `${parts.join(" · ")}${draggable ? ` · ${t("calendar.arrowKeysMove")}` : ""}`;
                         })()}
@@ -1081,6 +1090,7 @@ export function WeekTimeGrid({
                           return (
                             <>
                               <div className="flex items-center gap-1">
+                                <StatusIcon className={cn("h-2.5 w-2.5 shrink-0", statusMeta.iconClass)} aria-hidden />
                                 <span className="truncate text-[10px] font-semibold tabular-nums">
                                   {formatTime(b.starts_at, shopTz)}
                                 </span>

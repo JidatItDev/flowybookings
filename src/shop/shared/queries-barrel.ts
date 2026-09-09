@@ -14,7 +14,7 @@ export {
   type CustomerDetail,
   type CustomerPaymentRow,
 } from "@/shop/customers/queries";
-export { bookingsQuery, type BookingWithRelations } from "@/shop/calendar/queries";
+export { bookingsQuery, calendarBookingsQuery, type BookingWithRelations } from "@/shop/calendar/queries";
 export {
   paymentsQuery,
   shopPaymentProvidersStatusQuery,

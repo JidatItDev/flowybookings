@@ -4,6 +4,10 @@ import { useT } from "@/shared/lib/i18n";
 const map: Record<string, string> = {
   // Booking
   pending: "bg-warning/15 text-warning-foreground",
+  // Split-pending UI states (see booking-visual-status.ts) — not real DB
+  // statuses, only ever passed in explicitly by the calendar's detail sheet.
+  payment_pending: "bg-muted text-muted-foreground",
+  confirmation_pending: "bg-warning/15 text-warning-foreground",
   confirmed: "bg-info/15 text-info-foreground",
   completed: "bg-mint text-mint-foreground",
   cancelled: "bg-muted text-muted-foreground",

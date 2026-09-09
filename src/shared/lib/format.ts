@@ -56,6 +56,13 @@ export function relativeFromNow(iso: string | Date | null | undefined): string {
   return formatDate(d);
 }
 
+/** Whole-minute duration between two ISO timestamps — callers format the
+ * localized "1h 30m" / "45 min" text themselves via t(), same pattern as
+ * every other calendar label in ShopCalendarPage. */
+export function durationMinutes(startIso: string, endIso: string): number {
+  return Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 60000);
+}
+
 export function initials(name: string): string {
   return name
     .split(" ")

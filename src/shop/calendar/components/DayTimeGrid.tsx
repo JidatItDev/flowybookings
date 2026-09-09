@@ -6,6 +6,7 @@ import {
   type ServiceLite,
   type RescheduleParams,
 } from "@/shop/calendar/components/RescheduleConfirmDialog";
+import { resolveVisualStatus, VISUAL_STATUS_META } from "@/shop/calendar/booking-visual-status";
 import { formatCents, formatTime } from "@/shared/lib/format";
 import { staffInitials, type StaffColor } from "@/shop/calendar/staff-color";
 import type { BookingWithRelations } from "@/shop/shared/queries-barrel";
@@ -127,6 +128,9 @@ export type DayTimeGridProps = {
   staff: StaffLite[];
   customers: CustomerLite[];
   services: ServiceLite[];
+  /** Booking ids with a currently-open (unpaid) deposit payment — splits the
+   * "pending" status visually into payment-pending vs confirmation-pending. */
+  openPaymentBookingIds?: Set<string>;
   colors: ColorResolver;
   /** Filter op één staff_id, "all", of "unassigned". */
   staffFilter: string | "all" | "unassigned";
@@ -202,6 +206,7 @@ export function DayTimeGrid({
   staff,
   customers,
   services,
+  openPaymentBookingIds,
   colors,
   staffFilter,
   businessHours,
@@ -499,7 +504,7 @@ export function DayTimeGrid({
               key={`col-${c.key}`}
               data-col-key={c.key}
               data-col-staff-id={c.staffId ?? ""}
-              className="relative border-l border-border"
+              className="relative @container border-l border-border"
               style={{ height: totalHeight }}
               onDragOver={onReschedule ? (e) => {
                 // Sta drop alleen toe als er een booking-id meegegeven is.
@@ -868,6 +873,9 @@ export function DayTimeGrid({
                   const cust = customers.find((x) => x.id === b.customer_id);
                   const svc = services.find((x) => x.id === b.service_id);
                   const isCancelled = b.status === "cancelled" || b.status === "no_show";
+                  const visualStatus = resolveVisualStatus(b.status, openPaymentBookingIds?.has(b.id) ?? false);
+                  const statusMeta = VISUAL_STATUS_META[visualStatus];
+                  const StatusIcon = statusMeta.icon;
                   const tone = c.color;
                   const draggable = !!onReschedule && !isCancelled;
                   const isResizingThis = resizing?.bookingId === b.id;
@@ -1200,7 +1208,7 @@ export function DayTimeGrid({
                           });
                         } : undefined}
                         className={cn(
-                          "block h-full w-full overflow-hidden rounded-lg border px-2 py-1 text-left text-[11px] shadow-soft transition-all duration-150 hover:z-20 hover:scale-[1.01] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+                          "relative block h-full w-full overflow-hidden rounded-lg border px-2 py-1 text-left text-[11px] shadow-soft transition-all duration-150 hover:z-20 hover:scale-[1.01] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-background",
                           draggable && !isResizingThis && "cursor-grab active:cursor-grabbing",
                           tone
                             ? `${tone.bg} ${tone.text} border-transparent`
@@ -1212,25 +1220,57 @@ export function DayTimeGrid({
                           touchDrag?.bookingId === b.id && "scale-[1.02] opacity-70 ring-2 ring-primary/70 shadow-lg",
                         )}
                         style={touchDrag?.bookingId === b.id ? { touchAction: "none" } : undefined}
-                        title={`${cust?.full_name ?? "—"} · ${svc?.name ?? "—"} · ${formatTime(b.starts_at, shopTz)}–${formatTime(b.ends_at, shopTz)}${draggable ? ` · ${t("calendar.dragOrKeysToMove")}` : ""}`}
+                        title={`${cust?.full_name ?? "—"} · ${svc?.name ?? "—"} · ${formatTime(b.starts_at, shopTz)}–${formatTime(b.ends_at, shopTz)} · ${t(statusMeta.labelKey)}${draggable ? ` · ${t("calendar.dragOrKeysToMove")}` : ""}`}
                         aria-label={draggable ? `${cust?.full_name ?? "—"} · ${formatTime(b.starts_at, shopTz)}–${formatTime(b.ends_at, shopTz)} · ${t("calendar.arrowKeysHint")}` : undefined}
                       >
-                        <div className="flex items-center justify-between gap-1">
-                          <span className="truncate font-semibold">
+                        <span className={cn("absolute inset-y-0 left-0 w-1", statusMeta.stripeClass)} aria-hidden />
+                        {/* Narrow column (default): stacked layout, degrading to icon-only
+                            when short — vertical space is the constraint here. Hidden once
+                            the column (not the viewport — @container tracks the actual
+                            per-staff column width) is wide enough for a single row instead. */}
+                        <div className="@sm:hidden">
+                          {liveHeight <= 30 ? (
+                            <div className="flex h-full items-center justify-center pl-1">
+                              <StatusIcon className={cn("h-3 w-3 shrink-0", statusMeta.iconClass)} aria-hidden />
+                            </div>
+                          ) : (
+                            <div className="pl-1">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="flex min-w-0 items-center gap-1">
+                                  <StatusIcon className={cn("h-3 w-3 shrink-0", statusMeta.iconClass)} aria-hidden />
+                                  <span className="truncate font-semibold">
+                                    {formatTime(b.starts_at, shopTz)}
+                                  </span>
+                                </span>
+                                <span className="shrink-0 text-[10px] font-medium tabular-nums opacity-90">
+                                  {formatCents(b.price_cents)}
+                                </span>
+                              </div>
+                              <div className="truncate font-medium">
+                                {cust?.full_name ?? "—"}
+                              </div>
+                              {liveHeight > 44 && (
+                                <div className="truncate text-[10px] opacity-90">
+                                  {svc?.name ?? "—"}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        {/* Wide column: horizontal space is the abundant resource, not
+                            vertical — one row (badge, time, customer, service, amount)
+                            fits even a 15-minute block, instead of hiding everything. */}
+                        <div className="hidden h-full items-center gap-1.5 pl-1 @sm:flex">
+                          <StatusIcon className={cn("h-3 w-3 shrink-0", statusMeta.iconClass)} aria-hidden />
+                          <span className="shrink-0 font-semibold tabular-nums">
                             {formatTime(b.starts_at, shopTz)}
                           </span>
-                          <span className="shrink-0 text-[10px] font-medium tabular-nums opacity-90">
+                          <span className="truncate font-medium">{cust?.full_name ?? "—"}</span>
+                          {svc && <span className="truncate text-[10px] opacity-80">{svc.name}</span>}
+                          <span className="ml-auto shrink-0 text-[10px] font-medium tabular-nums opacity-90">
                             {formatCents(b.price_cents)}
                           </span>
                         </div>
-                        <div className="truncate font-medium">
-                          {cust?.full_name ?? "—"}
-                        </div>
-                        {liveHeight > 44 && (
-                          <div className="truncate text-[10px] opacity-90">
-                            {svc?.name ?? "—"}
-                          </div>
-                        )}
                       </button>
                       {/* Resize-handle: alleen wanneer reschedule beschikbaar is en booking actief is.
                           Ondersteunt zowel mouse als touch (tablet/iPad in salons) met

@@ -21,6 +21,13 @@ export const shopKeys = {
   customerPayments: (shopId: string, customerId: string) =>
     ["shop", shopId, "customer", customerId, "payments"] as const,
   bookings: (shopId: string) => ["shop", shopId, "bookings"] as const,
+  /** Calendar-grid-scoped bookings — only the calendar page uses this, keyed by
+   * the padded UTC range it actually needs (see ShopCalendarPage's visibleRange).
+   * Every other bookings consumer (analytics, customer history, staff/services
+   * pages, etc.) intentionally keeps using the unscoped `bookings` key above —
+   * they need full history, not a calendar viewport. */
+  calendarBookings: (shopId: string, rangeStartIso: string, rangeEndIso: string) =>
+    ["shop", shopId, "bookings", "range", rangeStartIso, rangeEndIso] as const,
   payments: (shopId: string) => ["shop", shopId, "payments"] as const,
   shopFull: (shopId: string) => ["shop", shopId, "full"] as const,
   automations: (shopId: string) => ["shop", shopId, "automations"] as const,

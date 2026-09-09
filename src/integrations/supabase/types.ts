@@ -197,6 +197,7 @@ export type Database = {
           cancelled_at: string | null
           confirmation_sent_at: string | null
           created_at: string
+          created_via: string | null
           currency: string
           customer_id: string | null
           deposit_cents: number
@@ -219,6 +220,7 @@ export type Database = {
           cancelled_at?: string | null
           confirmation_sent_at?: string | null
           created_at?: string
+          created_via?: string | null
           currency?: string
           customer_id?: string | null
           deposit_cents?: number
@@ -241,6 +243,7 @@ export type Database = {
           cancelled_at?: string | null
           confirmation_sent_at?: string | null
           created_at?: string
+          created_via?: string | null
           currency?: string
           customer_id?: string | null
           deposit_cents?: number

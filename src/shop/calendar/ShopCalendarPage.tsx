@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Plus, Filter, CalendarDays, UserX, Check, ChevronsUpDown, UserPlus, Search, List, LayoutGrid, AlertTriangle } from "lucide-react";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronLeft, ChevronRight, Plus, Filter, CalendarDays, UserX, Check, CheckCheck, ChevronsUpDown, UserPlus, Search, List, LayoutGrid, AlertTriangle, MoreVertical, Ban } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { DayTimeGrid } from "@/shop/calendar/components/DayTimeGrid";
 import { WeekTimeGrid } from "@/shop/calendar/components/WeekTimeGrid";
 import { BookingCard } from "@/shop/calendar/components/BookingCard";
+import { CalendarLegend } from "@/shop/calendar/components/CalendarLegend";
 import { RescheduleSheet } from "@/shop/calendar/components/RescheduleSheet";
 import { toast } from "sonner";
 import { PageHeader } from "@/shared/components/PageHeader";
@@ -12,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -39,17 +42,18 @@ import { bookingErrorToast } from "@/booking/lib/booking-errors";
 import { useActiveShopId } from "@/shop/shared/shop-context";
 import { useBookingsRealtime } from "@/shop/calendar/use-bookings-realtime";
 import {
-  bookingsQuery, customersQuery, paymentsQuery, servicesQuery, shopFullQuery, shopKeys, staffQuery,
+  bookingsQuery, calendarBookingsQuery, customersQuery, paymentsQuery, servicesQuery, shopFullQuery, shopKeys, staffQuery,
   type BookingWithRelations,
 } from "@/shop/shared/queries-barrel";
 import { canTransition, type BookingAction, type BookingLite } from "@/booking/server/booking-status-decision";
+import { resolveVisualStatus, VISUAL_STATUS_META, type VisualStatus } from "@/shop/calendar/booking-visual-status";
 import { useRefundAction } from "@/shop/payments/useRefundAction";
 import { RefundConfirmDialog } from "@/shop/payments/RefundConfirmDialog";
 import { Sparkles } from "lucide-react";
 import { useIsMobile } from "@/shared/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { usePullToRefresh } from "@/shop/calendar/use-pull-to-refresh";
-import { formatCents, formatTime } from "@/shared/lib/format";
+import { formatCents, formatTime, durationMinutes } from "@/shared/lib/format";
 import { cn } from "@/shared/lib/utils";
 import { useT } from "@/shared/lib/i18n";
 import { useAuth } from "@/auth/lib/auth-context";
@@ -83,7 +87,61 @@ function toDepositMode(mode: string): "default" | "custom" {
   return mode === "custom" ? "custom" : "default";
 }
 
+/** Monday of the shop-local week at `weekOffset` weeks from today (0 = this week). */
+function mondayStartYmd(todayYmd: string, weekOffset: number): string {
+  // Maandag-start: getUTCDay() op de civiele datumstring zelf is
+  // timezone-onafhankelijk (0=zo, 1=ma, … 6=za).
+  const dow = new Date(todayYmd + "T00:00:00Z").getUTCDay();
+  const mondayOffset = dow === 0 ? -6 : 1 - dow;
+  return addDaysToYmd(todayYmd, mondayOffset + weekOffset * 7);
+}
+
+const CALENDAR_RANGE_PAD_DAYS = 3;
+/** Matches dayChips' own fixed window (today .. today+13) — the range query
+ * must always cover it too, since the chip strip's counts/occupancy rings
+ * read from the same `bookings` array regardless of which day/week is active. */
+const DAY_CHIP_WINDOW_DAYS = 14;
+
+/**
+ * The UTC window the calendar page actually needs bookings for, given its
+ * current navigation state — `null` means "unbounded" (the dayOffset===null
+ * "all" list mode, which intentionally keeps using the unscoped bookingsQuery
+ * instead of a range). Padded so quick prev/next navigation and near-edge
+ * drag/resize don't need a fresh fetch.
+ */
+function computeVisibleRange(
+  dayOffset: number | null,
+  calendarMode: "day" | "week",
+  weekOffset: number,
+  todayYmd: string,
+  shopTz: string,
+): { start: Date; end: Date } | null {
+  if (dayOffset === null) return null;
+
+  let start = shopLocalDayBoundsUtc(todayYmd, shopTz).rangeStart;
+  let end = shopLocalDayBoundsUtc(addDaysToYmd(todayYmd, DAY_CHIP_WINDOW_DAYS - 1), shopTz).rangeEnd;
+
+  if (calendarMode === "week") {
+    const weekStartYmd = mondayStartYmd(todayYmd, weekOffset);
+    const weekStart = shopLocalDayBoundsUtc(weekStartYmd, shopTz).rangeStart;
+    const weekEnd = shopLocalDayBoundsUtc(addDaysToYmd(weekStartYmd, 6), shopTz).rangeEnd;
+    if (weekStart.getTime() < start.getTime()) start = weekStart;
+    if (weekEnd.getTime() > end.getTime()) end = weekEnd;
+  } else {
+    const { rangeStart, rangeEnd } = shopLocalDayBoundsUtc(addDaysToYmd(todayYmd, dayOffset), shopTz);
+    if (rangeStart.getTime() < start.getTime()) start = rangeStart;
+    if (rangeEnd.getTime() > end.getTime()) end = rangeEnd;
+  }
+
+  return {
+    start: new Date(start.getTime() - CALENDAR_RANGE_PAD_DAYS * 86_400_000),
+    end: new Date(end.getTime() + CALENDAR_RANGE_PAD_DAYS * 86_400_000),
+  };
+}
+
 const statuses = ["all", "pending", "confirmed", "completed", "cancelled", "no_show"] as const;
+
+const EMPTY_BOOKINGS: BookingWithRelations[] = [];
 
 // Error codes booking-status.ts / reschedule.ts can return that have a
 // dedicated, translated message. Anything else (unexpected server errors)
@@ -141,6 +199,10 @@ export function ShopCalendarPage() {
           : undefined;
   const [filter, setFilter] = useState<(typeof statuses)[number]>("all");
   const [staffFilter, setStaffFilter] = useState<string | "all" | "unassigned">("all");
+  // "Needs attention" pill (confirmation-pending bookings) — an orthogonal
+  // on/off narrowing, not a `filter` value, so it composes with whatever
+  // status/staff filter is already set instead of replacing it.
+  const [attentionOnly, setAttentionOnly] = useState(false);
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<BookingWithRelations | null>(null);
   const [viewing, setViewing] = useState<BookingWithRelations | null>(null);
@@ -170,13 +232,73 @@ export function ShopCalendarPage() {
     completed: t("calendar.completed"), cancelled: t("calendar.cancelled"), no_show: t("calendar.noShow"),
   };
 
-  const {
-    data: bookings = [],
-    isLoading: bookingsLoading,
-    error: bookingsError,
-    refetch: refetchBookings,
-    isFetching: bookingsFetching,
-  } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId });
+  const { data: shopFull } = useQuery({ ...shopFullQuery(shopId ?? ""), enabled: !!shopId });
+  const businessHours = (shopFull?.business_hours ?? undefined) as
+    | import("@/shop/calendar/components/DayTimeGrid").BusinessHours
+    | undefined;
+  // Every date/time computation and display on this page is anchored to the
+  // shop's own wall clock, not the browser's or the server's — matches the
+  // customer-facing booking flow (shop-timezone.ts) and the DB triggers that
+  // already validate working hours via `starts_at AT TIME ZONE shop.timezone`.
+  const shopTz = resolveShopTimezone(shopFull?.timezone);
+  const todayYmd = shopTodayYmd(shopTz);
+
+  // The calendar only ever needs bookings inside its current viewport (padded
+  // for smooth nav) — `null` means the dayOffset===null "all" list mode, which
+  // intentionally keeps fetching unbounded history instead (see calendarBookingsQuery's
+  // own comment for why every OTHER bookings consumer on other pages is untouched).
+  const visibleRange = useMemo(
+    () => computeVisibleRange(dayOffset, calendarMode, weekOffset, todayYmd, shopTz),
+    [dayOffset, calendarMode, weekOffset, todayYmd, shopTz],
+  );
+  // Whichever cache `bookings` above is actually reading from right now — an
+  // optimistic mutation (reschedule) must patch this exact key, not always the
+  // unscoped one, or the edit becomes invisible whenever the grid is range-scoped.
+  const activeBookingsKey = shopId
+    ? visibleRange === null
+      ? shopKeys.bookings(shopId)
+      : shopKeys.calendarBookings(shopId, visibleRange.start.toISOString(), visibleRange.end.toISOString())
+    : shopKeys.bookings("");
+  const allBookingsQuery = useQuery({
+    ...bookingsQuery(shopId ?? ""),
+    enabled: !!shopId && visibleRange === null,
+  });
+  const rangedBookingsQuery = useQuery({
+    ...calendarBookingsQuery(shopId ?? "", visibleRange?.start ?? new Date(0), visibleRange?.end ?? new Date(0)),
+    enabled: !!shopId && visibleRange !== null,
+    // The query key changes on every day/week navigation — without this,
+    // `data` resets to undefined the instant the key changes (even if the new
+    // range is prefetched-but-not-yet-settled or arrives a beat later), which
+    // flashes the grid to its empty/skeleton state and back. Keep showing the
+    // previous range's bookings (isPlaceholderData: true) until the new range
+    // actually resolves.
+    placeholderData: keepPreviousData,
+  });
+  const activeBookingsQuery = visibleRange === null ? allBookingsQuery : rangedBookingsQuery;
+  // Stable `[]` fallback — `data ?? []` would mint a new array every render
+  // and cascade into every useMemo downstream that depends on `bookings`.
+  const bookings = activeBookingsQuery.data ?? EMPTY_BOOKINGS;
+  const bookingsLoading = activeBookingsQuery.isLoading;
+  const bookingsError = activeBookingsQuery.error;
+  const refetchBookings = activeBookingsQuery.refetch;
+  const bookingsFetching = activeBookingsQuery.isFetching;
+
+  // Prefetch both the previous and next day/week's range so prev/next nav in
+  // either direction rarely shows a loading flash. Cheap no-op if already
+  // cached and fresh. (keepPreviousData above is the real fix for the flash —
+  // this just shortens how long the placeholder data stays stale.)
+  useEffect(() => {
+    if (!shopId || visibleRange === null) return;
+    for (const dir of [-1, 1] as const) {
+      const adjacent =
+        calendarMode === "week"
+          ? computeVisibleRange(dayOffset, "week", weekOffset + dir, todayYmd, shopTz)
+          : computeVisibleRange((dayOffset ?? 0) + dir, "day", weekOffset, todayYmd, shopTz);
+      if (!adjacent) continue;
+      void qc.prefetchQuery(calendarBookingsQuery(shopId, adjacent.start, adjacent.end));
+    }
+  }, [shopId, visibleRange, calendarMode, dayOffset, weekOffset, todayYmd, shopTz, qc]);
+
   const { data: customers = [] } = useQuery({ ...customersQuery(shopId ?? ""), enabled: !!shopId });
   const { data: services = [] } = useQuery({ ...servicesQuery(shopId ?? ""), enabled: !!shopId });
   const { data: staff = [] } = useQuery({ ...staffQuery(shopId ?? ""), enabled: !!shopId });
@@ -197,16 +319,16 @@ export function ShopCalendarPage() {
     }
     return map;
   }, [payments]);
-  const { data: shopFull } = useQuery({ ...shopFullQuery(shopId ?? ""), enabled: !!shopId });
-  const businessHours = (shopFull?.business_hours ?? undefined) as
-    | import("@/shop/calendar/components/DayTimeGrid").BusinessHours
-    | undefined;
-  // Every date/time computation and display on this page is anchored to the
-  // shop's own wall clock, not the browser's or the server's — matches the
-  // customer-facing booking flow (shop-timezone.ts) and the DB triggers that
-  // already validate working hours via `starts_at AT TIME ZONE shop.timezone`.
-  const shopTz = resolveShopTimezone(shopFull?.timezone);
-  const todayYmd = shopTodayYmd(shopTz);
+  // Feeds the grid blocks' payment-pending vs confirmation-pending split (see
+  // booking-visual-status.ts) — a pending booking with an open payment here is
+  // waiting on the customer, not on the shop owner.
+  const openPaymentBookingIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const [bookingId, p] of paymentsByBooking) {
+      if (p.status === "unpaid") ids.add(bookingId);
+    }
+    return ids;
+  }, [paymentsByBooking]);
   const colors = useStaffColors(shopId);
 
   // Pull-to-refresh — composes with the existing bookingsQuery refetch above.
@@ -294,7 +416,7 @@ export function ShopCalendarPage() {
     },
     onMutate: async (params) => {
       if (!shopId) return;
-      const key = shopKeys.bookings(shopId);
+      const key = activeBookingsKey;
       await qc.cancelQueries({ queryKey: key });
       const prev = qc.getQueryData<BookingWithRelations[]>(key);
       const durMs = +new Date(params.booking.ends_at) - +new Date(params.booking.starts_at);
@@ -315,7 +437,7 @@ export function ShopCalendarPage() {
     },
     onError: (e: unknown, _params, context) => {
       if (shopId && context?.prev) {
-        qc.setQueryData(shopKeys.bookings(shopId), context.prev);
+        qc.setQueryData(activeBookingsKey, context.prev);
       }
       const err = e instanceof Error ? e : (e as { message?: string });
       toast.error(bookingErrorToast(err, t, err.message ?? ""));
@@ -324,6 +446,8 @@ export function ShopCalendarPage() {
       toast.success(t("calendar.bookingUpdated"));
     },
     onSettled: () => {
+      // Prefix match: invalidates the unscoped cache AND every cached
+      // calendarBookings range (including a prefetched-but-inactive adjacent one).
       if (shopId) qc.invalidateQueries({ queryKey: shopKeys.bookings(shopId) });
     },
   });
@@ -332,6 +456,9 @@ export function ShopCalendarPage() {
   // "Day" always means a shop-local calendar day, not a UTC one.
   const scopedBookings = bookings.filter((b) => {
     if (filter !== "all" && b.status !== filter) return false;
+    if (attentionOnly && resolveVisualStatus(b.status, openPaymentBookingIds.has(b.id)) !== "confirmation_pending") {
+      return false;
+    }
     if (dayOffset !== null) {
       const { rangeStart, rangeEnd } = shopLocalDayBoundsUtc(addDaysToYmd(todayYmd, dayOffset), shopTz);
       const t = new Date(b.starts_at).getTime();
@@ -349,6 +476,16 @@ export function ShopCalendarPage() {
     }
     return { map, unassigned, total: scopedBookings.length };
   }, [scopedBookings]);
+
+  // Counts across everything currently loaded (not narrowed by the day/status
+  // filter already applied to scopedBookings) — the pill should stay a useful
+  // "how many need me" indicator even while looking at one specific day/status.
+  const attentionCount = useMemo(
+    () =>
+      bookings.filter((b) => resolveVisualStatus(b.status, openPaymentBookingIds.has(b.id)) === "confirmation_pending")
+        .length,
+    [bookings, openPaymentBookingIds],
+  );
 
   const filtered = scopedBookings.filter((b) => {
     if (staffFilter === "unassigned") return !b.staff_id;
@@ -465,6 +602,43 @@ export function ShopCalendarPage() {
               </div>
             </div>
           )}
+
+          {/* "Needs attention" pill (confirmation-pending bookings, across everything
+              currently loaded) + legend. A booking here is one the shop owner can
+              actually act on right now — clicking jumps to an unfiltered, all-time
+              list view narrowed to just those. */}
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (attentionOnly) {
+                  setAttentionOnly(false);
+                } else {
+                  setAttentionOnly(true);
+                  setFilter("all");
+                  setDayOffset(null);
+                  setViewMode("list");
+                }
+              }}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                attentionOnly
+                  ? "border-warning bg-warning text-warning-foreground"
+                  : attentionCount > 0
+                    ? "border-warning/40 bg-warning/10 text-warning hover:bg-warning/20"
+                    : "border-border bg-card text-muted-foreground",
+              )}
+            >
+              {(() => {
+                const AttentionIcon = VISUAL_STATUS_META.confirmation_pending.icon;
+                return <AttentionIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />;
+              })()}
+              {attentionCount > 0
+                ? `${attentionCount} ${t("calendar.needsAttention")}`
+                : t("calendar.needsAttentionNone")}
+            </button>
+            <CalendarLegend />
+          </div>
 
           {/* Vandaag aan het werk: compacte avatar-strip met werkuren + bookings vandaag */}
           {workingToday.length > 0 && (
@@ -828,11 +1002,7 @@ export function ShopCalendarPage() {
 
           {/* Week-navigatie: vorige/volgende week + label. Alleen in week-modus. */}
           {viewMode === "grid" && calendarMode === "week" && (() => {
-            // Maandag-start, in de tijdzone van de shop: getUTCDay() op de civiele
-            // datumstring zelf is timezone-onafhankelijk (0=zo, 1=ma, … 6=za).
-            const dow = new Date(todayYmd + "T00:00:00Z").getUTCDay();
-            const mondayOffset = dow === 0 ? -6 : 1 - dow;
-            const weekStartYmd = addDaysToYmd(todayYmd, mondayOffset + weekOffset * 7);
+            const weekStartYmd = mondayStartYmd(todayYmd, weekOffset);
             const weekEndYmd = addDaysToYmd(weekStartYmd, 6);
             const weekStart = shopLocalDayBoundsUtc(weekStartYmd, shopTz).rangeStart;
             const weekEnd = shopLocalDayBoundsUtc(weekEndYmd, shopTz).rangeStart;
@@ -913,9 +1083,7 @@ export function ShopCalendarPage() {
               )}
             />
           ) : viewMode === "grid" && calendarMode === "week" && !isMobile ? (() => {
-            const dow = new Date(todayYmd + "T00:00:00Z").getUTCDay();
-            const mondayOffset = dow === 0 ? -6 : 1 - dow;
-            const weekStartYmd = addDaysToYmd(todayYmd, mondayOffset + weekOffset * 7);
+            const weekStartYmd = mondayStartYmd(todayYmd, weekOffset);
             const weekEndYmd = addDaysToYmd(weekStartYmd, 7);
             const weekStart = shopLocalDayBoundsUtc(weekStartYmd, shopTz).rangeStart;
             const weekEnd = shopLocalDayBoundsUtc(weekEndYmd, shopTz).rangeStart;
@@ -936,6 +1104,7 @@ export function ShopCalendarPage() {
                 staff={staff}
                 customers={customers}
                 services={services}
+                openPaymentBookingIds={openPaymentBookingIds}
                 colors={colors}
                 businessHours={businessHours}
                 onSelectBooking={(b) => setViewing(b)}
@@ -969,6 +1138,7 @@ export function ShopCalendarPage() {
               staff={staff}
               customers={customers}
               services={services}
+              openPaymentBookingIds={openPaymentBookingIds}
               colors={colors}
               staffFilter={staffFilter}
               businessHours={businessHours}
@@ -1244,11 +1414,6 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
   // Hits the same cache als de calendar-pagina; geen extra request.
   const { data: allBookings = [] } = useQuery({ ...bookingsQuery(shopId ?? ""), enabled: !!shopId && open });
 
-  const statusLabel: Record<string, string> = {
-    pending: t("calendar.pending"), confirmed: t("calendar.confirmed"),
-    completed: t("calendar.completed"), cancelled: t("calendar.cancelled"), no_show: t("calendar.noShow"),
-  };
-
   const [form, setForm] = useState({ customer_id: "", service_id: "", staff_id: "", starts_at: "", duration: 60, status: "pending" as BookingWithRelations["status"], notes: "" });
 
   // Reset / hydrate the form whenever the dialog opens or the edited booking changes.
@@ -1374,8 +1539,11 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
           )
         : booking?.deposit_cents ?? 0;
       const payload = { shop_id: shopId, customer_id: form.customer_id || null, service_id: form.service_id || null, staff_id: form.staff_id || null, starts_at: startUtc.toISOString(), ends_at: ends.toISOString(), status: form.status, price_cents: svc?.price_cents ?? booking?.price_cents ?? 0, deposit_cents: resolvedDepositCents, notes: form.notes || null };
+      // created_via is set on insert only — an edit must never overwrite a
+      // booking's true origin (e.g. editing an online booking's notes here
+      // would otherwise mislabel it "manual").
       if (booking) { const { error } = await supabase.from("bookings").update(payload).eq("id", booking.id); if (error) throw error; }
-      else { const { error } = await supabase.from("bookings").insert(payload); if (error) throw error; }
+      else { const { error } = await supabase.from("bookings").insert({ ...payload, created_via: "manual" }); if (error) throw error; }
     },
     onSuccess: () => { toast.success(booking ? t("calendar.bookingUpdated") : t("calendar.bookingCreated")); onClose(); if (shopId) qc.invalidateQueries({ queryKey: shopKeys.bookings(shopId) }); },
     onError: (e: Error) => {
@@ -1500,13 +1668,17 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
                 <Sparkles className="h-3.5 w-3.5" /> {t("calendar.firstAvailableSlot")}
               </Button>
             </div>
-            <div>
-              <Label>{t("calendar.status")}</Label>
-              <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as BookingWithRelations["status"] })}>
-                <SelectTrigger className="h-11 sm:h-9"><SelectValue /></SelectTrigger>
-                <SelectContent className="max-h-[60dvh] min-w-[12rem]">{(["pending", "confirmed", "completed", "cancelled", "no_show"] as const).map((s) => <SelectItem key={s} value={s} className="py-2.5 sm:py-1.5">{statusLabel[s]}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
+            {/* Status is no longer editable here — a raw status write from this
+                form bypassed every guard in booking-status-decision.ts (no
+                time-based validation, no confirmation/cancellation email, no
+                activity_log entry), the same problem the list view's raw
+                status <Select> had before it was removed for guarded actions
+                only. A new booking always starts pending; an existing one
+                keeps whatever status it already has (form.status is hydrated
+                from booking?.status and, with no control left to change it,
+                just passes straight through on save) — the shop owner uses
+                the guarded primary/overflow actions in the detail sheet for
+                every transition instead. Shown read-only in the summary below. */}
             <div><Label htmlFor="nt">{t("calendar.notes")}</Label><Input id="nt" className="h-11 sm:h-9" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
             {slotWarning && (
               <div
@@ -1518,6 +1690,77 @@ function BookingFormDialog({ open, onClose, booking, shopId, prefill }: { open: 
                 <span>{slotWarning.message}</span>
               </div>
             )}
+            {(() => {
+              const svc = services.find((s) => s.id === form.service_id);
+              const cust = customers.find((c) => c.id === form.customer_id);
+              const stf = staff.find((s) => s.id === form.staff_id);
+              const startUtc = formStartsAtToUtc(form.starts_at);
+              if (!svc && !cust && !startUtc) return null;
+              const priceCents = svc?.price_cents ?? booking?.price_cents ?? 0;
+              const defaultDepositPercent = resolveShopDefaultDepositPercent(shopFull?.branding);
+              const depositCents = svc
+                ? resolveDepositCents({ ...svc, deposit_mode: toDepositMode(svc.deposit_mode) }, defaultDepositPercent)
+                : booking?.deposit_cents ?? 0;
+              const dueAtAppointmentCents = Math.max(0, priceCents - depositCents);
+              const h = Math.floor(form.duration / 60);
+              const m = form.duration % 60;
+              const durationLabel = h > 0
+                ? t("calendar.durationHoursMinutes", { h, m })
+                : t("calendar.durationMinutesOnly", { min: form.duration });
+              return (
+                <div className="space-y-2 rounded-xl border border-border bg-muted/30 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      {t("calendar.bookingSummary")}
+                    </p>
+                    <StatusBadge status={form.status} />
+                  </div>
+                  {cust && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">{t("calendar.customer")}</span>
+                      <span className="font-medium">{cust.full_name}</span>
+                    </div>
+                  )}
+                  {startUtc && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">{t("calendar.when")}</span>
+                      <span className="font-medium">
+                        {formatTime(startUtc, shopTz)} · {durationLabel}
+                      </span>
+                    </div>
+                  )}
+                  {stf && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">{t("calendar.staffCol")}</span>
+                      <span className="font-medium">{stf.full_name}</span>
+                    </div>
+                  )}
+                  {svc && (
+                    <>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">{t("calendar.totalPrice")}</span>
+                        <span className="font-medium">{formatCents(priceCents)}</span>
+                      </div>
+                      {depositCents > 0 ? (
+                        <>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">{t("calendar.depositAmount")}</span>
+                            <span className="font-medium">{formatCents(depositCents)}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">{t("calendar.dueAtAppointment")}</span>
+                            <span className="font-medium">{formatCents(dueAtAppointmentCents)}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">{t("calendar.noOnlinePaymentManual")}</p>
+                        </>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">{t("calendar.noDepositRequired")}</p>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
         <DialogFooter className="sticky bottom-0 z-10 flex-col-reverse gap-2 border-t border-border/60 bg-background/95 px-5 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:flex-row sm:justify-end sm:gap-2 [padding-bottom:max(0.75rem,env(safe-area-inset-bottom))]">
@@ -1750,7 +1993,12 @@ function BookingActionDialog({
   const remainingBalanceCents = Math.max(0, (booking.price_cents ?? 0) - (booking.deposit_cents ?? 0));
   const hasOpenPayment = payment?.status === "unpaid";
   const isRefundable = !!payment && (payment.status === "paid" || payment.status === "deposit_paid");
-  const isRefunded = payment?.status === "refunded";
+  // `created_via` is set explicitly at creation time by both booking-creation
+  // code paths (PublicBookingFlow.tsx / ShopCalendarPage's manual-save
+  // mutation) and backfilled for older rows — see the migration. Null means
+  // a no-deposit booking with no payment row, genuinely ambiguous between the
+  // two origins from the data alone, so no badge shows for those.
+  const bookingOrigin = booking.created_via;
 
   // Same pure guard logic booking-status.ts enforces server-side, reused here
   // purely for UI disablement/tooltips — the server remains the source of
@@ -1781,11 +2029,29 @@ function BookingActionDialog({
         </div>
       )}
       <div className="rounded-xl bg-muted/40 p-3">
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("calendar.when")}</p>
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("calendar.when")}</p>
+          <span className="flex items-center gap-1.5">
+            {bookingOrigin && (
+              <span className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                {t(bookingOrigin === "manual" ? "calendar.manualBookingBadge" : "calendar.onlineBookingBadge")}
+              </span>
+            )}
+            <StatusBadge status={resolveVisualStatus(booking.status, !!hasOpenPayment)} />
+          </span>
+        </div>
         <p className="mt-1 font-medium">
           {new Date(booking.starts_at).toLocaleDateString(dateLocale, { weekday: "long", day: "2-digit", month: "long", timeZone: shopTz })}
           {" · "}
-          {formatTime(booking.starts_at, shopTz)}
+          {formatTime(booking.starts_at, shopTz)}–{formatTime(booking.ends_at, shopTz)}
+          <span className="ml-1.5 text-xs font-normal text-muted-foreground">
+            ({(() => {
+              const mins = durationMinutes(booking.starts_at, booking.ends_at);
+              const h = Math.floor(mins / 60);
+              const m = mins % 60;
+              return h > 0 ? t("calendar.durationHoursMinutes", { h, m }) : t("calendar.durationMinutesOnly", { min: mins });
+            })()})
+          </span>
         </p>
       </div>
       <div className="grid gap-2">
@@ -1807,16 +2073,46 @@ function BookingActionDialog({
             <span className="text-xs italic text-muted-foreground">{t("calendar.unassigned")}</span>
           )}
         </div>
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2">
-          <span className="text-xs uppercase tracking-wider text-muted-foreground">{t("calendar.amount")}</span>
-          <span className="flex items-center gap-2">
-            <span className="font-medium">{formatCents(booking.price_cents)}</span>
-            {isRefunded && <Badge variant="outline">{t("calendar.refundedBadge")}</Badge>}
-          </span>
-        </div>
-        {remainingBalanceCents > 0 && (
-          <ActionRow label={t("calendar.remainingBalance")} value={formatCents(remainingBalanceCents)} />
-        )}
+        {(() => {
+          const hasDeposit = (booking.deposit_cents ?? 0) > 0;
+          return (
+            <div className="rounded-xl border border-border bg-card p-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                  {t("calendar.paymentSectionTitle")}
+                </span>
+                {payment && <StatusBadge status={payment.status} />}
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{t("calendar.totalPrice")}</span>
+                <span className="font-medium">{formatCents(booking.price_cents)}</span>
+              </div>
+              {hasDeposit ? (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">{t("calendar.depositAmount")}</span>
+                    <span className="font-medium">{formatCents(booking.deposit_cents)}</span>
+                  </div>
+                  {remainingBalanceCents > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">{t("calendar.dueAtAppointment")}</span>
+                      <span className="font-medium">{formatCents(remainingBalanceCents)}</span>
+                    </div>
+                  )}
+                  {/* A manual booking never goes through online payment, even on a
+                      deposit-configured service (see CONTEXT.md's Manual booking
+                      definition) — no `payment` row exists for it, so there's no
+                      status to show, just the figures for in-person settlement. */}
+                  {!payment && (
+                    <p className="mt-1.5 text-xs text-muted-foreground">{t("calendar.noOnlinePaymentManual")}</p>
+                  )}
+                </>
+              ) : (
+                <p className="mt-1.5 text-xs text-muted-foreground">{t("calendar.noDepositRequired")}</p>
+              )}
+            </div>
+          );
+        })()}
       </div>
       {booking.notes && (
         <div className="rounded-xl border border-border bg-card p-3">
@@ -1830,37 +2126,112 @@ function BookingActionDialog({
   // Status actions — identical on every device. Every click opens the shared
   // confirm dialog below instead of mutating immediately (per the UX rework:
   // every status change gets a confirmation step, not a bare instant click).
+  //
+  // One verb-labeled primary button (the single "move it forward" action) +
+  // everything else in an overflow menu — a booking is usually only ever one
+  // meaningful click from its next state, so showing 4 equal-weight buttons
+  // when at most 1-2 are ever enabled was the core complaint here. Cancel and
+  // No-show always live in the overflow (exceptions, not the default next
+  // step), separated by a divider with red text; anything genuinely
+  // unavailable stays visible but disabled, with the reason shown inline
+  // (not as a hover title — disabled elements don't reliably fire native
+  // tooltips, see the span-wrapping fix this replaced on the old buttons).
+  type ActionCandidate = { action: BookingAction; label: string; icon: typeof Check; verdict: typeof confirmVerdict };
+  const confirmCandidate: ActionCandidate = {
+    action: confirmAction,
+    label: confirmAction === "confirm" ? t("calendar.actionConfirmBooking") : t("calendar.actionMarkConfirmed"),
+    icon: Check,
+    verdict: confirmVerdict,
+  };
+  const completedCandidate: ActionCandidate = {
+    action: "markCompleted",
+    label: t("calendar.actionMarkCompleted"),
+    icon: CheckCheck,
+    verdict: completedVerdict,
+  };
+  const noShowCandidate: ActionCandidate = {
+    action: "markNoShow",
+    label: t("calendar.actionMarkNoShow"),
+    icon: UserX,
+    verdict: noShowVerdict,
+  };
+  // Priority: confirm > mark completed > undo-variant of confirm. No-show
+  // never becomes primary — it's always an exception path, not the default.
+  const primary: ActionCandidate | null =
+    confirmAction === "confirm" && confirmVerdict.allowed
+      ? confirmCandidate
+      : completedVerdict.allowed
+        ? completedCandidate
+        : confirmVerdict.allowed
+          ? confirmCandidate
+          : null;
+  // Regular (non-destructive) overflow: whichever of confirm/undo-confirm and
+  // markCompleted didn't win the primary slot. No-show and Cancel are always
+  // exceptions/corrections, never primary — they live below a divider, red.
+  const overflowItems = [confirmCandidate, completedCandidate].filter((c) => c !== primary);
+  const cancelCandidate: ActionCandidate = {
+    action: "cancel",
+    label: t("calendar.cancelBooking"),
+    icon: Ban,
+    verdict: cancelVerdict,
+  };
+  const destructiveItems: ActionCandidate[] = [noShowCandidate, cancelCandidate];
+
   const statusActions = (
-    <div className="grid grid-cols-2 gap-2 pt-2">
-      {/* title lives on the span, not the Button: disabled:pointer-events-none
-          on the base Button class (needed so disabled buttons don't fire
-          onClick) also blocks native title tooltips from ever showing on a
-          disabled button — the span is a non-disabled hover target instead. */}
-      <span title={guardTitle(confirmVerdict)}>
-        <Button variant="default" disabled={!confirmVerdict.allowed} onClick={() => setPendingAction(confirmAction)} className="w-full">
-          {t("calendar.confirmed")}
+    <div className="flex items-center gap-2 pt-2">
+      {primary ? (
+        <Button variant="default" onClick={() => setPendingAction(primary.action)} className="flex-1">
+          <primary.icon className="h-4 w-4" /> {primary.label}
         </Button>
-      </span>
-      <span title={guardTitle(completedVerdict)}>
-        <Button variant="hero" disabled={!completedVerdict.allowed} onClick={() => setPendingAction("markCompleted")} className="w-full">
-          {t("calendar.completed")}
-        </Button>
-      </span>
-      <span title={guardTitle(cancelVerdict)}>
-        <Button variant="outline" disabled={!cancelVerdict.allowed} onClick={() => setPendingAction("cancel")} className="w-full">
-          {t("calendar.cancelBooking")}
-        </Button>
-      </span>
-      <span title={guardTitle(noShowVerdict)}>
-        <Button
-          variant="outline"
-          disabled={!noShowVerdict.allowed}
-          onClick={() => setPendingAction("markNoShow")}
-          className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
-        >
-          <UserX className="h-4 w-4" /> {t("calendar.noShow")}
-        </Button>
-      </span>
+      ) : (
+        <span className="flex-1 rounded-md border border-dashed border-border px-3 py-2 text-center text-sm text-muted-foreground">
+          {t("calendar.noActionsAvailable")}
+        </span>
+      )}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon" title={t("calendar.moreActions")} aria-label={t("calendar.moreActions")}>
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-64">
+          {overflowItems.map((c) => (
+            <DropdownMenuItem
+              key={c.action}
+              disabled={!c.verdict.allowed}
+              onSelect={() => setPendingAction(c.action)}
+              className="flex-col items-start gap-0.5 py-2"
+            >
+              <span className="flex items-center gap-2">
+                <c.icon className="h-4 w-4" /> {c.label}
+              </span>
+              {!c.verdict.allowed && (
+                <span className="pl-6 text-[11px] leading-tight text-muted-foreground">
+                  {guardTitle(c.verdict)}
+                </span>
+              )}
+            </DropdownMenuItem>
+          ))}
+          {overflowItems.length > 0 && <DropdownMenuSeparator />}
+          {destructiveItems.map((c) => (
+            <DropdownMenuItem
+              key={c.action}
+              disabled={!c.verdict.allowed}
+              onSelect={() => setPendingAction(c.action)}
+              className="flex-col items-start gap-0.5 py-2 text-destructive focus:text-destructive"
+            >
+              <span className="flex items-center gap-2">
+                <c.icon className="h-4 w-4" /> {c.label}
+              </span>
+              {!c.verdict.allowed && (
+                <span className="pl-6 text-[11px] leading-tight text-muted-foreground">
+                  {guardTitle(c.verdict)}
+                </span>
+              )}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 

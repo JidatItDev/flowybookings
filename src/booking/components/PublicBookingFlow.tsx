@@ -496,6 +496,7 @@ export function PublicBookingFlow({ presetShopId }: PublicBookingFlowProps) {
           deposit_cents: resolvedDepositCents,
           currency: selectedService.currency,
           notes: note || null,
+          created_via: "online",
         })
         .select("id").single();
       if (bErr) throw bErr;
