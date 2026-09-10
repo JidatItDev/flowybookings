@@ -9,7 +9,11 @@ import {
   bookingsQuery,
   customersQuery,
   paymentsQuery,
+  servicesQuery,
+  shopFullQuery,
+  staffQuery,
 } from "@/shop/shared/queries-barrel";
+import { resolveShopTimezone } from "@/shared/lib/shop-timezone";
 import { formatCents } from "@/shared/lib/format";
 import { useT } from "@/shared/lib/i18n";
 import { StatusBadge } from "@/shared/components/StatusBadge";
@@ -27,6 +31,10 @@ export function MollieConnectPayments({ shopId }: { shopId: string }) {
   const { data: payments = [] } = useQuery(paymentsQuery(shopId));
   const { data: bookings = [] } = useQuery(bookingsQuery(shopId));
   const { data: customers = [] } = useQuery(customersQuery(shopId));
+  const { data: services = [] } = useQuery(servicesQuery(shopId));
+  const { data: staff = [] } = useQuery(staffQuery(shopId));
+  const { data: shopFull } = useQuery(shopFullQuery(shopId));
+  const shopTz = resolveShopTimezone(shopFull?.timezone);
 
   const rows = useMemo(
     () => payments.filter((p) => p.provider === "mollie_connect"),
@@ -70,6 +78,8 @@ export function MollieConnectPayments({ shopId }: { shopId: string }) {
               {rows.map((p) => {
                 const booking = bookings.find((b) => b.id === p.booking_id);
                 const cust = customers.find((c) => c.id === booking?.customer_id);
+                const svc = services.find((s) => s.id === booking?.service_id);
+                const stf = staff.find((s) => s.id === booking?.staff_id);
                 const canRefund =
                   !!p.provider_payment_id &&
                   (p.status === "paid" || p.status === "deposit_paid");
@@ -101,6 +111,16 @@ export function MollieConnectPayments({ shopId }: { shopId: string }) {
                             id: p.id,
                             amount: p.amount_cents,
                             currency: p.currency,
+                            booking: booking
+                              ? {
+                                  customerName: cust?.full_name ?? "—",
+                                  serviceName: svc?.name ?? "—",
+                                  staffName: stf?.full_name ?? null,
+                                  startsAt: booking.starts_at,
+                                  endsAt: booking.ends_at,
+                                  status: booking.status,
+                                }
+                              : null,
                           })
                         }
                       >
@@ -115,7 +135,7 @@ export function MollieConnectPayments({ shopId }: { shopId: string }) {
         </div>
       )}
 
-      <RefundConfirmDialog refundTarget={refundTarget} setRefundTarget={setRefundTarget} refundMut={refundMut} />
+      <RefundConfirmDialog refundTarget={refundTarget} setRefundTarget={setRefundTarget} refundMut={refundMut} shopTz={shopTz} />
     </div>
   );
 }

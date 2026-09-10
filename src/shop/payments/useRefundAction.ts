@@ -11,7 +11,23 @@ import { shopKeys } from "@/shop/shared/queries-barrel";
 import { useT } from "@/shared/lib/i18n";
 import { assertNotImpersonating } from "@/admin/impersonation/ImpersonationBanner";
 
-export type RefundTarget = { id: string; amount: number; currency: string };
+export type RefundTarget = {
+  id: string;
+  amount: number;
+  currency: string;
+  /** Optional booking context to show in the confirm dialog — populated by
+   * callers that have it in scope but don't already show it right above the
+   * button (the Payments page). The calendar's Cancel dialog omits this since
+   * the same info is already visible in the sheet it's nested inside. */
+  booking?: {
+    customerName: string;
+    serviceName: string;
+    staffName: string | null;
+    startsAt: string;
+    endsAt: string;
+    status: string;
+  } | null;
+};
 
 export function useRefundAction(shopId: string) {
   const { t } = useT();
